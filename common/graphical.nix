@@ -1,161 +1,79 @@
 # This contains settings to provide a graphical system.
-{ config, pkgs, ... }:
-
+{ config, pkgs, lib, ... }:
+with lib;
+let
+    cfg = config.hsys;
+    needDisplayServer = cfg.enableGnome|| cfg.enablei3;
+in
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./common.nix
-    ];
-
-  services = {
-    # Configure keymap in X11 (outdated - we use wayland now)
-    xserver = {
-      enable = true;
-      desktopManager.gnome.enable = true;
-      desktopManager.xterm.enable = false;
-      displayManager.gdm.enable = true;
-      layout = "us,ar";
-      xkbOptions = "caps:escape";
-      libinput.enable = false;
-      synaptics.enable = true;
-      synaptics.twoFingerScroll = true;
-    };
-
-    # Yubikey
-    udev.packages = with pkgs; [ libu2f-host yubikey-personalization ];
-    pcscd.enable = true;
- 
-    printing.enable = true;
-    pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-    };
- 
-    flatpak.enable = true;
+  options.hsys.enableGnome =mkOption {
+    description = "Enable Gnome desktop environment";
+    type = types.bool;
+    default = false;
+  };
+  options.hsys.enablei3 = mkOption {
+    description = "Enable the i3 window manager";
+    type = types.bool;
+    default = false;
   };
 
+  config = mkMerge [
+    (mkIf needDisplayServer { # Global Xorg/wayland and desktop settings go here
+      services = {
+        # Configure keymap in X11 (outdated - we use wayland now)
+        xserver = {
+          enable = true;
+          layout = "us,ar";
+          xkbOptions = "caps:escape";
+	  enableCtrlAltBackspace = false; # security?
+	  
+        };
+        printing = {
+          enable = true;
+	  drivers = [
+	    pkgs.epson-escpr
+	  ];
+	};
+        pipewire = {
+          enable = true;
+          alsa.enable = true;
+          alsa.support32Bit = true;
+          pulse.enable = true;
+	  media-session.enable = true;
+        };
+      };
+      programs.xwayland.enable = true;
+      environment.systemPackages = with pkgs; [
 
-  environment.gnome.excludePackages = [
-    pkgs.gnome.geary
-    pkgs.gnome.gnome-music
-    pkgs.epiphany
+      ];
+      fonts = {
+        enableDefaultFonts = true;
+	enableGhostscriptFonts = true;
+	fonts = with pkgs; [
+	  google-fonts
+	  corefonts
+	  roboto
+	  ubuntu_font_family
+	];
+      };
+    })
+
+    (mkIf cfg.enableGnome { # These are set when gnome is enabled.
+      services.xserver.desktopManager.gnome.enable = true;
+      services.xserver.displayManager.gdm.enable = true;
+
+      environment.gnome.excludePackages = [
+        pkgs.gnome.geary
+        pkgs.gnome.gnome-music
+        pkgs.epiphany
+      ];
+      environment.systemPackages = with pkgs; [
+        gnome.dconf-editor
+      ];
+
+    })
+
   ];
-  # Enable the GNOME Desktop Environment.
  
-  # Enable sound.
-  sound.enable = true;
-  security = {
-    rtkit.enable = true;
-    doas = {
-      enable = true;
-      extraRules = [{
-        users = [ "humaid" ];
-        persist = true;
-	keepEnv = true;
-      }];
-    };
-    sudo.enable = false;
-    protectKernelImage = true;
-
-  };
-
-
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    zsh
-    zsh-autosuggestions
-    neovim
-    wget
-    tmux
-    firefox
-    htop
-    wget
-    curl
-    tcpdump
-    file
-    lsof
-    strace
-    xz
-    zip
-    lz4
-    unzip
-    rsync
-    tree
-    pwgen
-    jq
-    usbutils
-    pciutils
-    gitAndTools.gitFull
-    xclip
-
-
-    killall
-    file
-    gimp
-    du-dust
-    mdbook
-    hugo
-    keepassxc
-    google-fonts
-
-    gnome.dconf-editor
-
-    # Programming
-    gnupg
-    gdb
-    bvi
-    plantuml
-    bc
-    gnumake
-    bat
-    ffmpeg
-    lm_sensors
-    minify
-
-    # Productivity
-    prusa-slicer
-    audacity
-    gimp
-    inkscape
-    audacity
-    gimp
-    inkscape
-    libreoffice
-    vlc
-    obs-studio
-
-    # CLI productivity
-    jpegoptim
-    optipng
-    languagetool
-    aspell
-    aspellDicts.ar
-    aspellDicts.en
-    aspellDicts.fi
-
-    # Desktop
-    signal-desktop
-    libreoffice
-    vlc
-    obs-studio
-
-    # CLI productivity
-    jpegoptim
-    optipng
-    languagetool
-
-    # Desktop
-    signal-desktop
-
-
-  ];
-  programs.neovim.viAlias = true;
-  programs.neovim.vimAlias = true;
-
-  hardware.pulseaudio.enable = false;
-  hardware.cpu.intel.updateMicrocode = true;
 }
 

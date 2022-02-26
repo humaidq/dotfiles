@@ -8,14 +8,14 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
-      ../../common/graphical.nix
+      ../../common
+      ../../common/laptop.nix
     ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader = {
     systemd-boot = {
       enable = true;
-      editor = false;
       memtest86.enable = true;
       consoleMode = "auto";
     };
@@ -23,24 +23,17 @@
     efi.canTouchEfiVariables = true;
   };
   boot = {
-    cleanTmpDir = true;
     plymouth.enable = true;
-    kernelParams = [
-      # Enable sanity check, redzoning, poisoning.
-      "slub_debug=FZP"
-      # Page allocator randomisatoin
-      "page_alloc.shuffle=1"
-      # Reduce boot TTY output
-      "quiet"
-      "vga=current"
-    ];
   };
+
+  hsys.enableGnome = true;
+  hsys.getDevTools = true;
+  hsys.laptop = true;
 
   networking = {
     hostName = "serow"; # Define your hostname.
     interfaces.enp0s31f6.useDHCP = true;
     interfaces.wlp0s20f3.useDHCP = true;
-    firewall.enable = true;
   };
 
   # This value determines the NixOS release from which the default

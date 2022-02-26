@@ -1,9 +1,7 @@
-# This is the commons files, which is attributes that spans different
-# system types (e.g. graphical, server, RPi, etc).
+# User and home-manager configurations goes here.
 { config, pkgs, lib, ... }:
 {
   imports = [ <home-manager/nixos> ];
-  time.timeZone = "Asia/Dubai";
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.humaid = {
@@ -13,18 +11,12 @@
     shell = pkgs.zsh;
   };
 
-  services.power-profiles-daemon.enable = false;
-  services.tlp = {
-    enable = true;
-    settings = {
-      START_CHARGE_THRESH_BAT0 = 80;
-      STOP_CHARGE_THRESH_BAT0 = 85;
-    };
-  };
-
   home-manager.users.humaid = {pkgs, lib, ...}: 
   let
     mkTuple = lib.hm.gvariant.mkTuple;
+    nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+        inherit pkgs;
+    };
   in
   {
     xdg = {
@@ -42,6 +34,12 @@
 	publicShare = "";
 	templates = "";
       };
+    };
+    programs.firefox = {
+      enable = true;
+      extensions = with nur.repos.rycee.firefox-addons; [
+        ublock-origin
+      ];
     };
     programs.tmux = {
       enable = true;
@@ -62,6 +60,8 @@
       '';
       shellAliases = {
         rebuild = "doas nixos-rebuild switch";
+	vim = "nvim";
+	vi = "nvim";
       };
       history = {
         size = 10000000;
@@ -126,27 +126,4 @@
       };
     };
   };
-
-  documentation = {
-    enable = true;
-    nixos.enable = true;
-    man.enable = true;
-    man.generateCaches = true;
-    info.enable = true;
-    doc.enable = true;
-  };
-
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  programs = {
-    mtr.enable = true;
-    gnupg.agent = {
-      enable = true;
-      enableSSHSupport = true;
-    };
-  };
-
-  nixpkgs.config.allowUnfree = true;
-  nix.allowedUsers = [ "humaid" ];
 }
-
