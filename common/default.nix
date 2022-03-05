@@ -9,8 +9,11 @@
       ./security.nix
       ./apps.nix
       ./graphical.nix
+      ./v12n.nix
     ];
+
   time.timeZone = "Asia/Dubai";
+  i18n.defaultLocale = "en_GB.UTF-8";
 
   documentation = {
     enable = true;
@@ -30,12 +33,22 @@
       enableSSHSupport = true;
     };
   };
+
+  # This allows updating intel microcode
+  hardware.enableRedistributableFirmware = true;
+
   services.fwupd.enable = true;
+  services.timesyncd.enable = true;
+  services.timesyncd.servers = [
+    "0.asia.pool.ntp.org"
+    "1.asia.pool.ntp.org"
+    "2.asia.pool.ntp.org"
+    "3.asia.pool.ntp.org"
+  ];
 
   nixpkgs.config.allowUnfree = true;
   nix.allowedUsers = [ "humaid" ];
 
-    sound.enable = true;
   nixpkgs.overlays = [
      (self: super: {
       tor-browser-bundle-bin = super.tor-browser-bundle-bin.overrideAttrs (old: rec  {
@@ -46,83 +59,4 @@
       });
      })
    ];
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-    zsh
-    zsh-autosuggestions
-    neovim
-    wget
-    tmux
-    ranger
-    htop
-    wget
-    curl
-    tcpdump
-    file
-    lsof
-    strace
-    xz
-    zip
-    lz4
-    unzip
-    rsync
-    tree
-    pwgen
-    jq
-    ripgrep
-    ripgrep-all
-    usbutils
-    pciutils
-    gitAndTools.gitFull
-    xclip
-    killall
-    file
-    du-dust
-    wike
-  #];
-    firefox
-    tor-browser-bundle-bin
-    gimp
-    keepassxc
-
-    signal-desktop
-    libreoffice
-    vlc
-    obs-studio
-
-    # Productivity
-    prusa-slicer
-    audacity
-    gimp
-    inkscape
-    audacity
-    gimp
-    inkscape
-    libreoffice
-    vlc
-    obs-studio
-
-
-    # CLI productivity
-    jpegoptim
-    optipng
-    languagetool
-    aspell
-    aspellDicts.ar
-    aspellDicts.en
-    aspellDicts.fi
-
-    # CLI productivity
-    jpegoptim
-    optipng
-    languagetool
-  ];
-  programs.neovim.viAlias = true;
-  programs.neovim.vimAlias = true;
-
-  hardware.pulseaudio.enable = false;
-  hardware.cpu.intel.updateMicrocode = true;
-
 }
-

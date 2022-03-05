@@ -25,16 +25,21 @@
   boot = {
     plymouth.enable = true;
   };
-
-  hsys.enableGnome = true;
-  hsys.getDevTools = true;
-  hsys.laptop = true;
+  services.fstrim.enable = true;
 
   networking = {
     hostName = "serow"; # Define your hostname.
     interfaces.enp0s31f6.useDHCP = true;
     interfaces.wlp0s20f3.useDHCP = true;
   };
+
+  # My configuration specific settings
+  hsys.enableGnome = true;
+  hsys.getDevTools = true;
+  hsys.laptop = true;
+  hsys.virtualisation = true;
+
+  boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

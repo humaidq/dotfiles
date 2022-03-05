@@ -20,20 +20,21 @@ in
   config = mkMerge [
     (mkIf needDisplayServer { # Global Xorg/wayland and desktop settings go here
       services = {
-        # Configure keymap in X11 (outdated - we use wayland now)
+        # Display server (X11)
         xserver = {
           enable = true;
           layout = "us,ar";
           xkbOptions = "caps:escape";
 	  enableCtrlAltBackspace = false; # security?
-	  
         };
-        printing = {
-          enable = true;
-	  drivers = [
-	    pkgs.epson-escpr
-	  ];
-	};
+
+	# Printing
+        printing.enable = true;
+        printing.drivers = [
+          pkgs.epson-escpr
+        ];
+
+	# Audio
         pipewire = {
           enable = true;
           alsa.enable = true;
@@ -41,11 +42,30 @@ in
           pulse.enable = true;
 	  media-session.enable = true;
         };
-      };
-      programs.xwayland.enable = true;
-      environment.systemPackages = with pkgs; [
 
-      ];
+        # Track highest uptimes :)
+	uptimed.enable = true;
+      };
+      sound.enable = true;
+      hardware.pulseaudio.enable = false; # replaced with pipewire above
+      # We need to make system look better overall when we have a graphical system
+      boot.plymouth.enable = true;
+
+      # Define printers
+      hardware.printers.ensurePrinters = [{
+	name = "Home_Printer";
+	model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
+	location = "Home Office (Abu Dhabi)";
+	deviceUri = "lpd://192.168.0.189:515/PASSTHRU";
+	ppdOptions = { PageSize = "A4"; };
+      }];
+      hardware.printers.ensureDefaultPrinter = "Home_Printer";
+
+      # Mouse
+      hardware.logitech.wireless.enable = true;
+      hardware.logitech.wireless.enableGraphical = config.hardware.logitech.wireless.enable;
+      
+      # Fonts
       fonts = {
         enableDefaultFonts = true;
 	enableGhostscriptFonts = true;
@@ -54,8 +74,44 @@ in
 	  corefonts
 	  roboto
 	  ubuntu_font_family
+	  fira-code
+	  cantarell_fonts
+	  freefont_ttf
+	  inconsolata
+	  liberation_ttf
+	  lmodern
+	  terminus_font
+	  ttf_bitstream_vera
 	];
       };
+
+      # Firefox with custom policies
+
+      # Default applications for graphical systems
+      environment.systemPackages = with pkgs; [
+        tor-browser-bundle-bin
+        gimp
+        keepassxc
+        wike
+        signal-desktop
+        libreoffice
+        vlc
+        obs-studio
+	sxiv
+	zathura
+
+        # Productivity
+        prusa-slicer
+        audacity
+        gimp
+        inkscape
+        audacity
+        gimp
+        inkscape
+        libreoffice
+        vlc
+        obs-studio
+      ];
     })
 
     (mkIf cfg.enableGnome { # These are set when gnome is enabled.
@@ -70,10 +126,7 @@ in
       environment.systemPackages = with pkgs; [
         gnome.dconf-editor
       ];
-
     })
-
   ];
- 
 }
 
