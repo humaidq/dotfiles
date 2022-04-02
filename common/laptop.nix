@@ -2,13 +2,13 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-    cfg = config.hsys;
+  cfg = config.hsys;
 in
 {
-  options.hsys.laptop =mkOption {
-    description= "Configures laptop-specific settings";
-    type= types.bool;
-    default= false;
+  options.hsys.laptop = mkOption {
+    description = "Configures laptop-specific settings";
+    type = types.bool;
+    default = false;
   };
 
   config = mkIf cfg.laptop {
@@ -26,7 +26,7 @@ in
     powerManagement = {
       enable = true;
       powertop.enable = true;
-   };
+    };
     networking.networkmanager.wifi.powersave = true;
     services.xserver.libinput = {
       enable = true;

@@ -6,7 +6,8 @@
 
 {
   imports =
-    [ # Include the results of the hardware scan.
+    [
+      # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ../../common
       ../../common/laptop.nix
@@ -39,7 +40,7 @@
   hsys.laptop = true;
   hsys.virtualisation = true;
 
-  boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
+  #boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

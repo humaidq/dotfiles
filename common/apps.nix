@@ -2,23 +2,23 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-    cfg = config.hsys;
+  cfg = config.hsys;
 in
 {
-  options.hsys.getSystemTools =mkOption {
-    description= "Installs basic system tools";
-    type= types.bool;
-    default= true;
+  options.hsys.getSystemTools = mkOption {
+    description = "Installs basic system tools";
+    type = types.bool;
+    default = true;
   };
-  options.hsys.getCliTools =mkOption {
-    description= "Installs favourite CLI tools";
-    type= types.bool;
-    default= true;
+  options.hsys.getCliTools = mkOption {
+    description = "Installs favourite CLI tools";
+    type = types.bool;
+    default = true;
   };
-  options.hsys.getDevTools =mkOption {
-    description= "Installs development tools";
-    type= types.bool;
-    default= false;
+  options.hsys.getDevTools = mkOption {
+    description = "Installs development tools";
+    type = types.bool;
+    default = false;
   };
   #options.hsys.getTools =mkOption {
   #  description: "Installs development tools";
@@ -27,7 +27,8 @@ in
   #};
 
   config = mkMerge [
-    (mkIf cfg.getSystemTools { # Basic system tools for all systems
+    (mkIf cfg.getSystemTools {
+      # Basic system tools for all systems
       environment.systemPackages = with pkgs; [
         zsh
         zsh-autosuggestions
@@ -35,6 +36,7 @@ in
         wget
         tmux
         ranger
+        lf
         htop
         wget
         curl
@@ -59,24 +61,41 @@ in
         killall
         file
         du-dust
-	dig
-	nixpkgs-fmt
+        dig
+        nixpkgs-fmt
+        shellcheck
+        borgbackup
       ];
-
-      programs.neovim.viAlias = true;
-      programs.neovim.vimAlias = true;
 
       # Locate
       services.locate = {
+        enable = true;
         locate = pkgs.plocate;
+        interval = "daily";
       };
 
       environment.variables = {
         EDITOR = "nvim";
         VISUAL = "nvim";
+        #TERMINAL = "";
+        BROWSER = "firefox";
+
+        # clean up
+        GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
+        LESSHISTFILE = "-";
+        WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
+        TMUX_TMPDIR="$XDG_RUNTIME_DIR";
+        CARGO_HOME="$XDG_DATA_HOME/cargo";
+        GOPATH="$HOME/repos/go";
+        HISTFILE = "$XDG_DATA_HOME/history";
+
+        # Java issue fix
+        _JAVA_AWT_WM_NONREPARENTING = "1";
       };
+
     })
-    (mkIf cfg.getCliTools { # All development and programming tools/utilities
+    (mkIf cfg.getCliTools {
+      # All development and programming tools/utilities
       environment.systemPackages = with pkgs; [
         # CLI productivity
         jpegoptim
@@ -93,9 +112,11 @@ in
         languagetool
       ];
     })
-    (mkIf cfg.getDevTools { # All development and programming tools/utilities
+    (mkIf cfg.getDevTools {
+      # All development and programming tools/utilities
       environment.systemPackages = with pkgs; [
         go
+        gopls
         gcc
         gnupg
         gdb
@@ -109,9 +130,11 @@ in
         minify
         mdbook
         hugo
-	dmtx
+        dmtx-utils
+        python38Full
       ];
+      # This would set up proper wireshark group
+      programs.wireshark.enable = true;
     })
   ];
-
 }

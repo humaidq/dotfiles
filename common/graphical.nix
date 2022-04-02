@@ -2,11 +2,11 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-    cfg = config.hsys;
-    needDisplayServer = cfg.enableGnome|| cfg.enablei3;
+  cfg = config.hsys;
+  needDisplayServer = cfg.enableGnome || cfg.enablei3;
 in
 {
-  options.hsys.enableGnome =mkOption {
+  options.hsys.enableGnome = mkOption {
     description = "Enable Gnome desktop environment";
     type = types.bool;
     default = false;
@@ -18,33 +18,34 @@ in
   };
 
   config = mkMerge [
-    (mkIf needDisplayServer { # Global Xorg/wayland and desktop settings go here
+    (mkIf needDisplayServer {
+      # Global Xorg/wayland and desktop settings go here
       services = {
         # Display server (X11)
         xserver = {
           enable = true;
           layout = "us,ar";
           xkbOptions = "caps:escape";
-	  enableCtrlAltBackspace = false; # security?
+          enableCtrlAltBackspace = false; # security?
         };
 
-	# Printing
+        # Printing
         printing.enable = true;
         printing.drivers = [
           pkgs.epson-escpr
         ];
 
-	# Audio
+        # Audio
         pipewire = {
           enable = true;
           alsa.enable = true;
           alsa.support32Bit = true;
           pulse.enable = true;
-	  media-session.enable = true;
+          #media-session.enable = true;
         };
 
         # Track highest uptimes :)
-	uptimed.enable = true;
+        uptimed.enable = true;
       };
       sound.enable = true;
       hardware.pulseaudio.enable = false; # replaced with pipewire above
@@ -53,36 +54,36 @@ in
 
       # Define printers
       hardware.printers.ensurePrinters = [{
-	name = "Home_Printer";
-	model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
-	location = "Home Office (Abu Dhabi)";
-	deviceUri = "lpd://192.168.0.189:515/PASSTHRU";
-	ppdOptions = { PageSize = "A4"; };
+        name = "Home_Printer";
+        model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
+        location = "Home Office (Abu Dhabi)";
+        deviceUri = "lpd://192.168.0.189:515/PASSTHRU";
+        ppdOptions = { PageSize = "A4"; };
       }];
       hardware.printers.ensureDefaultPrinter = "Home_Printer";
 
       # Mouse
       hardware.logitech.wireless.enable = true;
       hardware.logitech.wireless.enableGraphical = config.hardware.logitech.wireless.enable;
-      
+
       # Fonts
       fonts = {
         enableDefaultFonts = true;
-	enableGhostscriptFonts = true;
-	fonts = with pkgs; [
-	  google-fonts
-	  corefonts
-	  roboto
-	  ubuntu_font_family
-	  fira-code
-	  cantarell_fonts
-	  freefont_ttf
-	  inconsolata
-	  liberation_ttf
-	  lmodern
-	  terminus_font
-	  ttf_bitstream_vera
-	];
+        enableGhostscriptFonts = true;
+        fonts = with pkgs; [
+          google-fonts
+          corefonts
+          roboto
+          ubuntu_font_family
+          fira-code
+          cantarell-fonts
+          freefont_ttf
+          inconsolata
+          liberation_ttf
+          lmodern
+          terminus_font
+          ttf_bitstream_vera
+        ];
       };
 
       # Firefox with custom policies
@@ -92,13 +93,17 @@ in
         tor-browser-bundle-bin
         gimp
         keepassxc
+        thunderbird
         wike
         signal-desktop
         libreoffice
         vlc
         obs-studio
-	sxiv
-	zathura
+        sxiv
+        zathura
+        spotify
+        ksnip
+        blanket
 
         # Productivity
         prusa-slicer
@@ -110,11 +115,16 @@ in
         inkscape
         libreoffice
         vlc
+        kooha
         obs-studio
+        contrast
+        helvum
+        wireshark
       ];
     })
 
-    (mkIf cfg.enableGnome { # These are set when gnome is enabled.
+    (mkIf cfg.enableGnome {
+      # These are set when gnome is enabled.
       services.xserver.desktopManager.gnome.enable = true;
       services.xserver.displayManager.gdm.enable = true;
 

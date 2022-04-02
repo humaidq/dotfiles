@@ -2,7 +2,7 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-    cfg = config.hsys;
+  cfg = config.hsys;
 in
 {
   options.hsys.virtualisation = mkOption {
@@ -16,12 +16,13 @@ in
       enable = true;
       autoPrune.enable = true; # autoPrune.dates default "weekly"
     };
-    virtualisation.virtualbox.host ={
+    virtualisation.virtualbox.host = {
       enable = true;
       enableExtensionPack = true;
     };
     environment.systemPackages = with pkgs; [
       qemu_full
+      gnome.gnome-boxes
     ];
 
   };

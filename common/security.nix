@@ -2,7 +2,7 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-    cfg = config.hsys;
+  cfg = config.hsys;
 in
 {
   options.hsys.enableYubikey = mkOption {
@@ -39,7 +39,7 @@ in
       };
       security = {
         rtkit.enable = true;
-	auditd.enable = true;
+        auditd.enable = true;
         doas = {
           enable = true;
           extraRules = [{
