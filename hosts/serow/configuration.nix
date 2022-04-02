@@ -39,6 +39,10 @@
   hsys.getDevTools = true;
   hsys.laptop = true;
   hsys.virtualisation = true;
+  hsys.backups = {
+    enable = true;
+    repo = "zh2137@zh2137.rsync.net:borg";
+  };
 
   #boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
 

@@ -10,6 +10,7 @@
       ./apps.nix
       ./graphical.nix
       ./v12n.nix
+      ./backup.nix
     ];
 
   time.timeZone = "Asia/Dubai";

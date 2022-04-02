@@ -10,11 +10,12 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.humaid = {
     isNormalUser = true;
-    extraGroups = [ "plugdev" "dialout" "wireshark" "video" "audio" ]; # wheel removed since we use doas
+    # wheel removed since we use doas
+    extraGroups = [ "plugdev" "dialout" "wireshark" "video" "audio" "docker"
+      "vboxusers" ];
     description = "Humaid AlQassimi";
     shell = pkgs.zsh;
   };
-
 
   home-manager.users.humaid = { pkgs, lib, ... }:
     let
@@ -69,6 +70,7 @@
         # Use vi-like keys to move in scroll mode
         keyMode = "vi";
         clock24 = false;
+        extraConfig = "set -g default-terminal \"xterm-256color\"";
       };
 
       programs.zsh = {
