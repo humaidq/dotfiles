@@ -40,7 +40,7 @@ in
       environment.BORG_RELOCATED_REPO_ACCESS_IS_OK = "yes";
       environment.BORG_RSH = "ssh -i /root/borgbackup_ssh_key";
       compression = "auto,lzma";
-      startAt = "daily";
+      startAt = "18:00";
       extraArgs = "--remote-path=borg1"; # rsync.net's executable
     };
 

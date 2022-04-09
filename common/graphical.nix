@@ -141,7 +141,6 @@ in
         
       };
 
-
       environment.gnome.excludePackages = [
         pkgs.gnome.geary
         pkgs.gnome.gnome-music
@@ -157,9 +156,18 @@ in
         brightnessctl
         dmenu
         st
+        slock
         xwallpaper
+        picom
       ];
 
+      # Fux set UID issue
+      security.wrappers.slock = {
+        source = "${pkgs.slock.out}/bin/slock";
+        setuid = true;
+        owner = "root";
+        group = "root";
+      };
     })
   ];
 }

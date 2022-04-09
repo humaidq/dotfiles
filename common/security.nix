@@ -59,11 +59,12 @@ in
 
       # Force use of DNS over TLS, and all requests must be validated with DNSSEC
       services.resolved.enable = true;
-      #services.resolved.dnssec = "true";
-      #services.resolved.extraConfig = "DNSOverTLS=true";
+      services.resolved.dnssec = "true";
+      services.resolved.extraConfig = "DNSOverTLS=true";
       networking.networkmanager.dns = "systemd-resolved";
-      networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
-    })
+      networking.nameservers = lib.mkForce [ "1.1.1.1" "1.0.0.1"
+        "2606:4700:4700::1111" "2606:4700:4700::1001" ];
+      })
   ];
 
 }

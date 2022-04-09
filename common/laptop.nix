@@ -38,6 +38,10 @@ in
       package = pkgs.bluezFull;
       powerOnBoot = false;
     };
+    environment.systemPackages = with pkgs; [
+      powertop
+    ];
+
 
     # Fix Thinkpad specific issue of throttling
     services.throttled.enable = true;

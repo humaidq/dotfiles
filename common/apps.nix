@@ -53,6 +53,9 @@ in
         tree
         pwgen
         jq
+        acpi
+        units
+        bc
         ripgrep
         ripgrep-all
         usbutils
@@ -78,10 +81,11 @@ in
       environment.variables = {
         EDITOR = "nvim";
         VISUAL = "nvim";
-        #TERMINAL = "";
+        TERMINAL = "st";
         BROWSER = "firefox";
 
         # clean up
+        XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
         GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
         LESSHISTFILE = "-";
         WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
@@ -89,6 +93,9 @@ in
         CARGO_HOME="$XDG_DATA_HOME/cargo";
         GOPATH="$HOME/repos/go";
         HISTFILE = "$XDG_DATA_HOME/history";
+
+        LC_ALL = "en_US.UTF-8";
+        DO_NOT_TRACK = "1";
 
         # Java issue fix
         _JAVA_AWT_WM_NONREPARENTING = "1";
@@ -123,7 +130,6 @@ in
         gdb
         bvi
         plantuml
-        bc
         gnumake
         bat
         ffmpeg
