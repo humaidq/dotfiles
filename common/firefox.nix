@@ -12,6 +12,13 @@
       };
     in
     {
+      home.file.".mozilla/firefox/default/chrome/firefox-gnome-theme".source =  fetchGit {
+        url = "https://github.com/rafaelmardojai/firefox-gnome-theme";
+        rev = "e8f93b9b3456c13356f17aae7c8abb99195d12ec";
+      };
+      home.file.".mozilla/firefox/default/chrome/userChrome.css".text =
+        "@import \"firefox-gnome-theme\/userChrome.css\";";
+
       programs.firefox = {
         enable = true;
         profiles.default = {
@@ -35,6 +42,8 @@
             DisableFirefoxScreenshots = true;
             NoDefaultBookmarks = true;
             OfferToSaveLogins = false;
+            PasswordManagerEnabled = false;
+            PictureInPicture = false;
             FirefoxHome = {
               Pocket = false;
               Snippets = false;
@@ -61,9 +70,17 @@
               "sponsorBlocker@ajay.app" = extension "sponsor-block";
               "uBlock0@raymondhill.net" = extension "ublock-origin";
               "{74145f27-f039-47ce-a470-a662b129930a}" = extension "clearurls";
+              "{9063c2e9-e07c-4c2c-9646-cfe7ca8d0498}" = extension "old-reddit-redirect";
               "{d133e097-46d9-4ecc-9903-fa6a722a6e0e}" = extension "bypass-paywalls-clean";
             };
             Preferences = {
+              # Firefox Gnome Theme settings
+              "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
+              "browser.uidensity" = 0;
+              "svg.context-properties.content.enabled" = true;
+              "ui.useOverlayScrollbars" = 1;
+              "layers.acceleration.force-enabled" = true; #wayland fix
+
               # Preferences
               "browser.newtabpage.enabled" = false; # Blank new page tab
               "browser.startup.homepage" = "https://start.duckduckgo.com";
@@ -142,7 +159,7 @@
               "browser.search.contryCode" = "US";
               "browser.search.region" = "US";
               "browser.search.geoip.url" = "";
-              "intl.accept_languages" = "en";
+              "intl.accept_languages" = "en-US";
               "intl.locale.matchOS" = false;
               "clipboard.autocopy" = false;
               "general.buildID.override" = "20100101";

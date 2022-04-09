@@ -11,6 +11,11 @@ in
     type = types.bool;
     default = false;
   };
+  options.hsys.enableDwm = mkOption {
+    description = "Enable dwm window manager";
+    type = types.bool;
+    default = false;
+  };
   options.hsys.enablei3 = mkOption {
     description = "Enable the i3 window manager";
     type = types.bool;
@@ -81,8 +86,11 @@ in
           inconsolata
           liberation_ttf
           lmodern
-          terminus_font
           ttf_bitstream_vera
+          # Bitmap fonts
+          terminus_font
+          cherry
+          spleen
         ];
       };
 
@@ -126,7 +134,13 @@ in
     (mkIf cfg.enableGnome {
       # These are set when gnome is enabled.
       services.xserver.desktopManager.gnome.enable = true;
-      services.xserver.displayManager.gdm.enable = true;
+      services.xserver.displayManager.gdm = {
+        enable = true;
+        wayland = true;
+        #nvidiaWayland = true;
+        
+      };
+
 
       environment.gnome.excludePackages = [
         pkgs.gnome.geary
@@ -136,6 +150,16 @@ in
       environment.systemPackages = with pkgs; [
         gnome.dconf-editor
       ];
+    })
+    (mkIf cfg.enableDwm {
+      services.xserver.windowManager.dwm.enable = true;
+      environment.systemPackages = with pkgs; [
+        brightnessctl
+        dmenu
+        st
+        xwallpaper
+      ];
+
     })
   ];
 }

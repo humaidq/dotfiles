@@ -36,6 +36,7 @@
 
   # My configuration specific settings
   hsys.enableGnome = true;
+  hsys.enableDwm = true;
   hsys.getDevTools = true;
   hsys.laptop = true;
   hsys.virtualisation = true;

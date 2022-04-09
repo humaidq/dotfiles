@@ -32,6 +32,7 @@ in
       environment.systemPackages = with pkgs; [
         zsh
         zsh-autosuggestions
+        zsh-nix-shell
         neovim
         wget
         tmux

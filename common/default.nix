@@ -59,6 +59,13 @@
           sha256 = "dfb1d238e2bf19002f2f141178c3af80775dd8d5d83b53b0ab86910ec4a1830d";
         };
       });
+      dwm = super.dwm.overrideAttrs (old: rec {
+        src = /home/humaid/repos/system/dwm;
+        #src = builtins.fetchGit {
+        #  url = "https://git.sr.ht/~humaid/dwm";
+        #  rev = "f2943ca1b20fb5069d5383380f9a98a66eb466aa";
+        #};
+      });
     })
   ];
 }

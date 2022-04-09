@@ -60,6 +60,7 @@
           publicShare = "";
           templates = "";
         };
+        configFile."user-dirs.locale".text = "en_GB";
       };
 
       # Manage Firefox
@@ -134,6 +135,7 @@
           bindkey '^f' vi-forward-char
 
           source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+          source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
           source ${lscolors}/lscolors.sh
         '';
         shellAliases = {
@@ -202,6 +204,10 @@
           font-name = "Inter 11";
         };
       };
+      gtk = {
+        enable = true;
+        theme.name = "Adwaita-dark";
+      };
       gtk.gtk3.extraConfig = {
         gtk-application-prefer-dark-theme = true;
         gtk-cursor-theme-name = "Adwaita";
@@ -245,6 +251,10 @@
           init.defaultBranch = "master";
           format.signoff = true;
           commit.verbose = "yes";
+          sendmail.smtpserver = "smtp.migadu.com";
+          sendmail.smtpuser = "git@humaidq.ae";
+          sendmail.smtpencryption = "tls";
+          sendmail.smtpserverport = "587";
           url = {
             #"git@github.com:".insteadOf = "https://github.com/";
             #"git@git.sr.ht:".insteadOf = "https://git.sr.ht/";
