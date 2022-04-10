@@ -59,6 +59,9 @@
           sha256 = "dfb1d238e2bf19002f2f141178c3af80775dd8d5d83b53b0ab86910ec4a1830d";
         };
       });
+      st = super.st.overrideAttrs (old: rec {
+        src = /home/humaid/repos/system/st;
+      });
       dwm = super.dwm.overrideAttrs (old: rec {
         src = /home/humaid/repos/system/dwm;
         #src = builtins.fetchGit {

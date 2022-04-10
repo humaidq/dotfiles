@@ -12,14 +12,12 @@ let
 in
 {
   home.file = {
+    # This script is used for loading programs for dwm
     ".bin/dwmload" = script ''
+      xidlelock --not-when-fullscreen --not-when-audio --timer 180 'slock'
       xwallpaper --center ${wallpaper} &
       picom --vsync --dbus --backend glx &
       setxkbmap -option caps:swapescape &
-    '';
-    ".bin/mkcd" = script ''
-      #!/bin/sh
-      mkdir -p $1 && cd $1
     '';
     ".bin/whoseport" = script ''
       lsof -i ":$1" | grep LISTEN

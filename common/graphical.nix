@@ -76,11 +76,15 @@ in
         enableDefaultFonts = true;
         enableGhostscriptFonts = true;
         fonts = with pkgs; [
+          noto-fonts
+          noto-fonts-cjk
+          noto-fonts-emoji
           google-fonts
           corefonts
           roboto
           ubuntu_font_family
           fira-code
+          fira-code-symbols
           cantarell-fonts
           freefont_ttf
           inconsolata
@@ -104,6 +108,7 @@ in
         thunderbird
         wike
         signal-desktop
+        whatsapp-for-linux
         libreoffice
         vlc
         obs-studio
@@ -134,12 +139,17 @@ in
     (mkIf cfg.enableGnome {
       # These are set when gnome is enabled.
       services.xserver.desktopManager.gnome.enable = true;
+      services.xserver.desktopManager.gnome.extraGSettingsOverrides = ''
+      [org.gnome.login-screen]
+        logo='${./hsys-white.svg}'
+      '';
       services.xserver.displayManager.gdm = {
         enable = true;
         wayland = true;
         #nvidiaWayland = true;
         
       };
+
 
       environment.gnome.excludePackages = [
         pkgs.gnome.geary
@@ -159,6 +169,7 @@ in
         slock
         xwallpaper
         picom
+        xidlehook
       ];
 
       # Fux set UID issue

@@ -85,14 +85,14 @@ in
         BROWSER = "firefox";
 
         # clean up
-        XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
+        #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
         GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
         LESSHISTFILE = "-";
         WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
         TMUX_TMPDIR="$XDG_RUNTIME_DIR";
-        CARGO_HOME="$XDG_DATA_HOME/cargo";
+        #CARGO_HOME="$XDG_DATA_HOME/cargo";
         GOPATH="$HOME/repos/go";
-        HISTFILE = "$XDG_DATA_HOME/history";
+        #HISTFILE = "$XDG_DATA_HOME/history";
 
         LC_ALL = "en_US.UTF-8";
         DO_NOT_TRACK = "1";
@@ -126,11 +126,20 @@ in
         go
         gopls
         gcc
+        cargo
+        rustc
+        rust-analyzer
+        rustfmt
+        pkg-config
         gnupg
         gdb
         bvi
         plantuml
         gnumake
+        cmake
+        cmake-language-server
+        lua
+        sumneko-lua-language-server
         bat
         ffmpeg
         lm_sensors
@@ -139,6 +148,7 @@ in
         hugo
         dmtx-utils
         python38Full
+        pyright
       ];
       # This would set up proper wireshark group
       programs.wireshark.enable = true;

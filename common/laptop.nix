@@ -41,6 +41,7 @@ in
     environment.systemPackages = with pkgs; [
       powertop
     ];
+    #services.thinkfan.enable = true; # thinkpad_acpi doesn't seem to support fan_control
 
 
     # Fix Thinkpad specific issue of throttling

@@ -44,3 +44,6 @@ vim.api.nvim_command('autocmd FileType css setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType html setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType yaml setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType python setlocal et ts=4 sw=4')
+
+-- Disable splash screen
+opt.shm:append("I")

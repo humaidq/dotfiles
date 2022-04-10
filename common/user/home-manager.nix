@@ -12,6 +12,7 @@ in
     ./nvim.nix
     ./shell.nix
     ./scripts.nix
+    ./git.nix
   ];
 
   home.stateVersion = "21.11";

@@ -3,6 +3,10 @@
 with lib;
 let
   cfg = config.hsys;
+  hosts = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/StevenBlack/hosts/199df730514da981d1522d4d21a67d1bab6726de/hosts";
+    sha256 = "492fe39b260e811ed1c556e6c4abfacf54b2094b8f931cf3c80562505bc04b4c";
+  };
 in
 {
   options.hsys.enableYubikey = mkOption {
@@ -58,12 +62,16 @@ in
       networking.networkmanager.wifi.macAddress = "random"; #security
 
       # Force use of DNS over TLS, and all requests must be validated with DNSSEC
-      services.resolved.enable = true;
-      services.resolved.dnssec = "true";
-      services.resolved.extraConfig = "DNSOverTLS=true";
-      networking.networkmanager.dns = "systemd-resolved";
-      networking.nameservers = lib.mkForce [ "1.1.1.1" "1.0.0.1"
-        "2606:4700:4700::1111" "2606:4700:4700::1001" ];
+      #services.resolved = {
+      #  enable = true;
+      #  dnssec = "true";
+      #  llmnr = "false";
+      #  extraConfig = "DNSOverTLS=true";
+      #};
+      #networking.networkmanager.dns = "systemd-resolved";
+      networking.nameservers = [ "1.1.1.1" "1.0.0.1"];
+      networking.extraHosts = builtins.readFile hosts;
+
       })
   ];
 

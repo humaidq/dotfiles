@@ -18,7 +18,16 @@ in
       gtk-theme = "Adwaita-dark";
       clock-format = "12h";
       show-battery-percentage = true;
+      clock-show-weekday = true;
+      # Inter font
+      document-font-name = "Inter 11";
+      font-name = "Inter 11";
     };
+    "org/gnome/desktop/background" = {
+      picture-uri = "file://${./wallhaven-13mk9v.jpg}";
+      picture-options = "centered";
+    };
+    "org/gnome/calendar".show-weekdate = true;
     "org/gnome/desktop/sound" = {
       allow-volume-above-100-percent = true;
     };
@@ -37,11 +46,6 @@ in
       automount = false;
       automount-open = false;
       autorun-never = true;
-    };
-    "org/gnome/desktop/interface" = {
-      # Inter font
-      document-font-name = "Inter 11";
-      font-name = "Inter 11";
     };
   };
 }

@@ -10,12 +10,12 @@ let
   };
 in
 {
-  home.file.".mozilla/firefox/default/chrome/firefox-gnome-theme".source =  fetchGit {
-    url = "https://github.com/rafaelmardojai/firefox-gnome-theme";
-    rev = "e8f93b9b3456c13356f17aae7c8abb99195d12ec";
-  };
-  home.file.".mozilla/firefox/default/chrome/userChrome.css".text =
-    "@import \"firefox-gnome-theme\/userChrome.css\";";
+  #home.file.".mozilla/firefox/default/chrome/firefox-gnome-theme".source =  fetchGit {
+  #  url = "https://github.com/rafaelmardojai/firefox-gnome-theme";
+  #  rev = "e8f93b9b3456c13356f17aae7c8abb99195d12ec";
+  #};
+  #home.file.".mozilla/firefox/default/chrome/userChrome.css".text =
+  #  "@import \"firefox-gnome-theme\/userChrome.css\";";
 
   programs.firefox = {
     enable = true;
@@ -73,11 +73,11 @@ in
         };
         Preferences = {
           # Firefox Gnome Theme settings
-          "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
-          "browser.uidensity" = 0;
-          "svg.context-properties.content.enabled" = true;
-          "ui.useOverlayScrollbars" = 1;
-          "layers.acceleration.force-enabled" = true; #wayland fix
+          #"toolkit.legacyUserProfileCustomizations.stylesheets" = true;
+          #"browser.uidensity" = 0;
+          #"svg.context-properties.content.enabled" = true;
+          #"ui.useOverlayScrollbars" = 1;
+          #"layers.acceleration.force-enabled" = true; #wayland fix
 
           # Preferences
           "browser.newtabpage.enabled" = false; # Blank new page tab
