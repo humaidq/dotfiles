@@ -18,6 +18,7 @@ in
       xwallpaper --center ${wallpaper} &
       picom --vsync --dbus --backend glx &
       setxkbmap -option caps:swapescape &
+      hstatus &
     '';
     ".bin/whoseport" = script ''
       lsof -i ":$1" | grep LISTEN

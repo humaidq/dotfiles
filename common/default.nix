@@ -62,6 +62,12 @@
       st = super.st.overrideAttrs (old: rec {
         src = /home/humaid/repos/system/st;
       });
+      # Overlaying a package inside a scope is a bit awkward
+      gnome = super.gnome.overrideScope' (gself: gsuper: {
+        gdm = gsuper.gdm.overrideAttrs (old: {
+          icon = ./hsys-white.svg;
+        });
+      });
       dwm = super.dwm.overrideAttrs (old: rec {
         src = /home/humaid/repos/system/dwm;
         #src = builtins.fetchGit {

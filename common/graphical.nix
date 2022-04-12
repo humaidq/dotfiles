@@ -55,7 +55,11 @@ in
       sound.enable = true;
       hardware.pulseaudio.enable = false; # replaced with pipewire above
       # We need to make system look better overall when we have a graphical system
-      boot.plymouth.enable = true;
+      boot.plymouth = {
+        enable = true;
+        logo = ./hsys-icon-blue.png;
+        font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
+      };
 
       # Define printers
       hardware.printers.ensurePrinters = [{
@@ -91,6 +95,7 @@ in
           liberation_ttf
           lmodern
           ttf_bitstream_vera
+          inter
           # Bitmap fonts
           terminus_font
           cherry
@@ -139,10 +144,10 @@ in
     (mkIf cfg.enableGnome {
       # These are set when gnome is enabled.
       services.xserver.desktopManager.gnome.enable = true;
-      services.xserver.desktopManager.gnome.extraGSettingsOverrides = ''
-      [org.gnome.login-screen]
-        logo='${./hsys-white.svg}'
-      '';
+      #services.xserver.desktopManager.gnome.extraGSettingsOverrides = ''
+      #[org.gnome.login-screen]
+      #  logo='${./hsys-white.svg}'
+      #'';
       services.xserver.displayManager.gdm = {
         enable = true;
         wayland = true;
@@ -170,6 +175,7 @@ in
         xwallpaper
         picom
         xidlehook
+        (import ./../pkgs/hstatus.nix)
       ];
 
       # Fux set UID issue

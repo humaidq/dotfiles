@@ -56,6 +56,7 @@ in
         acpi
         units
         bc
+        sshfs
         ripgrep
         ripgrep-all
         usbutils
