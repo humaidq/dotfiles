@@ -5,7 +5,6 @@
     [
       <nixpkgs/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix>
       <nixpkgs/nixos/modules/installer/cd-dvd/channel.nix>
-      <nixpkgs/nixos/modules/profiles/qemu-guest.nix>
       ../../common
       ../../common/laptop.nix
     ];
@@ -18,11 +17,13 @@
   # it again.
   networking.wireless.enable = false;
 
+  boot.plymouth.enable = lib.mkForce false;
+
   # My configuration specific settings
-  hsys.enableGnome = true;
-  hsys.enableDwm = true;
-  hsys.getDevTools = true;
-  hsys.laptop = true;
+  hsys.enableGnome = false;
+  hsys.enableDwm = false;
+  hsys.getDevTools = false;
+  hsys.laptop = false;
   hsys.virtualisation = false;
 
   # Installation user stuff
@@ -38,12 +39,12 @@
     SSH daemon is also running.
   '';
 
-  system.build.isoImage = {
-    compressImage = true;
-    isoBaseName = "hsys";
-    #efiSplashImage = ./efi-background.png;
-    splashScreen = ./bios-boot.png;
-  };
+  #system.build.isoImage = {
+  #  compressImage = true;
+  #  isoBaseName = "hsys";
+  #  #efiSplashImage = ./efi-background.png;
+  #  splashScreen = ./bios-boot.png;
+  #};
   services.timesyncd.enable = lib.mkForce true; #config with qemu settings
 
 
