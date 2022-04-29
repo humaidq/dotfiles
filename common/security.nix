@@ -62,14 +62,20 @@ in
       networking.networkmanager.wifi.macAddress = "random"; #security
 
       # Force use of DNS over TLS, and all requests must be validated with DNSSEC
+      #networking.networkmanager.dns = "systemd-resolved";
       #services.resolved = {
       #  enable = true;
-      #  dnssec = "true";
-      #  llmnr = "false";
-      #  extraConfig = "DNSOverTLS=true";
+      #  dnssec = "allow-downgrade";
+      #  #llmnr = "true";
+      #  extraConfig = ''
+      #    [Resolve]
+      #    DNS=1.1.1.1#one.one.one.one
+      #    DNSOverTLS=yes
+      #    '';
+      #  fallbackDns = [ "1.1.1.1#one.one.one.one" ];
       #};
-      #networking.networkmanager.dns = "systemd-resolved";
-      networking.nameservers = [ "1.1.1.1" "1.0.0.1"];
+      networking.nameservers = [ "1.1.1.1#one.one.one.one"
+      "1.0.0.1#one.one.one.one"];
       networking.extraHosts = builtins.readFile hosts;
 
       })
