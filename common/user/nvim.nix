@@ -3,9 +3,9 @@
 {
   # Custom neovim setup
   # We use paq for managing neovim packages.
-  xdg.dataFile."nvim/site/pack/paqs/start/paq-nvim".source = fetchGit {
-    url = "https://github.com/savq/paq-nvim";
-    rev = "6caab059bc15cc61afc7aa7e0515ee06eb550bcf";
+  xdg.dataFile."nvim/site/pack/packer/start/packer.nvim".source = fetchGit {
+    url = "https://github.com/wbthomason/packer.nvim";
+    rev = "4dedd3b08f8c6e3f84afbce0c23b66320cd2a8f2";
   };
 
   # Symlink our neovim configuration files
