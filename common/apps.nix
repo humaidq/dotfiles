@@ -75,6 +75,10 @@ in
         interval = "daily";
       };
 
+      # Fix some issue with gdm not showing user, as zsh is not a
+      # recognised shell.
+      environment.shells = [ pkgs.zsh ];
+
       environment.variables = {
         EDITOR = "nvim";
         VISUAL = "nvim";

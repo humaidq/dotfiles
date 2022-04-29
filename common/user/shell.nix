@@ -75,6 +75,10 @@ in
       source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
       source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
       source ${lscolors}/lscolors.sh
+
+      function mkcd() {
+        mkdir -p $1 && cd $1
+      }
       echo "$fg[cyan]Welcome back Humaid to your local terminal."
     '';
     shellAliases = {
@@ -88,6 +92,7 @@ in
       x = "clear";
       t = "tmux";
       sudo = "doas";
+      ptop = "doas powertop";
       gpa = "git remote | xargs -L1 git push --all";
       bsd2 = "licensor BSD-2-Clause \"${lname}\" > LICENSE";
       agpl = "licensor AGPL-3.0 \"${lname}\" > LICENSE";
@@ -101,6 +106,7 @@ in
 
       # Nix
       rebuild = "doas nixos-rebuild switch";
+      rebuild-offline = "doas nixos-rebuild switch --option substitute false";
       xs = "nix search";
       np = "nix-shell -p";
       nr = "nix-repl";
