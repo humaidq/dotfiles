@@ -23,9 +23,7 @@
 
     efi.canTouchEfiVariables = true;
   };
-  boot = {
-    plymouth.enable = true;
-  };
+  boot.plymouth.enable = true;
   services.fstrim.enable = true;
 
   networking = {

@@ -16,15 +16,15 @@ in
   options.humaid.firefox.gnome-theme.enable = lib.mkEnableOption "Firefox Gnome Theme";
 
   config = lib.mkMerge [
-    ( lib.mkIf nixosConfig.hsys.workProfile {
+    (lib.mkIf nixosConfig.hsys.workProfile {
       programs.firefox.profiles.default.bookmarks = {
         "Intranet" = { url = "https://tiiuae.sharepoint.com/sites/Node"; };
         "Calendar" = { url = "https://outlook.office.com/calendar/view/week"; };
         "Atlassian Start Page" = { url = "https://start.atlassian.com"; };
       };
     })
-    ( lib.mkIf cfg.gnome-theme.enable {
-      home.file.".mozilla/firefox/default/chrome/firefox-gnome-theme".source =  fetchGit {
+    (lib.mkIf cfg.gnome-theme.enable {
+      home.file.".mozilla/firefox/default/chrome/firefox-gnome-theme".source = fetchGit {
         url = "https://github.com/rafaelmardojai/firefox-gnome-theme";
         rev = "e8f93b9b3456c13356f17aae7c8abb99195d12ec";
       };
@@ -39,7 +39,8 @@ in
       };
       # TODO configuration for about:config
     })
-    ({ # For all
+    ({
+      # For all
       programs.firefox = {
         enable = true;
         profiles.default = {
@@ -56,7 +57,7 @@ in
           cfg = {
             #enableTridactylNative = true;
           };
-          
+
           # https://github.com/mozilla/policy-templates
           extraPolicies = {
             DisablePocket = true;

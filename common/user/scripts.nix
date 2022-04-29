@@ -6,7 +6,7 @@ let
     text = ''
       #!/bin/sh
       ${text}
-      '';
+    '';
   };
   wallpaper = ./wallhaven-13mk9v.jpg;
 in

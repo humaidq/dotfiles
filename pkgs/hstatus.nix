@@ -1,4 +1,4 @@
-with import <nixpkgs> {};
+with import <nixpkgs> { };
 
 rustPlatform.buildRustPackage rec {
   pname = "hstatus";
@@ -8,7 +8,7 @@ rustPlatform.buildRustPackage rec {
 
   cargoSha256 = "sha256:186v7d3c2sv8rc1s7rz0sfzbc2wj7l7sxlcnpcz25gb5ni86gh1f";
   buildInputs = [ x11 xorg.libX11 ];
-  nativeBuildInputs = [ rustc cargo  pkg-config ];
+  nativeBuildInputs = [ rustc cargo pkg-config ];
 
 
   meta = with lib; {

@@ -98,7 +98,7 @@ in
       agpl = "licensor AGPL-3.0 \"${lname}\" > LICENSE";
       yt = "youtube-dl --add-metadata -ic";
       yta = "youtube-dl --add-metadata -xic";
-      
+
       turbo = "doas cpupower -c all frequency-set -g performance";
       unturbo = "doas cpupower -c all frequency-set -g powersave";
 

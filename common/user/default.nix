@@ -1,4 +1,4 @@
-{config, pkgs, ...}:
+{ config, pkgs, ... }:
 
 {
   imports = [ <home-manager/nixos> ];
@@ -8,8 +8,15 @@
     isNormalUser = true;
     uid = 1000;
     # wheel removed since we use doas
-    extraGroups = [ "plugdev" "dialout" "wireshark" "video" "audio" "docker"
-      "vboxusers" ];
+    extraGroups = [
+      "plugdev"
+      "dialout"
+      "wireshark"
+      "video"
+      "audio"
+      "docker"
+      "vboxusers"
+    ];
     description = "Humaid AlQassimi";
     shell = pkgs.zsh;
   };

@@ -12,22 +12,24 @@ in
   };
 
   config = mkIf cfg.workProfile {
-      # TODO work printer
-      hardware.printers.ensurePrinters = [{
-        name = "TII Secure";
-        model = "${./assets/taskalfa4053ci-driverless-cupsfilters.ppd}";
-        location = "TII Any Printer";
-        deviceUri = "lpd://10.161.10.41";
-        ppdOptions = { PageSize = "A4"; };
-      }];
-      hardware.printers.ensureDefaultPrinter = lib.mkForce "TII Secure";
+    hardware.printers.ensurePrinters = [{
+      name = "TII Secure";
+      model = "${./assets/taskalfa4053ci-driverless-cupsfilters.ppd}";
+      location = "TII Any Printer";
+      deviceUri = "lpd://10.161.10.41";
+      ppdOptions = { PageSize = "A4"; };
+    }];
+    hardware.printers.ensureDefaultPrinter = lib.mkForce "TII Secure";
 
-      # Default applications for graphical systems
-      environment.systemPackages = with pkgs; [
-        tailscale
-        stlink
-      ];
-   };
+    # Default applications for graphical systems
+    environment.systemPackages = with pkgs; [
+      tailscale
+      stlink
+      unstable.qgroundcontrol
+      nodejs
+      yarn
+    ];
+  };
 }
 
 

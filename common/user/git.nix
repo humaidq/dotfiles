@@ -1,7 +1,8 @@
 { nixosConfig, config, pkgs, lib, ... }:
 {
   config = lib.mkMerge [
-    ({ # Default across all installations
+    ({
+      # Default across all installations
       programs.git = {
         enable = true;
         package = pkgs.gitAndTools.gitFull;
@@ -29,7 +30,8 @@
         userEmail = "humaid@ssrc.tii.ae";
       };
     })
-    (lib.mkIf nixosConfig.hsys.workProfile { # Home-profile only
+    (lib.mkIf nixosConfig.hsys.workProfile {
+      # Home-profile only
       programs.git.extraConfig = {
         sendmail.smtpserver = "smtp.migadu.com";
         sendmail.smtpuser = "git@humaidq.ae";

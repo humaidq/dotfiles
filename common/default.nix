@@ -3,8 +3,8 @@
 { config, pkgs, lib, ... }:
 let
   unstableTarball =
-  fetchTarball
-    https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
+    fetchTarball
+      https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
 in
 {
 

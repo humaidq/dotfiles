@@ -60,7 +60,7 @@ in
       # We need to make system look better overall when we have a graphical system
       boot.plymouth = {
         enable = true;
-        logo = ./hsys-icon-blue.png;
+        logo = ./assets/hsys-icon-blue.png;
         font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
@@ -161,9 +161,7 @@ in
         enable = true;
         wayland = true;
         #nvidiaWayland = true;
-        
       };
-
 
       environment.gnome.excludePackages = [
         pkgs.gnome.geary

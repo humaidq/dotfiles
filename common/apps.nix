@@ -90,9 +90,9 @@ in
         GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
         LESSHISTFILE = "-";
         WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
-        TMUX_TMPDIR="$XDG_RUNTIME_DIR";
+        TMUX_TMPDIR = "$XDG_RUNTIME_DIR";
         #CARGO_HOME="$XDG_DATA_HOME/cargo";
-        GOPATH="$HOME/repos/go";
+        GOPATH = "$HOME/repos/go";
         #HISTFILE = "$XDG_DATA_HOME/history";
 
         LC_ALL = "en_US.UTF-8";
@@ -156,7 +156,7 @@ in
         gnupg
         gdb
         bvi
-        
+
         plantuml
         gnumake
         cmake
