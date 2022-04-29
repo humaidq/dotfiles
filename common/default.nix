@@ -1,6 +1,11 @@
 # This is the commons files, which is attributes that spans different
 # system types (e.g. graphical, server, RPi, etc).
 { config, pkgs, lib, ... }:
+let
+  unstableTarball =
+  fetchTarball
+    https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
+in
 {
 
   imports =
@@ -11,6 +16,7 @@
       ./graphical.nix
       ./v12n.nix
       ./backup.nix
+      ./work.nix
     ];
 
   time.timeZone = "Asia/Dubai";
@@ -47,27 +53,44 @@
     "3.asia.pool.ntp.org"
   ];
 
+  nix = {
+    allowedUsers = [ "humaid" ];
+    autoOptimiseStore = true;
+    gc.automatic = true;
+    gc.dates = "19:00";
+  };
+
+  nixpkgs.config.packageOverrides = pkgs: {
+    unstable = import unstableTarball {
+      config = config.nixpkgs.config;
+    };
+  };
+
+  # Use spleen font for console (tty)
+  fonts.fonts = with pkgs; [
+    spleen
+  ];
+  console.font = "${pkgs.spleen}/share/consolefonts/spleen-16x32.psfu";
+
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.allowBroken = true;
-  nix.allowedUsers = [ "humaid" ];
-
   nixpkgs.overlays = [
     (self: super: {
       tor-browser-bundle-bin = super.tor-browser-bundle-bin.overrideAttrs (old: rec  {
         src = super.fetchurl {
-          url = "https://huma.id/tor-browser-linux64-11.0.6_en-US.tar.xz";
-          sha256 = "dfb1d238e2bf19002f2f141178c3af80775dd8d5d83b53b0ab86910ec4a1830d";
+          url = "https://huma.id/tor.tar.xz";
+          sha256 = "sha256:0pz1v5ig031wgnq3191ja08a4brdrbzziqnkpcrlra1wcdnzv985";
         };
       });
       st = super.st.overrideAttrs (old: rec {
         src = /home/humaid/repos/system/st;
       });
       # Overlaying a package inside a scope is a bit awkward
-      gnome = super.gnome.overrideScope' (gself: gsuper: {
-        gdm = gsuper.gdm.overrideAttrs (old: {
-          icon = ./hsys-white.svg;
-        });
-      });
+      #gnome = super.gnome.overrideScope' (gself: gsuper: {
+      #  gdm = gsuper.gdm.overrideAttrs (old: {
+      #    icon = ./hsys-white.svg;
+      #  });
+      #});
       dwm = super.dwm.overrideAttrs (old: rec {
         src = /home/humaid/repos/system/dwm;
         #src = builtins.fetchGit {

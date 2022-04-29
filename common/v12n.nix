@@ -24,7 +24,5 @@ in
       qemu_full
       gnome.gnome-boxes
     ];
-
   };
-
 }

@@ -32,6 +32,9 @@ in
           layout = "us,ar";
           xkbOptions = "caps:escape";
           enableCtrlAltBackspace = false; # security?
+          screenSection = ''
+            Option  "TripleBuffer" "on"
+          '';
         };
 
         # Printing

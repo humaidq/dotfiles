@@ -16,6 +16,10 @@ in
   ];
 
   home.stateVersion = "21.11";
+
+
+  nixpkgs.config.allowUnfree = true;
+
   xdg = {
     enable = true;
     mimeApps.enable = true;
@@ -59,10 +63,11 @@ in
   };
 
   programs = {
-    go = {
-      enable = true;
-      goPath = "repos/go";
-    };
+    #go = {
+    #  enable = true;
+    #  package = unstable.go_1_18;
+    #  goPath = "repos/go";
+    #};
     ssh = {
       enable = true;
       matchBlocks."huma.id".user = "root";
