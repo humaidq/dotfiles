@@ -41,18 +41,17 @@ in
         htop
         wget
         curl
-        tcpdump
+        gitAndTools.gitFull
         file
         lsof
-        strace
         xz
         zip
         lz4
         unzip
         rsync
         tree
-        pwgen
         jq
+        fd
         acpi
         units
         bc
@@ -61,15 +60,12 @@ in
         ripgrep-all
         usbutils
         pciutils
-        gitAndTools.gitFull
-        xclip
         killall
         file
         du-dust
         dig
         nixpkgs-fmt
-        shellcheck
-        borgbackup
+        (import ../pkgs/ufetch.nix)
       ];
 
       # Locate
@@ -114,6 +110,24 @@ in
         aspellDicts.ar
         aspellDicts.en
         aspellDicts.fi
+        #youtube-dl
+        yt-dlp
+        texlive.combined.scheme-full
+        biber
+        nixos-generators
+        tcpdump
+        strace
+        netcat
+        nmap
+        pwgen
+        pv
+        bombadillo
+        shellcheck
+        gping
+        traceroute
+        borgbackup
+        qrencode
+        gnupatch
 
         # CLI productivity
         jpegoptim
@@ -124,8 +138,11 @@ in
     (mkIf cfg.getDevTools {
       # All development and programming tools/utilities
       environment.systemPackages = with pkgs; [
-        go
-        gopls
+        #go
+        git-privacy
+        unstable.go_1_18
+        unstable.gopls
+        unstable.delve
         gcc
         cargo
         rustc
@@ -135,6 +152,7 @@ in
         gnupg
         gdb
         bvi
+        
         plantuml
         gnumake
         cmake
@@ -142,7 +160,7 @@ in
         lua
         sumneko-lua-language-server
         bat
-        ffmpeg
+        ffmpeg-full
         lm_sensors
         minify
         mdbook
@@ -150,6 +168,9 @@ in
         dmtx-utils
         python38Full
         pyright
+        sqlite
+        rlwrap
+        vscode
       ];
       # This would set up proper wireshark group
       programs.wireshark.enable = true;

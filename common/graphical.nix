@@ -83,6 +83,10 @@ in
           noto-fonts
           noto-fonts-cjk
           noto-fonts-emoji
+          source-code-pro
+          source-sans-pro
+          source-serif-pro
+          amiri
           google-fonts
           corefonts
           roboto
@@ -99,15 +103,14 @@ in
           # Bitmap fonts
           terminus_font
           cherry
-          spleen
         ];
       };
 
-      # Firefox with custom policies
-
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
+        xdotool
         tor-browser-bundle-bin
+        ungoogled-chromium
         gimp
         keepassxc
         thunderbird
@@ -121,9 +124,12 @@ in
         zathura
         spotify
         ksnip
+        xclip
         blanket
+        appimage-run
 
         # Productivity
+        emacs
         prusa-slicer
         audacity
         gimp
@@ -175,7 +181,8 @@ in
         xwallpaper
         picom
         xidlehook
-        (import ./../pkgs/hstatus.nix)
+        maim
+        (import ../pkgs/hstatus.nix)
       ];
 
       # Fux set UID issue
