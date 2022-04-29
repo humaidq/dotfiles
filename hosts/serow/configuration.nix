@@ -34,6 +34,8 @@
     interfaces.wlp0s20f3.useDHCP = true;
   };
 
+  boot.kernelParams = [ "video=efifb:nobgrt" "bgrt_disable" ];
+
   # My configuration specific settings
   hsys.enableGnome = true;
   hsys.enableDwm = true;
