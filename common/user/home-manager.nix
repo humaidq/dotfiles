@@ -66,6 +66,10 @@ in
     ssh = {
       enable = true;
       matchBlocks."huma.id".user = "root";
+      matchBlocks."rs" = {
+        hostname = "zh2137.rsync.net";
+        user = "zh2137";
+      };
     };
     gpg = {
       enable = true;

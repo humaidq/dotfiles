@@ -31,7 +31,7 @@ in
 
   config = mkIf cfg.backups.enable {
     services.borgbackup.jobs."mainbackup" = {
-      archiveBaseName = "${config.networking.hostName}-";
+      archiveBaseName = "${config.networking.hostName}";
       dateFormat = "+%Y-%b-%d";
       paths = cfg.backups.paths;
       exclude = cfg.backups.exclude;
