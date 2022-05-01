@@ -35,6 +35,7 @@ in
           screenSection = ''
             Option  "TripleBuffer" "on"
           '';
+		  #logFile = "/var/log/Xorg.0.log";
         };
 
         # Printing

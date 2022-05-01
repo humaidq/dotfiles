@@ -11,7 +11,6 @@
         #signing.signByDefault = true;
         delta.enable = true;
         userName = "Humaid AlQassimi";
-        userEmail = "git@huma.id";
         extraConfig = {
           core.editor = "nvim";
           pull.rebase = "true";
@@ -30,8 +29,9 @@
         userEmail = "humaid@ssrc.tii.ae";
       };
     })
-    (lib.mkIf nixosConfig.hsys.workProfile {
+    (lib.mkIf (!nixosConfig.hsys.workProfile) {
       # Home-profile only
+      programs.git.userEmail = "git@huma.id";
       programs.git.extraConfig = {
         sendmail.smtpserver = "smtp.migadu.com";
         sendmail.smtpuser = "git@humaidq.ae";
