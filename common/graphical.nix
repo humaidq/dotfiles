@@ -30,7 +30,7 @@ in
         xserver = {
           enable = true;
           layout = "us,ar";
-          xkbOptions = "caps:escape";
+          #xkbOptions = "caps:escape";
           enableCtrlAltBackspace = false; # security?
           screenSection = ''
             Option  "TripleBuffer" "on"
@@ -41,7 +41,7 @@ in
         # Printing
         printing.enable = true;
         printing.drivers = [
-          pkgs.epson-escpr
+          pkgs.epson-escpr # Home Printer
         ];
 
         # Audio
@@ -58,6 +58,7 @@ in
       };
       sound.enable = true;
       hardware.pulseaudio.enable = false; # replaced with pipewire above
+
       # We need to make system look better overall when we have a graphical system
       boot.plymouth = {
         enable = true;
@@ -131,6 +132,7 @@ in
         xclip
         blanket
         appimage-run
+        ungoogled-chromium
 
         # Productivity
         emacs
@@ -148,6 +150,7 @@ in
         contrast
         helvum
         wireshark
+        deluge
       ];
     })
 
@@ -175,6 +178,8 @@ in
     })
     (mkIf cfg.enableDwm {
       services.xserver.windowManager.dwm.enable = true;
+      # When dwm is enabled, always make it the default session.
+      services.xserver.displayManager.defaultSession = "none+dwm";
       environment.systemPackages = with pkgs; [
         brightnessctl
         dmenu

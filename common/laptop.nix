@@ -30,8 +30,11 @@ in
     networking.networkmanager.wifi.powersave = true;
     services.xserver.libinput = {
       enable = true;
-      touchpad.tapping = true;
-      touchpad.naturalScrolling = true;
+      touchpad = {
+        disableWhileTyping = true;
+        tapping = true;
+        naturalScrolling = true;
+      };
     };
     hardware.bluetooth = {
       enable = true;

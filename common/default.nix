@@ -83,10 +83,7 @@ in
         };
       });
       st = super.st.overrideAttrs (old: rec {
-        src = builtins.fetchGit {
-          url = "https://git.sr.ht/~humaid/st";
-          rev = "4019a301d57e53eb8c3f519876e059ae5f3bf4af";
-        };
+        src = /home/humaid/repos/system/st;
       });
       # Overlaying a package inside a scope is a bit awkward
       #gnome = super.gnome.overrideScope' (gself: gsuper: {
