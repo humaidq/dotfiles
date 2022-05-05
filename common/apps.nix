@@ -35,17 +35,15 @@ in
         zsh-nix-shell
         neovim
         wget
-        tmux
-        ranger
-        lf
         htop
         wget
         curl
-        gitAndTools.gitFull
         file
+        gitAndTools.gitFull
         lsof
         xz
         zip
+        pstree
         lz4
         unzip
         rsync
@@ -55,25 +53,16 @@ in
         acpi
         units
         bc
-        sshfs
-        ripgrep
-        ripgrep-all
         usbutils
         pciutils
         killall
         file
-        du-dust
         dig
+        pv
         nixpkgs-fmt
         (import ../pkgs/ufetch.nix)
       ];
 
-      # Locate
-      services.locate = {
-        enable = true;
-        locate = pkgs.plocate;
-        interval = "daily";
-      };
 
       # Fix some issue with gdm not showing user, as zsh is not a
       # recognised shell.
@@ -84,6 +73,7 @@ in
         VISUAL = "nvim";
         TERMINAL = "st";
         BROWSER = "firefox";
+        PAGER = "bat --paging=always";
 
         # clean up
         #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
@@ -116,7 +106,6 @@ in
         aspellDicts.fi
         #youtube-dl
         yt-dlp
-        texlive.combined.scheme-full
         biber
         nixos-generators
         tcpdump
@@ -124,20 +113,36 @@ in
         netcat
         nmap
         pwgen
-        pv
+        du-dust
         bombadillo
-        shellcheck
         gping
         traceroute
         borgbackup
         qrencode
         gnupatch
+        pandoc
+        sshfs
+        ripgrep
+        ripgrep-all
+        aria2
+        tmux
+        #ranger # TODO derecated
+        lf
+        scc
+        fzf
 
         # CLI productivity
         jpegoptim
         optipng
         languagetool
       ];
+
+      # Locate
+      services.locate = {
+        enable = true;
+        locate = pkgs.plocate;
+        interval = "daily";
+      };
     })
     (mkIf cfg.getDevTools {
       # All development and programming tools/utilities
@@ -158,6 +163,8 @@ in
         bvi
 
         plantuml
+        texlive.combined.scheme-full
+        shellcheck
         gnumake
         cmake
         cmake-language-server
@@ -174,7 +181,7 @@ in
         pyright
         sqlite
         rlwrap
-        vscode
+        vscodium
       ];
       # This would set up proper wireshark group
       programs.wireshark.enable = true;
