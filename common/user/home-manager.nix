@@ -13,45 +13,13 @@ in
     ./shell.nix
     ./scripts.nix
     ./git.nix
+    ./xdg.nix
   ];
 
   home.stateVersion = "21.11";
-
+  home.sessionPath = [ "$HOME/.bin" ];
 
   nixpkgs.config.allowUnfree = true;
-
-  xdg = {
-    enable = true;
-    mimeApps.enable = true;
-    #portal = {
-    #  enable = true;
-    #  extraPortals = with pkgs; [
-    #    xdg-desktop-portal-wlr
-    #    xdg-desktop-portal-gtk
-    #  ];
-    #  gtkUsePortal = true;
-    #};
-    #mime.defaultApplications = {
-    #  image/png = [
-    #    "img.desktop"
-    #  ];
-
-    #};
-    userDirs = {
-      enable = true;
-      createDirectories = false;
-      desktop = "$HOME";
-      documents = "$HOME/docs";
-      download = "$HOME/inbox/web";
-      music = "$HOME/docs/music";
-      pictures = "$HOME/docs/pics";
-      videos = "$HOME/docs/vids";
-      publicShare = "";
-      templates = "";
-    };
-    configFile."user-dirs.locale".text = "en_GB";
-  };
-
 
   gtk = {
     enable = true;
@@ -88,6 +56,9 @@ in
       keyMode = "vi";
       clock24 = false;
       extraConfig = "set -g default-terminal \"xterm-256color\"";
+    };
+    lf = {
+      enable = true;
     };
   };
 }

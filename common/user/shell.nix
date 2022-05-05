@@ -70,34 +70,62 @@ in
       bindkey '^[[Z' undo                               # shift + tab undo last action
       bindkey '^f' vi-forward-char
 
-      export PATH=$PATH:~/.bin
-
       source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
       source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
       source ${lscolors}/lscolors.sh
 
       function mkcd() {
-        mkdir -p $1 && cd $1
+        mkdir -p "$@" && cd "$@"
       }
+
+      # from https://github.com/xero/dotfiles/blob/master/zsh/.zsh/06-aliases.zsh#L120=
+      function md() {
+        pandoc -s -f markdown -t man "$*" | man -l -
+      }
+      function manwww() {
+        curl -skL "$*" | pandoc -s -f html -t man | man -l -
+      }
+
       echo "$fg[cyan]Welcome back Humaid to your local terminal."
     '';
     shellAliases = {
       ka = "killall";
-      g = "git";
       vim = "nvim";
       vi = "nvim";
       v = "nvim";
       recent = "ls -ltch";
       q = "exit";
-      x = "clear";
+      c = "clear";
       t = "tmux";
       sudo = "doas";
       ptop = "doas powertop";
       gpa = "git remote | xargs -L1 git push --all";
       bsd2 = "licensor BSD-2-Clause \"${lname}\" > LICENSE";
       agpl = "licensor AGPL-3.0 \"${lname}\" > LICENSE";
-      yt = "youtube-dl --add-metadata -ic";
-      yta = "youtube-dl --add-metadata -xic";
+      yt = "yt-dlp --add-metadata -ic";
+      yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
+      uf = "ufetch";
+      pgr = "ps aux | grep";
+
+      # Git
+      g = "git";
+      ga = "git add";
+      gc = "git commit";
+      gs = "git status";
+      gd = "git diff";
+      gpl = "git pull";
+      gps = "git push";
+      gr = "git restore";
+      grs = "git restore --staged";
+      gco = "git checkout";
+      gcb = "git checkout -b";
+
+      # Always recursive
+      cp = "cp -r";
+      scp = "scp -r";
+
+      # Less verbosity
+      bc = "bc -ql";
 
       turbo = "doas cpupower -c all frequency-set -g performance";
       unturbo = "doas cpupower -c all frequency-set -g powersave";
@@ -112,12 +140,13 @@ in
       nr = "nix-repl";
       nrp = "nix-repl '<nixpkgs>'";
 
-      # set color=auto for some commands
-      ls = "ls --color=auto -hN --group-directories-first";
-      grep = "grep --color=auto";
-      diff = "diff --color=auto";
-      ip = "ip --color=auto";
-      l = "ls -alhN --color=auto";
+      # set color=always for some commands
+      ls = "ls --color=always -hN --group-directories-first";
+      grep = "grep --color=always";
+      diff = "diff --color=always";
+      ip = "ip --color=always";
+      l = "ls -alhN --color=always";
+      tree = "tree -C";
       history = "history 0"; # force show all history
     };
     history = {
