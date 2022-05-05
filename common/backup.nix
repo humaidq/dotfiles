@@ -27,6 +27,11 @@ in
       type = types.str;
       description = "Repository to backup to";
     };
+    startsAt = mkOption {
+      type = types.str;
+      default = "18:00";
+      description = "When the backup starts";
+    };
   };
 
   config = mkIf cfg.backups.enable {
@@ -43,7 +48,7 @@ in
       environment.BORG_RELOCATED_REPO_ACCESS_IS_OK = "yes";
       environment.BORG_RSH = "ssh -i /root/borgbackup_ssh_key";
       compression = "auto,lzma";
-      startAt = "18:00";
+      startAt = cfg.backups.startsAt;
       extraArgs = "--remote-path=borg1"; # rsync.net's executable
     };
 
