@@ -66,6 +66,14 @@ in
         font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
+      services.xserver.displayManager.lightdm = {
+        enable = true;
+        #greeter.package = pkgs.pantheon.elementary-greeter;
+        greeters = {
+          gtk.theme.name = "Adwaita-dark";
+        };
+      };
+
       # Define printers
       hardware.printers.ensurePrinters = [{
         name = "Home_Printer";
@@ -133,6 +141,7 @@ in
         blanket
         appimage-run
         ungoogled-chromium
+        rpi-imager
 
         # Productivity
         emacs
@@ -161,11 +170,6 @@ in
       #[org.gnome.login-screen]
       #  logo='${./hsys-white.svg}'
       #'';
-      services.xserver.displayManager.gdm = {
-        enable = true;
-        wayland = true;
-        #nvidiaWayland = true;
-      };
 
       environment.gnome.excludePackages = [
         pkgs.gnome.geary

@@ -15,6 +15,7 @@
       "video"
       "audio"
       "docker"
+      "disk"
       "vboxusers"
     ];
     description = "Humaid AlQassimi";

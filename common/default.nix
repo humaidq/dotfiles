@@ -7,7 +7,6 @@ let
       https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
 in
 {
-
   imports =
     [
       ./user
@@ -38,6 +37,7 @@ in
     gnupg.agent = {
       enable = true;
       enableSSHSupport = true;
+      pinentryFlavor = "tty";
     };
   };
 
