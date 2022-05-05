@@ -20,6 +20,8 @@
           url = {
             #"git@github.com:".insteadOf = "https://github.com/";
             #"git@git.sr.ht:".insteadOf = "https://git.sr.ht/";
+            "git@github.com:".insteadOf = "gh:";
+            "git@git.sr.ht:".insteadOf = "srht:";
           };
         };
       };
@@ -27,6 +29,7 @@
     (lib.mkIf nixosConfig.hsys.workProfile {
       programs.git = {
         userEmail = "humaid@ssrc.tii.ae";
+        extraConfig.url."git@github.com:tiiuae/".insteadOf = "tii:";
       };
     })
     (lib.mkIf (!nixosConfig.hsys.workProfile) {
