@@ -4,6 +4,11 @@ let
     url = "https://github.com/trapd00r/LS_COLORS";
     rev = "14ed0f0e7c8e531bbb4adaae799521cdd8acfbd3"; # 13 Mar, 2022
   };
+  zsh-extract = fetchGit {
+    url = "https://github.com/le0me55i/zsh-extract";
+    # Project is stagnant (Dec 2019), though works perfectly fine.
+    rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
+  };
   lname = "Humaid AlQassimi"; # Legal name for licensor
 in
 {
@@ -73,6 +78,7 @@ in
       source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
       source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
       source ${lscolors}/lscolors.sh
+      source ${zsh-extract}/extract.plugin.zsh
 
       function mkcd() {
         mkdir -p "$@" && cd "$@"
@@ -107,6 +113,8 @@ in
       yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
       uf = "ufetch";
       pgr = "ps aux | grep";
+      open = "xdg-open";
+      ex = "extract";
 
       # Git
       g = "git";
@@ -138,8 +146,8 @@ in
       rebuild-offline = "doas nixos-rebuild switch --option substitute false";
       xs = "nix search";
       np = "nix-shell -p";
-      nr = "nix-repl";
-      nrp = "nix-repl '<nixpkgs>'";
+      nr = "nix repl";
+      nrp = "nix repl '<nixpkgs>'";
 
       # set color=always for some commands
       ls = "ls --color=always -hN --group-directories-first";

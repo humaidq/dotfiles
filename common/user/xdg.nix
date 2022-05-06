@@ -59,21 +59,22 @@ in
       templates = "";
     };
     configFile."user-dirs.locale".text = "en_GB";
+
+    # Desktop entry aliases
+    dataFile."applications/img.desktop" =
+      desktopEntry "Image Viewer" "${pkgs.sxiv}/bin/sxiv -a %f";
+
+    dataFile."applications/file.desktop" =
+      desktopEntry "File Manager" "${pkgs.st}/bin/st -e lf %u";
+
+    dataFile."applications/text.desktop" =
+      desktopEntry "Text Editor" "${pkgs.emacs}/bin/emacs %f";
+
+    dataFile."applications/pdf.desktop" =
+      desktopEntry "PDF Viewer" "${pkgs.zathura}/bin/zathura %u";
+
+    dataFile."applications/video.desktop" =
+      desktopEntry "Video Player" "${pkgs.vlc}/bin/vlc %u";
   };
 
-  # Desktop entry aliases
-  xdg.dataFile."applications/img.desktop" =
-    desktopEntry "Image Viewer" "${pkgs.sxiv}/bin/sxiv -a %f";
-
-  xdg.dataFile."applications/file.desktop" =
-    desktopEntry "File Manager" "${pkgs.st}/bin/st -e lf %u";
-
-  xdg.dataFile."applications/text.desktop" =
-    desktopEntry "Text Editor" "${pkgs.emacs}/bin/emacs %f";
-
-  xdg.dataFile."applications/pdf.desktop" =
-    desktopEntry "PDF Viewer" "${pkgs.zathura}/bin/zathura %u";
-
-  xdg.dataFile."applications/video.desktop" =
-    desktopEntry "Video Player" "${pkgs.vlc}/bin/vlc %u";
 }
