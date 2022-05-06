@@ -33,5 +33,6 @@ in
       languagetool /tmp/lacheck.txt
     '';
     ".bin/fan" = script "echo level $1 | doas tee /proc/acpi/ibm/fan";
+    ".bin/wiki" = script "emacsclient -c $HOME/wiki/main.org";
   };
 }

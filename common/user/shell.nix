@@ -93,6 +93,7 @@ in
       vim = "nvim";
       vi = "nvim";
       v = "nvim";
+      e = "emacsclient -c";
       recent = "ls -ltch";
       q = "exit";
       c = "clear";

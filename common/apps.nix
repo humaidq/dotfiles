@@ -73,7 +73,7 @@ in
         VISUAL = "nvim";
         TERMINAL = "st";
         BROWSER = "firefox";
-        PAGER = "bat --paging=always";
+        #PAGER = "bat --paging=always";
 
         # clean up
         #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";

@@ -21,6 +21,13 @@ in
 
   nixpkgs.config.allowUnfree = true;
 
+  qt = {
+    enable = true;
+    platformTheme = "gtk";
+    style.package = pkgs.adwaita-qt;
+    style.name = "adwaita-dark";
+  };
+
   gtk = {
     enable = true;
     theme.name = "Adwaita-dark";
@@ -28,7 +35,19 @@ in
       gtk-application-prefer-dark-theme = true;
       gtk-cursor-theme-name = "Adwaita";
     };
+    gtk3.bookmarks = [
+      "file:///home/humaid/docs"
+      "file:///home/humaid/repos"
+      "file:///home/humaid/inbox"
+      "file:///home/humaid/inbox/web"
+    ];
   };
+
+#  xdg.configFile."vlc/vlcrc".text = ''
+#[qt]
+## Do not ask for network policy at start
+#qt-privacy-ask=0
+  #'';
 
   programs = {
     #go = {

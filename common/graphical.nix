@@ -68,6 +68,7 @@ in
 
       services.xserver.displayManager.lightdm = {
         enable = true;
+        background = ./assets/hsys-lightdm.png;
         #greeter.package = pkgs.pantheon.elementary-greeter;
         greeters = {
           gtk.theme.name = "Adwaita-dark";
