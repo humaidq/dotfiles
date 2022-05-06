@@ -44,6 +44,14 @@
     enable = true;
     repo = "zh2137@zh2137.rsync.net:borg";
   };
+  services.tailscale.enable = true;
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = false;
+    permitRootLogin = "no";
+  };
+  services.emacs.enable = true;
+  services.emacs.install = true;
 
   #boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
 
@@ -54,6 +62,4 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "21.11"; # Did you read the comment?
-
 }
-
