@@ -149,6 +149,7 @@ in
         prusa-slicer
         audacity
         gimp
+        pinta
         inkscape
         audacity
         gimp
@@ -194,6 +195,8 @@ in
         picom
         xidlehook
         maim
+        rofi
+        rofimoji
         (import ../pkgs/hstatus.nix)
       ];
 

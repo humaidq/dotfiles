@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   #nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
@@ -14,6 +14,7 @@ in
     ./scripts.nix
     ./git.nix
     ./xdg.nix
+    ./rofi.nix
   ];
 
   home.stateVersion = "21.11";
@@ -49,6 +50,9 @@ in
 #qt-privacy-ask=0
   #'';
 
+  xsession.enable = true;
+  xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
+  
   programs = {
     #go = {
     #  enable = true;

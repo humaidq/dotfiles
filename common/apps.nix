@@ -60,7 +60,8 @@ in
         dig
         pv
         nixpkgs-fmt
-        (import ../pkgs/ufetch.nix)
+        pfetch
+        #(import ../pkgs/ufetch.nix)
       ];
 
 
