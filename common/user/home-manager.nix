@@ -52,6 +52,20 @@ in
 
   xsession.enable = true;
   xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
+  services.dunst = {
+    enable = true;
+    #iconTheme.package = pkgs.gnome.adwaita-icon-theme;
+    settings = {
+      global = {
+        frame_color = "#1d2e86";
+      };
+      urgency_normal = {
+        background = "#130e24";
+        foreground = "#ffffff";
+        timeout = 8;
+      };
+    };
+  };
   
   programs = {
     #go = {

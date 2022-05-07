@@ -162,6 +162,7 @@ in
         gnupg
         gdb
         bvi
+        tealdeer
 
         plantuml
         texlive.combined.scheme-full

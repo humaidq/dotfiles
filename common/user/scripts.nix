@@ -4,7 +4,7 @@ let
   script = text: {
     executable = true;
     text = ''
-      #!/bin/sh
+      #!/usr/bin/env bash
       ${text}
     '';
   };
@@ -32,32 +32,51 @@ in
       name=$(date +%s)
       maim -s ${screensDir}/$name.png
       xclip -selection clipboard -t image/png -i ${screensDir}/$name.png
+      hn "*click!* Screenshot copied to clipboard!"
     '';
+    ".bin/hn" = script "dunstify \"hsys\" \"$1\"";
     # Screenshot which asks for prompts.
     ".bin/screen-sel" = script ''
       name=$(date +%s)
       sel=$(printf "select area\\ncurrent window\\nfull screen\\nquit" | rofi -dmenu -p Screenshot)
+      if [[ "$sel" == "quit" ]]; then
+         exit 0
+      fi
       del=$(printf "0" | rofi -dmenu -p "Delay (s)")
       sleep $del
       case "$sel" in
            "select area") maim -s ${screensDir}/$name.png ;;
            "current window") maim -i $(xdotool getactivewindow) ${screensDir}/$name.png ;;
            "full screen") maim ${screensDir}/$name.png ;;
-           "quit") exit 0 ;;
       esac
+      hn "*click!* Screenshot taken!"
       edit=$(printf "no\\npinta\\ngimp" | rofi -dmenu -p Edit?)
+      if [[ "$edit" != "no" ]]; then
+         hn "Launching editor... Image will be copied when the editor exits."
+      fi
       case "$edit" in
            "pinta") pinta ${screensDir}/$name.png ;;
-           "gimp") gimp -s ${screensDir}/$name.png ;;
+           "gimp") gimp -n -s ${screensDir}/$name.png ;;
       esac
       xclip -selection clipboard -t image/png -i ${screensDir}/$name.png
+      hn "Screenshot copied to clipboard!"
     '';
+    ".bin/emoji" = script ''
+    sel=$(rofimoji -a copy)
+    if [[ "$sel" != "" ]]; then
+       hn "Emoji copied to clipboard!"
+    fi
+    '';
+    # Check a LaTeX document through languagetool.
     ".bin/lacheck" = script ''
       pandoc $1 -f latex -t plain -o /tmp/lacheck.txt
       languagetool /tmp/lacheck.txt
     '';
+    # Lenovo Fan speed setter script.
     ".bin/fan" = script "echo level $1 | doas tee /proc/acpi/ibm/fan";
+    # Binary alias to open wiki.
     ".bin/wiki" = script "emacsclient -c $HOME/wiki/main.org";
+    # Prompts ascii arts to pick from.
     ".bin/ascii-art" = script ''
       sel=$(cat ${../assets/looks.txt} | ${dmenu_cmd})
       echo -n "$sel" | xclip -selection clipboard
