@@ -45,6 +45,10 @@
     repo = "zh2137@zh2137.rsync.net:borg";
   };
   services.tailscale.enable = true;
+  networking.firewall = {
+    trustedInterfaces = [ "tailscale0" ];
+    allowedUDPPorts = [ config.services.tailscale.port ];
+  };
   services.openssh = {
     enable = true;
     passwordAuthentication = false;
