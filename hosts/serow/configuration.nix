@@ -10,7 +10,6 @@
       # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ../../common
-      ../../common/laptop.nix
     ];
 
   # Use the systemd-boot EFI boot loader.

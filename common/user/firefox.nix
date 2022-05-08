@@ -8,6 +8,7 @@ let
     installation_mode = "force_installed";
     install_url = "https://addons.mozilla.org/firefox/downloads/latest/${name}/latest.xpi";
   };
+  graphical = nixosConfig.hsys.enableGnome || nixosConfig.hsys.enablei3;
   cfg = config.humaid.firefox;
 in
 {
@@ -39,7 +40,7 @@ in
       };
       # TODO configuration for about:config
     })
-    ({
+    (lib.mkIf graphical {
       # For all
       programs.firefox = {
         enable = true;

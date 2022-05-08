@@ -9,7 +9,6 @@ let
     '';
   };
   wallpaper = ./wallhaven-13mk9v.jpg;
-  dmenu_cmd = "dmenu -fn cherry:size=10 -nb \"#130e24\" -nf \"#bbbbbb\" -sb \"#1d2e86\" -sf \"#eeeeee\"";
   screensDir = "~/inbox/screens";
 in
 {
@@ -78,7 +77,7 @@ in
     ".bin/wiki" = script "emacsclient -c $HOME/wiki/main.org";
     # Prompts ascii arts to pick from.
     ".bin/ascii-art" = script ''
-      sel=$(cat ${../assets/looks.txt} | ${dmenu_cmd})
+      sel=$(cat ${../assets/looks.txt} | rofi -dmenu -p "Pick a look!")
       echo -n "$sel" | xclip -selection clipboard
     '';
   };

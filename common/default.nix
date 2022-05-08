@@ -16,6 +16,7 @@ in
       ./v12n.nix
       ./backup.nix
       ./work.nix
+      ./laptop.nix
     ];
 
   time.timeZone = "Asia/Dubai";
