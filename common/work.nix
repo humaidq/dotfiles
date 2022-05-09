@@ -23,6 +23,8 @@ in
 
     # Default applications for graphical systems
     environment.systemPackages = with pkgs; [
+      slack
+      teams
       tailscale
       stlink
       qgroundcontrol
