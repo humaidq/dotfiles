@@ -80,7 +80,7 @@ in
       tor-browser-bundle-bin = super.tor-browser-bundle-bin.overrideAttrs (old: rec  {
         src = super.fetchurl {
           url = "https://huma.id/tor.tar.xz";
-          sha256 = "sha256:0pz1v5ig031wgnq3191ja08a4brdrbzziqnkpcrlra1wcdnzv985";
+          sha256 = "sha256:1dx92jdnvs7w52mps4zhnnjym6jsl9vwfiav1jw8qq0g8hslgybd";
         };
       });
       st = super.st.overrideAttrs (old: rec {

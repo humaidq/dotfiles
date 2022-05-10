@@ -122,6 +122,7 @@ in
 
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
+        xorg.xkill
         xdotool
         tor-browser-bundle-bin
         ungoogled-chromium
