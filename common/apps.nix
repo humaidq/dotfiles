@@ -101,6 +101,7 @@ in
         jpegoptim
         optipng
         languagetool
+        ispell
         aspell
         aspellDicts.ar
         aspellDicts.en
@@ -165,6 +166,7 @@ in
         tealdeer
 
         plantuml
+        graphviz
         texlive.combined.scheme-full
         shellcheck
         gnumake
