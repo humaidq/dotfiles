@@ -28,8 +28,11 @@ in
       tailscale
       stlink
       qgroundcontrol
+
+      # Dev
       nodejs
       yarn
+      python38Packages.pyserial
     ];
   };
 }
