@@ -164,6 +164,8 @@ in
         gdb
         bvi
         tealdeer
+        jre
+        jdk
 
         plantuml
         graphviz

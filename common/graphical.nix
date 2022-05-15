@@ -144,6 +144,7 @@ in
         appimage-run
         ungoogled-chromium
         rpi-imager
+        unstable.minecraft
 
         # Productivity
         emacs
