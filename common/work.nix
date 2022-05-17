@@ -30,8 +30,8 @@ in
       qgroundcontrol
 
       # Dev
-      nodejs
-      yarn
+      unstable.nodejs
+      unstable.yarn
       python38Packages.pyserial
     ];
   };

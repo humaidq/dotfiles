@@ -16,6 +16,7 @@
       "audio"
       "docker"
       "disk"
+      "networkmanager"
       "vboxusers"
     ];
     description = "Humaid AlQassimi";
