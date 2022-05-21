@@ -181,7 +181,7 @@ in
         lm_sensors
         minify
         mdbook
-        hugo
+        unstable.hugo
         dmtx-utils
         python38Full
         pyright

@@ -66,6 +66,7 @@ in
       bindkey '^U' backward-kill-line                   # ctrl + U
       bindkey '^[[3;5~' kill-word                       # ctrl + Supr
       bindkey '^[[3~' delete-char                       # delete
+      bindkey '^[[P' delete-char                        # fix delete for st
       bindkey '^[[1;5C' forward-word                    # ctrl + ->
       bindkey '^[[1;5D' backward-word                   # ctrl + <-
       bindkey '^[[5~' beginning-of-buffer-or-history    # page up
@@ -73,7 +74,7 @@ in
       bindkey '^[[H' beginning-of-line                  # home
       bindkey '^[[F' end-of-line                        # end
       bindkey '^[[Z' undo                               # shift + tab undo last action
-      bindkey '^f' vi-forward-char
+      bindkey '^f' vi-forward-char                      # for auto-complete
 
       source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
       source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh

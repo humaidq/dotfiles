@@ -123,6 +123,7 @@ in
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
         xorg.xkill
+        xcolor
         xdotool
         tor-browser-bundle-bin
         ungoogled-chromium
