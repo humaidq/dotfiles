@@ -182,6 +182,7 @@ in
         minify
         mdbook
         unstable.hugo
+        sfeed
         dmtx-utils
         python38Full
         pyright
