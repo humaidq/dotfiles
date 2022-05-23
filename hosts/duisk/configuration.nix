@@ -38,9 +38,28 @@
     passwordAuthentication = false;
     permitRootLogin = "no";
   };
+  services.jitsi-meet = {
+    enable = true;
+    hostName = "meet.huma.id";
+    caddy.enable = true;
+    nginx.enable = false;
+    interfaceConfig = {
+      SHOW_JITSI_WATERMARK = false;
+      SHOW_WATERMARK_FOR_GUESTS = false;
+    };
+  };
+  services.jitsi-videobridge.openFirewall = true;
+
+  services.spacecookie = {
+    enable = true;
+    settings = {
+      root = "/srv/gopher";
+    };
+  };
+
 
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 22 443 80 ];
+  networking.firewall.allowedTCPPorts = [ 22 443 80 70 ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

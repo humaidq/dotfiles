@@ -52,6 +52,21 @@
       import header
       import cors huma.id
       import general
+      handle_errors {
+        rewrite * /{http.error.status_code}.html
+        file_server
+      }
+    '';
+    virtualHosts."bot.huma.id".extraConfig = "respond \"beep boop\"";
+    virtualHosts."buildstatusproxy.huma.id".extraConfig = ''
+      handle /~humaid/*.svg {
+        reverse_proxy https://builds.sr.ht {
+          header_up Host {upstream_hostport}
+        }
+      }
+      handle {
+        respond "This is a private proxy for builds.sr.ht status images."
+      }
     '';
 
     # Redirect all domains back to huma.id, preserving the path.
