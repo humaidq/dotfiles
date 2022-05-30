@@ -43,11 +43,20 @@
     enable = true;
     repo = "zh2137@zh2137.rsync.net:borg";
   };
+
+  # Enable tailscale
   services.tailscale.enable = true;
   networking.firewall = {
     trustedInterfaces = [ "tailscale0" ];
     allowedUDPPorts = [ config.services.tailscale.port ];
   };
+
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
+  };
+
+
   services.openssh = {
     enable = true;
     passwordAuthentication = false;
@@ -56,6 +65,13 @@
   services.emacs.enable = true;
   services.emacs.install = true;
 
+  networking.firewall.allowedTCPPorts = [ 8008 8009 8010 ];
+  networking.firewall.allowedUDPPortRanges = [
+    {
+      from = 32768;
+      to = 61000;
+    }
+  ];
   #boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
 
   # This value determines the NixOS release from which the default

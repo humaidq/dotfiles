@@ -79,8 +79,8 @@ in
     (self: super: {
       tor-browser-bundle-bin = super.tor-browser-bundle-bin.overrideAttrs (old: rec  {
         src = super.fetchurl {
-          url = "https://huma.id/tor.tar.xz";
-          sha256 = "sha256:1dx92jdnvs7w52mps4zhnnjym6jsl9vwfiav1jw8qq0g8hslgybd";
+          url = "https://f.huma.id/tor-browser-linux64-11.0.13_en-US.tar.xz";
+          sha256 = "df61fd90b7c1033cbb5856f3d076b5ca19f27e93c1a84741bd83b019dfe7ff0e";
         };
       });
       st = super.st.overrideAttrs (old: rec {
