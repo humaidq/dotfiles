@@ -71,11 +71,6 @@ in
   };
 
   # Enable unstable configurations
-  nixpkgs.config.packageOverrides = pkgs: {
-    unstable = import unstableTarball {
-      config = config.nixpkgs.config;
-    };
-  };
 
   # Use spleen font for console (tty)
   fonts.fonts = with pkgs; [
@@ -85,8 +80,15 @@ in
 
   nixpkgs = {
     # Allow proprietary packages and packages marked as broken
-    config.allowUnfree = true;
-    config.allowBroken = true;
+    config = {
+      allowUnfree = true;
+      allowBroken = true;
+      packageOverrides = pkgs: {
+        unstable = import unstableTarball {
+          config = config.nixpkgs.config;
+        };
+      };
+    };
 
     # Custom overlays
     overlays = [
