@@ -57,6 +57,14 @@
         file_server
       }
     '';
+    virtualHosts."f.huma.id".extraConfig = ''
+      root * /srv/files
+      file_server
+      import header
+      import cors f.huma.id
+      import general
+    '';
+
     virtualHosts."bot.huma.id".extraConfig = "respond \"beep boop\"";
     virtualHosts."buildstatusproxy.huma.id".extraConfig = ''
       handle /~humaid/*.svg {
@@ -69,10 +77,29 @@
       }
     '';
 
+
     # Redirect all domains back to huma.id, preserving the path.
     virtualHosts."www.huma.id" = {
       serverAliases = [ "humaidq.ae" "www.humaidq.ae" ];
       extraConfig = "redir https://huma.id{uri} permanent";
+    };
+
+    # Redirect all domains back to huma.id without perserving path.
+    virtualHosts."live.humaidq.ae" = {
+      serverAliases = [
+        "csldg.humaidq.ae"
+        "maps.humaidq.ae"
+        "morse.humaidq.ae"
+        "areweherdimmuneyet.humaidq.ae"
+        "areweherdimmuneyet.huma.id"
+        "awhiy.humaidq.ae"
+        "notes-testing.humaidq.ae"
+        "hw-status.humaidq.ae"
+        "notebook.humaidq.ae"
+        "covid.huma.id"
+        "maps.huma.id"
+      ];
+      extraConfig = "redir https://huma.id permanent";
     };
   };
 }
