@@ -103,7 +103,7 @@ in
               "{d133e097-46d9-4ecc-9903-fa6a722a6e0e}" = extension "bypass-paywalls-clean";
             };
             Preferences = {
-
+              "browser.aboutConfig.showWarning" = false;
               # Preferences
               "browser.newtabpage.enabled" = false; # Blank new page tab
               "browser.startup.homepage" = "https://start.duckduckgo.com";
@@ -112,6 +112,13 @@ in
               "signon.rememberSignons" = false; # we use a separate password manager
               "browser.formfill.enable" = false;
               "findbar.highlightAll" = true;
+
+              # Fonts
+              "font.name.monospace.x-western" = "Fira Code";
+              "font.name.sans-serif.x-western" = "Inter";
+              "font.name.serif.x-western" = "Merriweather";
+              "font.name.sans-serif.ar" = "Noto Sans Arabic";
+              "font.name.serif.ar" = "Amiri";
 
               # Only connect to HTTPS websites on all windows
               "dom.security.https_only_mode" = true;
@@ -170,8 +177,8 @@ in
               "privacy.resistFingerprinting.block_mozAddonManager" = true;
               "browser.fixup.alternate.enabled" = false;
               "browser.urlbar.trimURLs" = false;
-              "dom.enable_user_timing" = false;
-              "dom.mozTCPSocket.enabled" = false;
+              #"dom.enable_user_timing" = false;
+              #"dom.mozTCPSocket.enabled" = false;
               "dom.network.enabled" = false;
               "dom.battery.enabled" = false;
               "beacon.enabled" = false;

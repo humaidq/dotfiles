@@ -80,5 +80,21 @@ in
       sel=$(cat ${../assets/looks.txt} | rofi -dmenu -p "Pick a look!")
       echo -n "$sel" | xclip -selection clipboard
     '';
+    ".bin/htype" = script ''
+      xdotool key Ctrl+a && xdotool key Ctrl+x
+      text=$(xclip -o -selection clipboard)
+      
+      # Text expandments
+      text=$(printf "$text" | sed "s/\\\h/Hey/g")
+      text=$(printf "$text" | sed "s/\\\gm/Good morning/g")
+      text=$(printf "$text" | sed "s/\\\ln/This might help you:/g")
+      text=$(printf "$text" | sed "s/\\\lm/Let me know if you need help/g")
+      text=$(printf "$text" | sed "s/\\\sy/See you/g")
+      text=$(printf "$text" | sed "s/\\\np/No problem/g")
+      #text=$(echo "$text" | sed "s/\\\cf/https:\\\/\\\/confluence.example.com\\\/x\\\//g")
+
+
+      xdotool type "$text"
+    '';
   };
 }
