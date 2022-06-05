@@ -5,7 +5,7 @@
     email = "me.caddy@huma.id";
 
     # Importable configurations
-    config = ''
+    extraConfig = ''
       (header) {
         # enable HSTS
         header Strict-Transport-Security max-age=31536000;
