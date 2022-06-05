@@ -144,6 +144,7 @@ in
         enable = true;
         locate = pkgs.plocate;
         interval = "daily";
+        localuser = null; # for 22.04
       };
     })
     (mkIf cfg.getDevTools {

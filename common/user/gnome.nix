@@ -15,6 +15,13 @@ in
             "org.gnome.Nautilus.desktop"
         ];
         };
+        "org/gnome/desktop/privacy" = {
+          remember-app-usage = false;
+          remember-recent-files = true;
+        };
+        "org/gnome/desktop/search-providers" = {
+          disable-external = true;
+        };
         "org/gnome/desktop/interface" = {
         gtk-theme = "Adwaita-dark";
         clock-format = "12h";
@@ -26,7 +33,11 @@ in
         };
         "org/gnome/desktop/background" = {
         picture-uri = "file://${./wallhaven-13mk9v.jpg}";
+        picture-uri-dark = "file://${./wallhaven-13mk9v.jpg}";
         picture-options = "centered";
+        primary-color = "#134dae";
+        secondary-color = "#134dae";
+        show-desktop-icons = false;
         };
         "org/gnome/calendar".show-weekdate = true;
         "org/gnome/desktop/sound" = {
