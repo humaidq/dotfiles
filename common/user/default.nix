@@ -18,6 +18,7 @@
       "disk"
       "networkmanager"
       "vboxusers"
+      "wheel"
     ];
     description = "Humaid AlQassimi";
     shell = pkgs.zsh;

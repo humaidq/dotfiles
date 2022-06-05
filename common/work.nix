@@ -21,12 +21,16 @@ in
     #}];
     #hardware.printers.ensureDefaultPrinter = lib.mkForce "TII_Secure";
 
+    security.sudo.enable = mkForce true;
+
     # Default applications for graphical systems
     environment.systemPackages = with pkgs; [
       slack
       teams
       stlink
       qgroundcontrol
+
+      OVMFFull
 
       # Dev
       unstable.nodejs

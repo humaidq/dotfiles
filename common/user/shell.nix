@@ -106,7 +106,7 @@ in
       q = "exit";
       c = "clear";
       t = "tmux";
-      sudo = "doas";
+      #sudo = "doas";
       ptop = "doas powertop";
       gpa = "git remote | xargs -L1 git push --all";
       bsd2 = "licensor BSD-2-Clause \"${lname}\" > LICENSE";
