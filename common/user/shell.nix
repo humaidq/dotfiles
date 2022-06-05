@@ -101,6 +101,7 @@ in
       vi = "nvim";
       v = "nvim";
       e = "emacsclient -c";
+      ef = "emacsclient -c $(fzf)";
       recent = "ls -ltch";
       q = "exit";
       c = "clear";

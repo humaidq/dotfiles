@@ -13,9 +13,9 @@
         userName = "Humaid AlQassimi";
         extraConfig = {
           core.editor = "nvim";
-          pull.rebase = "true";
+          #pull.rebase = "true";
           init.defaultBranch = "master";
-          format.signoff = true;
+          format.signOff = true;
           commit.verbose = "yes";
           url = {
             #"git@github.com:".insteadOf = "https://github.com/";
