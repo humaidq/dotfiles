@@ -59,6 +59,16 @@
     getDevTools = true;
     laptop = true;
     virtualisation = true;
+
+    tailscale = {
+      enable = true;
+      exitNode = true;
+      ssh = true;
+
+      # temp
+      auth = true;
+      tsKey = "tskey-kKX8n35CNTRL-A76BPGh8jqVkuVFHWA3YJ";
+    };
   };
 
 

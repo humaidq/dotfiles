@@ -34,35 +34,23 @@
   boot.kernelParams = [ "video=efifb:nobgrt" "bgrt_disable" ];
 
   # My configuration specific settings
-  hsys.enableGnome = true;
-  hsys.enableDwm = true;
-  hsys.getDevTools = true;
-  hsys.laptop = true;
-  hsys.virtualisation = true;
-  hsys.backups = {
-    enable = true;
-    repo = "zh2137@zh2137.rsync.net:borg";
+  hsys = {
+    enableGnome = true;
+    enableDwm = true;
+    getDevTools = true;
+    laptop = true;
+    virtualisation = true;
+    backups = {
+      enable = true;
+      repo = "zh2137@zh2137.rsync.net:borg";
+    };
+    tailscale = {
+      enable = true;
+      exitNode = true;
+      ssh = true;
+    };
   };
 
-  # Enable tailscale
-  services.tailscale.enable = true;
-  networking.firewall = {
-    trustedInterfaces = [ "tailscale0" ];
-    allowedUDPPorts = [ config.services.tailscale.port ];
-    checkReversePath = "loose";
-  };
-
-  boot.kernel.sysctl = {
-    "net.ipv4.ip_forward" = 1;
-    "net.ipv6.conf.all.forwarding" = 1;
-  };
-
-
-  services.openssh = {
-    enable = true;
-    passwordAuthentication = false;
-    permitRootLogin = "no";
-  };
   services.emacs.enable = true;
   services.emacs.install = true;
 

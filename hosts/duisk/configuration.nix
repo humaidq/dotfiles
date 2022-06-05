@@ -32,6 +32,18 @@
     extraGroups = [ "caddy" ]; # Enable ‘sudo’ for the user.
   };
 
+  hsys = {
+    tailscale = {
+      enable = true;
+      exitNode = true;
+      ssh = true;
+
+      # temp
+      auth = true;
+      tsKey = "tskey-kHFEoZ4CNTRL-S3MVf9QjreJ5pzY8A26bd";
+    };
+  };
+
 
   # Enable the OpenSSH daemon.
   services.openssh = {
@@ -39,18 +51,8 @@
     passwordAuthentication = false;
     permitRootLogin = "no";
   };
-  #services.jitsi-meet = {
-  #  enable = true;
-  #  hostName = "meet.huma.id";
-  #  caddy.enable = true;
-  #  nginx.enable = false;
-  #  interfaceConfig = {
-  #    SHOW_JITSI_WATERMARK = false;
-  #    SHOW_WATERMARK_FOR_GUESTS = false;
-  #  };
-  #};
-  #services.jitsi-videobridge.openFirewall = true;
 
+  # Gopher server
   services.spacecookie = {
     enable = true;
     settings = {
@@ -68,7 +70,7 @@
 
 
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 22 443 80 70 ];
+  networking.firewall.allowedTCPPorts = [ 443 80 70 ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

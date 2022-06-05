@@ -25,7 +25,6 @@ in
     environment.systemPackages = with pkgs; [
       slack
       teams
-      tailscale
       stlink
       qgroundcontrol
 
