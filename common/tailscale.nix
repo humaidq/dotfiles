@@ -27,7 +27,7 @@ in
     type = types.bool;
     default = false;
   };
-  options.hsys.tailscale.ts-key = mkOption {
+  options.hsys.tailscale.tsKey = mkOption {
     description = "The oneshot key";
     type = types.str;
   };
@@ -87,7 +87,7 @@ in
           fi
       
           # otherwise authenticate with tailscale
-          ${tailscale}/bin/tailscale up -authkey ${cfg.ts-key}
+          ${tailscale}/bin/tailscale up -authkey ${cfg.tsKey}
         '';
       };
     })
