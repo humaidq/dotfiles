@@ -38,17 +38,17 @@
     passwordAuthentication = false;
     permitRootLogin = "no";
   };
-  services.jitsi-meet = {
-    enable = true;
-    hostName = "meet.huma.id";
-    caddy.enable = true;
-    nginx.enable = false;
-    interfaceConfig = {
-      SHOW_JITSI_WATERMARK = false;
-      SHOW_WATERMARK_FOR_GUESTS = false;
-    };
-  };
-  services.jitsi-videobridge.openFirewall = true;
+  #services.jitsi-meet = {
+  #  enable = true;
+  #  hostName = "meet.huma.id";
+  #  caddy.enable = true;
+  #  nginx.enable = false;
+  #  interfaceConfig = {
+  #    SHOW_JITSI_WATERMARK = false;
+  #    SHOW_WATERMARK_FOR_GUESTS = false;
+  #  };
+  #};
+  #services.jitsi-videobridge.openFirewall = true;
 
   services.spacecookie = {
     enable = true;
@@ -56,6 +56,14 @@
       root = "/srv/gopher";
     };
   };
+
+  #services.molly-brown = {
+  #  enable = true;
+  #  hostName = "huma.id";
+  #  # Here we have to use caddy.
+  #  certPath = 
+  #  docBase = "/srv/gemini";
+  #};
 
 
   # Open ports in the firewall.
