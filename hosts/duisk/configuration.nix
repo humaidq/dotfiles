@@ -6,13 +6,14 @@
 
 {
   imports =
-    [ # Include the results of the hardware scan.
+    [
+      # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ../../common
       ./caddy.nix
     ];
 
-  boot.loader.grub = {  
+  boot.loader.grub = {
     enable = true;
     version = 2;
     device = "/dev/vda"; # or "nodev" for efi only

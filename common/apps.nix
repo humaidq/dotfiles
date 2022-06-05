@@ -65,8 +65,7 @@ in
       ];
 
 
-      # Fix some issue with gdm not showing user, as zsh is not a
-      # recognised shell.
+      # Ensure zsh is recognised as a system shell.
       environment.shells = [ pkgs.zsh ];
 
       environment.variables = {
@@ -144,7 +143,7 @@ in
         enable = true;
         locate = pkgs.plocate;
         interval = "daily";
-        localuser = null; # for 22.04
+        localuser = null; # for 22.05
       };
     })
     (mkIf cfg.getDevTools {

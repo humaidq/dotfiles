@@ -39,8 +39,8 @@
   hardware.nvidia = {
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     modesetting.enable = true;
-	nvidiaPersistenced = true;
-	nvidiaSettings = true;
+    nvidiaPersistenced = true;
+    nvidiaSettings = true;
     prime = {
       intelBusId = lib.mkDefault "PCI:0:2:0";
       nvidiaBusId = lib.mkDefault "PCI:1:0:0";

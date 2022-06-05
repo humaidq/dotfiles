@@ -12,7 +12,7 @@
       
         # disable clients from sniffing the media type
         header X-Content-Type-Options nosniff
-      	
+        
         # clickjacking protection
         header X-Frame-Options DENY
       
@@ -43,7 +43,7 @@
         header @origin Access-Control-Allow-Origin "{args.0}"
         header @origin Access-Control-Request-Method GET 
       }
-      '';
+    '';
 
     # Main website configuration
     virtualHosts."huma.id".extraConfig = ''

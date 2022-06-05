@@ -22,7 +22,7 @@ in
   home.sessionPath = [ "$HOME/.bin" ];
 
   nixpkgs.config.allowUnfree = true;
-  
+
   programs = {
     #go = {
     #  enable = true;

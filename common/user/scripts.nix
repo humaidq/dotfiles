@@ -61,10 +61,10 @@ in
       hn "Screenshot copied to clipboard!"
     '';
     ".bin/emoji" = script ''
-    sel=$(rofimoji -a copy)
-    if [[ "$sel" != "" ]]; then
-       hn "Emoji copied to clipboard!"
-    fi
+      sel=$(rofimoji -a copy)
+      if [[ "$sel" != "" ]]; then
+         hn "Emoji copied to clipboard!"
+      fi
     '';
     # Check a LaTeX document through languagetool.
     ".bin/lacheck" = script ''

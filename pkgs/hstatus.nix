@@ -4,7 +4,7 @@ rustPlatform.buildRustPackage rec {
   pname = "hstatus";
   version = "0.1";
 
- #src = /home/humaid/repos/public/hstatus;
+  #src = /home/humaid/repos/public/hstatus;
   src = builtins.fetchGit {
     url = "https://git.sr.ht/~humaid/hstatus";
     rev = "e06f64a1c6e650644a5009f8b84b587c12af3b7a";
