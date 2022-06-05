@@ -61,6 +61,7 @@ in
         openFirewall = false;
       };
 
+      environment.systemPackages = with pkgs; [ mosh ];
     })
     (mkIf cfg.auth {
       # Source: https://tailscale.com/blog/nixos-minecraft/
