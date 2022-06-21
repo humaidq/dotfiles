@@ -18,6 +18,9 @@ in
       settings = {
         START_CHARGE_THRESH_BAT0 = 80;
         STOP_CHARGE_THRESH_BAT0 = 85;
+        USB_AUTOSUSPEND = 0; # Mouse disconnecting issue
+        USB_AUTOSUSPEND_ON_AC = 0;
+        USB_AUTOSUSPEND_ON_BAT = 0;
       };
     };
     boot.kernelParams = [

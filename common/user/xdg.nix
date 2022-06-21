@@ -60,6 +60,9 @@ in
     };
     configFile."user-dirs.locale".text = "en_GB";
 
+    # prevent home-manager from failing after rebuild
+    configFile."mimeapps.list".force = true;
+
     # Desktop entry aliases
     dataFile."applications/img.desktop" =
       desktopEntry "Image Viewer" "${pkgs.sxiv}/bin/sxiv -a %f";

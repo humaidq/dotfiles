@@ -39,10 +39,13 @@ in
         };
 
         # Printing
-        printing.enable = true;
-        printing.drivers = [
-          pkgs.epson-escpr # Home Printer
-        ];
+        printing = {
+          enable = true;
+          browsing = mkForce false;
+          drivers = [
+            pkgs.epson-escpr # Home Printer
+          ];
+        };
 
         # Audio
         pipewire = {
@@ -123,6 +126,7 @@ in
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
         xorg.xkill
+        pavucontrol
         xcolor
         xdotool
         tor-browser-bundle-bin

@@ -158,8 +158,11 @@ in
               "toolkit.telemetry.unified" = false;
               "toolkit.telemetry.archive.enabled" = false;
               "breakpad.reportURL" = "";
+              "browser.aboutHomeSnippets.updateUrl" = "";
+              "media.gmp-gmpopenh264.enabled" = false;
               "browser.tabs.crashReporting.sendReport" = false;
               "browser.crashReports.unsubmittedCheck.enabled" = false;
+              "browser.startup.homepage_override.mstone" = "ignore";
               # Experiments and stuff
               "experiments.supported" = false;
               "experiments.enabled" = false;
@@ -177,6 +180,9 @@ in
               "privacy.resistFingerprinting.block_mozAddonManager" = true;
               "browser.fixup.alternate.enabled" = false;
               "browser.urlbar.trimURLs" = false;
+              "network.dns.disablePrefetch" = true;
+              "network.prefetch-next" = false;
+              "network.http.speculative-parallel-limit" = 0;
               #"dom.enable_user_timing" = false;
               #"dom.mozTCPSocket.enabled" = false;
               "dom.network.enabled" = false;

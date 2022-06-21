@@ -27,10 +27,11 @@ in
     environment.systemPackages = with pkgs; [
       slack
       teams
+      zoom-us
       stlink
       qgroundcontrol
 
-      OVMFFull
+      OVMF
 
       # Dev
       unstable.nodejs
