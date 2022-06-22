@@ -30,18 +30,22 @@
   boot.kernelParams = [ "video=efifb:nobgrt" "bgrt_disable" ];
   boot.blacklistedKernelModules = [ "i915" "nouveau" "riafb" "nvidiafb" ];
 
-  #services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.videoDrivers = lib.mkForce [ "nvidia" ];
   hardware.opengl = {
     enable = true;
     driSupport32Bit = true;
+    driSupport = true;
+    extraPackages = with pkgs; [ vaapiVdpau ];
   };
 
   hardware.nvidia = {
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     modesetting.enable = true;
-    nvidiaPersistenced = true;
+    #nvidiaPersistenced = true;
     nvidiaSettings = true;
     prime = {
+      #offload.enable = true;
+      sync.enable = true;
       intelBusId = lib.mkDefault "PCI:0:2:0";
       nvidiaBusId = lib.mkDefault "PCI:1:0:0";
     };
