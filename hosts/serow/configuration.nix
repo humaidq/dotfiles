@@ -54,7 +54,8 @@
   services.emacs.enable = true;
   services.emacs.install = true;
 
-  networking.firewall.allowedTCPPorts = [ 8008 8009 8010 ];
+  networking.firewall.allowedTCPPorts = [ 8008 8009 8010 5000];
+  networking.firewall.allowedUDPPorts = [ 5000];
   networking.firewall.allowedUDPPortRanges = [
     {
       from = 32768;
