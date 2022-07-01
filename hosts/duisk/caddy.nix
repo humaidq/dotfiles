@@ -77,6 +77,20 @@
       }
     '';
 
+    virtualHosts."tii.huma.id".extraConfig = ''
+      root * /srv/tii
+      file_server
+      import header
+      import cors tii.huma.id
+      import general
+      @outside not remote_ip 217.164.192.81
+      @outside {
+        basicauth {
+          tii JDJhJDE0JE5VN2VzdVhTb2duSC50aG5zQmFxNC5VWkFQOVpMQnZNeHBRM2UycEJsOU5xdExObWt5REFT
+        }
+      }
+    '';
+
 
     # Redirect all domains back to huma.id, preserving the path.
     virtualHosts."www.huma.id" = {
