@@ -7,24 +7,31 @@
     # Importable configurations
     extraConfig = ''
       (header) {
-        # enable HSTS
-        header Strict-Transport-Security max-age=31536000;
-      
-        # disable clients from sniffing the media type
-        header X-Content-Type-Options nosniff
+        header {
+          # enable HSTS
+          Strict-Transport-Security max-age=31536000;
         
-        # clickjacking protection
-        header X-Frame-Options DENY
-      
-        header Referrer-Policy strict-origin
-        header X-XSS-Protection 1; mode=block
-        header server huh?
-      
+          # disable clients from sniffing the media type
+          X-Content-Type-Options nosniff
+          
+          # clickjacking protection
+          X-Frame-Options DENY
+
+          # disable FLOC
+          Permissions-Policy interest-cohort=()
+
+        
+          Referrer-Policy strict-origin
+          X-XSS-Protection 1; mode=block
+          server huh?
+          @cachedFiles Cache-Control "public, max-age=31536000, must-revalidate"
+        }
+        
+
         @cachedFiles {
           path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg
         }
       
-        header @cachedFiles Cache-Control "public, max-age=31536000, must-revalidate"
       }
       
       (general) {
