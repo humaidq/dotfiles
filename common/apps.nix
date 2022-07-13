@@ -79,6 +79,7 @@ in
         #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
         GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
         LESSHISTFILE = "-";
+        SQLITE_HISTORY = "/tmp/sqlite_history";
         WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
         TMUX_TMPDIR = "$XDG_RUNTIME_DIR";
         #CARGO_HOME="$XDG_DATA_HOME/cargo";
@@ -131,6 +132,7 @@ in
         lf
         scc
         fzf
+        signify
 
         # CLI productivity
         jpegoptim
@@ -156,6 +158,7 @@ in
         unstable.delve
         gcc
         cargo
+        hare
         rustc
         rust-analyzer
         rustfmt
@@ -166,6 +169,7 @@ in
         tealdeer
         jre
         jdk
+        licensor
 
         plantuml
         graphviz
