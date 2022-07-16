@@ -9,6 +9,7 @@ in
   imports = [
     ./firefox.nix
     ./gnome.nix
+    ./mate.nix
     ./nvim.nix
     ./shell.nix
     ./scripts.nix

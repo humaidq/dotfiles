@@ -43,6 +43,11 @@ in
       enable = true;
       package = pkgs.bluezFull;
       powerOnBoot = false;
+      settings = {
+        General = {
+          ControllerMode = "bredr";
+        };
+      };
     };
     environment.systemPackages = with pkgs; [
       powertop

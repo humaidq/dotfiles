@@ -1,6 +1,6 @@
 { nixosConfig, config, pkgs, lib, ... }:
 let
-  graphical = nixosConfig.hsys.enableGnome || nixosConfig.hsys.enablei3;
+  graphical = nixosConfig.hsys.enableGnome || nixosConfig.hsys.enableDwm;
 in
 {
   config = lib.mkIf graphical {

@@ -20,6 +20,9 @@ in
       enable = true;
       enableExtensionPack = true;
     };
+    virtualisation.xen = {
+      enable = true;
+    };
     environment.systemPackages = with pkgs; [
       qemu_full
       gnome.gnome-boxes

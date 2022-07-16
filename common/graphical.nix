@@ -3,11 +3,17 @@
 with lib;
 let
   cfg = config.hsys;
-  needDisplayServer = cfg.enableGnome || cfg.enablei3;
+  needDisplayServer = cfg.enableGnome || cfg.enableDwm || cfg.enableMate ||
+    cfg.enablei3;
 in
 {
   options.hsys.enableGnome = mkOption {
     description = "Enable Gnome desktop environment";
+    type = types.bool;
+    default = false;
+  };
+  options.hsys.enableMate = mkOption {
+    description = "Enable MATE desktop environment";
     type = types.bool;
     default = false;
   };
@@ -38,6 +44,7 @@ in
           #logFile = "/var/log/Xorg.0.log";
         };
 
+
         # Printing
         printing = {
           enable = true;
@@ -47,20 +54,31 @@ in
           ];
         };
 
-        # Audio
+        # Audio (1/2)
         pipewire = {
           enable = true;
           alsa.enable = true;
           alsa.support32Bit = true;
           pulse.enable = true;
-          #media-session.enable = true;
+          wireplumber.enable = true;
         };
 
         # Track highest uptimes :)
         uptimed.enable = true;
+
       };
+
+      # home-manager can get angry if dconf is not enabled.
+      programs.dconf.enable = true;
+
+      # Audio (2/2)
       sound.enable = true;
       hardware.pulseaudio.enable = false; # replaced with pipewire above
+
+      # Networking
+      # This is enabled with Gnome by default, but when other DE/WMs are
+      # used, this is not set -- causing no WiFi connectivity.
+      networking.networkmanager.enable = true;
 
       # We need to make system look better overall when we have a graphical system
       boot.plymouth = {
@@ -187,6 +205,14 @@ in
       ];
       environment.systemPackages = with pkgs; [
         gnome.dconf-editor
+      ];
+    })
+    (mkIf cfg.enableMate {
+      # These are set when mate is enabled.
+      services.xserver.desktopManager.mate.enable = true;
+      environment.systemPackages = with pkgs; [
+        gnome.dconf-editor
+        arc-theme
       ];
     })
     (mkIf cfg.enableDwm {

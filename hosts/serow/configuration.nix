@@ -35,7 +35,8 @@
 
   # My configuration specific settings
   hsys = {
-    enableGnome = true;
+    #enableGnome = false;
+    #enableMate = true;
     enableDwm = true;
     getDevTools = true;
     laptop = true;
@@ -54,12 +55,17 @@
   services.emacs.enable = true;
   services.emacs.install = true;
 
-  networking.firewall.allowedTCPPorts = [ 8008 8009 8010 5000 ];
-  networking.firewall.allowedUDPPorts = [ 5000 ];
+  networking.firewall.allowedTCPPorts = [ 8008 8009 8010 5000 7236 7250 ];
+  networking.firewall.allowedUDPPorts = [ 5000 5353 ];
   networking.firewall.allowedUDPPortRanges = [
     {
       from = 32768;
       to = 61000;
+    }
+    {
+      # miracast
+      from = 1024;
+      to = 65535;
     }
   ];
   #boot.extraModulePackages = with config.boot.kernelPackages; [ xmm7360-pci ];
