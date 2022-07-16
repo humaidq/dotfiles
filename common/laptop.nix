@@ -28,7 +28,8 @@ in
     ];
     powerManagement = {
       enable = true;
-      powertop.enable = true;
+      # Powertop breaks mouse/keyboards when forcing autosuspend
+      #powertop.enable = true;
     };
     networking.networkmanager.wifi.powersave = true;
     services.xserver.libinput = {
@@ -49,9 +50,9 @@ in
         };
       };
     };
-    environment.systemPackages = with pkgs; [
-      powertop
-    ];
+    #environment.systemPackages = with pkgs; [
+    #  powertop
+    #];
     #services.thinkfan.enable = true; # thinkpad_acpi doesn't seem to support fan_control
 
 

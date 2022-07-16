@@ -13,7 +13,7 @@ in
 
   config = mkIf cfg.virtualisation {
     virtualisation.docker = {
-      enable = false;
+      enable = true;
       autoPrune.enable = true; # autoPrune.dates default "weekly"
     };
     virtualisation.virtualbox.host = {
