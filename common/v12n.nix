@@ -16,10 +16,10 @@ in
       enable = true;
       autoPrune.enable = true; # autoPrune.dates default "weekly"
     };
-    virtualisation.virtualbox.host = {
-      enable = true;
-      enableExtensionPack = true;
-    };
+    #virtualisation.virtualbox.host = {
+    #  enable = true;
+    #  enableExtensionPack = true;
+    #};
     #virtualisation.xen = {
     #  enable = true;
     #};

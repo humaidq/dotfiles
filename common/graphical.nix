@@ -147,7 +147,7 @@ in
         pavucontrol
         xcolor
         xdotool
-        tor-browser-bundle-bin
+        #tor-browser-bundle-bin
         ungoogled-chromium
         gimp
         keepassxc

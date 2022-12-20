@@ -59,8 +59,10 @@ in
   };
 
   nix = {
-    allowedUsers = [ "humaid" ];
-    autoOptimiseStore = true;
+    settings = {
+      allowed-users = [ "humaid" ];
+      auto-optimise-store = true;
+    };
     gc.automatic = true;
     gc.dates = "19:00";
 
