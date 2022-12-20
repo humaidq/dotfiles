@@ -174,6 +174,7 @@ in
         plantuml
         graphviz
         texlive.combined.scheme-full
+        tectonic
         shellcheck
         gnumake
         cmake

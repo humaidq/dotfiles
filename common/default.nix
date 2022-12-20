@@ -103,6 +103,9 @@ in
         st = super.st.overrideAttrs (old: rec {
           src = /home/humaid/repos/system/st;
         });
+        #doas = super.doas.overrideAttrs (old: rec {
+        #  src = /home/humaid/repos/contrib/OpenDoas;
+        #});
         dwm = super.dwm.overrideAttrs (old: rec {
           src = /home/humaid/repos/system/dwm;
           #src = builtins.fetchGit {

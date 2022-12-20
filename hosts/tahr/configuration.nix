@@ -51,7 +51,7 @@
   };
 
   # For python server for zephyr tests, and http servers testing
-  networking.firewall.allowedTCPPorts = [ 9000 8080 8443];
+  networking.firewall.allowedTCPPorts = [ 9000 8080 8443 ];
 
   # My configuration specific settings
   hsys = {
