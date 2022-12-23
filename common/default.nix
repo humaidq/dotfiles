@@ -74,7 +74,6 @@ in
     '';
   };
 
-  # Enable unstable configurations
 
   # Use spleen font for console (tty)
   fonts.fonts = with pkgs; [

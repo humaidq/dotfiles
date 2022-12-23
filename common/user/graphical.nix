@@ -49,7 +49,83 @@ in
           };
         };
       };
+    })
+    (lib.mkIf nixosConfig.hsys.enablei3 {
+      xsession.windowManager.i3 = {
+        enable = true;
+        config = {
+          bars = [{
+            colors = {
+              background = "#130e24";
+              activeWorkspace = {
+                background = "#1d2e86";
+                border = "#130e24";
+                text = "#eeeeee";
+              };
+              focusedWorkspace = {
+                background = "#1d2e86";
+                border = "#130e24";
+                text = "#eeeeee";
+              };
+              inactiveWorkspace = {
+                background = "#130e24";
+                border = "#130e24";
+                text = "#eeeeee";
+              };
+            };
+          }];
+          modifier = "Mod4";
+          colors = {
+            background = "#130e24";
+            focused = {
+              border = "#1d2e86";
+              background = "#1d2e86";
+              text = "#eeeeee";
+              indicator = "#2e9ef4";
+              childBorder = "#1d2e86";
+            };
+            focusedInactive = {
+              border = "#130e24";
+              background = "#130e24";
+              text = "#bbbbbb";
+              indicator = "#484e50";
+              childBorder = "#130e24";
+            };
+            unfocused = {
+              border = "#130e24";
+              background = "#130e24";
+              text = "#bbbbbb";
+              indicator = "#484e50";
+              childBorder = "#130e24";
+            };
+          };
+          keybindings = let
+            modifier = config.xsession.windowManager.i3.config.modifier;
+          in lib.mkOptionDefault {
+            "${modifier}+Return" = null;
+            "${modifier}+d" = null;
+            "${modifier}+Shift+Return" = "exec alacritty";
+            "${modifier}+Shift+c" = "kill";
+            "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
 
+            # We shift the bindings to match vim
+            "${modifier}+h" = "focus left";
+            "${modifier}+j" = "focus down";
+            "${modifier}+k" = "focus up";
+            "${modifier}+l" = "focus right";
+            "${modifier}+Shift+h" = "move left";
+            "${modifier}+Shift+j" = "move down";
+            "${modifier}+Shift+k" = "move up";
+            "${modifier}+Shift+l" = "move right";
+
+            # reassign due to vim bindings
+            "${modifier}+g" = "split h";
+
+            "${modifier}+Shift+v" = "reload";
+          };
+        };
+
+      };
     })
   ];
 }
