@@ -71,7 +71,7 @@ in
       desktopEntry "File Manager" "${pkgs.st}/bin/st -e lf %u";
 
     dataFile."applications/text.desktop" =
-      desktopEntry "Text Editor" "${pkgs.emacs}/bin/emacs %f";
+      desktopEntry "Text Editor" "${pkgs.alacritty}/bin/alacritty -e nvim %f";
 
     dataFile."applications/pdf.desktop" =
       desktopEntry "PDF Viewer" "${pkgs.zathura}/bin/zathura %u";

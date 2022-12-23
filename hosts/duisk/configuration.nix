@@ -20,10 +20,7 @@
   };
 
   networking.hostName = "duisk"; # Define your hostname.
-  networking.useDHCP = false;
-  networking.interfaces.enp1s0.useDHCP = true;
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.humaid = {
     isNormalUser = true;
     hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
@@ -43,7 +40,6 @@
       tsKey = "tskey-kHFEoZ4CNTRL-S3MVf9QjreJ5pzY8A26bd";
     };
   };
-
 
   # Enable the OpenSSH daemon.
   services.openssh = {
@@ -72,13 +68,6 @@
   # Open ports in the firewall.
   networking.firewall.allowedTCPPorts = [ 443 80 70 ];
 
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "21.11"; # Did you read the comment?
-
+  system.stateVersion = "21.11";
 }
 

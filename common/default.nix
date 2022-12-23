@@ -13,8 +13,6 @@ in
       ./security.nix
       ./apps.nix
       ./graphical.nix
-      ./v12n.nix
-      ./backup.nix
       ./work.nix
       ./laptop.nix
       ./tailscale.nix
@@ -23,7 +21,10 @@ in
   time.timeZone = "Asia/Dubai";
   i18n.defaultLocale = "en_GB.UTF-8";
 
-  # Enable all documentation
+  # We enable DHCP for all network interfaces by default.
+  networking.useDHCP = true;
+
+  # Enable all documentation.
   documentation = {
     enable = true;
     nixos.enable = true;
@@ -79,7 +80,7 @@ in
   fonts.fonts = with pkgs; [
     spleen
   ];
-  console.font = "${pkgs.spleen}/share/consolefonts/spleen-16x32.psfu";
+  console.font = "${pkgs.spleen}/share/consolefonts/spleen-12x24.psfu";
 
   nixpkgs = {
     # Allow proprietary packages and packages marked as broken
@@ -96,25 +97,16 @@ in
     # Custom overlays
     overlays = [
       (self: super: {
-        tor-browser-bundle-bin = super.tor-browser-bundle-bin.overrideAttrs (old: rec  {
-          src = super.fetchurl {
-            url = "https://f.huma.id/tor-browser-linux64-11.0.13_en-US.tar.xz";
-            sha256 = "df61fd90b7c1033cbb5856f3d076b5ca19f27e93c1a84741bd83b019dfe7ff0e";
-          };
-        });
-        st = super.st.overrideAttrs (old: rec {
-          src = /home/humaid/repos/system/st;
-        });
-        #doas = super.doas.overrideAttrs (old: rec {
-        #  src = /home/humaid/repos/contrib/OpenDoas;
+        #st = super.st.overrideAttrs (old: rec {
+        #  src = /home/humaid/repos/system/st;
         #});
-        dwm = super.dwm.overrideAttrs (old: rec {
-          src = /home/humaid/repos/system/dwm;
-          #src = builtins.fetchGit {
-          #  url = "https://git.sr.ht/~humaid/dwm";
-          #  rev = "2c41d2c22d3f363669f916ab4820b0783b442277";
-          #};
-        });
+        #dwm = super.dwm.overrideAttrs (old: rec {
+        #  src = /home/humaid/repos/system/dwm;
+        #  #src = builtins.fetchGit {
+        #  #  url = "https://git.sr.ht/~humaid/dwm";
+        #  #  rev = "2c41d2c22d3f363669f916ab4820b0783b442277";
+        #  #};
+        #});
         # Overlaying a package inside a scope is a bit awkward
         #gnome = super.gnome.overrideScope' (gself: gsuper: {
         #  gdm = gsuper.gdm.overrideAttrs (old: {

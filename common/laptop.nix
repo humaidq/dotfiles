@@ -6,12 +6,15 @@ let
 in
 {
   options.hsys.laptop = mkOption {
-    description = "Configures laptop-specific settings";
+    description = "Configures laptop-specific (ThinkPad) settings";
     type = types.bool;
     default = false;
   };
 
   config = mkIf cfg.laptop {
+    # Assumption: all laptops use SSDs
+    services.fstrim.enable = true;
+
     services.power-profiles-daemon.enable = false;
     services.tlp = {
       enable = true;
@@ -25,6 +28,8 @@ in
     };
     boot.kernelParams = [
       "workqueue.power_efficient=y"
+      # Disable vendor OEM logo (BGRT)
+      "video=efifb:nobgrt" "bgrt_disable"
     ];
     powerManagement = {
       enable = true;
@@ -41,7 +46,7 @@ in
       };
     };
     hardware.bluetooth = {
-      enable = true;
+      enable = false; #not using bluetooth currently
       package = pkgs.bluezFull;
       powerOnBoot = false;
       settings = {
@@ -50,12 +55,8 @@ in
         };
       };
     };
-    #environment.systemPackages = with pkgs; [
-    #  powertop
-    #];
-    #services.thinkfan.enable = true; # thinkpad_acpi doesn't seem to support fan_control
 
-
+    # Also assuming all laptops are ThinkPads for now...
     # Fix Thinkpad specific issue of throttling
     services.throttled.enable = true;
   };

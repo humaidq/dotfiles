@@ -26,6 +26,17 @@ in
       services.udev.packages = with pkgs; [ libu2f-host yubikey-personalization ];
       services.pcscd.enable = true;
     })
+    (mkIf (cfg.hardenSystem && !cfg.isVM) {
+      # Only enable firewall on non-VMs. VMs rely on host's firewall.
+      networking.firewall.enable = true;
+      networking.networkmanager.wifi.macAddress = "random";
+
+      # VMs should use host's DNS.
+      networking.nameservers = [
+        "1.1.1.1#one.one.one.one"
+        "1.0.0.1#one.one.one.one"
+      ];
+    })
     (mkIf cfg.hardenSystem {
       boot.loader.systemd-boot.editor = false;
 
@@ -58,29 +69,7 @@ in
         #forcePageTableIsolation = true;
       };
 
-      networking.firewall.enable = true;
-      networking.networkmanager.wifi.macAddress = "random"; #security
-
-      # Force use of DNS over TLS, and all requests must be validated with DNSSEC
-      #networking.networkmanager.dns = "systemd-resolved";
-      #services.resolved = {
-      #  enable = true;
-      #  dnssec = "allow-downgrade";
-      #  #llmnr = "true";
-      #  extraConfig = ''
-      #    [Resolve]
-      #    DNS=1.1.1.1#one.one.one.one
-      #    DNSOverTLS=yes
-      #    '';
-      #  fallbackDns = [ "1.1.1.1#one.one.one.one" ];
-      #};
-      networking.nameservers = [
-        "1.1.1.1#one.one.one.one"
-        "1.0.0.1#one.one.one.one"
-      ];
       networking.extraHosts = builtins.readFile hosts;
-
     })
   ];
-
 }

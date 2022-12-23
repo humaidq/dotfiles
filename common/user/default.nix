@@ -11,16 +11,15 @@
     extraGroups = [
       "plugdev"
       "dialout"
-      "wireshark"
       "video"
       "audio"
       "docker"
       "disk"
       "networkmanager"
-      "vboxusers"
       "wheel"
+      "lp"
     ];
-    description = "Humaid AlQassimi";
+    description = "Humaid Alqasimi";
     shell = pkgs.zsh;
   };
 

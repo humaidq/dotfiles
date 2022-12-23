@@ -30,40 +30,41 @@ in
     (mkIf cfg.getSystemTools {
       # Basic system tools for all systems
       environment.systemPackages = with pkgs; [
+        # shell related
         zsh
         zsh-autosuggestions
         zsh-nix-shell
+
+        # utilities
         neovim
         wget
         htop
-        wget
-        curl
-        file
         gitAndTools.gitFull
+        rsync
+        bc
+        units
+        pfetch
+        nixpkgs-fmt
+
+        # packages that must come with every Linux system
+        curl
         lsof
         xz
         zip
         pstree
         lz4
         unzip
-        rsync
         tree
         jq
         fd
         acpi
-        units
-        bc
         usbutils
         pciutils
         killall
         file
         dig
         pv
-        nixpkgs-fmt
-        pfetch
-        #(import ../pkgs/ufetch.nix)
       ];
-
 
       # Ensure zsh is recognised as a system shell.
       environment.shells = [ pkgs.zsh ];
@@ -71,9 +72,8 @@ in
       environment.variables = {
         EDITOR = "nvim";
         VISUAL = "nvim";
-        TERMINAL = "st";
+        TERMINAL = "alacritty";
         BROWSER = "firefox";
-        #PAGER = "bat --paging=always";
 
         # clean up
         #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
@@ -100,13 +100,15 @@ in
         # CLI productivity
         jpegoptim
         optipng
+
+        # spell checking
         languagetool
         ispell
         aspell
         aspellDicts.ar
         aspellDicts.en
         aspellDicts.fi
-        #youtube-dl
+
         yt-dlp
         biber
         nixos-generators
@@ -122,22 +124,17 @@ in
         borgbackup
         qrencode
         gnupatch
-        pandoc
         sshfs
         ripgrep
+        pandoc
         ripgrep-all
         aria2
         tmux
-        #ranger # TODO derecated
         lf
         scc
         fzf
         signify
-
-        # CLI productivity
-        jpegoptim
-        optipng
-        languagetool
+        lm_sensors
       ];
 
       # Locate
@@ -151,52 +148,53 @@ in
     (mkIf cfg.getDevTools {
       # All development and programming tools/utilities
       environment.systemPackages = with pkgs; [
-        #go
-        git-privacy
-        unstable.go_1_18
-        unstable.gopls
-        unstable.delve
+        # compilers, interpreters, runtimes, etc
+        go
         gcc
-        cargo
         hare
         rustc
-        rust-analyzer
-        rustfmt
-        pkg-config
-        gnupg
-        gdb
-        bvi
-        tealdeer
         jre
         jdk
-        licensor
+        lua
+        python38Full
 
+        # utilities
+        ffmpeg-full
+        unstable.delve
+        git-privacy
+        gdb
+        bvi
+        minify
+        pkg-config
+        licensor
+        gnupg
+        bat
+        sqlite
+        dmtx-utils
+        rlwrap
+
+        # build tools
+        gnumake
+        cmake
+        cargo
+
+        # documentation, generators
+        mdbook
+        unstable.hugo
         plantuml
         graphviz
         texlive.combined.scheme-full
         tectonic
+
+        # language servers, checkers, formatters
         shellcheck
-        gnumake
-        cmake
-        cmake-language-server
-        lua
         sumneko-lua-language-server
-        bat
-        ffmpeg-full
-        lm_sensors
-        minify
-        mdbook
-        unstable.hugo
-        sfeed
-        dmtx-utils
-        python38Full
+        cmake-language-server
         pyright
-        sqlite
-        rlwrap
-        vscodium
+        rust-analyzer
+        rustfmt
+        gopls
       ];
-      # This would set up proper wireshark group
-      programs.wireshark.enable = true;
     })
   ];
 }

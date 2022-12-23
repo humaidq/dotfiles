@@ -10,13 +10,14 @@
         #signing.key = "";
         #signing.signByDefault = true;
         delta.enable = true;
-        userName = "Humaid AlQassimi";
+        userName = "Humaid Alqasimi";
         extraConfig = {
           core.editor = "nvim";
           #pull.rebase = "true";
           init.defaultBranch = "master";
           format.signOff = true;
           commit.verbose = "yes";
+          safe.directory = "/mnt/hgfs/*";
           url = {
             #"git@github.com:".insteadOf = "https://github.com/";
             #"git@git.sr.ht:".insteadOf = "https://git.sr.ht/";

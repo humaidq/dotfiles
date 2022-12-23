@@ -9,7 +9,7 @@ let
     # Project is stagnant (Dec 2019), though works perfectly fine.
     rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
   };
-  lname = "Humaid AlQassimi"; # Legal name for licensor
+  lname = "Humaid Alqasimi"; # Legal name for licensor
 in
 {
   programs.zsh = {
@@ -100,8 +100,7 @@ in
       vim = "nvim";
       vi = "nvim";
       v = "nvim";
-      e = "emacsclient -c";
-      ef = "emacsclient -c $(fzf)";
+      vf = "nvim $(fzf)";
       recent = "ls -ltch";
       q = "exit";
       c = "clear";

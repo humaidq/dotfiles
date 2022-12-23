@@ -1,36 +1,38 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 {
   imports =
     [
       ./hardware-configuration.nix
       ../../common
+	  ./vmware-guest.nix
     ];
 
   # Use the systemd-boot EFI boot loader.
   boot.loader = {
     systemd-boot = {
       enable = true;
-      memtest86.enable = true;
       consoleMode = "auto";
     };
 
     efi.canTouchEfiVariables = true;
   };
 
-  networking.hostName = "serow";
+  # We have our own module that works with aarch64.
+  disabledModules = [ "virtualisation/vmware-guest.nix" ];
+  virtualisation.vmware.guest.enable = true;
+
+  networking.hostName = "goral";
 
   # My configuration specific settings
   hsys = {
-    enableDwm = true;
+	enablei3 = true;
+    hidpi = true;
     getDevTools = true;
-    laptop = true;
-    virtualisation = true;
-    backups = {
-      enable = true;
-      repo = "zh2137@zh2137.rsync.net:borg";
-    };
+
+    isVM = true;
+
     tailscale = {
-      enable = true;
+      enable = false;
       exitNode = true;
       ssh = true;
     };

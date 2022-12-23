@@ -3,7 +3,7 @@ local opt = vim.opt
 
 cmd('filetype plugin indent on')
 cmd('syntax on')
-cmd('colorscheme ron')
+--cmd('colorscheme ron')
 
 -- Character encoding
 opt.encoding = 'utf-8'
