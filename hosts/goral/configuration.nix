@@ -32,9 +32,12 @@
     isVM = true;
 
     tailscale = {
-      enable = false;
-      exitNode = true;
+      enable = true;
+      exitNode = false;
       ssh = true;
+
+      auth = true;
+      tsKey = "tskey-auth-kdikPt1CNTRL-X8pKxKkb9mLMBtoWy5h6uLfH6qdAuwhH";
     };
   };
 

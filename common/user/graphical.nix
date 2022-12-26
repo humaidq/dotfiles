@@ -1,6 +1,7 @@
 { nixosConfig, config, pkgs, lib, ... }:
 let
   graphical = nixosConfig.hsys.enableDwm || nixosConfig.hsys.enablei3;
+  wallpaper = ./wallhaven-13mk9v.jpg;
 in
 {
   config = lib.mkMerge [
@@ -50,11 +51,21 @@ in
         };
       };
     })
+    (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.isVM) {
+      # Use "Command" key as modifier (equi. to Super key).
+      xsession.windowManager.i3.config.modifier = lib.mkForce "Mod4";
+    })
     (lib.mkIf nixosConfig.hsys.enablei3 {
       xsession.windowManager.i3 = {
         enable = true;
         config = {
+          # Use "Alt" key.
+          modifier = "Mod1";
+          startup = [
+            {command = "feh --bg-fill ${wallpaper}"; always = true; }
+          ];
           bars = [{
+            statusCommand = "${pkgs.i3status}/bin/i3status";
             colors = {
               background = "#130e24";
               activeWorkspace = {
@@ -74,7 +85,6 @@ in
               };
             };
           }];
-          modifier = "Mod4";
           colors = {
             background = "#130e24";
             focused = {
