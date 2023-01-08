@@ -69,6 +69,14 @@ in
         #forcePageTableIsolation = true;
       };
 
+      # Fix set UID issue
+      security.wrappers.slock = {
+        source = "${pkgs.slock.out}/bin/slock";
+        setuid = true;
+        owner = "root";
+        group = "root";
+      };
+
       networking.extraHosts = builtins.readFile hosts;
     })
   ];

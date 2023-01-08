@@ -36,7 +36,10 @@ in
       # Powertop breaks mouse/keyboards when forcing autosuspend
       #powertop.enable = true;
     };
-    networking.networkmanager.wifi.powersave = true;
+	networking.networkmanager = {
+      enable = true;
+	  wifi.powersave = true;
+	};
     services.xserver.libinput = {
       enable = true;
       touchpad = {

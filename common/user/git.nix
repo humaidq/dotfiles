@@ -7,15 +7,17 @@
         enable = true;
         package = pkgs.gitAndTools.gitFull;
         aliases = { co = "checkout"; };
-        #signing.key = "";
-        #signing.signByDefault = true;
+        signing.key = nixosConfig.hsys.git.sshkey;
+        signing.signByDefault = true;
         delta.enable = true;
         userName = "Humaid Alqasimi";
         extraConfig = {
           core.editor = "nvim";
-          #pull.rebase = "true";
           init.defaultBranch = "master";
           format.signoff = true;
+          gpg.format = "ssh";
+          tag.gpgsign = true;
+          user.allowedSignersFile = "~/.ssh/allowed_signers";
           commit.verbose = "yes";
           push.default = "current";
           safe.directory = "/mnt/hgfs/*";
@@ -30,7 +32,7 @@
     })
     (lib.mkIf nixosConfig.hsys.workProfile {
       programs.git = {
-        userEmail = "humaid@ssrc.tii.ae";
+        userEmail = "humaid.alqassimi+git@tii.ae";
         extraConfig.url."git@github.com:tiiuae/".insteadOf = "tii:";
       };
     })

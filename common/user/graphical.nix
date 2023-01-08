@@ -131,6 +131,8 @@ in
             "${modifier}+d" = null;
             "${modifier}+Shift+Return" = "exec alacritty";
             "${modifier}+Shift+c" = "kill";
+            "${modifier}+Shift+q" = "exec slock";
+            "${modifier}+s" = "exec slock";
             "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
 
             # We shift the bindings to match vim
@@ -146,10 +148,13 @@ in
             # reassign due to vim bindings
             "${modifier}+g" = "split h";
 
+            # laptop bindings
+            "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
+            "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
+
             "${modifier}+Shift+v" = "reload";
           };
         };
-
       };
     })
   ];
