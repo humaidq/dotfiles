@@ -153,6 +153,7 @@ in
         brightnessctl
         slock
         xidlehook
+		nm-tray
       ];
     })
   ];

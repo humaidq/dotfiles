@@ -8,15 +8,9 @@
       ../../common
     ];
 
-  boot.loader = {
-    systemd-boot = {
-      enable = true;
-      memtest86.enable = true;
-      consoleMode = "auto";
-    };
-
-    efi.canTouchEfiVariables = true;
-  };
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.efi.efiSysMountPoint = "/boot/efi";
 
   networking.hostName = "tahr";
 
@@ -42,7 +36,7 @@
     };
   };
 
-  services.logind.lidSwitchExternalPower = "ignore";
+  #services.logind.lidSwitchExternalPower = "ignore";
 
   # My configuration specific settings
   hsys = {
@@ -50,10 +44,10 @@
     enablei3 = true;
     getDevTools = true;
     laptop = true;
-    virtualisation = true;
+    git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKBG6luRkesOBp4w8cMb+d8yUwFZsF02whLR4f3O9+6c humaid.alqassimi+git@tii.ae";
 
     tailscale = {
-      enable = true;
+      enable = false;
       exitNode = true;
       ssh = true;
 
