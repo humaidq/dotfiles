@@ -15,8 +15,9 @@
           core.editor = "nvim";
           #pull.rebase = "true";
           init.defaultBranch = "master";
-          format.signOff = true;
+          format.signoff = true;
           commit.verbose = "yes";
+          push.default = "current";
           safe.directory = "/mnt/hgfs/*";
           url = {
             #"git@github.com:".insteadOf = "https://github.com/";

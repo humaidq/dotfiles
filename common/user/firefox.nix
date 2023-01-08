@@ -8,7 +8,6 @@ let
     installation_mode = "force_installed";
     install_url = "https://addons.mozilla.org/firefox/downloads/latest/${name}/latest.xpi";
   };
-  graphical = nixosConfig.hsys.enableDwm || nixosConfig.hsys.enablei3;
   cfg = config.humaid.firefox;
 in
 {
@@ -40,7 +39,7 @@ in
       };
       # TODO configuration for about:config
     })
-    (lib.mkIf graphical {
+    (lib.mkIf nixosConfig.hsys.isGraphical {
       # For all
       programs.firefox = {
         enable = true;

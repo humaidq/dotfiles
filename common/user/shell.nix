@@ -112,7 +112,7 @@ in
       agpl = "licensor AGPL-3.0 \"${lname}\" > LICENSE";
       yt = "yt-dlp --add-metadata -ic";
       yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
-      uf = "ufetch";
+      pf = "pfetch";
       pgr = "ps aux | grep";
       open = "xdg-open";
       ex = "extract";
@@ -151,11 +151,11 @@ in
       nrp = "nix repl '<nixpkgs>'";
 
       # set color=always for some commands
-      ls = "ls --color=always -hN --group-directories-first";
+      #ls = "exa -h --group-directories-first";
       grep = "grep --color=always";
       diff = "diff --color=always";
       ip = "ip --color=always";
-      l = "ls -alhN --color=always";
+      l = "exa -alh";
       tree = "tree -C";
       history = "history 0"; # force show all history
     };
@@ -166,5 +166,9 @@ in
     sessionVariables = {
       EDITOR = "nvim";
     };
+  };
+  programs.exa = {
+    enable = true;
+    enableAliases = true;
   };
 }

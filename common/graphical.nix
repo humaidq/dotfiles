@@ -3,14 +3,9 @@
 with lib;
 let
   cfg = config.hsys;
-  needDisplayServer = cfg.enableDwm || cfg.enablei3;
+  needDisplayServer = cfg.enablei3 /* || cfg.enableDwm... */;
 in
 {
-  options.hsys.enableDwm = mkOption {
-    description = "Enable dwm window manager";
-    type = types.bool;
-    default = false;
-  };
   options.hsys.enablei3 = mkOption {
     description = "Enable the i3 window manager";
     type = types.bool;
@@ -26,9 +21,15 @@ in
     type = types.bool;
     default = false;
   };
+  options.hsys.isGraphical = mkOption {
+    description = "Configures the system for graphical UI";
+    type = types.bool;
+    default = cfg.enablei3 /* || cfg.enableDwm */;
+  };
 
   config = mkMerge [
-    (mkIf (needDisplayServer && cfg.hidpi) {
+    # All graphical HiDPI systems
+    (mkIf (cfg.isGraphical && cfg.hidpi) {
       hardware.video.hidpi.enable = true;
       hardware.opengl.enable = true;
       services.xserver.dpi = 180;
@@ -38,7 +39,8 @@ in
         _JAVA_OPTIONS = "-Dsun.java2d.uiScale=2";
       };
     })
-    (mkIf (needDisplayServer && !cfg.isVM) {
+    # Graphical non-VM systems
+    (mkIf (cfg.isGraphical && !cfg.isVM) {
       # Enable audio only on non-VMs (I don't use audio on VMs)
       services.pipewire = {
         enable = true;
@@ -61,7 +63,8 @@ in
         prusa-slicer
       ];
     })
-    (mkIf needDisplayServer {
+    # All graphical systems
+    (mkIf cfg.isGraphical {
       # Global Xorg/wayland and desktop settings go here
       services = {
         # Display server (X11)
@@ -138,6 +141,7 @@ in
         zathura
       ];
     })
+    # i3 Basic configurations
     (mkIf cfg.enablei3 {
       services.xserver.windowManager.i3.enable = true;
       environment.systemPackages = with pkgs; [
@@ -148,7 +152,8 @@ in
         alacritty
       ];
     })
-    (mkIf (cfg.enablei3 && !cfg.isVM) { # i3 extra settings for non-VMs
+    # i3 non-VM settings
+    (mkIf (cfg.enablei3 && !cfg.isVM) {
       environment.systemPackages = with pkgs; [
         brightnessctl
         slock

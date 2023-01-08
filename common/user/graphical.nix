@@ -1,11 +1,10 @@
 { nixosConfig, config, pkgs, lib, ... }:
 let
-  graphical = nixosConfig.hsys.enableDwm || nixosConfig.hsys.enablei3;
   wallpaper = ./wallhaven-13mk9v.jpg;
 in
 {
   config = lib.mkMerge [
-    (lib.mkIf graphical {
+    (lib.mkIf nixosConfig.hsys.isGraphical {
       qt = {
         enable = true;
         platformTheme = "gtk";
@@ -53,7 +52,22 @@ in
     })
     (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.isVM) {
       # Use "Command" key as modifier (equi. to Super key).
-      xsession.windowManager.i3.config.modifier = lib.mkForce "Mod4";
+      xsession.windowManager.i3.config = {
+        modifier = lib.mkForce "Mod4";
+      };
+
+
+      # TODO xidlehook
+      #       xidlehook --not-when-fullscreen --not-when-audio --timer 180 'slock' \'\' &
+      # TODO setxkbmap
+      # setxkbmap -option caps:ctrl_modifier -layout us,ar,fi -option grp:win_space_toggle
+      # This should be doen in xorg settings.
+    })
+    (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.isVM) {
+
+      xsession.windowManager.i3.config.startup = [
+        {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'slock' \\'\\'"; }
+      ];
     })
     (lib.mkIf nixosConfig.hsys.enablei3 {
       xsession.windowManager.i3 = {
@@ -63,6 +77,7 @@ in
           modifier = "Mod1";
           startup = [
             {command = "feh --bg-fill ${wallpaper}"; always = true; }
+            #{command = "picom --vsync --dbus --backend glx"; }
           ];
           bars = [{
             statusCommand = "${pkgs.i3status}/bin/i3status";

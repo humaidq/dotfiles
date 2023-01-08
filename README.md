@@ -11,10 +11,9 @@
 
 These are things that have to be setup manually after an installation:
 
-- [ ] Setup symlink from /etc/nixos/configuration.nix to the host's config.
+- Setup symlink from /etc/nixos/configuration.nix to the host's config.
 
 ## TODOs
 
 - Secret management
-- Alacritty configuration
-- i3 configuration
+- Migrate to flakes
