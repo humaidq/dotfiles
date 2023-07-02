@@ -55,21 +55,26 @@ in
       xsession.windowManager.i3.config = {
         modifier = lib.mkForce "Mod4";
       };
-
-
-      # TODO xidlehook
-      #       xidlehook --not-when-fullscreen --not-when-audio --timer 180 'slock' \'\' &
-      # TODO setxkbmap
-      # setxkbmap -option caps:ctrl_modifier -layout us,ar,fi -option grp:win_space_toggle
-      # This should be doen in xorg settings.
+      programs.i3status = {
+        enable = true;
+        modules = {
+          "wireless _first_".enable = false;
+          "battery all".enable = false;
+        };
+      };
     })
-    (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.isVM) {
-
+    (lib.mkIf (nixosConfig.hsys.enablei3 && !nixosConfig.hsys.isVM) {
       xsession.windowManager.i3.config.startup = [
         {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'slock' \\'\\'"; }
       ];
     })
     (lib.mkIf nixosConfig.hsys.enablei3 {
+      programs.i3status = {
+        enable = true;
+        modules = {
+          ipv6.enable = false;
+        };
+      };
       xsession.windowManager.i3 = {
         enable = true;
         config = {
