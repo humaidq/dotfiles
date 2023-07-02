@@ -42,15 +42,9 @@ in
       doc.enable = true;
     };
 
-    # Some programs need SUID wrappers, can be configured further or are
-    # started in user sessions.
     programs = {
+      ssh.startAgent = true;
       mtr.enable = true;
-      gnupg.agent = {
-        enable = true;
-        enableSSHSupport = true;
-        pinentryFlavor = "tty";
-      };
     };
 
     # This allows updating intel microcode

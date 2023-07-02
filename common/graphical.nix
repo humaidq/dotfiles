@@ -30,7 +30,7 @@ in
   config = mkMerge [
     # All graphical HiDPI systems
     (mkIf (cfg.isGraphical && cfg.hidpi) {
-      hardware.video.hidpi.enable = true;
+      #hardware.video.hidpi.enable = true;
       hardware.opengl.enable = true;
       services.xserver.dpi = 180;
       environment.variables = {
@@ -140,6 +140,11 @@ in
         sxiv
         zathura
       ];
+
+      programs._1password-gui = {
+        enable = true;
+        polkitPolicyOwners = [ "humaid" ];
+      };
     })
     # i3 Basic configurations
     (mkIf cfg.enablei3 {

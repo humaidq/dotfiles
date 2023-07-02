@@ -93,7 +93,7 @@ in
               # Extension IDs are found in "about:support"
               "jid1-BoFifL9Vbdl2zQ@jetpack" = extension "decentraleyes";
               "jid1-MnnxcxisBPnSXQ@jetpack" = extension "privacy-badger17";
-              "keepassxc-browser@keepassxc.org" = extension "keepassxc-browser";
+              "#keepassxc-browser@keepassxc.org" = extension "keepassxc-browser";
               "savepage-we@DW-dev" = extension "save-page-we";
               "sponsorBlocker@ajay.app" = extension "sponsor-block";
               "uBlock0@raymondhill.net" = extension "ublock-origin";

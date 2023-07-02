@@ -22,6 +22,7 @@
     description = "Humaid Alqasimi";
     shell = pkgs.zsh;
   };
+  programs.zsh.enable = true;
 
   home-manager.users.humaid = (import ./home-manager.nix);
 }

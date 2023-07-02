@@ -28,11 +28,12 @@
 	enablei3 = true;
     hidpi = true;
     getDevTools = true;
+    git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr6WzdDnXBEBok4FGr0609j985aYZ82+wj/Vipp/pdg git@huma.id";
 
     isVM = true;
 
     tailscale = {
-      enable = true;
+      enable = false;
       exitNode = false;
       ssh = true;
 

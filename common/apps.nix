@@ -134,6 +134,7 @@ in
         scc
         fzf
         signify
+        cheat
         lm_sensors
       ];
 
@@ -147,11 +148,13 @@ in
     })
     (mkIf cfg.getDevTools {
       # All development and programming tools/utilities
+      services.emacs.enable = true;
+      services.emacs.install = true;
       environment.systemPackages = with pkgs; [
         # compilers, interpreters, runtimes, etc
         go
         gcc
-        hare
+        #hare
         rustc
         jre
         jdk

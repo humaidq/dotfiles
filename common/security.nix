@@ -41,7 +41,7 @@ in
       boot.loader.systemd-boot.editor = false;
 
       boot = {
-        cleanTmpDir = true;
+        tmp.cleanOnBoot = true;
         kernelParams = [
           # Enable sanity check, redzoning, poisoning.
           "slub_debug=FZP"

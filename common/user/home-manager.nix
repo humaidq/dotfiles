@@ -22,11 +22,6 @@ in
   nixpkgs.config.allowUnfree = true;
 
   programs = {
-    #go = {
-    #  enable = true;
-    #  package = unstable.go_1_18;
-    #  goPath = "repos/go";
-    #};
     ssh = {
       enable = true;
       matchBlocks."huma.id".user = "root";
@@ -34,10 +29,9 @@ in
         hostname = "zh2137.rsync.net";
         user = "zh2137";
       };
-    };
-    gpg = {
-      enable = true;
-      #homedir = "${config.home.homeDirectory}/.config/gnupg";
+      matchBlocks."*" = {
+        extraOptions.IdentityAgent = "~/.1password/agent.sock";
+      };
     };
     tmux = {
       enable = true;

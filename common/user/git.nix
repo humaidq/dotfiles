@@ -7,17 +7,18 @@
         enable = true;
         package = pkgs.gitAndTools.gitFull;
         aliases = { co = "checkout"; };
-        signing.key = nixosConfig.hsys.git.sshkey;
-        signing.signByDefault = true;
+        #signing.key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW";
+        #signing.key = nixosConfig.hsys.git.sshkey;
+        #signing.signByDefault = true;
         delta.enable = true;
         userName = "Humaid Alqasimi";
         extraConfig = {
           core.editor = "nvim";
           init.defaultBranch = "master";
           format.signoff = true;
-          gpg.format = "ssh";
-          tag.gpgsign = true;
-          user.allowedSignersFile = "~/.ssh/allowed_signers";
+          #gpg.format = "ssh";
+          #"gpg \"ssh\"".program = "/opt/1Password/op-ssh-sign";
+          #commit.gpgsign = true;
           commit.verbose = "yes";
           push.default = "current";
           safe.directory = "/mnt/hgfs/*";
