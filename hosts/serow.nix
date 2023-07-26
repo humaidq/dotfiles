@@ -1,12 +1,8 @@
-{ config, pkgs, ... }:
-{
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../../common
-    ];
+{ config, pkgs, ... }: {
+  imports = [
+    ../../common
+  ];
 
-  # Use the systemd-boot EFI boot loader.
   boot.loader = {
     systemd-boot = {
       enable = true;
@@ -17,8 +13,6 @@
     efi.canTouchEfiVariables = true;
   };
 
-  networking.hostName = "serow";
-
   # My configuration specific settings
   hsys = {
     enableDwm = true;
@@ -26,7 +20,7 @@
     laptop = true;
     virtualisation = true;
     backups = {
-      enable = true;
+      enable = false;
       repo = "zh2137@zh2137.rsync.net:borg";
     };
     tailscale = {
@@ -36,5 +30,5 @@
     };
   };
 
-  system.stateVersion = "21.11";
+  system.stateVersion = "23.0521.11";
 }

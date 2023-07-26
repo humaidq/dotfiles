@@ -1,18 +1,13 @@
-# Work laptop
-{ lib, config, pkgs, ... }:
+{ lib, config, pkgs, ... }: {
+  imports = [
+    ../../common
+  ];
 
-{
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../../common
-    ];
-
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.efi.efiSysMountPoint = "/boot/efi";
-
-  networking.hostName = "tahr";
+  boot.loader = {
+    systemd-boot.enable = true;
+    efi.canTouchEfiVariables = true;
+    efi.efiSysMountPoint = "/boot/efi";
+  };
 
   # Annoying Nvidia configurations
   services.xserver.videoDrivers = lib.mkForce [ "nvidia" ];

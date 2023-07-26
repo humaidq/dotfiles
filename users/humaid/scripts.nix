@@ -60,7 +60,7 @@ in
     ".bin/fan" = script "echo level $1 | doas tee /proc/acpi/ibm/fan";
     # Prompts ascii arts to pick from.
     ".bin/ascii-art" = script ''
-      sel=$(cat ${../assets/looks.txt} | dmenu -p "Pick a look!")
+      sel=$(cat ${./looks.txt} | dmenu -p "Pick a look!")
       echo -n "$sel" | xclip -selection clipboard
     '';
   };

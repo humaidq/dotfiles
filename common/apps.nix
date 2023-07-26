@@ -163,7 +163,7 @@ in
 
         # utilities
         ffmpeg-full
-        unstable.delve
+        #unstable.delve
         git-privacy
         gdb
         bvi
@@ -183,7 +183,8 @@ in
 
         # documentation, generators
         mdbook
-        unstable.hugo
+        #unstable.hugo
+        hugo
         plantuml
         graphviz
         texlive.combined.scheme-full

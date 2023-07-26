@@ -139,6 +139,7 @@ in
         appimage-run
         sxiv
         zathura
+        firefox
       ];
 
       programs._1password-gui = {

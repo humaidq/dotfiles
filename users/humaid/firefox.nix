@@ -1,9 +1,6 @@
 { nixosConfig, config, pkgs, lib, ... }:
 let
   mkTuple = lib.hm.gvariant.mkTuple;
-  nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
-    inherit pkgs;
-  };
   extension = name: {
     installation_mode = "force_installed";
     install_url = "https://addons.mozilla.org/firefox/downloads/latest/${name}/latest.xpi";

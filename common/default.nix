@@ -3,14 +3,13 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-  unstableTarball =
-    fetchTarball
-      https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
+#  unstableTarball =
+#    fetchTarball
+#      https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
 in
 {
   imports =
     [
-      ./user
       ./security.nix
       ./apps.nix
       ./graphical.nix
@@ -86,11 +85,11 @@ in
       config = {
         allowUnfree = true;
         allowBroken = true;
-        packageOverrides = pkgs: {
-          unstable = import unstableTarball {
-            config = config.nixpkgs.config;
-          };
-        };
+        #packageOverrides = pkgs: {
+        #  unstable = import unstableTarball {
+        #    config = config.nixpkgs.config;
+        #  };
+        #};
       };
 
       # Custom overlays

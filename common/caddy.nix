@@ -1,5 +1,8 @@
 { config, pkgs, lib, ... }:
 {
+  # Open ports for Caddy
+  networking.firewall.allowedTCPPorts = [ 443 80 ];
+
   services.caddy = {
     enable = true;
     email = "me.caddy@huma.id";
@@ -64,6 +67,8 @@
         file_server
       }
     '';
+
+    # For serving files
     virtualHosts."f.huma.id".extraConfig = ''
       root * /srv/files
       file_server
@@ -72,32 +77,9 @@
       import general
     '';
 
+    # Fun stuff
     virtualHosts."bot.huma.id".extraConfig = "respond \"beep boop\"";
-    virtualHosts."buildstatusproxy.huma.id".extraConfig = ''
-      handle /~humaid/*.svg {
-        reverse_proxy https://builds.sr.ht {
-          header_up Host {upstream_hostport}
-        }
-      }
-      handle {
-        respond "This is a private proxy for builds.sr.ht status images."
-      }
-    '';
-
-    virtualHosts."tii.huma.id".extraConfig = ''
-      root * /srv/tii
-      file_server
-      import header
-      import cors tii.huma.id
-      import general
-      @outside not remote_ip 217.164.192.81
-      @outside {
-        basicauth {
-          tii JDJhJDE0JE5VN2VzdVhTb2duSC50aG5zQmFxNC5VWkFQOVpMQnZNeHBRM2UycEJsOU5xdExObWt5REFT
-        }
-      }
-    '';
-
+    virtualHosts."car.huma.id".extraConfig = "respond \"vroom vroom\"";
 
     # Redirect all domains back to huma.id, preserving the path.
     virtualHosts."www.huma.id" = {

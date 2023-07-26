@@ -1,13 +1,9 @@
-{ config, pkgs, lib, ... }:
-{
-  imports =
-    [
-      ./hardware-configuration.nix
-      ../../common
-	  ./vmware-guest.nix
-    ];
+{ config, pkgs, lib, ... }: {
+  imports = [
+    ../common
+    ../lib/vmware-guest.nix
+  ];
 
-  # Use the systemd-boot EFI boot loader.
   boot.loader = {
     systemd-boot = {
       enable = true;
@@ -21,7 +17,7 @@
   disabledModules = [ "virtualisation/vmware-guest.nix" ];
   virtualisation.vmware.guest.enable = true;
 
-  networking.hostName = "goral";
+  virtualisation.docker.enable = true;
 
   # My configuration specific settings
   hsys = {
@@ -33,14 +29,14 @@
     isVM = true;
 
     tailscale = {
-      enable = false;
+      enable = true;
       exitNode = false;
       ssh = true;
 
       auth = true;
-      tsKey = "tskey-auth-kdikPt1CNTRL-X8pKxKkb9mLMBtoWy5h6uLfH6qdAuwhH";
+      tsKey = "tskey-auth-kqgVE14CNTRL-ik7eAL6b338aaXZxJeqrA8weWYNtUgwb";
     };
   };
 
-  system.stateVersion = "21.11";
+  system.stateVersion = "23.05";
 }

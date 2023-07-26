@@ -1,8 +1,6 @@
 { config, pkgs, ... }:
 
 {
-  imports = [ <home-manager/nixos> ];
-
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.humaid = {
     isNormalUser = true;
@@ -23,6 +21,4 @@
     shell = pkgs.zsh;
   };
   programs.zsh.enable = true;
-
-  home-manager.users.humaid = (import ./home-manager.nix);
 }
