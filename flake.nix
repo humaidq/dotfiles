@@ -72,6 +72,13 @@
       system = "x86_64-linux";
       user   = "humaid";
     };
+    
+    # System that runs on my temporary Dell laptop
+    nixosConfigurations.capra = mkMachine "capra" {
+      inherit overlays nixpkgs home-manager;
+      system = "x86_64-linux";
+      user   = "humaid";
+    };
 
     packages.aarch64-linux = {
       vmware = nixos-generators.nixosGenerate {
