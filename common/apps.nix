@@ -180,6 +180,7 @@ in
         gnumake
         cmake
         cargo
+        nodejs
 
         # documentation, generators
         mdbook
@@ -198,6 +199,7 @@ in
         rust-analyzer
         rustfmt
         gopls
+        golangci-lint
       ];
     })
   ];
