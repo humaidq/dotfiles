@@ -15,7 +15,7 @@ in
     # Assumption: all laptops use SSDs
     services.fstrim.enable = true;
 
-    services.power-profiles-daemon.enable = false;
+    #services.power-profiles-daemon.enable = false;
     services.tlp = {
       enable = true;
       settings = {
@@ -48,6 +48,7 @@ in
         naturalScrolling = true;
       };
     };
+    services.logind.lidSwitch = "suspend";
     hardware.bluetooth = {
       enable = false; #not using bluetooth currently
       package = pkgs.bluezFull;

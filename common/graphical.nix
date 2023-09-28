@@ -55,6 +55,7 @@ in
       # On VMs, these applications would reside on the host.
       environment.systemPackages = with pkgs; [
         pavucontrol
+        pulseaudio # for pactl
         gimp
         inkscape
         libreoffice
@@ -135,6 +136,7 @@ in
         xorg.xkill
         xcolor
         xdotool
+        lxrandr
         xclip
         appimage-run
         sxiv
@@ -145,6 +147,9 @@ in
       programs._1password-gui = {
         enable = true;
         polkitPolicyOwners = [ "humaid" ];
+      };
+      environment.variables = {
+        "SSH_AUTH_SOCK" = "~/.1password/agent.sock";
       };
     })
     # i3 Basic configurations

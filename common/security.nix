@@ -39,6 +39,7 @@ in
     })
     (mkIf cfg.hardenSystem {
       boot.loader.systemd-boot.editor = false;
+      programs.gnupg.agent.pinentryFlavor = "qt";
 
       boot = {
         tmp.cleanOnBoot = true;
@@ -65,6 +66,7 @@ in
         };
         sudo.enable = false;
         protectKernelImage = true;
+        polkit.enable = true;
         #apparmor.enable = true;
         #forcePageTableIsolation = true;
       };

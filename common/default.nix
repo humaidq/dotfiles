@@ -68,9 +68,11 @@ in
         # Enable flakes
         experimental-features = [ "nix-command" "flakes" ];
       };
-      gc.automatic = true;
-      gc.dates = "19:00";
-
+      gc = {
+        automatic = true;
+        dates = "weekly";
+        options = "--delete-older-than 60d";
+      };
     };
 
 

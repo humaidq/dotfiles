@@ -73,6 +73,15 @@ in
         enable = true;
         modules = {
           ipv6.enable = false;
+          "volume master" = {
+            enable = true;
+            position = 1;
+          };
+          load.enable = false;
+          "disk /".enable = false;
+          "ethernet _first_".enable = false;
+          memory.enable = false;
+          "tztime local".settings.format = "%Y-%m-%d %I:%M:%S %p";
         };
       };
       xsession.windowManager.i3 = {
@@ -82,8 +91,9 @@ in
           modifier = "Mod1";
           startup = [
             {command = "feh --bg-fill ${wallpaper}"; always = true; }
-            #{command = "picom --vsync --dbus --backend glx"; }
+            {command = "picom --vsync --dbus"; }
           ];
+          defaultWorkspace = "workspace number 1";
           bars = [{
             statusCommand = "${pkgs.i3status}/bin/i3status";
             colors = {
@@ -111,7 +121,7 @@ in
               border = "#1d2e86";
               background = "#1d2e86";
               text = "#eeeeee";
-              indicator = "#2e9ef4";
+              indicator = "#1d2e86";
               childBorder = "#1d2e86";
             };
             focusedInactive = {
@@ -136,8 +146,7 @@ in
             "${modifier}+d" = null;
             "${modifier}+Shift+Return" = "exec alacritty";
             "${modifier}+Shift+c" = "kill";
-            "${modifier}+Shift+q" = "exec slock";
-            "${modifier}+s" = "exec slock";
+            "${modifier}+s" = "exec ${pkgs.slock}/bin/slock";
             "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
 
             # We shift the bindings to match vim
@@ -156,6 +165,12 @@ in
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
             "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
+            "XF86AudioRaiseVolume" = "exec pactl set-sink-volume @DEFAULT_SINK@ +5%";
+            "XF86AudioLowerVolume" = "exec pactl set-sink-volume @DEFAULT_SINK@ -5%";
+            "XF86AudioMute" = "exec pactl set-sink-mute @DEFAULT_SINK@ toggle";
+            "XF86AudioMicMute" = "exec pactl set-source-mute @DEFAULT_SOURCE@ toggle";
+            "XF86Display" = "exec lxrandr";
+
 
             "${modifier}+Shift+v" = "reload";
           };
