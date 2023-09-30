@@ -4,11 +4,10 @@
   networking.firewall.allowedTCPPorts = [ 443 80 ];
 
   # Extra hardening
-  systemd.services.caddy = {
+  systemd.services.caddy.serviceConfig = {
     # Upstream already sets NoNewPrivileges, PrivateDevices, ProtectHome
     ProtectSystem = "strict";
     PrivateTmp = "yes";
-    RestrictAddressFamilies = "AF_INET AF_INET6";
   };
 
   services.caddy = {
