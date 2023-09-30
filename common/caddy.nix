@@ -18,7 +18,8 @@
           X-Content-Type-Options nosniff
           
           # clickjacking protection
-          X-Frame-Options DENY
+		  X-Frame-Options DENY
+
 
           # disable FLOC
           Permissions-Policy interest-cohort=()
@@ -26,11 +27,11 @@
           Referrer-Policy strict-origin
           X-XSS-Protection 1; mode=block
           server huh?
-          @cachedFiles Cache-Control "public, max-age=31536000, must-revalidate"
+          @staticFiles Cache-Control "public, max-age=31536000"
         }
         
-        @cachedFiles {
-          path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg
+        @staticFiles {
+          path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
         }
       
       }

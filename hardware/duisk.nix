@@ -4,24 +4,29 @@
 { config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports =
-    [
-      (modulesPath + "/profiles/qemu-guest.nix")
-    ];
+  imports = [ ];
 
-  boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "virtio_pci" "sr_mod" "virtio_blk" ];
+  boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "virtio_pci" "sr_mod" "virtio_blk" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    {
-      device = "/dev/disk/by-uuid/24da46df-d5f4-4f13-90fe-466940b49328";
-      fsType = "xfs";
+    { device = "/dev/disk/by-uuid/e10bbcac-d9ff-4675-baa6-e914b8c86999";
+      fsType = "ext4";
     };
 
   swapDevices =
-    [{ device = "/dev/disk/by-uuid/e74ad83b-181e-43c8-a5e1-c0ce8b3fdd31"; }];
+    [ { device = "/dev/disk/by-uuid/9f1bbc4d-a74e-45f3-831d-d2c63bf51eff"; }
+    ];
 
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+  # (the default) this is the recommended approach. When using systemd-networkd it's
+  # still possible to use this option, but it's recommended to use it in conjunction
+  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+  networking.useDHCP = lib.mkDefault true;
+  # networking.interfaces.ens3.useDHCP = lib.mkDefault true;
+
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  virtualisation.hypervGuest.enable = true;
 }
