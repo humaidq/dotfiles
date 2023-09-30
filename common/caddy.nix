@@ -22,7 +22,6 @@
 
           # disable FLOC
           Permissions-Policy interest-cohort=()
-
         
           Referrer-Policy strict-origin
           X-XSS-Protection 1; mode=block
@@ -30,7 +29,6 @@
           @cachedFiles Cache-Control "public, max-age=31536000, must-revalidate"
         }
         
-
         @cachedFiles {
           path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg
         }
@@ -46,7 +44,6 @@
           output file /var/log/access.log
         }
       }
-      
       
       (cors) {
         @origin header Origin {args.0}

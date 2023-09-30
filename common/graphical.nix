@@ -4,6 +4,11 @@ with lib;
 let
   cfg = config.hsys;
   needDisplayServer = cfg.enablei3 /* || cfg.enableDwm... */;
+  xmodmapFile = pkgs.writeText "xmodmap" ''
+    remove Lock = Caps_Lock
+    keysym Caps_Lock = Control_L
+    add Control = Control_L
+  '';
 in
 {
   options.hsys.enablei3 = mkOption {
@@ -57,6 +62,7 @@ in
         pavucontrol
         pulseaudio # for pactl
         gimp
+        pinta
         inkscape
         libreoffice
         vlc
@@ -94,12 +100,19 @@ in
         font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
-      services.xserver.displayManager.lightdm = {
-        enable = true;
-        background = ./assets/hsys-lightdm.png;
-        greeters = {
-          gtk.theme.name = "Adwaita-dark";
+      services.xserver.displayManager = {
+        lightdm = {
+          enable = true;
+          background = ./assets/hsys-lightdm.png;
+          greeters = {
+            gtk.theme.name = "Adwaita-dark";
+          };
         };
+        # Make the Caps Lock key both Esc and Ctrl (when long pressed)
+        sessionCommands = ''
+          ${pkgs.xorg.xmodmap}/bin/xmodmap ${xmodmapFile}
+          ${pkgs.xcape}/bin/xcape -e 'Control_L=Escape'
+        '';
       };
 
       # Fonts
@@ -134,12 +147,14 @@ in
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
         xorg.xkill
+        xorg.xmodmap
+        xcape
         xcolor
         xdotool
         lxrandr
         xclip
         appimage-run
-        sxiv
+        nsxiv
         zathura
         firefox
       ];
@@ -167,7 +182,7 @@ in
     (mkIf (cfg.enablei3 && !cfg.isVM) {
       environment.systemPackages = with pkgs; [
         brightnessctl
-        slock
+        i3lock
         xidlehook
 		nm-tray
       ];

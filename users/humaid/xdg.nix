@@ -65,7 +65,7 @@ in
 
     # Desktop entry aliases
     dataFile."applications/img.desktop" =
-      desktopEntry "Image Viewer" "${pkgs.sxiv}/bin/sxiv -a %f";
+      desktopEntry "Image Viewer" "${pkgs.nsxiv}/bin/nsxiv -a %f";
 
     dataFile."applications/file.desktop" =
       desktopEntry "File Manager" "${pkgs.st}/bin/st -e lf %u";
@@ -79,5 +79,4 @@ in
     dataFile."applications/video.desktop" =
       desktopEntry "Video Player" "${pkgs.vlc}/bin/vlc %u";
   };
-
 }

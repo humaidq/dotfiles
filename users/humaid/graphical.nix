@@ -26,6 +26,11 @@ in
           "file:///home/humaid/inbox/web"
         ];
       };
+      home.file.".Xmodmap".text = ''
+        remove Lock = Caps_Lock
+        keysym Caps_Lock = Control_L
+        add Control = Control_L
+      '';
 
       #  xdg.configFile."vlc/vlcrc".text = ''
       #[qt]
@@ -65,7 +70,7 @@ in
     })
     (lib.mkIf (nixosConfig.hsys.enablei3 && !nixosConfig.hsys.isVM) {
       xsession.windowManager.i3.config.startup = [
-        {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'slock' \\'\\'"; }
+        {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'i3lock' \\'\\'"; }
       ];
     })
     (lib.mkIf nixosConfig.hsys.enablei3 {
@@ -146,7 +151,7 @@ in
             "${modifier}+d" = null;
             "${modifier}+Shift+Return" = "exec alacritty";
             "${modifier}+Shift+c" = "kill";
-            "${modifier}+s" = "exec ${pkgs.slock}/bin/slock";
+            "${modifier}+s" = "exec i3lock";
             "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
 
             # We shift the bindings to match vim
@@ -165,12 +170,13 @@ in
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
             "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
-            "XF86AudioRaiseVolume" = "exec pactl set-sink-volume @DEFAULT_SINK@ +5%";
-            "XF86AudioLowerVolume" = "exec pactl set-sink-volume @DEFAULT_SINK@ -5%";
-            "XF86AudioMute" = "exec pactl set-sink-mute @DEFAULT_SINK@ toggle";
-            "XF86AudioMicMute" = "exec pactl set-source-mute @DEFAULT_SOURCE@ toggle";
+            "XF86AudioRaiseVolume" = "exec amixer set Master 5%+";
+            "XF86AudioLowerVolume" = "exec amixer set Master 5%-";
+            "XF86AudioMute" = "exec amixer set Master toggle";
+            "XF86AudioMicMute" = "exec amixer set Capture toggle";
             "XF86Display" = "exec lxrandr";
-
+            "Print" = "exec screen-sel";
+            "XF86Sleep" = "exec systemctl suspend";
 
             "${modifier}+Shift+v" = "reload";
           };

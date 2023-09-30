@@ -143,9 +143,9 @@ in
       units = "units --history /dev/null";
 
       # Nix
-      rebuild = "doas nixos-rebuild switch";
-      rebuild-offline = "doas nixos-rebuild switch --option substitute false";
-      xs = "nix search";
+      #rebuild = "doas nixos-rebuild switch";
+      #rebuild-offline = "doas nixos-rebuild switch --option substitute false";
+      xs = "nix search nixpkgs";
       np = "nix-shell -p";
       nr = "nix repl";
       nrp = "nix repl '<nixpkgs>'";

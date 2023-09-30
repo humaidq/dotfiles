@@ -52,10 +52,18 @@ in
           "quiet"
           "vga=current"
         ];
+        kernel.sysctl = {
+          "fs.suid_dumpable" = 0;
+          "net.ipv4.icmp_echo_ignore_all" = 1;
+          # Why isn't this default on NixOS?
+          "kernel.dmesg_restrict" = 1;
+          "kernel.sysrq" = 0;
+        };
+        blacklistedKernelModules = [ "cramfs" "freevxfs" "jffs2" "hfs" "hfsplus" ];
+
       };
       security = {
         rtkit.enable = true;
-        auditd.enable = true;
         doas = {
           enable = true;
           extraRules = [{
@@ -65,19 +73,21 @@ in
           }];
         };
         sudo.enable = false;
-        protectKernelImage = true;
         polkit.enable = true;
-        #apparmor.enable = true;
+        apparmor.enable = true;
+
+        protectKernelImage = true;
         #forcePageTableIsolation = true;
+        lockKernelModules = true;
       };
 
       # Fix set UID issue
-      security.wrappers.slock = {
-        source = "${pkgs.slock.out}/bin/slock";
-        setuid = true;
-        owner = "root";
-        group = "root";
-      };
+      #security.wrappers.slock = {
+      #  source = "${pkgs.slock.out}/bin/slock";
+      #  setuid = true;
+      #  owner = "root";
+      #  group = "root";
+      #};
 
       networking.extraHosts = builtins.readFile hosts;
     })

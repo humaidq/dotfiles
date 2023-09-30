@@ -20,11 +20,6 @@
   programs = {
     ssh = {
       enable = true;
-      matchBlocks."huma.id".user = "root";
-      matchBlocks."rs" = {
-        hostname = "zh2137.rsync.net";
-        user = "zh2137";
-      };
       matchBlocks."*" = {
         extraOptions.IdentityAgent = "~/.1password/agent.sock";
       };
@@ -40,6 +35,21 @@
     };
     lf = {
       enable = true;
+      extraConfig = "set shell sh";
+      commands = {
+        open = ''
+          ''${{
+        case $(file --mime-type "$(readlink -f $f)" -b) in
+          text/*|application/json|inode/x-empty) $EDITOR $fx ;;
+          application/*) nvim $fx ;;
+          *) for f in $fx; do setsid $OPENER $f > /dev/null 2> /dev/null & done ;;
+        esac
+        }}
+        '';
+      };
+      cmdKeybindings = {
+        "<enter>" = "open";
+      };
     };
   };
 }
