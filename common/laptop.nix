@@ -60,6 +60,12 @@ in
       };
     };
 
+    location.latitude = 25.1959313;
+    location.longitude = 55.2737957;
+    services.redshift = {
+      enable = true;
+    };
+
     # Also assuming all laptops are ThinkPads for now...
     # Fix Thinkpad specific issue of throttling
     services.throttled.enable = true;

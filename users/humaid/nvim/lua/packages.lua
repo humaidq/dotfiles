@@ -1,14 +1,18 @@
 require("lazy").setup({
-  -- 
-  "folke/neodev.nvim",
-  "editorconfig/editorconfig-vim",
+  -- Misc (functionality that should be in vim)
   "ap/vim-css-color",
-  "LnL7/vim-nix",
   "tpope/vim-repeat",
   "tpope/vim-surround",
   "tpope/vim-fugitive",
-  "nvim-lua/plenary.nvim",
+  "tpope/vim-commentary",
+
+  -- Language support
   "lervag/vimtex",
+  "LnL7/vim-nix",
+
+  -- Auto Complete and LSP stuff
+  "nvim-lua/plenary.nvim",
+  "folke/neodev.nvim",
   "L3MON4D3/LuaSnip",
   "williamboman/mason.nvim",
   "WhoIsSethDaniel/mason-tool-installer.nvim",
@@ -35,6 +39,8 @@ require("lazy").setup({
   },
   'hrsh7th/cmp-path',
   'hrsh7th/cmp-buffer',
+
+  -- Theme
   {
     "folke/tokyonight.nvim",
     lazy = false,

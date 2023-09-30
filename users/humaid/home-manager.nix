@@ -52,4 +52,7 @@
       };
     };
   };
+
+  # creating this empty file enables redshift for this user
+  xdg.configFile."systemd/user/default.target.wants/redshift.service".text = "";
 }

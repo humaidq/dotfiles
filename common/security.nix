@@ -54,13 +54,60 @@ in
         ];
         kernel.sysctl = {
           "fs.suid_dumpable" = 0;
-          "net.ipv4.icmp_echo_ignore_all" = 1;
+          "kernel.yama.ptrace_scope" = 1;
           # Why isn't this default on NixOS?
           "kernel.dmesg_restrict" = 1;
           "kernel.sysrq" = 0;
-        };
-        blacklistedKernelModules = [ "cramfs" "freevxfs" "jffs2" "hfs" "hfsplus" ];
+          # Disable broadcast ICMP
+          "net.ipv4.icmp_echo_ignore_broadcasts" = true;
 
+          # Enables strict reverse path filtering, and log them
+          "net.ipv4.conf.all.log_martians" = true;
+          "net.ipv4.conf.all.rp_filter" = "1";
+          "net.ipv4.conf.default.log_martians" = true;
+          "net.ipv4.conf.default.rp_filter" = "1";
+
+          # Ignore all ICMP packets
+          "net.ipv4.conf.all.accept_redirects" = false;
+          "net.ipv4.conf.all.secure_redirects" = false;
+          "net.ipv4.conf.default.accept_redirects" = false;
+          "net.ipv4.conf.default.secure_redirects" = false;
+          "net.ipv6.conf.all.accept_redirects" = false;
+          "net.ipv6.conf.default.accept_redirects" = false;
+
+          # hide kptr
+          "kernel.kptr_restrict" = 2;
+
+          # Prevent syn flood attack
+          "net.ipv4.tcp_syncookies" = 1;
+          "net.ipv4.tcp_synack_retries" = 5;
+
+          # Disable bpf() JIT (to eliminate spray attacks)
+          "net.core.bpf_jit_enable" = false;
+
+          # Disable ftrace debugging
+          "kernel.ftrace_enabled" = false;
+
+          # Ignore outgoing ICMP redirects (IPv4 only)
+          "net.ipv4.conf.all.send_redirects" = false;
+          "net.ipv4.conf.default.send_redirects" = false;
+        };
+        blacklistedKernelModules = [
+            "adfs" "af_802154" "affs" "appletalk" "atm" "ax25" "befs" "bfs"
+            "btusb" "can" "cifs" "cramfs" "dccp" "decnet" "econet" "efs"
+            "erofs" "exofs" "f2fs" "freevxfs" "gfs2" "hfs" "hfsplus" "hpfs"
+            "ipx" "jffs2" "jfs" "minix" "n-hdlc" "netrom" "nilfs2" "omfs"
+            "p8022" "p8023" "psnap" "qnx4" "qnx6" "rds" "rose" "sctp" "sysv"
+            "tipc" "udf" "ufs" "vivid" "x25" "firewire-core" "firewire-sbp2"
+            "sbp2" "isdn" "arcnet" "phonet" "wimax" "floppy"
+
+            # no beeping
+            "snd_pcsp" "pcspkr"
+
+            # Might use
+            "bluetooth"
+            "ccid"
+          ];
       };
       security = {
         rtkit.enable = true;
