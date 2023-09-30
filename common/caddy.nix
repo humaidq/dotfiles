@@ -3,6 +3,14 @@
   # Open ports for Caddy
   networking.firewall.allowedTCPPorts = [ 443 80 ];
 
+  # Extra hardening
+  systemd.services.caddy = {
+    # Upstream already sets NoNewPrivileges, PrivateDevices, ProtectHome
+    ProtectSystem = "strict";
+    PrivateTmp = "yes";
+    RestrictAddressFamilies = "AF_INET AF_INET6";
+  };
+
   services.caddy = {
     enable = true;
     email = "me.caddy@huma.id";
