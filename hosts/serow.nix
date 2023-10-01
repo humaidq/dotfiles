@@ -26,5 +26,10 @@
     };
   };
 
+  # enable qemu virtualisation
+  environment.systemPackages = with pkgs; [
+    qemu_kvm
+  ];
+
   system.stateVersion = "23.0521.11";
 }

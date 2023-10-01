@@ -153,8 +153,8 @@ in
       nrp = "nix repl '<nixpkgs>'";
 
       # Better ls
-      ls = lib.mkForce "exa -group-directories-first";
-      l = "exa -alh --git";
+      ls = lib.mkForce "exa --group-directories-first";
+      l = "exa -a -l -h --git --group-directories-first";
 
       # set color=always for some commands
       grep = "grep --color=always";

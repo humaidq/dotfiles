@@ -31,18 +31,19 @@ in
       networking.firewall.enable = true;
       networking.networkmanager.wifi.macAddress = "random";
 
-      # VMs should use host's DNS.
-      networking.nameservers = [
-        "1.1.1.1#one.one.one.one"
-        "1.0.0.1#one.one.one.one"
-      ];
     })
     (mkIf cfg.hardenSystem {
-      boot.loader.systemd-boot.editor = false;
       programs.gnupg.agent.pinentryFlavor = "qt";
 
+      # Boot and kernel hardening
       boot = {
+        # /tmp uses tmpfs and cleans on boot
         tmp.cleanOnBoot = true;
+        tmp.useTmpfs = true;
+
+        # Block boot menu editor.
+        loader.systemd-boot.editor = false;
+
         kernelParams = [
           # Enable sanity check, redzoning, poisoning.
           "slub_debug=FZP"
@@ -52,6 +53,7 @@ in
           "quiet"
           "vga=current"
         ];
+
         kernel.sysctl = {
           "fs.suid_dumpable" = 0;
           "kernel.yama.ptrace_scope" = 1;
@@ -91,7 +93,11 @@ in
           # Ignore outgoing ICMP redirects (IPv4 only)
           "net.ipv4.conf.all.send_redirects" = false;
           "net.ipv4.conf.default.send_redirects" = false;
+
+          # Use TCP fast open to speed up some requests
+          "net.ipv4.tcp_fastopen" = 1;
         };
+
         blacklistedKernelModules = [
             "adfs" "af_802154" "affs" "appletalk" "atm" "ax25" "befs" "bfs"
             "btusb" "can" "cifs" "cramfs" "dccp" "decnet" "econet" "efs"
@@ -99,18 +105,19 @@ in
             "ipx" "jffs2" "jfs" "minix" "n-hdlc" "netrom" "nilfs2" "omfs"
             "p8022" "p8023" "psnap" "qnx4" "qnx6" "rds" "rose" "sctp" "sysv"
             "tipc" "udf" "ufs" "vivid" "x25" "firewire-core" "firewire-sbp2"
-            "sbp2" "isdn" "arcnet" "phonet" "wimax" "floppy"
+            "sbp2" "isdn" "arcnet" "phonet" "wimax" "floppy" 
 
             # no beeping
             "snd_pcsp" "pcspkr"
 
             # Might use
-            "bluetooth"
-            "ccid"
-          ];
+            "bluetooth" "ccid" "wwan" "nfc"
+        ];
       };
+
       security = {
-        rtkit.enable = true;
+        # I prefer doas over sudo due to simplicity.
+        sudo.enable = false;
         doas = {
           enable = true;
           extraRules = [{
@@ -119,23 +126,31 @@ in
             keepEnv = true;
           }];
         };
-        sudo.enable = false;
+
         polkit.enable = true;
+        rtkit.enable = true;
         apparmor.enable = true;
 
         protectKernelImage = true;
-        #forcePageTableIsolation = true;
+        forcePageTableIsolation = true;
         lockKernelModules = true;
       };
+      
+      # VMs should use host's DNS.
+      networking.nameservers = [
+        "1.1.1.1#one.one.one.one"
+        "1.0.0.1#one.one.one.one"
+      ];
+      services.resolved = {
+        enable = true;
+        dnssec = "true";
+        domains = [ "~." ];
+        extraConfig = ''
+          DNSOverTLS=yes
+        '';
+      };
 
-      # Fix set UID issue
-      #security.wrappers.slock = {
-      #  source = "${pkgs.slock.out}/bin/slock";
-      #  setuid = true;
-      #  owner = "root";
-      #  group = "root";
-      #};
-
+      # StevenBlack's hosts file.
       networking.extraHosts = builtins.readFile hosts;
     })
   ];
