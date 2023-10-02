@@ -33,6 +33,7 @@ in
         # shell related
         zsh
         zsh-autosuggestions
+        direnv
         zsh-nix-shell
 
         # utilities
