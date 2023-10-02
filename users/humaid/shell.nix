@@ -120,9 +120,11 @@ in
       # Git
       g = "git";
       ga = "git add";
+      gad = "git add .";
       gc = "git commit";
       gs = "git status";
       gd = "git diff";
+      gds = "git diff --staged";
       gpl = "git pull";
       gps = "git push";
       gr = "git restore";
@@ -143,19 +145,21 @@ in
       units = "units --history /dev/null";
 
       # Nix
-      rebuild = "doas nixos-rebuild switch";
-      rebuild-offline = "doas nixos-rebuild switch --option substitute false";
-      xs = "nix search";
+      #rebuild = "doas nixos-rebuild switch";
+      #rebuild-offline = "doas nixos-rebuild switch --option substitute false";
+      xs = "nix search nixpkgs";
       np = "nix-shell -p";
       nr = "nix repl";
       nrp = "nix repl '<nixpkgs>'";
 
+      # Better ls
+      ls = lib.mkForce "exa --group-directories-first";
+      l = "exa -a -l -h --git --group-directories-first";
+
       # set color=always for some commands
-      #ls = "exa -h --group-directories-first";
       grep = "grep --color=always";
       diff = "diff --color=always";
       ip = "ip --color=always";
-      l = "exa -alh";
       tree = "tree -C";
       history = "history 0"; # force show all history
     };
@@ -167,6 +171,7 @@ in
       EDITOR = "nvim";
     };
   };
+  # soon will be replaced with "eza" upstream
   programs.exa = {
     enable = true;
     enableAliases = true;

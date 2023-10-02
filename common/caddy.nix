@@ -3,6 +3,13 @@
   # Open ports for Caddy
   networking.firewall.allowedTCPPorts = [ 443 80 ];
 
+  # Extra hardening
+  systemd.services.caddy.serviceConfig = {
+    # Upstream already sets NoNewPrivileges, PrivateDevices, ProtectHome
+    ProtectSystem = "strict";
+    PrivateTmp = "yes";
+  };
+
   services.caddy = {
     enable = true;
     email = "me.caddy@huma.id";
@@ -18,21 +25,20 @@
           X-Content-Type-Options nosniff
           
           # clickjacking protection
-          X-Frame-Options DENY
+		  X-Frame-Options DENY
+
 
           # disable FLOC
           Permissions-Policy interest-cohort=()
-
         
           Referrer-Policy strict-origin
           X-XSS-Protection 1; mode=block
           server huh?
-          @cachedFiles Cache-Control "public, max-age=31536000, must-revalidate"
+          @staticFiles Cache-Control "public, max-age=31536000"
         }
         
-
-        @cachedFiles {
-          path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg
+        @staticFiles {
+          path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
         }
       
       }
@@ -46,7 +52,6 @@
           output file /var/log/access.log
         }
       }
-      
       
       (cors) {
         @origin header Origin {args.0}

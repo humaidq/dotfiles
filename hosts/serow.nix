@@ -1,6 +1,6 @@
 { config, pkgs, ... }: {
   imports = [
-    ../../common
+    ../common
   ];
 
   boot.loader = {
@@ -15,20 +15,21 @@
 
   # My configuration specific settings
   hsys = {
-    enableDwm = true;
+    enablei3 = true;
     getDevTools = true;
     laptop = true;
-    virtualisation = true;
-    backups = {
-      enable = false;
-      repo = "zh2137@zh2137.rsync.net:borg";
-    };
+    #virtualisation = true;
     tailscale = {
       enable = true;
       exitNode = true;
       ssh = true;
     };
   };
+
+  # enable qemu virtualisation
+  environment.systemPackages = with pkgs; [
+    qemu_kvm
+  ];
 
   system.stateVersion = "23.0521.11";
 }

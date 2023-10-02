@@ -26,6 +26,11 @@ in
           "file:///home/humaid/inbox/web"
         ];
       };
+      home.file.".Xmodmap".text = ''
+        remove Lock = Caps_Lock
+        keysym Caps_Lock = Control_L
+        add Control = Control_L
+      '';
 
       #  xdg.configFile."vlc/vlcrc".text = ''
       #[qt]
@@ -65,7 +70,7 @@ in
     })
     (lib.mkIf (nixosConfig.hsys.enablei3 && !nixosConfig.hsys.isVM) {
       xsession.windowManager.i3.config.startup = [
-        {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'slock' \\'\\'"; }
+        {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'i3lock' \\'\\'"; }
       ];
     })
     (lib.mkIf nixosConfig.hsys.enablei3 {
@@ -73,6 +78,15 @@ in
         enable = true;
         modules = {
           ipv6.enable = false;
+          "volume master" = {
+            enable = true;
+            position = 1;
+          };
+          load.enable = false;
+          "disk /".enable = false;
+          "ethernet _first_".enable = false;
+          memory.enable = false;
+          "tztime local".settings.format = "%Y-%m-%d %I:%M:%S %p";
         };
       };
       xsession.windowManager.i3 = {
@@ -82,8 +96,9 @@ in
           modifier = "Mod1";
           startup = [
             {command = "feh --bg-fill ${wallpaper}"; always = true; }
-            #{command = "picom --vsync --dbus --backend glx"; }
+            {command = "picom --vsync --dbus"; }
           ];
+          defaultWorkspace = "workspace number 1";
           bars = [{
             statusCommand = "${pkgs.i3status}/bin/i3status";
             colors = {
@@ -111,7 +126,7 @@ in
               border = "#1d2e86";
               background = "#1d2e86";
               text = "#eeeeee";
-              indicator = "#2e9ef4";
+              indicator = "#1d2e86";
               childBorder = "#1d2e86";
             };
             focusedInactive = {
@@ -136,8 +151,7 @@ in
             "${modifier}+d" = null;
             "${modifier}+Shift+Return" = "exec alacritty";
             "${modifier}+Shift+c" = "kill";
-            "${modifier}+Shift+q" = "exec slock";
-            "${modifier}+s" = "exec slock";
+            "${modifier}+s" = "exec i3lock";
             "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
 
             # We shift the bindings to match vim
@@ -156,6 +170,13 @@ in
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
             "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
+            "XF86AudioRaiseVolume" = "exec amixer set Master 5%+";
+            "XF86AudioLowerVolume" = "exec amixer set Master 5%-";
+            "XF86AudioMute" = "exec amixer set Master toggle";
+            "XF86AudioMicMute" = "exec amixer set Capture toggle";
+            "XF86Display" = "exec lxrandr";
+            "Print" = "exec screen-sel";
+            "XF86Sleep" = "exec systemctl suspend";
 
             "${modifier}+Shift+v" = "reload";
           };

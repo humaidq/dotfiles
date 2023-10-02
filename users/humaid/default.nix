@@ -16,6 +16,7 @@
       "networkmanager"
       "wheel"
       "lp"
+      "kvm"
     ];
     description = "Humaid Alqasimi";
     shell = pkgs.zsh;

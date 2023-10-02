@@ -76,14 +76,14 @@ in
         BROWSER = "firefox";
 
         # clean up
-        #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority";
+        #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority"; # breaking DMs
         GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
         LESSHISTFILE = "-";
         SQLITE_HISTORY = "/tmp/sqlite_history";
         WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
         TMUX_TMPDIR = "$XDG_RUNTIME_DIR";
-        #CARGO_HOME="$XDG_DATA_HOME/cargo";
         GOPATH = "$HOME/repos/go";
+        #CARGO_HOME="$XDG_DATA_HOME/cargo";
         #HISTFILE = "$XDG_DATA_HOME/history";
 
         LC_ALL = "en_US.UTF-8";
@@ -118,7 +118,6 @@ in
         nmap
         pwgen
         du-dust
-        bombadillo
         gping
         traceroute
         borgbackup
@@ -126,7 +125,6 @@ in
         gnupatch
         sshfs
         ripgrep
-        pandoc
         ripgrep-all
         aria2
         tmux
@@ -154,12 +152,11 @@ in
         # compilers, interpreters, runtimes, etc
         go
         gcc
-        #hare
         rustc
         jre
         jdk
         lua
-        python38Full
+        python311Full
 
         # utilities
         ffmpeg-full
@@ -180,24 +177,34 @@ in
         gnumake
         cmake
         cargo
+        nodejs
 
         # documentation, generators
         mdbook
-        #unstable.hugo
+        pandoc
         hugo
         plantuml
+        nodePackages.mermaid-cli
         graphviz
         texlive.combined.scheme-full
         tectonic
 
         # language servers, checkers, formatters
         shellcheck
-        sumneko-lua-language-server
-        cmake-language-server
-        pyright
+        #sumneko-lua-language-server
+        #cmake-language-server
         rust-analyzer
-        rustfmt
         gopls
+        gotools
+        golangci-lint
+        nodePackages.pyright
+        nodePackages.eslint
+        nodePackages.stylelint
+        nodePackages.bash-language-server
+        nodePackages.vscode-json-languageserver
+        nodePackages.dockerfile-language-server-nodejs
+        taplo
+        lua-language-server
       ];
     })
   ];

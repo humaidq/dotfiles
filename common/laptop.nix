@@ -15,7 +15,7 @@ in
     # Assumption: all laptops use SSDs
     services.fstrim.enable = true;
 
-    services.power-profiles-daemon.enable = false;
+    #services.power-profiles-daemon.enable = false;
     services.tlp = {
       enable = true;
       settings = {
@@ -48,6 +48,7 @@ in
         naturalScrolling = true;
       };
     };
+    services.logind.lidSwitch = "suspend";
     hardware.bluetooth = {
       enable = false; #not using bluetooth currently
       package = pkgs.bluezFull;
@@ -57,6 +58,12 @@ in
           ControllerMode = "bredr";
         };
       };
+    };
+
+    location.latitude = 25.1959313;
+    location.longitude = 55.2737957;
+    services.redshift = {
+      enable = true;
     };
 
     # Also assuming all laptops are ThinkPads for now...

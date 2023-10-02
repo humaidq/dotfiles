@@ -1,69 +1,121 @@
-vim.cmd [[packadd packer.nvim]]
+require("lazy").setup({
+  -- Misc (functionality that should be in vim)
+  "ap/vim-css-color",
+  "tpope/vim-repeat",
+  "tpope/vim-surround",
+  "tpope/vim-fugitive",
+  "tpope/vim-commentary",
 
-return require('packer').startup(function()
-	-- usually we let packer manage itself, but in this system this is managed
-	-- by nix in the common/user/nvim.nix file.
-	use {
-		'wbthomason/packer.nvim',
-		lock = true,
-	}
-	
-	 -- Language Server Protocol implementation
-    use {
-		'neovim/nvim-lspconfig',
-		config = function()
-			require'lspconfig'.gopls.setup{}
-			require'lspconfig'.rust_analyzer.setup{}
-			require'lspconfig'.pyright.setup{}
-			require'lspconfig'.cmake.setup{}
-			require'lspconfig'.sumneko_lua.setup{}
-		end
-	}
+  -- Language support
+  "lervag/vimtex",
+  "LnL7/vim-nix",
 
-	--use 'hrsh7th/nvim-compe' -- Code completion
-	use 'nvim-treesitter/nvim-treesitter' -- Requirement for some plugins
-	use 'tpope/vim-repeat' -- Repeat support for more stuff
-	use 'tpope/vim-fugitive' -- Git wrapper for vim
-	use 'ap/vim-css-color' -- Shows hex colours in CSS files
-	use 'nvim-lua/plenary.nvim' -- Bundle of useful Lua functions
-	use 'LnL7/vim-nix' -- Syntax highlighting, etc for Nix files
-    use 'lervag/vimtex' -- LaTeX support
-	use {
-		'nvim-neorg/neorg',
-		config = function()
-			require('neorg').setup {}
-		end,
-		requires = "nvim-lua/plenary.nvim"
-	}
+  -- Auto Complete and LSP stuff
+  "nvim-lua/plenary.nvim",
+  "folke/neodev.nvim",
+  "L3MON4D3/LuaSnip",
+  "williamboman/mason.nvim",
+  "WhoIsSethDaniel/mason-tool-installer.nvim",
+  { 
+    'VonHeikemen/lsp-zero.nvim',
+    branch = 'v2.x',
+    dependencies = {
+        -- LSP Support
+        { 'neovim/nvim-lspconfig' }, -- Required
+        {
+            -- Optional
+            'williamboman/mason.nvim',
+            build = function()
+                pcall(vim.cmd, 'MasonUpdate')
+            end,
+        },
+        { 'williamboman/mason-lspconfig.nvim' }, -- Optional
 
+        -- Autocompletion
+        { 'hrsh7th/nvim-cmp' },     -- Required
+        { 'hrsh7th/cmp-nvim-lsp' }, -- Required
+        { 'L3MON4D3/LuaSnip' },     -- Required
+    }
+  },
+  'hrsh7th/cmp-path',
+  'hrsh7th/cmp-buffer',
+
+  -- Theme
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {},
+  },
+})
+vim.cmd[[colorscheme tokyonight-night]]
+local lsp_zero = require('lsp-zero')
+
+lsp_zero.on_attach(function(client, bufnr)
+  lsp_zero.default_keymaps({buffer = bufnr})
 end)
+require("neodev").setup()
+require('mason').setup()
+require('mason-lspconfig').setup({
+  handlers = {
+    lsp_zero.default_setup,
+  },
+})
+require('mason-tool-installer').setup {
+  ensure_installed = {
+    'golangci-lint',
+    'bash-language-server',
+    'gopls',
+    'shellcheck',
+    'typescript-language-server',
+    'lua-language-server',
+	'dockerfile-language-server',
+    'stylelint',
+    'stylelint-lsp',
+    'eslint-lsp',
+    'rust-analyzer',
+    'pyright',
+	'json-lsp',
+	'taplo',
+  },
+}
 
---vim.o.completeopt = "menuone,noselect"
---require('compe').setup({
---    enabled = true,
---    autocomplete = true,
---    debug = false,
---    min_length = 1,
---    preselect = 'enable',
---    throttle_time = 80,
---    source_timeout = 200,
---    incomplete_delay = 400,
---    max_abbr_width = 100,
---    max_kind_width = 100,
---    max_menu_width = 100,
---    documentation = true,
---
---    source = {
---        path = true,
---        buffer = true,
---        calc = true,
---        vsnip = true,
---        nvim_lsp = true,
---        nvim_lua = true,
---        spell = true,
---        tags = true,
---        snippets_nvim = true,
---        treesitter = true,
---    },
---})
+local cmp = require('cmp')
+cmp.setup({
+	snippet = {
+	  -- REQUIRED - you must specify a snippet engine
+	  expand = function(args)
+		vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
+	  end,
+	},
+	mapping = cmp.mapping.preset.insert({
+	  ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+	  ['<C-f>'] = cmp.mapping.scroll_docs(4),
+	  ['<C-Space>'] = cmp.mapping.complete(),
+	  ['<C-e>'] = cmp.mapping.abort(),
+	  ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+	}),
+	sources = cmp.config.sources({
+	  { name = 'nvim_lsp' },
+	}, {
+	  { name = 'buffer' },
+	})
+})
 
+-- Use buffer source for `/` and `?` (if you enabled `native_menu`, this won't work anymore).
+cmp.setup.cmdline({ '/', '?' }, {
+	mapping = cmp.mapping.preset.cmdline(),
+	sources = {
+	  { name = 'buffer' }
+	}
+})
+
+-- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
+cmp.setup.cmdline(':', {
+	mapping = cmp.mapping.preset.cmdline(),
+	sources = cmp.config.sources({
+	  { name = 'path' }
+	}, {
+	  { name = 'cmdline' }
+	})
+})
