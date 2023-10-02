@@ -10,6 +10,7 @@
   boot.initrd.secrets = {
     "/crypto_keyfile.bin" = null;
   };
+  boot.initrd.kernelModules = [ "ch341" ];
 
   networking.networkmanager.enable = true;
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
