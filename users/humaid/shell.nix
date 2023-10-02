@@ -80,6 +80,7 @@ in
       source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
       source ${lscolors}/lscolors.sh
       source ${zsh-extract}/extract.plugin.zsh
+      eval "$(direnv hook zsh)"
 
       function mkcd() {
         mkdir -p "$@" && cd "$@"
@@ -171,6 +172,10 @@ in
       EDITOR = "nvim";
     };
   };
+
+  # nix-shell replacement
+  services.lorri.enable = true;
+
   # soon will be replaced with "eza" upstream
   programs.exa = {
     enable = true;
