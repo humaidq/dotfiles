@@ -1,13 +1,19 @@
 { lib, config, pkgs, ... }: {
   imports = [
-    ../../common
+    ../common
   ];
 
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
-    efi.efiSysMountPoint = "/boot/efi";
   };
+  boot.initrd.secrets = {
+    "/crypto_keyfile.bin" = null;
+  };
+
+  networking.networkmanager.enable = true;
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  virtualisation.docker.enable = true;
 
   # My configuration specific settings
   hsys = {
@@ -27,5 +33,5 @@
     };
   };
 
-  system.stateVersion = "21.11";
+  system.stateVersion = "23.05";
 }

@@ -1,6 +1,6 @@
 { lib, config, pkgs, ... }: {
   imports = [
-    ../../common
+    ../common
   ];
 
   boot.loader = {

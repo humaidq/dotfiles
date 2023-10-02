@@ -33,13 +33,13 @@
     })
     (lib.mkIf nixosConfig.hsys.workProfile {
       programs.git = {
-        userEmail = "humaid.alqassimi+git@tii.ae";
+        #userEmail = "humaid.alqassimi+git@tii.ae";
+		userEmail = "git@huma.id";
         extraConfig.url."git@github.com:tiiuae/".insteadOf = "tii:";
       };
     })
     (lib.mkIf (!nixosConfig.hsys.workProfile) {
       # Home-profile only
-      programs.git.userEmail = "git@huma.id";
       programs.git.extraConfig = {
         sendmail.smtpserver = "smtp.migadu.com";
         sendmail.smtpuser = "git@humaidq.ae";
