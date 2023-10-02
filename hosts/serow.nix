@@ -30,6 +30,7 @@
   environment.systemPackages = with pkgs; [
     qemu_kvm
   ];
+  hardware.flipperzero.enable = true;
 
   system.stateVersion = "23.0521.11";
 }
