@@ -26,17 +26,9 @@ in
     # Default applications for graphical systems
     environment.systemPackages = with pkgs; [
       slack
-      teams
       zoom-us
-      #stlink
       #qgroundcontrol
-
       OVMF
-
-      # Dev
-      #unstable.nodejs
-      #unstable.yarn
-      #python38Packages.pyserial
     ];
   };
 }
