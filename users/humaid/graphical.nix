@@ -69,9 +69,14 @@ in
       };
     })
     (lib.mkIf (nixosConfig.hsys.enablei3 && !nixosConfig.hsys.isVM) {
-      xsession.windowManager.i3.config.startup = [
-        {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'i3lock' \\'\\'"; }
-      ];
+      #xsession.windowManager.i3.config.startup = [
+      #  {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'i3lock' \\'\\'"; }
+      #];
+      services.screen-locker = {
+        enable = true;
+        inactiveInterval = 3; # minutes
+        lockCmd = "i3lock";
+      };
     })
     (lib.mkIf nixosConfig.hsys.enablei3 {
       programs.i3status = {

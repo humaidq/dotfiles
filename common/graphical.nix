@@ -78,7 +78,7 @@ in
         xserver = {
           enable = true;
           layout = "us,ar";
-          #xkbOptions = "caps:escape";
+          xkbOptions = "grp:win_space_toggle";
           enableCtrlAltBackspace = false; #prevent lockscreen bypass
           screenSection = ''
             Option  "TripleBuffer" "on"
