@@ -81,7 +81,7 @@ in
         GTK2_RC_FILES = "$XDG_CONFIG_HOME/gtk-2.0/gtkrc-2.0";
         LESSHISTFILE = "-";
         SQLITE_HISTORY = "/tmp/sqlite_history";
-        WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
+        #WGETRC = "$XDG_CONFIG_HOME/wget/wgetrc";
         TMUX_TMPDIR = "$XDG_RUNTIME_DIR";
         GOPATH = "$HOME/repos/go";
         #CARGO_HOME="$XDG_DATA_HOME/cargo";
@@ -157,7 +157,9 @@ in
         jre
         jdk
         lua
+        lua52Packages.luarocks
         python311Full
+        python311Packages.pip
 
         # utilities
         ffmpeg-full
@@ -192,7 +194,6 @@ in
 
         # language servers, checkers, formatters
         shellcheck
-        #sumneko-lua-language-server
         #cmake-language-server
         rust-analyzer
         gopls

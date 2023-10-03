@@ -31,7 +31,9 @@
       # Use vi-like keys to move in scroll mode
       keyMode = "vi";
       clock24 = false;
-      extraConfig = "set -g default-terminal \"xterm-256color\"";
+      extraConfig = ''
+        set-option -sa terminal-features ',*:RGB'
+      '';
     };
     lf = {
       enable = true;

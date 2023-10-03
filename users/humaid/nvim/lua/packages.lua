@@ -1,17 +1,18 @@
 require("lazy").setup({
   -- Misc (functionality that should be in vim)
+  "nvim-lua/plenary.nvim",
   "ap/vim-css-color",
   "tpope/vim-repeat",
   "tpope/vim-surround",
   "tpope/vim-fugitive",
   "tpope/vim-commentary",
+  "nvim-telescope/telescope.nvim",
 
   -- Language support
   "lervag/vimtex",
   "LnL7/vim-nix",
 
   -- Auto Complete and LSP stuff
-  "nvim-lua/plenary.nvim",
   "folke/neodev.nvim",
   "L3MON4D3/LuaSnip",
   "williamboman/mason.nvim",
@@ -79,6 +80,12 @@ require('mason-tool-installer').setup {
 	'taplo',
   },
 }
+
+local builtin = require('telescope.builtin')
+vim.keymap.set('n', '<leader>ff', builtin.find_files, {})
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, {})
+vim.keymap.set('n', '<leader>fb', builtin.buffers, {})
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, {})
 
 local cmp = require('cmp')
 cmp.setup({

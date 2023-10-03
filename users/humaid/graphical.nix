@@ -38,6 +38,20 @@ in
       #qt-privacy-ask=0
       #'';
 
+      programs.alacritty = {
+        enable = true;
+        settings = {
+          font = {
+            normal.family = "spleen";
+            size = 18;
+          };
+
+          # Without this, $TERM in tmux is set as xterm-256color which breaks
+          # vim colouring
+          env.TERM = "alacritty";
+        };
+      };
+
       xsession.enable = true;
       xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
       services.dunst = {
