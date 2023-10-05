@@ -81,20 +81,17 @@
       user   = "humaid";
     };
 
-    packages.aarch64-linux = {
+    packages.x86_64-linux = {
       x86-iso = nixos-generators.nixosGenerate {
         system = "x86_64-linux";
         modules = [
-          ./hosts/install.nix
+          ./hosts/minimal.nix
           ./users/humaid
-          {
-            hsys = {
-              enablei3 = true;
-            };
-          }
         ];
         format = "iso";
       };
+    };
+    packages.aarch64-linux = {
       vmware = nixos-generators.nixosGenerate {
         system = "aarch64-linux";
         modules = [

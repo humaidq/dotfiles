@@ -45,7 +45,7 @@
       
       (general) {
         encode {
-          gzip 8
+          zstd
         }
         log {
           #format single_field common_log
