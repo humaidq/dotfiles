@@ -1,5 +1,5 @@
 # This contains settings to provide a graphical system.
-{ config, pkgs, lib, ... }:
+{ config, pkgs, unstable, lib, ... }:
 with lib;
 let
   cfg = config.hsys;
@@ -149,9 +149,10 @@ in
       # All development and programming tools/utilities
       services.emacs.enable = true;
       services.emacs.install = true;
+
       environment.systemPackages = with pkgs; [
         # compilers, interpreters, runtimes, etc
-        go
+        unstable.pkgs.go_1_21
         gcc
         rustc
         jre
@@ -174,7 +175,6 @@ in
         bat
         sqlite
         dmtx-utils
-        rlwrap
 
         # build tools
         gnumake
@@ -196,9 +196,10 @@ in
         shellcheck
         #cmake-language-server
         rust-analyzer
-        gopls
-        gotools
-        golangci-lint
+        unstable.pkgs.gopls
+        unstable.pkgs.gotools
+        unstable.pkgs.golangci-lint
+        unstable.pkgs.govulncheck
         nodePackages.pyright
         nodePackages.eslint
         nodePackages.stylelint

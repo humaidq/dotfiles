@@ -32,6 +32,7 @@
     self,
     home-manager,
     nixpkgs,
+    nixpkgs-unstable,
     nixos-hardware,
     nixos-generators,
     sops-nix,
@@ -47,65 +48,65 @@
 
     # System that runs on a VM on Macbook Pro, my main system
     nixosConfigurations.goral = mkMachine "goral" {
-      inherit overlays nixpkgs home-manager;
+      inherit overlays nixpkgs nixpkgs-unstable home-manager;
       system = "aarch64-linux";
       user   = "humaid";
     };
 
     # Sytem that runs on Thinkpad
     nixosConfigurations.serow = mkMachine "serow" {
-      inherit overlays nixpkgs home-manager;
+      inherit overlays nixpkgs nixpkgs-unstable home-manager;
       system = "x86_64-linux";
       user   = "humaid";
     };
 
     # System that runs on Vultr cloud hosting huma.id
     nixosConfigurations.duisk = mkMachine "duisk" {
-      inherit overlays nixpkgs home-manager;
+      inherit overlays nixpkgs nixpkgs-unstable home-manager;
       system = "x86_64-linux";
       user   = "humaid";
     };
 
     # System that runs on my work laptop
     nixosConfigurations.tahr = mkMachine "tahr" {
-      inherit overlays nixpkgs home-manager;
+      inherit overlays nixpkgs nixpkgs-unstable home-manager;
       system = "x86_64-linux";
       user   = "humaid";
     };
     
     # System that runs on my temporary Dell laptop
     nixosConfigurations.capra = mkMachine "capra" {
-      inherit overlays nixpkgs home-manager;
+      inherit overlays nixpkgs nixpkgs-unstable home-manager;
       system = "x86_64-linux";
       user   = "humaid";
     };
 
     packages.aarch64-linux = {
+      x86-iso = nixos-generators.nixosGenerate {
+        system = "x86_64-linux";
+        modules = [
+          ./hosts/install.nix
+          ./users/humaid
+          {
+            hsys = {
+              enablei3 = true;
+            };
+          }
+        ];
+        format = "iso";
+      };
       vmware = nixos-generators.nixosGenerate {
         system = "aarch64-linux";
         modules = [
           ./hosts/install.nix
           ./users/humaid
           {
-
-              hsys = {
-                enablei3 = true;
-              };
-
+            hsys = {
+              enablei3 = true;
+            };
           }
         ];
         format = "vmware";
-        
-        # optional arguments:
-        # explicit nixpkgs and lib:
-        # pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        # lib = nixpkgs.legacyPackages.x86_64-linux.lib;
-        # additional arguments to pass to modules:
-        # specialArgs = { myExtraArg = "foobar"; };
-        
-        # you can also define your own custom formats
-        # customFormats = { "myFormat" = <myFormatModule>; ... };
-        # format = "myFormat";
       };
     };
   };

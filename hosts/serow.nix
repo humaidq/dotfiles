@@ -1,4 +1,4 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, nixpkgs-unstable, ... }: {
   imports = [
     ../common
   ];
