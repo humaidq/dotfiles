@@ -87,8 +87,14 @@
         modules = [
           ./hosts/minimal.nix
           ./users/humaid
+          home-manager.nixosModules.home-manager {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
+          }
         ];
-        format = "iso";
+        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
+        format = "standalone-iso";
       };
     };
     packages.aarch64-linux = {

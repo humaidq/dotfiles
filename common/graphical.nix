@@ -45,7 +45,7 @@ in
       };
     })
     # Graphical non-VM systems
-    (mkIf (cfg.isGraphical && !cfg.isVM) {
+    (mkIf (cfg.isGraphical && !cfg.isVM && !cfg.minimal) {
       # Enable audio only on non-VMs (I don't use audio on VMs)
       services.pipewire = {
         enable = true;
@@ -70,7 +70,7 @@ in
         prusa-slicer
       ];
     })
-    # All graphical systems
+    # All graphical systems (basic)
     (mkIf cfg.isGraphical {
       # Global Xorg/wayland and desktop settings go here
       services = {
@@ -83,11 +83,8 @@ in
           screenSection = ''
             Option  "TripleBuffer" "on"
           '';
-          #logFile = "/var/log/Xorg.0.log";
         };
 
-        # Track highest uptimes :)
-        uptimed.enable = true;
       };
 
       # home-manager can get angry if dconf is not enabled.
@@ -115,6 +112,26 @@ in
         '';
       };
 
+      # Default applications for graphical systems
+      environment.systemPackages = with pkgs; [
+        xorg.xkill
+        xorg.xmodmap
+        xcape
+        xcolor
+        xdotool
+        lxrandr
+        xclip
+        nsxiv
+      ];
+
+    })
+    (mkIf (cfg.isGraphical && !cfg.minimal) {
+      # Track highest uptimes :)
+      services.uptimed.enable = true;
+
+      boot.plymouth = {
+        font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
+      };
       # Fonts
       fonts = {
         enableDefaultFonts = true;
@@ -146,19 +163,11 @@ in
 
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
-        xorg.xkill
-        xorg.xmodmap
-        xcape
-        xcolor
-        xdotool
-        lxrandr
-        xclip
         appimage-run
-        nsxiv
         zathura
         firefox
       ];
-
+      
       programs._1password-gui = {
         enable = true;
         polkitPolicyOwners = [ "humaid" ];

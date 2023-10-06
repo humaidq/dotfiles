@@ -1,7 +1,7 @@
 { nixosConfig, config, pkgs, lib, ... }:
 {
   config = lib.mkMerge [
-    ({
+    (lib.mkIf nixosConfig.hsys.getDevTools {
       # Default across all installations
       programs.git = {
         enable = true;
@@ -32,13 +32,13 @@
         };
       };
     })
-    (lib.mkIf nixosConfig.hsys.workProfile {
+    (lib.mkIf (nixosConfig.hsys.workProfile && !nixosConfig.hsys.minimal) {
       programs.git = {
         #userEmail = "humaid.alqassimi+git@tii.ae";
         extraConfig.url."git@github.com:tiiuae/".insteadOf = "tii:";
       };
     })
-    (lib.mkIf (!nixosConfig.hsys.workProfile) {
+    (lib.mkIf (!nixosConfig.hsys.workProfile && !nixosConfig.hsys.minimal) {
       # Home-profile only
       programs.git.extraConfig = {
         sendmail.smtpserver = "smtp.migadu.com";

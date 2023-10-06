@@ -32,6 +32,21 @@ in
       networking.networkmanager.wifi.macAddress = "random";
 
     })
+    ({
+      # Basic security (no hardening)
+      security = {
+        # I prefer doas over sudo due to simplicity.
+        sudo.enable = false;
+        doas = {
+          enable = true;
+          extraRules = [{
+            users = [ "humaid" ];
+            persist = true;
+            keepEnv = true;
+          }];
+        };
+      };
+    })
     (mkIf cfg.hardenSystem {
       programs.gnupg.agent.pinentryFlavor = "qt";
 
@@ -116,24 +131,13 @@ in
       };
 
       security = {
-        # I prefer doas over sudo due to simplicity.
-        sudo.enable = false;
-        doas = {
-          enable = true;
-          extraRules = [{
-            users = [ "humaid" ];
-            persist = true;
-            keepEnv = true;
-          }];
-        };
-
         polkit.enable = true;
         rtkit.enable = true;
         apparmor.enable = true;
 
         protectKernelImage = true;
         forcePageTableIsolation = true;
-        lockKernelModules = true;
+        #lockKernelModules = true;
       };
       
       # VMs should use host's DNS.
