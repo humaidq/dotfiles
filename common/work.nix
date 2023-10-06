@@ -21,22 +21,10 @@ in
     #}];
     #hardware.printers.ensureDefaultPrinter = lib.mkForce "TII_Secure";
 
-    #security.sudo.enable = mkForce true;
-
     # Default applications for graphical systems
     environment.systemPackages = with pkgs; [
       slack
-      teams
       zoom-us
-      #stlink
-      #qgroundcontrol
-
-      OVMF
-
-      # Dev
-      #unstable.nodejs
-      #unstable.yarn
-      #python38Packages.pyserial
     ];
   };
 }
