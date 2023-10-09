@@ -12,6 +12,7 @@
         #signing.signByDefault = true;
         delta.enable = true;
         userName = "Humaid Alqasimi";
+        userEmail = "git@huma.id";
         extraConfig = {
           core.editor = "nvim";
           init.defaultBranch = "master";
@@ -34,7 +35,6 @@
     (lib.mkIf nixosConfig.hsys.workProfile {
       programs.git = {
         #userEmail = "humaid.alqassimi+git@tii.ae";
-		userEmail = "git@huma.id";
         extraConfig.url."git@github.com:tiiuae/".insteadOf = "tii:";
       };
     })

@@ -1,9 +1,14 @@
-machine_name: { nixpkgs, home-manager, system, user, overlays }:
+machine_name: { nixpkgs, nixpkgs-unstable, home-manager, system, user, overlays }:
 
 nixpkgs.lib.nixosSystem rec {
   inherit system;
+
   modules =
     [ 
+      {
+        # Pass "unstable" as specialArgs after importing it.
+        _module.args.unstable = import nixpkgs-unstable {inherit system;};
+      }
       ../hosts/${machine_name}.nix
       ../hardware/${machine_name}.nix
       ../users/${user}

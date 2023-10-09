@@ -1,12 +1,7 @@
 # This is the commons files, which is attributes that spans different
 # system types (e.g. graphical, server, RPi, etc).
-{ config, pkgs, lib, ... }:
+{ config, pkgs, unstable, lib, ... }:
 with lib;
-let
-#  unstableTarball =
-#    fetchTarball
-#      https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz;
-in
 {
   imports =
     [
@@ -17,6 +12,7 @@ in
       ./laptop.nix
       ./tailscale.nix
     ];
+
 
   options.hsys.git.sshkey = mkOption {
     description = "Set Git SSH signing key";
