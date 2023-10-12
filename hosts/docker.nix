@@ -5,21 +5,16 @@
 
   # My configuration specific settings
   hsys = {
-    installer = true;
-	enablei3 = true;
+	enablei3 = false;
     getDevTools = false;
     getCliTools = true;
     minimal = true;
-    hardenSystem = true;
+    hardenSystem = false;
   };
 
   users.users.humaid = {
     # Allow passwordless login
     initialHashedPassword = "";
-  };
-  services.xserver.displayManager.autoLogin = {
-    enable = true;
-    user = "humaid";
   };
   # Allow login to root with no password
   users.users.root.initialHashedPassword = "";
@@ -29,19 +24,6 @@
   security.polkit.enable = lib.mkForce false;
   security.rtkit.enable = lib.mkForce false;
   security.apparmor.enable = lib.mkForce false;
-
-  #boot.loader.grub.memtest86.enable = true;
-  boot.supportedFilesystems = [ "btrfs" "ntfs" "xfs" ];
-
-  environment.systemPackages = with pkgs; [
-    parted
-    nvme-cli
-    pciutils
-    usbutils
-    git
-    zip unzip
-    cryptsetup
-  ];
 
   system.stateVersion = "23.05";
 }

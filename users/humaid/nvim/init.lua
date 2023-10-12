@@ -11,4 +11,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 require('options')
-require('packages')
+
+-- minimal systems don't have packages file.
+local f = io.open(vim.fn.stdpath("config") .. '/lua/packages.lua', 'r')
+if f then
+    f:close()
+	require('packages')
+end

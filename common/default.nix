@@ -27,6 +27,11 @@ in
     type = types.bool;
     default = false;
   };
+  options.hsys.installer = mkOption {
+    description = "Bundle packages for installer.";
+    type = types.bool;
+    default = false;
+  };
 
   config = mkMerge [
     ({

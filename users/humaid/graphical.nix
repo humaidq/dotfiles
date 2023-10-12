@@ -92,6 +92,11 @@ in
         lockCmd = "i3lock";
       };
     })
+    (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.installer) {
+      xsession.windowManager.i3.config.startup = [
+        {command = "alacritty -e 'hsys-install'"; }
+      ];
+    })
     (lib.mkIf nixosConfig.hsys.enablei3 {
       programs.i3status = {
         enable = true;

@@ -1,6 +1,12 @@
 { nixosConfig, config, pkgs, lib, ... }:
 {
   config = lib.mkMerge [
+    (lib.mkIf nixosConfig.hsys.installer {
+      home.file.".bin/hsys-install" = {
+        executable = true;
+        text = builtins.readFile ../../lib/installer.sh;
+      };
+    })
     (lib.mkIf (!nixosConfig.hsys.minimal) {
       programs = {
         ssh = {

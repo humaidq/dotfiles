@@ -29,6 +29,7 @@
   # enable qemu virtualisation
   environment.systemPackages = with pkgs; [
     qemu_kvm
+    OVMF
   ];
   hardware.flipperzero.enable = true;
 
