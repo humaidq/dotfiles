@@ -45,6 +45,11 @@
           };
         };
       };
+      services.gpg-agent = {
+        enable = true;
+        enableZshIntegration = true;
+        pinentryFlavor = "qt";
+      };
     })
     (lib.mkIf nixosConfig.hsys.laptop {
       # creating this empty file enables redshift for this user

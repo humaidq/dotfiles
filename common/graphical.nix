@@ -3,7 +3,6 @@
 with lib;
 let
   cfg = config.hsys;
-  needDisplayServer = cfg.enablei3 /* || cfg.enableDwm... */;
   xmodmapFile = pkgs.writeText "xmodmap" ''
     remove Lock = Caps_Lock
     keysym Caps_Lock = Control_L
@@ -13,6 +12,11 @@ in
 {
   options.hsys.enablei3 = mkOption {
     description = "Enable the i3 window manager";
+    type = types.bool;
+    default = false;
+  };
+  options.hsys.enableGnome = mkOption {
+    description = "Enable the GNOME desktop environment";
     type = types.bool;
     default = false;
   };
@@ -27,9 +31,9 @@ in
     default = false;
   };
   options.hsys.isGraphical = mkOption {
-    description = "Configures the system for graphical UI";
+    description = "Enables display server and configures it";
     type = types.bool;
-    default = cfg.enablei3 /* || cfg.enableDwm */;
+    default = cfg.enablei3 || cfg.enableDwm;
   };
 
   config = mkMerge [
@@ -79,12 +83,11 @@ in
           enable = true;
           layout = "us,ar";
           xkbOptions = "grp:win_space_toggle";
-          enableCtrlAltBackspace = false; #prevent lockscreen bypass
+          enableCtrlAltBackspace = false; # prevent lockscreen bypass
           screenSection = ''
             Option  "TripleBuffer" "on"
           '';
         };
-
       };
 
       # home-manager can get angry if dconf is not enabled.
@@ -98,12 +101,15 @@ in
       };
 
       services.xserver.displayManager = {
-        lightdm = {
+        #lightdm = {
+        #  enable = true;
+        #  background = ./assets/hsys-lightdm.png;
+        #  greeters = {
+        #    gtk.theme.name = "Adwaita-dark";
+        #  };
+        #};
+        gdm = {
           enable = true;
-          background = ./assets/hsys-lightdm.png;
-          greeters = {
-            gtk.theme.name = "Adwaita-dark";
-          };
         };
         # Make the Caps Lock key both Esc and Ctrl (when long pressed)
         sessionCommands = ''
@@ -167,11 +173,15 @@ in
         zathura
         firefox
       ];
-      
+
+      # 1password setup
+      programs._1password.enable = true;
       programs._1password-gui = {
         enable = true;
         polkitPolicyOwners = [ "humaid" ];
       };
+      services.gnome.gnome-keyring.enable = true;
+
       environment.variables = {
         "SSH_AUTH_SOCK" = "~/.1password/agent.sock";
       };
@@ -196,6 +206,19 @@ in
 		nm-tray
       ];
     })
+    (mkIf cfg.enableGnome {
+      services.xserver.desktopManager.gnome.enable = true;
+      environment.gnome.excludePackages = with pkgs; [
+        gnome.geary
+        gnome.gnome-music
+        epiphany
+        gnome-tour
+        orca
+        gnome.cheese
+      ];
+      environment.systemPackages = with pkgs; [
+        gnome.dconf-editor
+      ];
+    })
   ];
 }
-

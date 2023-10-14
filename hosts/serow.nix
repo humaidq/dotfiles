@@ -16,8 +16,10 @@
   # My configuration specific settings
   hsys = {
     enablei3 = true;
+    enableGnome = true;
     getDevTools = true;
     laptop = true;
+    enableYubikey = true;
     #virtualisation = true;
     tailscale = {
       enable = true;

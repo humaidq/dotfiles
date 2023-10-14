@@ -48,7 +48,6 @@ in
       };
     })
     (mkIf cfg.hardenSystem {
-      programs.gnupg.agent.pinentryFlavor = "qt";
 
       # Boot and kernel hardening
       boot = {
@@ -139,6 +138,7 @@ in
         forcePageTableIsolation = true;
         #lockKernelModules = true;
       };
+      programs.gnupg.agent.pinentryFlavor = "qt";
       
       # VMs should use host's DNS.
       networking.nameservers = [

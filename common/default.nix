@@ -14,6 +14,7 @@ in
       ./work.nix
       ./laptop.nix
       ./tailscale.nix
+      ./overlays.nix
     ];
 
 
