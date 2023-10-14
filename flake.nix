@@ -1,5 +1,5 @@
 {
-  description = "hsys is a declarative system configuration built by Humaid";
+  description = "sifr is a declarative system configuration built by Humaid";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
@@ -131,7 +131,7 @@
           ./hosts/install.nix
           ./users/humaid
           {
-            hsys = {
+            sifr = {
               enablei3 = true;
             };
           }

@@ -34,7 +34,7 @@
   #services.logind.lidSwitchExternalPower = "ignore";
 
   # My configuration specific settings
-  hsys = {
+  sifr = {
     workProfile = true;
     enablei3 = true;
     getDevTools = true;

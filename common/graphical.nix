@@ -2,7 +2,7 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-  cfg = config.hsys;
+  cfg = config.sifr;
   xmodmapFile = pkgs.writeText "xmodmap" ''
     remove Lock = Caps_Lock
     keysym Caps_Lock = Control_L
@@ -10,27 +10,27 @@ let
   '';
 in
 {
-  options.hsys.enablei3 = mkOption {
+  options.sifr.enablei3 = mkOption {
     description = "Enable the i3 window manager";
     type = types.bool;
     default = false;
   };
-  options.hsys.enableGnome = mkOption {
+  options.sifr.enableGnome = mkOption {
     description = "Enable the GNOME desktop environment";
     type = types.bool;
     default = false;
   };
-  options.hsys.isVM = mkOption {
+  options.sifr.isVM = mkOption {
     description = "Configures system for VM use";
     type = types.bool;
     default = false;
   };
-  options.hsys.hidpi = mkOption {
+  options.sifr.hidpi = mkOption {
     description = "Configures system for HiDPI displays";
     type = types.bool;
     default = false;
   };
-  options.hsys.isGraphical = mkOption {
+  options.sifr.isGraphical = mkOption {
     description = "Enables display server and configures it";
     type = types.bool;
     default = cfg.enablei3 || cfg.enableDwm;
@@ -96,14 +96,14 @@ in
       # We need to make system look better overall when we have a graphical system
       boot.plymouth = {
         enable = true;
-        logo = ./assets/hsys-icon-blue.png;
+        logo = ./assets/sifr-icon-blue.png;
         font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
       services.xserver.displayManager = {
         #lightdm = {
         #  enable = true;
-        #  background = ./assets/hsys-lightdm.png;
+        #  background = ./assets/sifr-lightdm.png;
         #  greeters = {
         #    gtk.theme.name = "Adwaita-dark";
         #  };

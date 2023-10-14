@@ -3,7 +3,7 @@
 { config, pkgs, unstable, lib, ... }:
 with lib;
 let
-  cfg = config.hsys;
+  cfg = config.sifr;
 in
 {
   imports =
@@ -18,17 +18,17 @@ in
     ];
 
 
-  options.hsys.git.sshkey = mkOption {
+  options.sifr.git.sshkey = mkOption {
     description = "Set Git SSH signing key";
     type = types.str;
     default = "";
   };
-  options.hsys.minimal = mkOption {
+  options.sifr.minimal = mkOption {
     description = "Keep the system minimal and small";
     type = types.bool;
     default = false;
   };
-  options.hsys.installer = mkOption {
+  options.sifr.installer = mkOption {
     description = "Bundle packages for installer.";
     type = types.bool;
     default = false;

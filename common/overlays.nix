@@ -6,7 +6,7 @@ let
         let
           logo-override = builtins.toFile "logo-override" ''
             [org.gnome.login-screen]
-            logo='${./assets/hsys-icon-blue.png}'
+            logo='${./assets/sifr-icon-blue.png}'
           '';
         in
         prevGnome.gdm.overrideAttrs (old: {

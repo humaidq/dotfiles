@@ -2,19 +2,19 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-  cfg = config.hsys;
+  cfg = config.sifr;
   hosts = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/StevenBlack/hosts/199df730514da981d1522d4d21a67d1bab6726de/hosts";
     sha256 = "492fe39b260e811ed1c556e6c4abfacf54b2094b8f931cf3c80562505bc04b4c";
   };
 in
 {
-  options.hsys.enableYubikey = mkOption {
+  options.sifr.enableYubikey = mkOption {
     description = "Enables Yubikey support";
     type = types.bool;
     default = false;
   };
-  options.hsys.hardenSystem = mkOption {
+  options.sifr.hardenSystem = mkOption {
     description = "Hardens security settings";
     type = types.bool;
     default = true;

@@ -2,10 +2,10 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-  cfg = config.hsys;
+  cfg = config.sifr;
 in
 {
-  options.hsys.workProfile = mkOption {
+  options.sifr.workProfile = mkOption {
     description = "Enable work profile settings";
     type = types.bool;
     default = false;

@@ -4,7 +4,7 @@ let
   mkTuple = lib.hm.gvariant.mkTuple;
 in
 {
-  config = lib.mkIf nixosConfig.hsys.enableGnome {
+  config = lib.mkIf nixosConfig.sifr.enableGnome {
     # dconf (gsettings) for Gnome applications
     dconf.settings = {
       "org/gnome/shell" = {

@@ -18,7 +18,7 @@
   services.xserver.videoDrivers = lib.mkForce [ "intel" ];
 
   # My configuration specific settings
-  hsys = {
+  sifr = {
     workProfile = true;
     enablei3 = true;
     getDevTools = true;

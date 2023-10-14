@@ -4,7 +4,7 @@ let
 in
 {
   config = lib.mkMerge [
-    (lib.mkIf nixosConfig.hsys.isGraphical {
+    (lib.mkIf nixosConfig.sifr.isGraphical {
       qt = {
         enable = true;
         platformTheme = "gtk";
@@ -69,7 +69,7 @@ in
         };
       };
     })
-    (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.isVM) {
+    (lib.mkIf (nixosConfig.sifr.enablei3 && nixosConfig.sifr.isVM) {
       # Use "Command" key as modifier (equi. to Super key).
       xsession.windowManager.i3.config = {
         modifier = lib.mkForce "Mod4";
@@ -82,7 +82,7 @@ in
         };
       };
     })
-    (lib.mkIf (nixosConfig.hsys.enablei3 && !nixosConfig.hsys.isVM) {
+    (lib.mkIf (nixosConfig.sifr.enablei3 && !nixosConfig.sifr.isVM) {
       #xsession.windowManager.i3.config.startup = [
       #  {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'i3lock' \\'\\'"; }
       #];
@@ -92,12 +92,12 @@ in
         lockCmd = "i3lock";
       };
     })
-    (lib.mkIf (nixosConfig.hsys.enablei3 && nixosConfig.hsys.installer) {
+    (lib.mkIf (nixosConfig.sifr.enablei3 && nixosConfig.sifr.installer) {
       xsession.windowManager.i3.config.startup = [
-        {command = "alacritty -e 'hsys-install'"; }
+        {command = "alacritty -e 'sifr-install'"; }
       ];
     })
-    (lib.mkIf nixosConfig.hsys.enablei3 {
+    (lib.mkIf nixosConfig.sifr.enablei3 {
       programs.i3status = {
         enable = true;
         modules = {

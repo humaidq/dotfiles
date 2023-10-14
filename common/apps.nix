@@ -2,25 +2,25 @@
 { config, pkgs, unstable, lib, ... }:
 with lib;
 let
-  cfg = config.hsys;
+  cfg = config.sifr;
 in
 {
-  options.hsys.getSystemTools = mkOption {
+  options.sifr.getSystemTools = mkOption {
     description = "Installs basic system tools";
     type = types.bool;
     default = true;
   };
-  options.hsys.getCliTools = mkOption {
+  options.sifr.getCliTools = mkOption {
     description = "Installs favourite CLI tools";
     type = types.bool;
     default = true;
   };
-  options.hsys.getDevTools = mkOption {
+  options.sifr.getDevTools = mkOption {
     description = "Installs development tools";
     type = types.bool;
     default = false;
   };
-  #options.hsys.getTools =mkOption {
+  #options.sifr.getTools =mkOption {
   #  description: "Installs development tools";
   #  type: types.bool;
   #  default: false;

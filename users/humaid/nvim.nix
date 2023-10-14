@@ -9,7 +9,7 @@
     })
 
     # If dev tools are installed, we install packages (for lsp, etc)
-    (lib.mkIf nixosConfig.hsys.getDevTools {
+    (lib.mkIf nixosConfig.sifr.getDevTools {
       xdg.configFile."nvim/lua/packages.lua".source = ./nvim/lua/packages.lua;
     })
   ];

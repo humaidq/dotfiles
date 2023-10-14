@@ -20,7 +20,7 @@
   virtualisation.docker.enable = true;
 
   # My configuration specific settings
-  hsys = {
+  sifr = {
 	enablei3 = true;
     hidpi = true;
     getDevTools = true;

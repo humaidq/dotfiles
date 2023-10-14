@@ -2,10 +2,10 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-  cfg = config.hsys;
+  cfg = config.sifr;
 in
 {
-  options.hsys.laptop = mkOption {
+  options.sifr.laptop = mkOption {
     description = "Configures laptop-specific (ThinkPad) settings";
     type = types.bool;
     default = false;

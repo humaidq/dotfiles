@@ -16,7 +16,7 @@ nixpkgs.lib.nixosSystem rec {
         nixpkgs.overlays = overlays;
         networking.hostName = machine_name;
 
-        # Let "nixos-version" know git revision of hsys.
+        # Let "nixos-version" know git revision of sifr.
         #system.configurationRevision = nixpkgs.lib.mkIf (self ? rev) self.rev;
       }
   

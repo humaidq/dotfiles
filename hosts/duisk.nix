@@ -17,7 +17,7 @@
     extraGroups = [ "caddy" ];
   };
 
-  hsys = {
+  sifr = {
     tailscale = {
       enable = true;
       exitNode = true;

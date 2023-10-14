@@ -6,7 +6,7 @@
 #fi
 
 cat <<EOF
-hsys installer
+sifr installer
 
 
 EOF
@@ -72,7 +72,7 @@ doas cryptsetup luksFormat --type luks2 "${device}${devsep}1"
 doas cryptsetup open "${device}${devsep}1" cryptroot
 
 echo "Formatting drives..."
-doas mkfs.btrfs -L hsys /dev/mapper/cryptroot
+doas mkfs.btrfs -L sifr /dev/mapper/cryptroot
 doas mkswap -L swap "${device}${devsep}2"
 
 if [ "${is_efi}" = "true" ]; then
@@ -88,17 +88,17 @@ if [ "${is_efi}" = "true" ]; then
 fi
 doas swapon "${device}${devsep}2"
 
-git clone https://git.sr.ht/~humaid/hsys /tmp/hsys || return 2
+git clone https://git.sr.ht/~humaid/sifr /tmp/sifr || return 2
 nixos-generate-config --root /mnt --dir /tmp/nixconfig
 
 read -rp "Enter the name of the system (e.g. serow): " name
-cp /tmp/nixconfig/hardware-configuration.nix "/tmp/hsys/hardware/${name}.nix"
+cp /tmp/nixconfig/hardware-configuration.nix "/tmp/sifr/hardware/${name}.nix"
 echo "Opening a new terminal... Double-check the configurations for your host."
 echo "Once you close that terminal, the script will proceed to install the system."
-alacritty --working-directory="/tmp/hsys" -e tmux
-git --git-dir=/tmp/hsys add .
+alacritty --working-directory="/tmp/sifr" -e tmux
+git --git-dir=/tmp/sifr add .
 
-doas nixos-install --flake "/tmp/hsys#${name}"
-doas cp -r /tmp/hsys /mnt/home/humaid/
+doas nixos-install --flake "/tmp/sifr#${name}"
+doas cp -r /tmp/sifr /mnt/home/humaid/
 read -rp "Press enter to reboot the system"
 doas reboot

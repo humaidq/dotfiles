@@ -1,14 +1,14 @@
 { nixosConfig, config, pkgs, lib, ... }:
 {
   config = lib.mkMerge [
-    (lib.mkIf nixosConfig.hsys.getDevTools {
+    (lib.mkIf nixosConfig.sifr.getDevTools {
       # Default across all installations
       programs.git = {
         enable = true;
         package = pkgs.gitAndTools.gitFull;
         aliases = { co = "checkout"; };
         #signing.key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW";
-        #signing.key = nixosConfig.hsys.git.sshkey;
+        #signing.key = nixosConfig.sifr.git.sshkey;
         #signing.signByDefault = true;
         delta.enable = true;
         userName = "Humaid Alqasimi";
@@ -32,13 +32,13 @@
         };
       };
     })
-    (lib.mkIf (nixosConfig.hsys.workProfile && !nixosConfig.hsys.minimal) {
+    (lib.mkIf (nixosConfig.sifr.workProfile && !nixosConfig.sifr.minimal) {
       programs.git = {
         #userEmail = "humaid.alqassimi+git@tii.ae";
         extraConfig.url."git@github.com:tiiuae/".insteadOf = "tii:";
       };
     })
-    (lib.mkIf (!nixosConfig.hsys.workProfile && !nixosConfig.hsys.minimal) {
+    (lib.mkIf (!nixosConfig.sifr.workProfile && !nixosConfig.sifr.minimal) {
       # Home-profile only
       programs.git.extraConfig = {
         sendmail.smtpserver = "smtp.migadu.com";

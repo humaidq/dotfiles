@@ -1,4 +1,4 @@
-# Humaid's NixOS configurations
+# sifrOS: My Secure NixOS Configuration
 
 ## Hosts
 
@@ -12,11 +12,11 @@
 1. Get NixOS 23.05 or newer.
 2. Boot the image.
 3. Define and format the partition, mount it on `/mnt`.
-4. Install hsys:
+4. Install sifr:
     ```
     nix-shell -p git nixFlakes neovim
-    git clone https://git.sr.ht/~humaid/hsys /tmp/hsys
-    cd /tmp/hsys
+    git clone https://git.sr.ht/~humaid/sifr /tmp/sifr
+    cd /tmp/sifr
 
     HOST=...
 
@@ -35,7 +35,7 @@
 
     nixos-install --flake .#${HOST}
 
-    cp -r /tmp/hsys /mnt/etc/hsys
+    cp -r /tmp/sifr /mnt/etc/sifr
     ```
 
 ## TODOs

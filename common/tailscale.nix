@@ -2,32 +2,32 @@
 { config, pkgs, lib, ... }:
 with lib;
 let
-  cfg = config.hsys.tailscale;
+  cfg = config.sifr.tailscale;
 in
 {
-  options.hsys.tailscale.enable = mkOption {
+  options.sifr.tailscale.enable = mkOption {
     description = "Enable tailscale configuration";
     type = types.bool;
     default = false;
   };
-  options.hsys.tailscale.exitNode = mkOption {
+  options.sifr.tailscale.exitNode = mkOption {
     description = "Sets up the system as an exit node";
     type = types.bool;
     default = false;
   };
 
-  options.hsys.tailscale.ssh = mkOption {
+  options.sifr.tailscale.ssh = mkOption {
     description = "Enables openssh for access through tailscale only";
     type = types.bool;
     default = false;
   };
 
-  options.hsys.tailscale.auth = mkOption {
+  options.sifr.tailscale.auth = mkOption {
     description = "Performs a oneshot authentication with an auth-key";
     type = types.bool;
     default = false;
   };
-  options.hsys.tailscale.tsKey = mkOption {
+  options.sifr.tailscale.tsKey = mkOption {
     description = "The oneshot key";
     type = types.str;
   };

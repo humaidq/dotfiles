@@ -4,7 +4,7 @@
   ];
 
   # My configuration specific settings
-  hsys = {
+  sifr = {
     installer = true;
 	enablei3 = true;
     getDevTools = false;

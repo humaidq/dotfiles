@@ -13,14 +13,14 @@ in
   options.humaid.firefox.gnome-theme.enable = lib.mkEnableOption "Firefox Gnome Theme";
 
   config = lib.mkMerge [
-    (lib.mkIf nixosConfig.hsys.workProfile {
+    (lib.mkIf nixosConfig.sifr.workProfile {
       programs.firefox.profiles.default.bookmarks = {
         "Intranet" = { url = "https://tiiuae.sharepoint.com/sites/Node"; };
         "Calendar" = { url = "https://outlook.office.com/calendar/view/week"; };
         "Atlassian Start Page" = { url = "https://start.atlassian.com"; };
       };
     })
-    (lib.mkIf (nixosConfig.hsys.isGraphical && !nixosConfig.hsys.minimal) {
+    (lib.mkIf (nixosConfig.sifr.isGraphical && !nixosConfig.sifr.minimal) {
       # For all
       programs.firefox = {
         enable = true;
@@ -74,13 +74,13 @@ in
               # Extension IDs are found in "about:support"
               "jid1-BoFifL9Vbdl2zQ@jetpack" = extension "decentraleyes";
               "jid1-MnnxcxisBPnSXQ@jetpack" = extension "privacy-badger17";
-              "#keepassxc-browser@keepassxc.org" = extension "keepassxc-browser";
               "savepage-we@DW-dev" = extension "save-page-we";
               "sponsorBlocker@ajay.app" = extension "sponsor-block";
               "uBlock0@raymondhill.net" = extension "ublock-origin";
               "{74145f27-f039-47ce-a470-a662b129930a}" = extension "clearurls";
               "{9063c2e9-e07c-4c2c-9646-cfe7ca8d0498}" = extension "old-reddit-redirect";
-              "{d133e097-46d9-4ecc-9903-fa6a722a6e0e}" = extension "bypass-paywalls-clean";
+              # This was removed from extension store
+              # "{d133e097-46d9-4ecc-9903-fa6a722a6e0e}" = extension "bypass-paywalls-clean";
             };
             Preferences = {
               "browser.aboutConfig.showWarning" = false;

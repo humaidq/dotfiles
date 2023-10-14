@@ -24,7 +24,7 @@ in
       xclip -selection clipboard -t image/png -i ${screensDir}/$name.png
       hn "*click!* Screenshot copied to clipboard!"
     '';
-    ".bin/hn" = script "dunstify \"hsys\" \"$1\"";
+    ".bin/hn" = script "dunstify \"sifr\" \"$1\"";
     # Screenshot which asks for prompts.
     ".bin/screen-sel" = script ''
       name=$(date +%s)

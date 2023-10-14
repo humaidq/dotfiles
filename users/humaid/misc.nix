@@ -1,13 +1,13 @@
 { nixosConfig, config, pkgs, lib, ... }:
 {
   config = lib.mkMerge [
-    (lib.mkIf nixosConfig.hsys.installer {
-      home.file.".bin/hsys-install" = {
+    (lib.mkIf nixosConfig.sifr.installer {
+      home.file.".bin/sifr-install" = {
         executable = true;
         text = builtins.readFile ../../lib/installer.sh;
       };
     })
-    (lib.mkIf (!nixosConfig.hsys.minimal) {
+    (lib.mkIf (!nixosConfig.sifr.minimal) {
       programs = {
         ssh = {
           enable = true;
@@ -51,7 +51,7 @@
         pinentryFlavor = "qt";
       };
     })
-    (lib.mkIf nixosConfig.hsys.laptop {
+    (lib.mkIf nixosConfig.sifr.laptop {
       # creating this empty file enables redshift for this user
       xdg.configFile."systemd/user/default.target.wants/redshift.service".text = "";
     })
