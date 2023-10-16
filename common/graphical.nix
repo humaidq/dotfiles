@@ -1,5 +1,5 @@
 # This contains settings to provide a graphical system.
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, unstable, ... }:
 with lib;
 let
   cfg = config.sifr;
@@ -33,7 +33,7 @@ in
   options.sifr.isGraphical = mkOption {
     description = "Enables display server and configures it";
     type = types.bool;
-    default = cfg.enablei3 || cfg.enableDwm;
+    default = cfg.enablei3 || cfg.enableGnome;
   };
 
   config = mkMerge [
@@ -72,6 +72,7 @@ in
         vlc
         rpi-imager
         prusa-slicer
+        unstable.ollama
       ];
     })
     # All graphical systems (basic)

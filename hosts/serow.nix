@@ -33,6 +33,7 @@
     qemu_kvm
     OVMF
   ];
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
   hardware.flipperzero.enable = true;
 
   system.stateVersion = "23.0521.11";

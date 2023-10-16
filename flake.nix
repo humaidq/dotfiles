@@ -138,6 +138,19 @@
         ];
         format = "vmware";
       };
+      rpi4 = nixos-generators.nixosGenerate {
+        system = "aarch64-linux";
+        modules = [
+          ./hosts/rpi.nix
+          ./users/humaid
+          home-manager.nixosModules.home-manager {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
+          }
+        ];
+        format = "sd-aarch64";
+      };
     };
   };
 }
