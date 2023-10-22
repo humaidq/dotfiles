@@ -18,6 +18,8 @@
   virtualisation.vmware.guest.enable = true;
 
   virtualisation.docker.enable = true;
+  networking.firewall.enable = lib.mkForce false;
+
 
   # My configuration specific settings
   sifr = {
@@ -25,15 +27,15 @@
     hidpi = true;
     getDevTools = true;
     git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr6WzdDnXBEBok4FGr0609j985aYZ82+wj/Vipp/pdg git@huma.id";
-
+    
     isVM = true;
 
     tailscale = {
-      enable = true;
+      enable = false;
       exitNode = false;
-      ssh = true;
+      ssh = false;
 
-      auth = true;
+      auth = false;
       tsKey = "tskey-auth-kqgVE14CNTRL-ik7eAL6b338aaXZxJeqrA8weWYNtUgwb";
     };
   };

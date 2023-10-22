@@ -41,10 +41,10 @@
     (lib.mkIf (!nixosConfig.sifr.workProfile && !nixosConfig.sifr.minimal) {
       # Home-profile only
       programs.git.extraConfig = {
-        sendmail.smtpserver = "smtp.migadu.com";
-        sendmail.smtpuser = "git@humaidq.ae";
-        sendmail.smtpencryption = "tls";
-        sendmail.smtpserverport = "587";
+        sendemail.smtpserver = "smtp.mail.me.com";
+        sendemail.smtpuser = "me@huma.id";
+        sendemail.smtpencryption = "tls";
+        sendemail.smtpserverport = "587";
       };
     })
   ];
