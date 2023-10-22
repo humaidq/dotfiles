@@ -39,118 +39,26 @@
     nur,
     alejandra,
     ...
-  }: let
-    pkgs = import <nixpkgs> {};
-    mkMachine = import ./lib/mkmachine.nix;
-    overlays = [];
-  in {
-    #formatter.${system} = alejandra.defaultPackage.${system};
+  }: {
+    nixosConfigurations = (
+      import ./hosts {
+        inherit (nixpkgs) lib;
+        inherit inputs nixpkgs nixpkgs-unstable home-manager sops-nix alejandra;
+      }
+    );
 
-    # System that runs on a VM on Macbook Pro, my main system
-    nixosConfigurations.goral = mkMachine "goral" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "aarch64-linux";
-      user   = "humaid";
-    };
-
-    # Sytem that runs on Thinkpad
-    nixosConfigurations.serow = mkMachine "serow" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-
-    # System that runs on Vultr cloud hosting huma.id
-    nixosConfigurations.duisk = mkMachine "duisk" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-
-    # System that runs on my work laptop
-    nixosConfigurations.tahr = mkMachine "tahr" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-    
-    # System that runs on my temporary Dell laptop
-    nixosConfigurations.capra = mkMachine "capra" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-
-    packages.x86_64-linux = {
-      x86-iso = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        modules = [
-          ./hosts/minimal.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
-        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
-        format = "standalone-iso";
-      };
-      x86-docker = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        modules = [
-          ./hosts/docker.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
-        format = "docker";
-      };
-      x86-installer = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        modules = [
-          ./hosts/install.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
-        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
-        format = "standalone-iso";
-      };
-    };
-    packages.aarch64-linux = {
-      vmware = nixos-generators.nixosGenerate {
-        system = "aarch64-linux";
-        modules = [
-          ./hosts/install.nix
-          ./users/humaid
-          {
-            sifr = {
-              enablei3 = true;
-            };
-          }
-        ];
-        format = "vmware";
-      };
-      rpi4 = nixos-generators.nixosGenerate {
-        system = "aarch64-linux";
-        modules = [
-          ./hosts/rpi.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
-        format = "sd-aarch64";
-      };
-    };
+    # Generators (x86_64 and aarch64)
+    packages.x86_64-linux = (
+      import ./generators/x86.nix {
+        inherit (nixpkgs) lib;
+        inherit inputs nixpkgs nixos-generators nixpkgs-unstable home-manager sops-nix alejandra;
+      }
+    );
+    packages.aarch64-linux = (
+      import ./generators/aarch64.nix {
+        inherit (nixpkgs) lib;
+        inherit inputs nixpkgs nixos-generators nixpkgs-unstable home-manager sops-nix alejandra;
+      }
+    );
   };
 }

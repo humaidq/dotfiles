@@ -1,5 +1,9 @@
-{ config, pkgs, lib, ... }:
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ../common
   ];
@@ -28,7 +32,6 @@
   security.polkit.enable = lib.mkForce false;
   security.rtkit.enable = lib.mkForce false;
   security.apparmor.enable = lib.mkForce false;
-
 
   system.stateVersion = "23.05";
 }

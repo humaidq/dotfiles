@@ -1,15 +1,19 @@
 # This contains settings to provide a graphical system.
-{ config, pkgs, lib, unstable, ... }:
-with lib;
-let
+{
+  config,
+  pkgs,
+  lib,
+  unstable,
+  ...
+}:
+with lib; let
   cfg = config.sifr;
   xmodmapFile = pkgs.writeText "xmodmap" ''
     remove Lock = Caps_Lock
     keysym Caps_Lock = Control_L
     add Control = Control_L
   '';
-in
-{
+in {
   options.sifr.enablei3 = mkOption {
     description = "Enable the i3 window manager";
     type = types.bool;
@@ -130,7 +134,6 @@ in
         xclip
         nsxiv
       ];
-
     })
     (mkIf (cfg.isGraphical && !cfg.minimal) {
       # Track highest uptimes :)
@@ -179,7 +182,7 @@ in
       programs._1password.enable = true;
       programs._1password-gui = {
         enable = true;
-        polkitPolicyOwners = [ "humaid" ];
+        polkitPolicyOwners = ["humaid"];
       };
       services.gnome.gnome-keyring.enable = true;
 
@@ -204,7 +207,7 @@ in
         brightnessctl
         i3lock
         xidlehook
-		nm-tray
+        nm-tray
       ];
     })
     (mkIf cfg.enableGnome {

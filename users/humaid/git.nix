@@ -1,12 +1,17 @@
-{ nixosConfig, config, pkgs, lib, ... }:
 {
+  nixosConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   config = lib.mkMerge [
     (lib.mkIf nixosConfig.sifr.getDevTools {
       # Default across all installations
       programs.git = {
         enable = true;
         package = pkgs.gitAndTools.gitFull;
-        aliases = { co = "checkout"; };
+        aliases = {co = "checkout";};
         #signing.key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW";
         #signing.key = nixosConfig.sifr.git.sshkey;
         #signing.signByDefault = true;

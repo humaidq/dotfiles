@@ -1,5 +1,10 @@
-{ nixosConfig, config, pkgs, lib, ... }:
 {
+  nixosConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   config = lib.mkMerge [
     (lib.mkIf nixosConfig.sifr.installer {
       home.file.".bin/sifr-install" = {
@@ -31,13 +36,13 @@
           extraConfig = "set shell sh";
           commands = {
             open = ''
-              ''${{
-            case $(file --mime-type "$(readlink -f $f)" -b) in
-              text/*|application/json|inode/x-empty) $EDITOR $fx ;;
-              application/*) nvim $fx ;;
-              *) for f in $fx; do setsid $OPENER $f > /dev/null 2> /dev/null & done ;;
-            esac
-            }}
+                ''${{
+              case $(file --mime-type "$(readlink -f $f)" -b) in
+                text/*|application/json|inode/x-empty) $EDITOR $fx ;;
+                application/*) nvim $fx ;;
+                *) for f in $fx; do setsid $OPENER $f > /dev/null 2> /dev/null & done ;;
+              esac
+              }}
             '';
           };
           cmdKeybindings = {
@@ -56,4 +61,4 @@
       xdg.configFile."systemd/user/default.target.wants/redshift.service".text = "";
     })
   ];
- }
+}

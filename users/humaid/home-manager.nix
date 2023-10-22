@@ -1,6 +1,10 @@
-{ nixosConfig, config, pkgs, lib, ... }:
-
 {
+  nixosConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ./firefox.nix
     ./nvim.nix
@@ -14,7 +18,7 @@
   ];
 
   home.stateVersion = "21.11";
-  home.sessionPath = [ "$HOME/.bin" ];
+  home.sessionPath = ["$HOME/.bin"];
 
   nixpkgs.config.allowUnfree = true;
 }

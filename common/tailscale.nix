@@ -1,10 +1,13 @@
 # This file contains tailscale configurations
-{ config, pkgs, lib, ... }:
-with lib;
-let
-  cfg = config.sifr.tailscale;
-in
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+with lib; let
+  cfg = config.sifr.tailscale;
+in {
   options.sifr.tailscale.enable = mkOption {
     description = "Enable tailscale configuration";
     type = types.bool;
@@ -36,9 +39,9 @@ in
     (mkIf cfg.enable {
       services.tailscale.enable = true;
       networking.firewall = {
-        trustedInterfaces = [ "tailscale0" ];
+        trustedInterfaces = ["tailscale0"];
         # This allows local discovery/connection.
-        allowedUDPPorts = [ config.services.tailscale.port ];
+        allowedUDPPorts = [config.services.tailscale.port];
       };
     })
     (mkIf cfg.exitNode {
@@ -63,7 +66,7 @@ in
         openFirewall = false;
       };
 
-      environment.systemPackages = with pkgs; [ mosh ];
+      environment.systemPackages = with pkgs; [mosh];
     })
     (mkIf cfg.auth {
       # Source: https://tailscale.com/blog/nixos-minecraft/
@@ -71,9 +74,9 @@ in
         description = "Automatic connection to Tailscale";
 
         # make sure tailscale is running before trying to connect to tailscale
-        after = [ "network-pre.target" "tailscale.service" ];
-        wants = [ "network-pre.target" "tailscale.service" ];
-        wantedBy = [ "multi-user.target" ];
+        after = ["network-pre.target" "tailscale.service"];
+        wants = ["network-pre.target" "tailscale.service"];
+        wantedBy = ["multi-user.target"];
 
         # set this service as a oneshot job
         serviceConfig.Type = "oneshot";
@@ -82,13 +85,13 @@ in
         script = with pkgs; ''
           # wait for tailscaled to settle
           sleep 2
-      
+
           # check if we are already authenticated to tailscale
           status="$(${tailscale}/bin/tailscale status -json | ${jq}/bin/jq -r .BackendState)"
           if [ $status = "Running" ]; then # if so, then do nothing
             exit 0
           fi
-      
+
           # otherwise authenticate with tailscale
           ${tailscale}/bin/tailscale up -authkey ${cfg.tsKey}
         '';

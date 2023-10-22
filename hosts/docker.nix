@@ -1,11 +1,16 @@
-{ config, pkgs, lib, ... }: {
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ../common
   ];
 
   # My configuration specific settings
   sifr = {
-	enablei3 = false;
+    enablei3 = false;
     getDevTools = false;
     getCliTools = true;
     minimal = true;

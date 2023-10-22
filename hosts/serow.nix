@@ -1,4 +1,9 @@
-{ config, pkgs, nixpkgs-unstable, ... }: {
+{
+  config,
+  pkgs,
+  nixpkgs-unstable,
+  ...
+}: {
   imports = [
     ../common
   ];
@@ -33,7 +38,7 @@
     qemu_kvm
     OVMF
   ];
-  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  boot.binfmt.emulatedSystems = ["aarch64-linux"];
   hardware.flipperzero.enable = true;
 
   system.stateVersion = "23.0521.11";

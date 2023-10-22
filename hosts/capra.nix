@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }: {
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}: {
   imports = [
     ../common
   ];
@@ -10,12 +15,12 @@
   boot.initrd.secrets = {
     "/crypto_keyfile.bin" = null;
   };
-  boot.initrd.kernelModules = [ "ch341" ];
+  boot.initrd.kernelModules = ["ch341"];
 
   networking.networkmanager.enable = true;
-  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  boot.binfmt.emulatedSystems = ["aarch64-linux"];
   virtualisation.docker.enable = true;
-  services.xserver.videoDrivers = lib.mkForce [ "intel" ];
+  services.xserver.videoDrivers = lib.mkForce ["intel"];
 
   # My configuration specific settings
   sifr = {
@@ -38,7 +43,7 @@
   services.udev.extraRules = ''ACTION=="change", SUBSYSTEM=="drm", RUN+="${pkgs.autorandr}/bin/autorandr -c"'';
   services.autorandr = {
     enable = true;
-    
+
     profiles = {
       "dock" = {
         fingerprint = {

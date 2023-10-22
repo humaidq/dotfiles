@@ -1,22 +1,24 @@
 # This is the commons files, which is attributes that spans different
 # system types (e.g. graphical, server, RPi, etc).
-{ config, pkgs, unstable, lib, ... }:
-with lib;
-let
-  cfg = config.sifr;
-in
 {
-  imports =
-    [
-      ./security.nix
-      ./apps.nix
-      ./graphical.nix
-      ./work.nix
-      ./laptop.nix
-      ./tailscale.nix
-      ./overlays.nix
-    ];
-
+  config,
+  pkgs,
+  unstable,
+  lib,
+  ...
+}:
+with lib; let
+  cfg = config.sifr;
+in {
+  imports = [
+    ./security.nix
+    ./apps.nix
+    ./graphical.nix
+    ./work.nix
+    ./laptop.nix
+    ./tailscale.nix
+    ./overlays.nix
+  ];
 
   options.sifr.git.sshkey = mkOption {
     description = "Set Git SSH signing key";
@@ -35,7 +37,7 @@ in
   };
 
   config = mkMerge [
-    ({
+    {
       time.timeZone = "Asia/Dubai";
       i18n.defaultLocale = "en_GB.UTF-8";
 
@@ -54,11 +56,11 @@ in
 
       nix = {
         settings = {
-          allowed-users = [ "humaid" ];
+          allowed-users = ["humaid"];
           auto-optimise-store = true;
 
           # Enable flakes
-          experimental-features = [ "nix-command" "flakes" ];
+          experimental-features = ["nix-command" "flakes"];
 
           # Ghaf development
           trusted-substituters = [
@@ -80,7 +82,6 @@ in
         };
       };
 
-
       # Use spleen font for console (tty)
       fonts.fonts = with pkgs; [
         spleen
@@ -94,7 +95,7 @@ in
           allowBroken = true;
         };
       };
-    })
+    }
     (mkIf (!cfg.minimal) {
       # Enable all documentation.
       documentation = {

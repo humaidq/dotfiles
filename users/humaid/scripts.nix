@@ -1,6 +1,8 @@
-{ pkgs, lib, ... }:
-
-let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   script = text: {
     executable = true;
     text = ''
@@ -10,8 +12,7 @@ let
   };
   wallpaper = ./wallhaven-13mk9v.jpg;
   screensDir = "~/inbox/screens";
-in
-{
+in {
   home.file = {
     # Simple tool that tells you which process uses a specific port.
     ".bin/whoseport" = script ''

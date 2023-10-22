@@ -1,8 +1,12 @@
-{ nixosConfig, config, pkgs, lib, ... }:
-let
-  wallpaper = ./wallhaven-13mk9v.jpg;
-in
 {
+  nixosConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
+  wallpaper = ./wallhaven-13mk9v.jpg;
+in {
   config = lib.mkMerge [
     (lib.mkIf nixosConfig.sifr.isGraphical {
       qt = {
@@ -94,7 +98,7 @@ in
     })
     (lib.mkIf (nixosConfig.sifr.enablei3 && nixosConfig.sifr.installer) {
       xsession.windowManager.i3.config.startup = [
-        {command = "alacritty -e 'sifr-install'"; }
+        {command = "alacritty -e 'sifr-install'";}
       ];
     })
     (lib.mkIf nixosConfig.sifr.enablei3 {
@@ -119,31 +123,36 @@ in
           # Use "Alt" key.
           modifier = "Mod1";
           startup = [
-            {command = "feh --bg-fill ${wallpaper}"; always = true; }
-            {command = "picom --vsync --dbus"; }
+            {
+              command = "feh --bg-fill ${wallpaper}";
+              always = true;
+            }
+            {command = "picom --vsync --dbus";}
           ];
           defaultWorkspace = "workspace number 1";
-          bars = [{
-            statusCommand = "${pkgs.i3status}/bin/i3status";
-            colors = {
-              background = "#130e24";
-              activeWorkspace = {
-                background = "#1d2e86";
-                border = "#130e24";
-                text = "#eeeeee";
-              };
-              focusedWorkspace = {
-                background = "#1d2e86";
-                border = "#130e24";
-                text = "#eeeeee";
-              };
-              inactiveWorkspace = {
+          bars = [
+            {
+              statusCommand = "${pkgs.i3status}/bin/i3status";
+              colors = {
                 background = "#130e24";
-                border = "#130e24";
-                text = "#eeeeee";
+                activeWorkspace = {
+                  background = "#1d2e86";
+                  border = "#130e24";
+                  text = "#eeeeee";
+                };
+                focusedWorkspace = {
+                  background = "#1d2e86";
+                  border = "#130e24";
+                  text = "#eeeeee";
+                };
+                inactiveWorkspace = {
+                  background = "#130e24";
+                  border = "#130e24";
+                  text = "#eeeeee";
+                };
               };
-            };
-          }];
+            }
+          ];
           colors = {
             background = "#130e24";
             focused = {
@@ -170,40 +179,41 @@ in
           };
           keybindings = let
             modifier = config.xsession.windowManager.i3.config.modifier;
-          in lib.mkOptionDefault {
-            "${modifier}+Return" = null;
-            "${modifier}+d" = null;
-            "${modifier}+Shift+Return" = "exec alacritty";
-            "${modifier}+Shift+c" = "kill";
-            "${modifier}+s" = "exec i3lock";
-            "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
+          in
+            lib.mkOptionDefault {
+              "${modifier}+Return" = null;
+              "${modifier}+d" = null;
+              "${modifier}+Shift+Return" = "exec alacritty";
+              "${modifier}+Shift+c" = "kill";
+              "${modifier}+s" = "exec i3lock";
+              "${modifier}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
 
-            # We shift the bindings to match vim
-            "${modifier}+h" = "focus left";
-            "${modifier}+j" = "focus down";
-            "${modifier}+k" = "focus up";
-            "${modifier}+l" = "focus right";
-            "${modifier}+Shift+h" = "move left";
-            "${modifier}+Shift+j" = "move down";
-            "${modifier}+Shift+k" = "move up";
-            "${modifier}+Shift+l" = "move right";
+              # We shift the bindings to match vim
+              "${modifier}+h" = "focus left";
+              "${modifier}+j" = "focus down";
+              "${modifier}+k" = "focus up";
+              "${modifier}+l" = "focus right";
+              "${modifier}+Shift+h" = "move left";
+              "${modifier}+Shift+j" = "move down";
+              "${modifier}+Shift+k" = "move up";
+              "${modifier}+Shift+l" = "move right";
 
-            # reassign due to vim bindings
-            "${modifier}+g" = "split h";
+              # reassign due to vim bindings
+              "${modifier}+g" = "split h";
 
-            # laptop bindings
-            "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
-            "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
-            "XF86AudioRaiseVolume" = "exec amixer set Master 5%+";
-            "XF86AudioLowerVolume" = "exec amixer set Master 5%-";
-            "XF86AudioMute" = "exec amixer set Master toggle";
-            "XF86AudioMicMute" = "exec amixer set Capture toggle";
-            "XF86Display" = "exec lxrandr";
-            "Print" = "exec screen-sel";
-            "XF86Sleep" = "exec systemctl suspend";
+              # laptop bindings
+              "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
+              "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
+              "XF86AudioRaiseVolume" = "exec amixer set Master 5%+";
+              "XF86AudioLowerVolume" = "exec amixer set Master 5%-";
+              "XF86AudioMute" = "exec amixer set Master toggle";
+              "XF86AudioMicMute" = "exec amixer set Capture toggle";
+              "XF86Display" = "exec lxrandr";
+              "Print" = "exec screen-sel";
+              "XF86Sleep" = "exec systemctl suspend";
 
-            "${modifier}+Shift+v" = "reload";
-          };
+              "${modifier}+Shift+v" = "reload";
+            };
         };
       };
     })

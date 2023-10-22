@@ -1,23 +1,26 @@
-{ nixosConfig, config, pkgs, lib, ... }:
-let
+{
+  nixosConfig,
+  config,
+  pkgs,
+  lib,
+  ...
+}: let
   mkTuple = lib.hm.gvariant.mkTuple;
   extension = name: {
     installation_mode = "force_installed";
     install_url = "https://addons.mozilla.org/firefox/downloads/latest/${name}/latest.xpi";
   };
   cfg = config.humaid.firefox;
-in
-{
-
+in {
   # Configurations
   options.humaid.firefox.gnome-theme.enable = lib.mkEnableOption "Firefox Gnome Theme";
 
   config = lib.mkMerge [
     (lib.mkIf nixosConfig.sifr.workProfile {
       programs.firefox.profiles.default.bookmarks = {
-        "Intranet" = { url = "https://tiiuae.sharepoint.com/sites/Node"; };
-        "Calendar" = { url = "https://outlook.office.com/calendar/view/week"; };
-        "Atlassian Start Page" = { url = "https://start.atlassian.com"; };
+        "Intranet" = {url = "https://tiiuae.sharepoint.com/sites/Node";};
+        "Calendar" = {url = "https://outlook.office.com/calendar/view/week";};
+        "Atlassian Start Page" = {url = "https://start.atlassian.com";};
       };
     })
     (lib.mkIf (nixosConfig.sifr.isGraphical && !nixosConfig.sifr.minimal) {
@@ -28,7 +31,7 @@ in
           id = 0;
           isDefault = true;
           bookmarks = {
-            "NixOS Search" = { url = "https://search.nixos.org"; };
+            "NixOS Search" = {url = "https://search.nixos.org";};
             "lofi" = {
               url = "https://www.youtube.com/watch?v=7NOSDKb0HlU";
             };
@@ -151,7 +154,6 @@ in
               "network.allow-experiments" = false;
               "browser.discovery.enabled" = false;
               "security.ssl.errorReporting.automatic" = false;
-
 
               # Hardening & anti-fingerprinting stuff
               # We don't want to set too many "anti-fingerprinting" settings

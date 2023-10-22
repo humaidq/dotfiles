@@ -1,5 +1,8 @@
-{ pkgs, lib, ... }:
-let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   lscolors = fetchGit {
     url = "https://github.com/trapd00r/LS_COLORS";
     rev = "14ed0f0e7c8e531bbb4adaae799521cdd8acfbd3"; # 13 Mar, 2022
@@ -10,8 +13,7 @@ let
     rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
   };
   lname = "Humaid Alqasimi"; # Legal name for licensor
-in
-{
+in {
   programs.zsh = {
     enable = true;
     dotDir = ".config/zsh";
@@ -49,7 +51,7 @@ in
       zstyle ':completion:*' use-compctl false
       zstyle ':completion:*' verbose true
       zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
-      
+
       # History configurations
       HISTFILE=~/.zsh_history
       HISTSIZE=1000

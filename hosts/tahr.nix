@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }: {
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}: {
   imports = [
     ../common
   ];
@@ -10,12 +15,12 @@
   };
 
   # Annoying Nvidia configurations
-  services.xserver.videoDrivers = lib.mkForce [ "nvidia" ];
+  services.xserver.videoDrivers = lib.mkForce ["nvidia"];
   hardware.opengl = {
     enable = true;
     driSupport32Bit = true;
     driSupport = true;
-    extraPackages = with pkgs; [ vaapiVdpau ];
+    extraPackages = with pkgs; [vaapiVdpau];
   };
 
   hardware.nvidia = {

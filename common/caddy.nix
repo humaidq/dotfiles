@@ -1,7 +1,11 @@
-{ config, pkgs, lib, ... }:
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   # Open ports for Caddy
-  networking.firewall.allowedTCPPorts = [ 443 80 ];
+  networking.firewall.allowedTCPPorts = [443 80];
 
   # Extra hardening
   systemd.services.caddy.serviceConfig = {
@@ -16,48 +20,48 @@
 
     # Importable configurations
     extraConfig = ''
-      (header) {
-        header {
-          # enable HSTS
-          Strict-Transport-Security max-age=31536000;
-        
-          # disable clients from sniffing the media type
-          X-Content-Type-Options nosniff
-          
-          # clickjacking protection
-		  X-Frame-Options DENY
+        (header) {
+          header {
+            # enable HSTS
+            Strict-Transport-Security max-age=31536000;
+
+            # disable clients from sniffing the media type
+            X-Content-Type-Options nosniff
+
+            # clickjacking protection
+            X-Frame-Options DENY
 
 
-          # disable FLOC
-          Permissions-Policy interest-cohort=()
-        
-          Referrer-Policy strict-origin
-          X-XSS-Protection 1; mode=block
-          server huh?
-          @staticFiles Cache-Control "public, max-age=31536000"
+            # disable FLOC
+            Permissions-Policy interest-cohort=()
+
+            Referrer-Policy strict-origin
+            X-XSS-Protection 1; mode=block
+            server huh?
+            @staticFiles Cache-Control "public, max-age=31536000"
+          }
+
+          @staticFiles {
+            path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
+          }
+
         }
-        
-        @staticFiles {
-          path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
+
+        (general) {
+          encode {
+            zstd
+          }
+          log {
+            #format single_field common_log
+            output file /var/log/access.log
+          }
         }
-      
-      }
-      
-      (general) {
-        encode {
-          zstd
+
+        (cors) {
+          @origin header Origin {args.0}
+          header @origin Access-Control-Allow-Origin "{args.0}"
+          header @origin Access-Control-Request-Method GET
         }
-        log {
-          #format single_field common_log
-          output file /var/log/access.log
-        }
-      }
-      
-      (cors) {
-        @origin header Origin {args.0}
-        header @origin Access-Control-Allow-Origin "{args.0}"
-        header @origin Access-Control-Request-Method GET 
-      }
     '';
 
     # Main website configuration
@@ -88,7 +92,7 @@
 
     # Redirect all domains back to huma.id, preserving the path.
     virtualHosts."www.huma.id" = {
-      serverAliases = [ "humaidq.ae" "www.humaidq.ae" ];
+      serverAliases = ["humaidq.ae" "www.humaidq.ae"];
       extraConfig = "redir https://huma.id{uri} permanent";
     };
 

@@ -1,10 +1,14 @@
 # This contains settings to provide a graphical system.
-{ config, pkgs, unstable, lib, ... }:
-with lib;
-let
-  cfg = config.sifr;
-in
 {
+  config,
+  pkgs,
+  unstable,
+  lib,
+  ...
+}:
+with lib; let
+  cfg = config.sifr;
+in {
   options.sifr.getSystemTools = mkOption {
     description = "Installs basic system tools";
     type = types.bool;
@@ -68,7 +72,7 @@ in
       ];
 
       # Ensure zsh is recognised as a system shell.
-      environment.shells = [ pkgs.zsh ];
+      environment.shells = [pkgs.zsh];
 
       environment.variables = {
         EDITOR = "nvim";
@@ -93,7 +97,6 @@ in
         # Java issue fix
         _JAVA_AWT_WM_NONREPARENTING = "1";
       };
-
     })
     (mkIf cfg.getCliTools {
       # All development and programming tools/utilities
@@ -152,7 +155,7 @@ in
 
       environment.systemPackages = with pkgs; [
         # compilers, interpreters, runtimes, etc
-        unstable.pkgs.go_1_21
+        unstable.go_1_21
         gcc
         rustc
         jre
@@ -196,10 +199,10 @@ in
         shellcheck
         #cmake-language-server
         rust-analyzer
-        unstable.pkgs.gopls
-        unstable.pkgs.gotools
-        unstable.pkgs.golangci-lint
-        unstable.pkgs.govulncheck
+        unstable.gopls
+        unstable.gotools
+        unstable.golangci-lint
+        unstable.govulncheck
         nodePackages.pyright
         nodePackages.eslint
         nodePackages.stylelint

@@ -1,5 +1,8 @@
-{ pkgs, lib, ... }:
-let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   desktopEntry = name: command: {
     executable = true;
     text = ''
@@ -9,8 +12,7 @@ let
       Exec=${command}
     '';
   };
-in
-{
+in {
   xdg = {
     enable = true;
     mimeApps.enable = true;
@@ -23,28 +25,28 @@ in
     #  gtkUsePortal = true;
     #};
     mimeApps.defaultApplications = {
-      "inode/directory" = [ "file.desktop" ];
+      "inode/directory" = ["file.desktop"];
 
       # Images
-      "image/png" = [ "img.desktop" ];
-      "image/jpeg" = [ "img.desktop" ];
-      "image/gif" = [ "img.desktop" ];
+      "image/png" = ["img.desktop"];
+      "image/jpeg" = ["img.desktop"];
+      "image/gif" = ["img.desktop"];
 
       # Text
-      "text/x-shellscript" = [ "text.desktop" ];
-      "text/x-c" = [ "text.desktop" ];
-      "text/x-lisp" = [ "text.desktop" ];
-      "text/html" = [ "text.desktop" ];
-      "text/plain" = [ "text.desktop" ];
+      "text/x-shellscript" = ["text.desktop"];
+      "text/x-c" = ["text.desktop"];
+      "text/x-lisp" = ["text.desktop"];
+      "text/html" = ["text.desktop"];
+      "text/plain" = ["text.desktop"];
 
       # PDF
-      "application/pdf" = [ "pdf.desktop" ];
-      "application/postscript" = [ "pdf.desktop" ];
+      "application/pdf" = ["pdf.desktop"];
+      "application/postscript" = ["pdf.desktop"];
 
       # Videos
-      "video/mp4" = [ "video.desktop" ];
-      "video/x-msvideo" = [ "video.desktop" ];
-      "video/quicktime" = [ "video.desktop" ];
+      "video/mp4" = ["video.desktop"];
+      "video/x-msvideo" = ["video.desktop"];
+      "video/quicktime" = ["video.desktop"];
     };
     userDirs = {
       enable = true;

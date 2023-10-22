@@ -1,9 +1,11 @@
-{ nixosConfig, pkgs, lib, ... }:
-
-let
-  mkTuple = lib.hm.gvariant.mkTuple;
-in
 {
+  nixosConfig,
+  pkgs,
+  lib,
+  ...
+}: let
+  mkTuple = lib.hm.gvariant.mkTuple;
+in {
   config = lib.mkIf nixosConfig.sifr.enableGnome {
     # dconf (gsettings) for Gnome applications
     dconf.settings = {
@@ -50,8 +52,8 @@ in
       };
       "org/gnome/desktop/input-sources" = {
         # Add three keyboad layouts (en, ar, fi)
-        sources = [ (mkTuple [ "xkb" "us" ]) (mkTuple [ "xkb" "ara" ]) (mkTuple [ "xkb" "fi" ]) ];
-        xkb-options = [ "caps:escape" ];
+        sources = [(mkTuple ["xkb" "us"]) (mkTuple ["xkb" "ara"]) (mkTuple ["xkb" "fi"])];
+        xkb-options = ["caps:escape"];
       };
       "org/gnome/desktop/media-handling" = {
         # Don't mount devices when plugged in

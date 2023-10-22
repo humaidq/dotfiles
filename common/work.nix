@@ -1,10 +1,13 @@
 # This contains work-specific settings.
-{ config, pkgs, lib, ... }:
-with lib;
-let
-  cfg = config.sifr;
-in
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+with lib; let
+  cfg = config.sifr;
+in {
   options.sifr.workProfile = mkOption {
     description = "Enable work profile settings";
     type = types.bool;
@@ -28,5 +31,3 @@ in
     ];
   };
 }
-
-

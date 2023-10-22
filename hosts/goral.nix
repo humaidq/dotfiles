@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }: {
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ../common
     ../lib/vmware-guest.nix
@@ -14,20 +19,19 @@
   };
 
   # We have our own module that works with aarch64.
-  disabledModules = [ "virtualisation/vmware-guest.nix" ];
+  disabledModules = ["virtualisation/vmware-guest.nix"];
   virtualisation.vmware.guest.enable = true;
 
   virtualisation.docker.enable = true;
   networking.firewall.enable = lib.mkForce false;
 
-
   # My configuration specific settings
   sifr = {
-	enablei3 = true;
+    enablei3 = true;
     hidpi = true;
     getDevTools = true;
     git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr6WzdDnXBEBok4FGr0609j985aYZ82+wj/Vipp/pdg git@huma.id";
-    
+
     isVM = true;
 
     tailscale = {

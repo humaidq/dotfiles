@@ -1,4 +1,4 @@
-{nixpkgs}:{
+{nixpkgs}: {
   imports = ["${nixpkgs}/nixos/modules/installer/cd-dvd/iso-image.nix"];
   formatAttr = "isoImage";
   fileExtension = ".iso";

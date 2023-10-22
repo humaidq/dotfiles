@@ -1,10 +1,13 @@
 # Contains laptop (Thinkpad) settings.
-{ config, pkgs, lib, ... }:
-with lib;
-let
-  cfg = config.sifr;
-in
 {
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+with lib; let
+  cfg = config.sifr;
+in {
   options.sifr.laptop = mkOption {
     description = "Configures laptop-specific (ThinkPad) settings";
     type = types.bool;
@@ -29,17 +32,18 @@ in
     boot.kernelParams = [
       "workqueue.power_efficient=y"
       # Disable vendor OEM logo (BGRT)
-      "video=efifb:nobgrt" "bgrt_disable"
+      "video=efifb:nobgrt"
+      "bgrt_disable"
     ];
     powerManagement = {
       enable = true;
       # Powertop breaks mouse/keyboards when forcing autosuspend
       #powertop.enable = true;
     };
-	networking.networkmanager = {
+    networking.networkmanager = {
       enable = true;
-	  wifi.powersave = true;
-	};
+      wifi.powersave = true;
+    };
     services.xserver.libinput = {
       enable = true;
       touchpad = {
@@ -71,4 +75,3 @@ in
     services.throttled.enable = true;
   };
 }
-      

@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }: {
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}: {
   imports = [
     ../common
   ];
@@ -6,7 +11,7 @@
   # My configuration specific settings
   sifr = {
     installer = true;
-	enablei3 = true;
+    enablei3 = true;
     getDevTools = false;
     getCliTools = true;
     minimal = true;
@@ -31,7 +36,7 @@
   security.apparmor.enable = lib.mkForce false;
 
   #boot.loader.grub.memtest86.enable = true;
-  boot.supportedFilesystems = [ "btrfs" "ntfs" "xfs" ];
+  boot.supportedFilesystems = ["btrfs" "ntfs" "xfs"];
 
   environment.systemPackages = with pkgs; [
     parted
@@ -39,7 +44,8 @@
     pciutils
     usbutils
     git
-    zip unzip
+    zip
+    unzip
     cryptsetup
   ];
 
