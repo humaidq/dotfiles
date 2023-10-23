@@ -26,6 +26,11 @@
       url = "github:kamadorueda/alejandra/3.0.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -38,12 +43,20 @@
     sops-nix,
     nur,
     alejandra,
+    nix-darwin,
     ...
   }: {
+    # System Configurations (NixOS and macOS)
     nixosConfigurations = (
       import ./hosts {
         inherit (nixpkgs) lib;
         inherit inputs nixpkgs nixpkgs-unstable home-manager sops-nix alejandra;
+      }
+    );
+    darwinConfigurations = (
+      import ./darwin {
+        inherit (nixpkgs) lib;
+        inherit inputs nixpkgs nixpkgs-unstable home-manager nix-darwin sops-nix alejandra;
       }
     );
 

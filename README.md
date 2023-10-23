@@ -1,42 +1,67 @@
 # sifrOS: My Secure NixOS Configuration
 
-## Hosts
+## Goal
 
-- goral: A VM that runs on my M2 Macbook Air (current daily driver)
-- serow: My ThinkPad T590
-- tahr: My work-provided ThinkPad P1
-- duisk: The server that runs huma.id
+sifrOS is an opinionated but modular framework for NixOS for my use case.
 
-## Setup
+Features:
 
-1. Get NixOS 23.05 or newer.
-2. Boot the image.
-3. Define and format the partition, mount it on `/mnt`.
-4. Install sifr:
-    ```
-    nix-shell -p git nixFlakes neovim
-    git clone https://git.sr.ht/~humaid/sifr /tmp/sifr
-    cd /tmp/sifr
+- Secure by default
+    - The system is configured to be secured by default, enabling firewall and hardening system and kernel settings.
+    - We aim with security through simplicity by using a minimal set of software per module.
+    - Firefox is configured to use uBlock Origin by default, and enable anti-fingerprinting settings and more.
+- Properly configured window manager/desktop environments
+    - i3wm is installed and configured to work out of the box, with media controls, locking, compositor and more.
+- Modular
+    - Components are separated by modules, and the configuration is available as Flakes.
+- Clean
+    - The system follows a common theme and branding.
+    - A minimal boot screen, login menu, and desktop.
+    - `$HOME` is mostly de-cluttered, and XDG user directories (e.g. Desktop, Downloads) are simplified.
 
-    HOST=...
+## General Information
 
-    # Get HW configuration
-    nixos-generate-config --root /mnt --dir /tmp/nixconfig
+Based on [NixOS Wiki Comparison definitions](https://nixos.wiki/wiki/Comparison_of_NixOS_setups).
 
-    cp /tmp/nixconfig/hardware-configuration.nix ./hardware/${HOST}.nix
-    nvim ./hardware/${HOST}.nix
+| Flakes | Home Manager | Secrets | File System | System Encryption | Opt-in state | Display Server | Desktop Environment |
+| - | - | - | - | - | - | - | - |
+| Yes | Yes | None (Yet) | Btrfs | Yes (LUKS) | No | X, Wayland | i3, Gnome |
 
-    # Create host configuration (if doesn't exist), base from similar host
-    cp ./hosts/serow.nix ./hosts/${HOST}.nix
-    nvim ./hosts/${HOST}.nix
+## Building
 
-    # Add host to flake.nix
-    nvim flake.nix
+To build Raspberry Pi 4 image:
+```
+nix build .#rpi4
+```
 
-    nixos-install --flake .#${HOST}
+To build x86-64 installer image:
+```
+nix build .#x86-installer
+```
 
-    cp -r /tmp/sifr /mnt/etc/sifr
-    ```
+## Installation
+
+Create an installer for the required architecture, and boot. After boot, you should automatically be logged in. A window should appear with the installer, the prompt will guide you through the installation process.
+
+## NixOS Example Usage
+
+To rebuild, run the following in the repository directory:
+```
+doas nixos-rebuild switch --flake .#goral
+```
+
+## macOS Example Setup & Usage
+
+These commands should be run after [installing Nix](https://nixos.org/download), and cloning this repository. The commands should be run while in this repository.
+
+First time run:
+```
+nix --extra-experimental-features 'flakes nix-command' run nix-darwin -- switch --flake .#takin
+```
+Then (without sudo):
+```
+darwin-rebuild switch --flake .#takin
+```
 
 ## TODOs
 
@@ -44,3 +69,4 @@
 - Raspberry Pi image
 - Docker image
 - Secret management
+- Deploy Tool (deploy-rs)
