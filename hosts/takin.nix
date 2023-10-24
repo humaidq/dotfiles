@@ -1,4 +1,8 @@
-{ config, pkgs, ... }: {
+{
+  config,
+  pkgs,
+  ...
+}: {
   networking = {
     computerName = "takin";
     hostName = "takin";
@@ -68,6 +72,5 @@
       "eloston-chromium" # ungoogled-chromium
       "logi-options-plus"
     ];
-
   };
 }

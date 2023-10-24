@@ -52,7 +52,7 @@ in {
       networking.firewall.enable = true;
       networking.networkmanager.wifi.macAddress = "random";
     })
-    (mkIf cfg.harden { 
+    (mkIf cfg.harden {
       # Boot and kernel hardening
       boot = {
         # /tmp uses tmpfs and cleans on boot

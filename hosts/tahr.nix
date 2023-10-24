@@ -40,7 +40,7 @@
       i3.enable = true;
       gnome.enable = true;
     };
-    
+
     profiles.basePlus = true;
     development.enable = true;
     security.yubikey = true;

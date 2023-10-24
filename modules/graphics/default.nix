@@ -22,7 +22,7 @@ in {
   options.sifr.graphics.enable = mkOption {
     description = "Sets up the graphical user environment with X11";
     type = types.bool;
-    default = (cfg.i3.enable || cfg.gnome.enable);
+    default = cfg.i3.enable || cfg.gnome.enable;
   };
   options.sifr.graphics.hidpi = mkOption {
     description = "Configures the system for HiDPI screens";
@@ -168,7 +168,6 @@ in {
             };
           };
         };
-
       };
     })
   ];

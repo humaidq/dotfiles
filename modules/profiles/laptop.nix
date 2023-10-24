@@ -75,6 +75,5 @@ in {
     # Also assuming all laptops are ThinkPads for now...
     # Fix Thinkpad specific issue of throttling
     services.throttled.enable = true;
-
   };
 }

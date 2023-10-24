@@ -254,7 +254,6 @@ in {
           dataFile."applications/video.desktop" =
             desktopEntry "Video Player" "${pkgs.vlc}/bin/vlc %u";
         };
-
       }; # end of home-manager
     })
   ];

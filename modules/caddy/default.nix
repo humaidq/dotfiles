@@ -31,48 +31,48 @@ in {
 
       # Importable configurations
       extraConfig = ''
-          (header) {
-   g        header {
-              # enable HSTS
-              Strict-Transport-Security max-age=31536000;
+               (header) {
+        g        header {
+                   # enable HSTS
+                   Strict-Transport-Security max-age=31536000;
 
-              # disable clients from sniffing the media type
-              X-Content-Type-Options nosniff
+                   # disable clients from sniffing the media type
+                   X-Content-Type-Options nosniff
 
-              # clickjacking protection
-              X-Frame-Options DENY
+                   # clickjacking protection
+                   X-Frame-Options DENY
 
 
-              # disable FLOC
-              Permissions-Policy interest-cohort=()
+                   # disable FLOC
+                   Permissions-Policy interest-cohort=()
 
-              Referrer-Policy strict-origin
-              X-XSS-Protection 1; mode=block
-              server huh?
-              @staticFiles Cache-Control "public, max-age=31536000"
-            }
+                   Referrer-Policy strict-origin
+                   X-XSS-Protection 1; mode=block
+                   server huh?
+                   @staticFiles Cache-Control "public, max-age=31536000"
+                 }
 
-            @staticFiles {
-              path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
-            }
+                 @staticFiles {
+                   path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
+                 }
 
-          }
+               }
 
-          (general) {
-            encode {
-              zstd
-            }
-            log {
-              #format single_field common_log
-              output file /var/log/access.log
-            }
-          }
+               (general) {
+                 encode {
+                   zstd
+                 }
+                 log {
+                   #format single_field common_log
+                   output file /var/log/access.log
+                 }
+               }
 
-          (cors) {
-            @origin header Origin {args.0}
-            header @origin Access-Control-Allow-Origin "{args.0}"
-            header @origin Access-Control-Request-Method GET
-          }
+               (cors) {
+                 @origin header Origin {args.0}
+                 header @origin Access-Control-Allow-Origin "{args.0}"
+                 header @origin Access-Control-Request-Method GET
+               }
       '';
 
       # Main website configuration

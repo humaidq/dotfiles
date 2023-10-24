@@ -9,7 +9,7 @@
 with lib; let
   cfg = config.sifr;
 in {
-  imports = [ ./overlays.nix ];
+  imports = [./overlays.nix];
 
   options.sifr.timezone = mkOption {
     description = "Sets the timezone";
@@ -112,4 +112,3 @@ in {
     };
   };
 }
-

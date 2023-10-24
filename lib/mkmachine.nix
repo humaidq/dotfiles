@@ -22,31 +22,32 @@ in
     inherit system;
     specialArgs = {inherit lib;};
 
-    modules = [
-      ../hosts/${machine_name}.nix
-      ../hardware/${machine_name}.nix
-      # ../users/${user}
+    modules =
+      [
+        ../hosts/${machine_name}.nix
+        ../hardware/${machine_name}.nix
+        # ../users/${user}
 
-      {
-        nixpkgs.overlays = overlays;
-        networking.hostName = machine_name;
-        environment.systemPackages = [alejandra.defaultPackage.${system}];
+        {
+          nixpkgs.overlays = overlays;
+          networking.hostName = machine_name;
+          environment.systemPackages = [alejandra.defaultPackage.${system}];
 
-        # Pass "unstable" as specialArgs after importing it.
-        _module.args.unstable = unstable;
+          # Pass "unstable" as specialArgs after importing it.
+          _module.args.unstable = unstable;
 
-        # Let "nixos-version" know git revision of sifr.
-        #system.configurationRevision = nixpkgs.lib.mkIf (self ? rev) self.rev;
-      }
+          # Let "nixos-version" know git revision of sifr.
+          #system.configurationRevision = nixpkgs.lib.mkIf (self ? rev) self.rev;
+        }
 
-      sops-nix.nixosModules.sops
+        sops-nix.nixosModules.sops
 
-      home-manager.nixosModules.home-manager
-      {
-        home-manager.useGlobalPkgs = true;
-        home-manager.useUserPackages = true;
-        #home-manager.users.${user} = import ../users/${user}/home-manager.nix;
-      }
-    ]
-    ++ (import ../modules/modules-list.nix);
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          #home-manager.users.${user} = import ../users/${user}/home-manager.nix;
+        }
+      ]
+      ++ (import ../modules/modules-list.nix);
   }
