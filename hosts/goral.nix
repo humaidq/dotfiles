@@ -5,7 +5,6 @@
   ...
 }: {
   imports = [
-    ../common
     ../lib/vmware-guest.nix
   ];
 
@@ -27,12 +26,16 @@
 
   # My configuration specific settings
   sifr = {
-    enablei3 = true;
-    hidpi = true;
-    getDevTools = true;
-    git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr6WzdDnXBEBok4FGr0609j985aYZ82+wj/Vipp/pdg git@huma.id";
-
-    isVM = true;
+    graphics = {
+      i3.enable = true;
+      hidpi = true;
+      enableSound = false;
+      apps = true;
+    };
+    hardware.vm = true;
+    profiles.basePlus = true;
+    development.enable = true;
+    security.yubikey = true;
 
     tailscale = {
       enable = false;

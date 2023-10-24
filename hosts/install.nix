@@ -4,18 +4,9 @@
   lib,
   ...
 }: {
-  imports = [
-    ../common
-  ];
-
   # My configuration specific settings
   sifr = {
-    installer = true;
-    enablei3 = true;
-    getDevTools = false;
-    getCliTools = true;
-    minimal = true;
-    hardenSystem = true;
+    profiles.installer = true;
   };
 
   users.users.humaid = {

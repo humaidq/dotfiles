@@ -5,16 +5,12 @@
   ...
 }: {
   imports = [
-    ../common
   ];
 
   # My configuration specific settings
   sifr = {
-    enablei3 = false;
-    getDevTools = false;
-    getCliTools = true;
-    minimal = true;
-    hardenSystem = false;
+    # TODO no harden
+    security.harden = false;
   };
 
   users.users.humaid = {

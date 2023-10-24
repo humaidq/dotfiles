@@ -3,11 +3,6 @@
   pkgs,
   ...
 }: {
-  imports = [
-    ../common
-    ../common/caddy.nix
-  ];
-
   boot.loader.grub = {
     enable = true;
     device = "/dev/vda";
@@ -22,6 +17,9 @@
   };
 
   sifr = {
+    profiles.basePlus = true;
+    caddy.enable = true;
+
     tailscale = {
       enable = true;
       exitNode = true;

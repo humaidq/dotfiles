@@ -4,10 +4,6 @@
   lib,
   ...
 }: {
-  imports = [
-    ../common
-  ];
-
   # My configuration specific settings
   sifr = {
     tailscale = {

@@ -4,18 +4,11 @@
   lib,
   ...
 }: {
-  imports = [
-    ../common
-  ];
-
   # My configuration specific settings
   sifr = {
-    enablei3 = true;
-    getDevTools = false;
-    getCliTools = false;
-    minimal = true;
-    hardenSystem = true;
+    graphics.i3.enable = true;
   };
+
   users.users.humaid = {
     # Allow passwordless login
     initialHashedPassword = "";

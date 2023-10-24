@@ -1,7 +1,8 @@
-# This file contains tailscale configurations
 {
   config,
   pkgs,
+  unstable,
+  home-manager,
   lib,
   ...
 }:

@@ -5,7 +5,6 @@
   ...
 }: {
   imports = [
-    ../common
   ];
 
   boot.loader = {
@@ -15,6 +14,8 @@
   boot.initrd.secrets = {
     "/crypto_keyfile.bin" = null;
   };
+
+  # for CAN serial
   boot.initrd.kernelModules = ["ch341"];
 
   networking.networkmanager.enable = true;
@@ -24,19 +25,25 @@
 
   # My configuration specific settings
   sifr = {
-    workProfile = true;
-    enablei3 = true;
-    getDevTools = true;
-    laptop = false;
+    graphics = {
+      i3.enable = true;
+      hidpi = true;
+      enableSound = false;
+      apps = true;
+    };
+    hardware.vm = true;
+    profiles.basePlus = true;
+    profiles.laptop = true;
+    development.enable = true;
+    security.yubikey = true;
 
     tailscale = {
       enable = false;
-      exitNode = true;
-      ssh = true;
+      exitNode = false;
+      ssh = false;
 
-      # temp
-      #auth = true;
-      #tsKey = "tskey-kKX8n35CNTRL-A76BPGh8jqVkuVFHWA3YJ";
+      auth = false;
+      #tsKey = "";
     };
   };
 

@@ -8,8 +8,8 @@
     isoBaseName = "sifr";
     #compressImage = true;
     squashfsCompression = "zstd -Xcompression-level 6";
-    efiSplashImage = ../common/assets/sifr-lightdm.png;
-    splashImage = ../common/assets/sifr-bios.png; # BIOS boot
+    efiSplashImage = ../assets/sifr-lightdm.png;
+    splashImage = ../assets/sifr-bios.png; # BIOS boot
     #grubTheme = null;
 
     # Make EFI & USB bootable

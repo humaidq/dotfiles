@@ -1,57 +1,58 @@
-# This file contains security settings.
 {
   config,
   pkgs,
+  home-manager,
+  unstable,
   lib,
   ...
 }:
 with lib; let
-  cfg = config.sifr;
+  cfg = config.sifr.security;
   hosts = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/StevenBlack/hosts/199df730514da981d1522d4d21a67d1bab6726de/hosts";
     sha256 = "492fe39b260e811ed1c556e6c4abfacf54b2094b8f931cf3c80562505bc04b4c";
   };
 in {
-  options.sifr.enableYubikey = mkOption {
-    description = "Enables Yubikey support";
+  options.sifr.security.harden = mkOption {
+    description = "Hardens the system settings";
+    type = types.bool;
+    default = true;
+  };
+  options.sifr.security.yubikey = mkOption {
+    description = "Enables YubiKey support";
     type = types.bool;
     default = false;
   };
-  options.sifr.hardenSystem = mkOption {
-    description = "Hardens security settings";
+  options.sifr.security.doas = mkOption {
+    description = "Replaces sudo with minimal alternative (doas)";
     type = types.bool;
     default = true;
   };
 
   config = mkMerge [
-    (mkIf cfg.enableYubikey {
-      # Yubikey
+    (mkIf cfg.doas {
+      security.sudo.enable = false;
+      security.doas = {
+        enable = true;
+        extraRules = [
+          {
+            users = ["humaid"];
+            persist = true;
+            keepEnv = true;
+          }
+        ];
+      };
+    })
+    (mkIf cfg.yubikey {
       services.udev.packages = with pkgs; [libu2f-host yubikey-personalization];
       services.pcscd.enable = true;
     })
-    (mkIf (cfg.hardenSystem && !cfg.isVM) {
+    (mkIf (cfg.harden && !config.sifr.hardware.vm) {
       # Only enable firewall on non-VMs. VMs rely on host's firewall.
       networking.firewall.enable = true;
       networking.networkmanager.wifi.macAddress = "random";
     })
-    {
-      # Basic security (no hardening)
-      security = {
-        # I prefer doas over sudo due to simplicity.
-        sudo.enable = false;
-        doas = {
-          enable = true;
-          extraRules = [
-            {
-              users = ["humaid"];
-              persist = true;
-              keepEnv = true;
-            }
-          ];
-        };
-      };
-    }
-    (mkIf cfg.hardenSystem {
+    (mkIf cfg.harden { 
       # Boot and kernel hardening
       boot = {
         # /tmp uses tmpfs and cleans on boot
@@ -59,7 +60,7 @@ in {
         tmp.useTmpfs = true;
 
         # Block boot menu editor.
-        loader.systemd-boot.editor = false;
+        loader.systemd-boot.editor = mkDefault false;
 
         kernelParams = [
           # Enable sanity check, redzoning, poisoning.
@@ -192,7 +193,7 @@ in {
         forcePageTableIsolation = true;
         #lockKernelModules = true;
       };
-      programs.gnupg.agent.pinentryFlavor = "qt";
+      #programs.gnupg.agent.pinentryFlavor = "qt";
 
       # VMs should use host's DNS.
       networking.nameservers = [

@@ -4,10 +4,6 @@
   nixpkgs-unstable,
   ...
 }: {
-  imports = [
-    ../common
-  ];
-
   boot.loader = {
     systemd-boot = {
       enable = true;
@@ -20,11 +16,15 @@
 
   # My configuration specific settings
   sifr = {
-    enablei3 = true;
-    enableGnome = true;
-    getDevTools = true;
-    laptop = true;
-    enableYubikey = true;
+    graphics = {
+      i3.enable = true;
+      gnome.enable = true;
+    };
+    profiles.basePlus = true;
+    profiles.laptop = true;
+    development.enable = true;
+    security.yubikey = true;
+
     #virtualisation = true;
     tailscale = {
       enable = true;

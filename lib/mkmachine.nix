@@ -1,4 +1,5 @@
 machine_name: {
+  lib,
   nixpkgs,
   nixpkgs-unstable,
   sops-nix,
@@ -19,11 +20,12 @@ machine_name: {
 in
   nixpkgs.lib.nixosSystem rec {
     inherit system;
+    specialArgs = {inherit lib;};
 
     modules = [
       ../hosts/${machine_name}.nix
       ../hardware/${machine_name}.nix
-      ../users/${user}
+      # ../users/${user}
 
       {
         nixpkgs.overlays = overlays;
@@ -43,7 +45,8 @@ in
       {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
-        home-manager.users.${user} = import ../users/${user}/home-manager.nix;
+        #home-manager.users.${user} = import ../users/${user}/home-manager.nix;
       }
-    ];
+    ]
+    ++ (import ../modules/modules-list.nix);
   }

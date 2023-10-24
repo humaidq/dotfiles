@@ -1,19 +1,19 @@
-# Contains laptop (Thinkpad) settings.
 {
   config,
   pkgs,
+  unstable,
+  home-manager,
   lib,
   ...
 }:
 with lib; let
-  cfg = config.sifr;
+  cfg = config.sifr.profiles;
 in {
-  options.sifr.laptop = mkOption {
-    description = "Configures laptop-specific (ThinkPad) settings";
+  options.sifr.profiles.laptop = mkOption {
+    description = "Laptop profile";
     type = types.bool;
     default = false;
   };
-
   config = mkIf cfg.laptop {
     # Assumption: all laptops use SSDs
     services.fstrim.enable = true;
@@ -69,9 +69,12 @@ in {
     services.redshift = {
       enable = true;
     };
+    # creating this empty file enables redshift for this user
+    home-manager.users.humaid.xdg.configFile."systemd/user/default.target.wants/redshift.service".text = "";
 
     # Also assuming all laptops are ThinkPads for now...
     # Fix Thinkpad specific issue of throttling
     services.throttled.enable = true;
+
   };
 }

@@ -4,10 +4,6 @@
   pkgs,
   ...
 }: {
-  imports = [
-    ../common
-  ];
-
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
@@ -40,11 +36,15 @@
 
   # My configuration specific settings
   sifr = {
-    workProfile = true;
-    enablei3 = true;
-    getDevTools = true;
-    laptop = true;
-    git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKBG6luRkesOBp4w8cMb+d8yUwFZsF02whLR4f3O9+6c humaid.alqassimi+git@tii.ae";
+    graphics = {
+      i3.enable = true;
+      gnome.enable = true;
+    };
+    
+    profiles.basePlus = true;
+    development.enable = true;
+    security.yubikey = true;
+    #git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKBG6luRkesOBp4w8cMb+d8yUwFZsF02whLR4f3O9+6c humaid.alqassimi+git@tii.ae";
 
     tailscale = {
       enable = false;
