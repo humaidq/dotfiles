@@ -4,6 +4,7 @@
   unstable,
   home-manager,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -17,7 +18,7 @@ in {
   config = mkIf cfg.installer {
     #config.sifr.graphics.i3.enable = mkDefault true;
 
-    home-manager.users.humaid = {
+    home-manager.users."${vars.user}" = {
       home.file.".bin/sifr-install" = {
         executable = true;
         text = builtins.readFile ../../lib/installer.sh;

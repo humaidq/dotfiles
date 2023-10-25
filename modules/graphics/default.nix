@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -113,7 +114,7 @@ in {
         nsxiv
       ];
 
-      home-manager.users.humaid = {
+      home-manager.users."${vars.user}" = {
         # Default themeing for GTK and Qt
         qt = {
           enable = true;
@@ -130,10 +131,10 @@ in {
             gtk-cursor-theme-name = "Adwaita";
           };
           gtk3.bookmarks = [
-            "file:///home/humaid/docs"
-            "file:///home/humaid/repos"
-            "file:///home/humaid/inbox"
-            "file:///home/humaid/inbox/web"
+            "file:///home/${vars.user}/docs"
+            "file:///home/${vars.user}/repos"
+            "file:///home/${vars.user}/inbox"
+            "file:///home/${vars.user}/inbox/web"
           ];
         };
 

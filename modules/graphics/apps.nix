@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -59,7 +60,7 @@ in {
       programs._1password.enable = true;
       programs._1password-gui = {
         enable = true;
-        polkitPolicyOwners = ["humaid"];
+        polkitPolicyOwners = ["${vars.user}"];
       };
       services.gnome.gnome-keyring.enable = true;
 

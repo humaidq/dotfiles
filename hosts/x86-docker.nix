@@ -5,18 +5,18 @@
   vars,
   ...
 }: {
+  imports = [
+  ];
+
   # My configuration specific settings
   sifr = {
-    graphics.i3.enable = true;
+    # TODO no harden
+    security.harden = false;
   };
 
-  users.users."${vars.user}" = {
+  users.users.${vars.user} = {
     # Allow passwordless login
     initialHashedPassword = "";
-  };
-  services.xserver.displayManager.autoLogin = {
-    enable = true;
-    user = "${vars.user}";
   };
   # Allow login to root with no password
   users.users.root.initialHashedPassword = "";

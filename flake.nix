@@ -45,33 +45,82 @@
     alejandra,
     nix-darwin,
     ...
-  }: {
-    # System Configurations (NixOS and macOS)
-    nixosConfigurations = (
-      import ./hosts {
-        inherit (nixpkgs) lib;
-        inherit inputs nixpkgs nixpkgs-unstable home-manager sops-nix alejandra;
-      }
-    );
-    darwinConfigurations = (
-      import ./darwin {
-        inherit (nixpkgs) lib;
-        inherit inputs nixpkgs nixpkgs-unstable home-manager nix-darwin sops-nix alejandra;
-      }
-    );
+  }: let
+    vars = {
+      user = "humaid";
+    };
+    mksystem = import ./lib/mksystem.nix {
+      inherit (nixpkgs) lib;
+      inherit nixpkgs nixpkgs-unstable home-manager alejandra sops-nix nixos-generators nix-darwin;
+    };
+  in {
+    # System Configurations for NixOS
+    nixosConfigurations = {
+      # System that runs on a VM on Macbook Pro, my main system
+      goral = mksystem.nixosSystem "goral" {
+        inherit vars;
+        system = "aarch64-linux";
+      };
 
-    # Generators (x86_64 and aarch64)
-    packages.x86_64-linux = (
-      import ./generators/x86.nix {
-        inherit (nixpkgs) lib;
-        inherit inputs nixpkgs nixos-generators nixpkgs-unstable home-manager sops-nix alejandra;
-      }
-    );
-    packages.aarch64-linux = (
-      import ./generators/aarch64.nix {
-        inherit (nixpkgs) lib;
-        inherit inputs nixpkgs nixos-generators nixpkgs-unstable home-manager sops-nix alejandra;
-      }
-    );
+      # Sytem that runs on Thinkpad T590
+      serow = mksystem.nixosSystem "serow" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+
+      # System that runs on Vultr cloud, hosting huma.id
+      duisk = mksystem.nixosSystem "duisk" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+
+      # System that runs on my work laptop
+      tahr = mksystem.nixosSystem "tahr" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+
+      # System that runs on my temporary Dell laptop
+      capra = mksystem.nixosSystem "capra" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+    };
+
+    # System Configurations for macOS
+    darwinConfigurations = {
+      takin = mksystem.darwinSystem "takin" {
+        inherit vars;
+      };
+    };
+
+    # Generators for x86_64
+    packages.x86_64-linux = let
+      system = "x86_64-linux";
+    in {
+      x86-installer = mksystem.nixosGenerate "x86-installer" {
+        inherit vars system;
+        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
+        format = "standalone-iso";
+      };
+      x86-docker = mksystem.nixosGenerate "x86-docker" {
+        inherit vars system;
+        format = "docker";
+      };
+    };
+
+    # Generators for aarch64
+    packages.aarch64-linux = let
+      system = "aarch64-linux";
+    in {
+      aarch64-installer = mksystem.nixosGenerate "aarch64-installer" {
+        inherit vars system;
+        format = "iso";
+      };
+      argali = mksystem.nixosGenerate "argali" {
+        inherit vars system;
+        format = "sd-aarch64";
+      };
+    };
   };
 }

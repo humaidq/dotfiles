@@ -4,6 +4,7 @@
   unstable,
   home-manager,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -24,7 +25,7 @@ in {
     default = true;
   };
   config = mkIf cfg.enable {
-    home-manager.users.humaid = {
+    home-manager.users."${vars.user}" = {
       home.file = {
         # Simple tool that tells you which process uses a specific port.
         ".bin/whoseport" = script ''

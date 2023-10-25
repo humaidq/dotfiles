@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -26,7 +27,7 @@ in {
         maim
         alacritty
       ];
-      home-manager.users.humaid = {
+      home-manager.users."${vars.user}" = {
         programs.i3status = {
           enable = true;
           modules = {
@@ -103,7 +104,7 @@ in {
               };
             };
             keybindings = let
-              modifier = config.home-manager.users.humaid.xsession.windowManager.i3.config.modifier;
+              modifier = config.home-manager.users."${vars.user}".xsession.windowManager.i3.config.modifier;
             in
               lib.mkOptionDefault {
                 "${modifier}+Return" = null;
@@ -145,7 +146,7 @@ in {
     })
     # i3 VM-specific configuration
     (mkIf (cfg.i3.enable && config.sifr.hardware.vm) {
-      home-manager.users.humaid = {
+      home-manager.users."${vars.user}" = {
         # Use "Command" key as modifier (equi. to Super key).
         xsession.windowManager.i3.config = {
           modifier = lib.mkForce "Mod4";
@@ -167,7 +168,7 @@ in {
         xidlehook
         nm-tray
       ];
-      home-manager.users.humaid = {
+      home-manager.users."${vars.user}" = {
         #xsession.windowManager.i3.config.startup = [
         #  {command = "xidlehook --not-when-fullscreen --not-when-audio --timer 180 'i3lock' \\'\\'"; }
         #];

@@ -5,6 +5,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -18,7 +19,7 @@ in {
 
   config = mkMerge [
     (mkIf cfg.enable {
-      home-manager.users.humaid = {
+      home-manager.users."${vars.user}" = {
         programs.git = {
           enable = true;
           package = pkgs.gitAndTools.gitFull;

@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -36,7 +37,7 @@ in {
         enable = true;
         extraRules = [
           {
-            users = ["humaid"];
+            users = ["${vars.user}"];
             persist = true;
             keepEnv = true;
           }

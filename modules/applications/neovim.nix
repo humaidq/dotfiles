@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -16,13 +17,13 @@ in {
   };
   config = mkMerge [
     (mkIf cfg.neovim.enable {
-      home-manager.users.humaid.xdg.configFile = {
+      home-manager.users."${vars.user}".xdg.configFile = {
         "nvim/init.lua".source = ./nvim/init.lua;
         "nvim/lua/options.lua".source = ./nvim/lua/options.lua;
       };
     })
     (mkIf (cfg.neovim.enable && config.sifr.development.enable) {
-      home-manager.users.humaid.xdg.configFile."nvim/lua/packages.lua".source = ./nvim/lua/packages.lua;
+      home-manager.users."${vars.user}".xdg.configFile."nvim/lua/packages.lua".source = ./nvim/lua/packages.lua;
     })
   ];
 }

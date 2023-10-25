@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -20,7 +21,7 @@ in {
   };
   config = mkIf cfg.firefox.enable {
     # For all
-    home-manager.users.humaid.programs.firefox = {
+    home-manager.users."${vars.user}".programs.firefox = {
       enable = true;
       profiles.default = {
         id = 0;

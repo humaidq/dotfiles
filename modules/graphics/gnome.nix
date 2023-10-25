@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -30,7 +31,7 @@ in {
       gnome.dconf-editor
     ];
 
-    home-manager.users.humaid = {lib, ...}: let
+    home-manager.users."${vars.user}" = {lib, ...}: let
       mkTuple = lib.hm.gvariant.mkTuple;
     in {
       # dconf (gsettings) for Gnome applications

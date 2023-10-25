@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  vars,
   ...
 }: {
   # My configuration specific settings
@@ -9,13 +10,13 @@
     profiles.installer = true;
   };
 
-  users.users.humaid = {
+  users.users."${vars.user}" = {
     # Allow passwordless login
     initialHashedPassword = "";
   };
   services.xserver.displayManager.autoLogin = {
     enable = true;
-    user = "humaid";
+    user = "${vars.user}";
   };
   # Allow login to root with no password
   users.users.root.initialHashedPassword = "";

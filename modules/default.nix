@@ -4,6 +4,7 @@
   home-manager,
   unstable,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -16,6 +17,7 @@ in {
     type = types.str;
     default = "Asia/Dubai";
   };
+  # TODO move for git
   options.sifr.username = mkOption {
     description = "Short username of the system user";
     type = types.str;
@@ -28,7 +30,7 @@ in {
   };
 
   config = {
-    users.users.humaid = {
+    users.users.${vars.user} = {
       isNormalUser = true;
       uid = 1000;
       extraGroups = [
@@ -46,7 +48,7 @@ in {
       description = cfg.fullname;
     };
 
-    home-manager.users.humaid = {
+    home-manager.users.${vars.user} = {
       home.stateVersion = "23.05";
       home.sessionPath = ["$HOME/.bin"];
 

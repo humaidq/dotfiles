@@ -26,11 +26,10 @@ sifrOS is an opinionated but modular framework for NixOS for my use case. The go
 | serow | `x86_64-linux` | ThinkPad T590 | Development Laptop |
 | tahr | `x86_64-linux` | ThinkPad P1 Gen3 | Work Laptop |
 | takin | `aarch64-darwin` | MacBook Pro M2 Max | Main Laptop |
-| rpi4 | `aarch64-linux` | Raspberry Pi 4 | Tinkering Device |
 | goral | `aarch64-linux` | VMWare under macOS | Development VM |
 | duisk | `x86_64-linux` | Vultr Cloud | Web Server for huma.id |
-| docker | `x86_64-linux` | Docker | Minimal Docker Image |
 | capra | `x86_64-linux` | Dell Latitude | Temp. Work Laptop |
+| argali | `aarch64-linux` | Raspberry Pi 4 | Tinkering Device (generator) |
 
 Installer will prompt the user to reuse a previous host configuration or create a new one.
 
@@ -46,7 +45,7 @@ An overview, based on [NixOS Wiki Comparison definitions](https://nixos.wiki/wik
 
 To build Raspberry Pi 4 image:
 ```
-nix build .#rpi4
+nix build .#argali
 ```
 
 To build x86-64 installer image:

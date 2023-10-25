@@ -4,6 +4,7 @@
   unstable,
   home-manager,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -15,7 +16,7 @@ in {
     default = false;
   };
   config = mkIf cfg.emacs.enable {
-    home-manager.users.humaid = {
+    home-manager.users.${vars.user} = {
       programs.emacs.enable = true;
       home.file.".emacs.d".source = ./emacsconfig;
     };

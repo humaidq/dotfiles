@@ -4,6 +4,7 @@
   unstable,
   home-manager,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -142,7 +143,7 @@ in {
       # Track highest uptime! :)
       services.uptimed.enable = true;
 
-      home-manager.users.humaid = {
+      home-manager.users."${vars.user}" = {
         programs = {
           ssh = {
             enable = true;

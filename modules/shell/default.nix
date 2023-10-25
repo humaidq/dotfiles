@@ -4,6 +4,7 @@
   unstable,
   home-manager,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -25,8 +26,8 @@ in {
   };
   config = mkIf cfg.zsh {
     programs.zsh.enable = true;
-    users.users.humaid.shell = pkgs.zsh;
-    home-manager.users.humaid = {
+    users.users."${vars.user}".shell = pkgs.zsh;
+    home-manager.users."${vars.user}" = {
       programs.zsh = {
         enable = true;
         dotDir = ".config/zsh";

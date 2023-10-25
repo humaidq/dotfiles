@@ -4,6 +4,7 @@
   unstable,
   home-manager,
   lib,
+  vars,
   ...
 }:
 with lib; let
@@ -70,7 +71,7 @@ in {
       enable = true;
     };
     # creating this empty file enables redshift for this user
-    home-manager.users.humaid.xdg.configFile."systemd/user/default.target.wants/redshift.service".text = "";
+    home-manager.users."${vars.user}".xdg.configFile."systemd/user/default.target.wants/redshift.service".text = "";
 
     # Also assuming all laptops are ThinkPads for now...
     # Fix Thinkpad specific issue of throttling
