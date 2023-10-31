@@ -51,7 +51,6 @@ in {
 
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
-        appimage-run
         zathura
         firefox
       ];

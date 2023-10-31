@@ -61,7 +61,7 @@ in {
         python311Packages.pip
 
         # utilities
-        ffmpeg-full
+        ffmpeg
         git-privacy
         gdb
         bvi
@@ -74,7 +74,6 @@ in {
         dmtx-utils
         fzf
         scc
-        ripgrep-all
 
         # build tools
         gnumake

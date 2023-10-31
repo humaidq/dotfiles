@@ -38,7 +38,6 @@ in {
         "dialout"
         "video"
         "audio"
-        "docker"
         "disk"
         "networkmanager"
         "wheel"
@@ -112,5 +111,7 @@ in {
         allowBroken = true;
       };
     };
+
+    system.stateVersion = "23.05";
   };
 }

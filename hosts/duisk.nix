@@ -31,6 +31,4 @@
       #tsKey = "tskey-kHFEoZ4CNTRL-S3MVf9QjreJ5pzY8A26bd";
     };
   };
-
-  system.stateVersion = "21.11";
 }

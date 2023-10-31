@@ -115,11 +115,16 @@
     in {
       aarch64-installer = mksystem.nixosGenerate "aarch64-installer" {
         inherit vars system;
-        format = "iso";
+        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
+        format = "standalone-iso";
       };
       argali = mksystem.nixosGenerate "argali" {
         inherit vars system;
         format = "sd-aarch64";
+      };
+      aarch64-dev-docker = mksystem.nixosGenerate "aarch64-dev-docker" {
+        inherit vars system;
+        format = "docker";
       };
     };
   };

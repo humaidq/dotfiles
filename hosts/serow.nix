@@ -24,6 +24,8 @@
     profiles.laptop = true;
     development.enable = true;
     security.yubikey = true;
+    v18n.emulation.enable = true;
+    v18n.emulation.systems = ["aarch64-linux"];
 
     #virtualisation = true;
     tailscale = {
@@ -33,13 +35,5 @@
     };
   };
 
-  # enable qemu virtualisation
-  environment.systemPackages = with pkgs; [
-    qemu_kvm
-    OVMF
-  ];
-  boot.binfmt.emulatedSystems = ["aarch64-linux"];
   hardware.flipperzero.enable = true;
-
-  system.stateVersion = "23.0521.11";
 }

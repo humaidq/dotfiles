@@ -32,7 +32,7 @@ in {
       # Importable configurations
       extraConfig = ''
                (header) {
-        g        header {
+                  header {
                    # enable HSTS
                    Strict-Transport-Security max-age=31536000;
 
