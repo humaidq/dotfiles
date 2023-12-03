@@ -51,6 +51,7 @@ in {
   darwinSystem = machine_name: {vars}:
     nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
+      specialArgs = {inherit vars lib;};
       modules = [
         ../hosts/${machine_name}.nix
 
@@ -59,6 +60,8 @@ in {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
         }
+        ../modules/options.nix
+        ../modules/shell
       ];
     };
 
