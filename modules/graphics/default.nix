@@ -65,7 +65,7 @@ in {
         # Display server (X11)
         xserver = {
           enable = true;
-          layout = "us,ar";
+          #layout = "us,ar";
           xkbOptions = "grp:win_space_toggle";
           enableCtrlAltBackspace = false; # prevent lockscreen bypass
           screenSection = ''

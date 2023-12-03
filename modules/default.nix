@@ -12,7 +12,7 @@ with lib; let
 in {
 
   config = mkMerge [
-    (mkIf pkgs.stdenv.isLinux {
+    ( {
       users.users.${vars.user} = {
         isNormalUser = true;
         uid = 1000;
@@ -63,17 +63,17 @@ in {
           experimental-features = ["nix-command" "flakes"];
 
           # Ghaf development
-          trusted-substituters = [
-            "https://cache.vedenemo.dev"
-          ];
+          #trusted-substituters = [
+          #  "https://cache.vedenemo.dev"
+          #];
 
-          substituters = [
-            "https://cache.vedenemo.dev"
-          ];
+          #substituters = [
+          #  "https://cache.vedenemo.dev"
+          #];
 
-          trusted-public-keys = [
-            "cache.vedenemo.dev:RGHheQnb6rXGK5v9gexJZ8iWTPX6OcSeS56YeXYzOcg="
-          ];
+          #trusted-public-keys = [
+          #  "cache.vedenemo.dev:RGHheQnb6rXGK5v9gexJZ8iWTPX6OcSeS56YeXYzOcg="
+          #];
         };
         gc = {
           automatic = true;
@@ -83,7 +83,7 @@ in {
       };
 
       # Use spleen font for console (tty)
-      fonts.fonts = with pkgs; [
+      fonts.packages = with pkgs; [
         spleen
       ];
       console.font = "${pkgs.spleen}/share/consolefonts/spleen-12x24.psfu";

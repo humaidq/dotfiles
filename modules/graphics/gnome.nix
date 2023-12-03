@@ -79,7 +79,7 @@ in {
         };
         "org/gnome/desktop/input-sources" = {
           # Add three keyboad layouts (en, ar, fi)
-          sources = [(mkTuple ["xkb" "us"]) (mkTuple ["xkb" "ara"]) (mkTuple ["xkb" "fi"])];
+          #sources = [(mkTuple ["xkb" "us"]) (mkTuple ["xkb" "ara"]) (mkTuple ["xkb" "fi"])];
           xkb-options = ["caps:escape"];
         };
         "org/gnome/desktop/media-handling" = {

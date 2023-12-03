@@ -135,7 +135,7 @@ in {
       # Locate
       services.locate = {
         enable = true;
-        locate = pkgs.plocate;
+        package = pkgs.plocate;
         interval = "daily";
         localuser = null; # for 22.05
         # Sometimes indexing hgfs on VMWare causing CPU to go 100%
