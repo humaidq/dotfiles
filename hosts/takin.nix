@@ -45,7 +45,7 @@
     nix-daemon.enable = true;
   };
   homebrew = {
-    enable = true;
+    enable = false;
     onActivation = {
       autoUpdate = false;
       upgrade = false;
