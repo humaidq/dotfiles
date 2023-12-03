@@ -149,9 +149,9 @@ in {
         programs = {
           ssh = {
             enable = true;
-            matchBlocks."*" = {
-              extraOptions.IdentityAgent = "~/.1password/agent.sock";
-            };
+            #matchBlocks."*" = {
+            #  extraOptions.IdentityAgent = "~/.1password/agent.sock";
+            #};
           };
           tmux = {
             enable = true;
