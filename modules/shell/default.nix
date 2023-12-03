@@ -104,6 +104,7 @@ in {
             source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
             source ${lscolors}/lscolors.sh
             source ${zsh-extract}/extract.plugin.zsh
+            export PATH=/opt/homebrew/bin:$PATH
             eval "$(direnv hook zsh)"
 
             function mkcd() {

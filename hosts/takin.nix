@@ -53,16 +53,26 @@
     nix-daemon.enable = true;
   };
   homebrew = {
-    enable = false;
+    enable = true;
     onActivation = {
-      autoUpdate = false;
-      upgrade = false;
+      autoUpdate = true;
+      upgrade = true;
       cleanup = "zap";
     };
+    taps = [
+      "homebrew/cask-fonts"
+    ];
     brews = [
       "jython"
       "python@3.11"
       "tmux"
+      "gnupg"
+      "go"
+      "mosquitto"
+      "openjdk"
+      "tmux"
+      "pinentry-mac"
+      "direnv"
     ];
     casks = [
       "vlc"
@@ -70,16 +80,16 @@
       "slack"
       "stats"
       "transmission"
-      "lulu"
-      "knockknock"
-      "iterm2"
       "firefox"
-      "bartender"
       "coconutbattery"
       "docker"
       "eloston-chromium" # ungoogled-chromium
       "logi-options-plus"
       "diffusionbee"
+      "bartender"
+      "tailscale"
+      "font-monaspace"
+      "figma"
     ];
   };
 }
