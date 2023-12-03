@@ -84,7 +84,7 @@ in {
         # documentation, generators
         mdbook
         pandoc
-        hugo
+        unstable.hugo
         plantuml
         nodePackages.mermaid-cli
         graphviz

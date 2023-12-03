@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  unstable,
   ...
 }: {
   imports = [
@@ -32,6 +33,7 @@
       apps = true;
     };
     v18n.docker.enable = true;
+    v18n.emulation.systems = ["x86_64-linux"];
     hardware.vm = true;
     profiles.basePlus = true;
     development.enable = true;
@@ -45,5 +47,18 @@
       auth = true;
       tsKey = "tskey-auth-kJy3Zg2CNTRL-C2KHKDFpXUWioAwiSPs8bWPAuG346L6uM";
     };
+  };
+  programs.nix-ld.enable = true;
+
+  services.openssh = {
+    enable = true;
+
+    # Security: do not allow password auth or root login.
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+    };
+
+    openFirewall = true;
   };
 }
