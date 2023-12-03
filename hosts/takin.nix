@@ -1,11 +1,19 @@
 {
   config,
   pkgs,
+  vars,
   ...
 }: {
   networking = {
     computerName = "takin";
     hostName = "takin";
+  };
+  home-manager.users.${vars.user} = {
+    home.stateVersion = "23.05";
+  };
+
+  users.users.${vars.user} = {
+    home = "/Users/humaid";
   };
 
   nix = {
@@ -45,7 +53,7 @@
     nix-daemon.enable = true;
   };
   homebrew = {
-    enable = true;
+    enable = false;
     onActivation = {
       autoUpdate = false;
       upgrade = false;
@@ -71,6 +79,7 @@
       "docker"
       "eloston-chromium" # ungoogled-chromium
       "logi-options-plus"
+      "diffusionbee"
     ];
   };
 }

@@ -28,6 +28,6 @@
   };
 in {
   config = {
-    nixpkgs.overlays = [overlayFunction];
+    #nixpkgs.overlays = [overlayFunction];
   };
 }

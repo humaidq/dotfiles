@@ -17,7 +17,7 @@ in {
   options.sifr.security.harden = mkOption {
     description = "Hardens the system settings";
     type = types.bool;
-    default = true;
+    default = pkgs.stdenv.isLinux;
   };
   options.sifr.security.yubikey = mkOption {
     description = "Enables YubiKey support";
@@ -27,7 +27,7 @@ in {
   options.sifr.security.doas = mkOption {
     description = "Replaces sudo with minimal alternative (doas)";
     type = types.bool;
-    default = true;
+    default = pkgs.stdenv.isLinux;
   };
 
   config = mkMerge [

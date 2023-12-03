@@ -22,7 +22,7 @@ in {
   options.sifr.profiles.base = mkOption {
     description = "Sifr minimal base for all systems";
     type = types.bool;
-    default = true;
+    default = pkgs.stdenv.isLinux;
   };
   options.sifr.profiles.basePlus = mkOption {
     description = "Additional productivity command-line tools";

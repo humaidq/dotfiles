@@ -1,4 +1,5 @@
 [
+  ./options.nix
   ./default.nix
   ./development
   ./graphics
