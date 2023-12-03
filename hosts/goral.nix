@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  unstable,
   ...
 }: {
   imports = [
@@ -20,32 +21,44 @@
   # We have our own module that works with aarch64.
   disabledModules = ["virtualisation/vmware-guest.nix"];
   virtualisation.vmware.guest.enable = true;
-
-  virtualisation.docker.enable = true;
   networking.firewall.enable = lib.mkForce false;
 
   # My configuration specific settings
   sifr = {
     graphics = {
       i3.enable = true;
+      gnome.enable = true;
       hidpi = true;
       enableSound = false;
       apps = true;
     };
+    v18n.docker.enable = true;
+    v18n.emulation.systems = ["x86_64-linux"];
     hardware.vm = true;
     profiles.basePlus = true;
     development.enable = true;
     security.yubikey = true;
 
     tailscale = {
-      enable = false;
+      enable = true;
       exitNode = false;
       ssh = false;
 
-      auth = false;
-      tsKey = "tskey-auth-kqgVE14CNTRL-ik7eAL6b338aaXZxJeqrA8weWYNtUgwb";
+      auth = true;
+      tsKey = "tskey-auth-kJy3Zg2CNTRL-C2KHKDFpXUWioAwiSPs8bWPAuG346L6uM";
     };
   };
+  programs.nix-ld.enable = true;
 
-  system.stateVersion = "23.05";
+  services.openssh = {
+    enable = true;
+
+    # Security: do not allow password auth or root login.
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+    };
+
+    openFirewall = true;
+  };
 }

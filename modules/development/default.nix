@@ -27,10 +27,12 @@ in {
           delta.enable = true;
           userName = "Humaid Alqasimi";
           userEmail = "git@huma.id";
+          signing.key = "54C2007DB93B5EC5";
+          signing.signByDefault = true;
           extraConfig = {
             core.editor = "nvim";
             init.defaultBranch = "master";
-            format.signoff = true;
+            format.signOff = true;
             commit.verbose = "yes";
             push.default = "current";
             safe.directory = "/mnt/hgfs/*";
@@ -61,7 +63,7 @@ in {
         python311Packages.pip
 
         # utilities
-        ffmpeg-full
+        ffmpeg
         git-privacy
         gdb
         bvi
@@ -74,7 +76,6 @@ in {
         dmtx-utils
         fzf
         scc
-        ripgrep-all
 
         # build tools
         gnumake
@@ -85,7 +86,7 @@ in {
         # documentation, generators
         mdbook
         pandoc
-        hugo
+        unstable.hugo
         plantuml
         nodePackages.mermaid-cli
         graphviz

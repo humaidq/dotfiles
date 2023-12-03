@@ -65,7 +65,7 @@ in {
         # Display server (X11)
         xserver = {
           enable = true;
-          layout = "us,ar";
+          #layout = "us,ar";
           xkbOptions = "grp:win_space_toggle";
           enableCtrlAltBackspace = false; # prevent lockscreen bypass
           screenSection = ''
@@ -85,16 +85,16 @@ in {
       };
 
       services.xserver.displayManager = {
-        #lightdm = {
-        #  enable = true;
-        #  background = ../../assets/sifr-lightdm.png;
-        #  greeters = {
-        #    gtk.theme.name = "Adwaita-dark";
-        #  };
-        #};
-        gdm = {
+        lightdm = {
           enable = true;
+          background = ../../assets/sifr-lightdm.png;
+          greeters = {
+            gtk.theme.name = "Adwaita-dark";
+          };
         };
+        #gdm = {
+        #  enable = true;
+        #};
         # Make the Caps Lock key both Esc and Ctrl (when long pressed)
         sessionCommands = ''
           ${pkgs.xorg.xmodmap}/bin/xmodmap ${xmodmapFile}

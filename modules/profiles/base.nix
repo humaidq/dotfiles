@@ -42,7 +42,7 @@ in {
         neovim
         wget
         htop
-        gitAndTools.gitFull
+        gitMinimal
         rsync
         bc
         units
@@ -57,7 +57,6 @@ in {
         lz4
         unzip
         tree
-        jq
         fd
         acpi
         usbutils
@@ -127,6 +126,7 @@ in {
         tmux
         lf
         sshfs
+        jq
 
         # TODO move to laptop config
         lm_sensors
@@ -135,9 +135,11 @@ in {
       # Locate
       services.locate = {
         enable = true;
-        locate = pkgs.plocate;
+        package = pkgs.plocate;
         interval = "daily";
         localuser = null; # for 22.05
+        # Sometimes indexing hgfs on VMWare causing CPU to go 100%
+        prunePaths = [ "/mnt" ];
       };
 
       # Track highest uptime! :)
@@ -147,9 +149,9 @@ in {
         programs = {
           ssh = {
             enable = true;
-            matchBlocks."*" = {
-              extraOptions.IdentityAgent = "~/.1password/agent.sock";
-            };
+            #matchBlocks."*" = {
+            #  extraOptions.IdentityAgent = "~/.1password/agent.sock";
+            #};
           };
           tmux = {
             enable = true;
@@ -184,7 +186,7 @@ in {
         services.gpg-agent = {
           enable = true;
           enableZshIntegration = true;
-          pinentryFlavor = "qt";
+          #pinentryFlavor = "qt";
         };
 
         xdg = {
@@ -240,20 +242,20 @@ in {
           configFile."mimeapps.list".force = true;
 
           # Desktop entry aliases
-          dataFile."applications/img.desktop" =
-            desktopEntry "Image Viewer" "${pkgs.nsxiv}/bin/nsxiv -a %f";
+          #dataFile."applications/img.desktop" =
+          #  desktopEntry "Image Viewer" "${pkgs.nsxiv}/bin/nsxiv -a %f";
 
-          dataFile."applications/file.desktop" =
-            desktopEntry "File Manager" "${pkgs.st}/bin/st -e lf %u";
+          #dataFile."applications/file.desktop" =
+          #  desktopEntry "File Manager" "${pkgs.st}/bin/st -e lf %u";
 
-          dataFile."applications/text.desktop" =
-            desktopEntry "Text Editor" "${pkgs.alacritty}/bin/alacritty -e nvim %f";
+          #dataFile."applications/text.desktop" =
+          #  desktopEntry "Text Editor" "${pkgs.alacritty}/bin/alacritty -e nvim %f";
 
-          dataFile."applications/pdf.desktop" =
-            desktopEntry "PDF Viewer" "${pkgs.zathura}/bin/zathura %u";
+          #dataFile."applications/pdf.desktop" =
+          #  desktopEntry "PDF Viewer" "${pkgs.zathura}/bin/zathura %u";
 
-          dataFile."applications/video.desktop" =
-            desktopEntry "Video Player" "${pkgs.vlc}/bin/vlc %u";
+          #dataFile."applications/video.desktop" =
+          #  desktopEntry "Video Player" "${pkgs.vlc}/bin/vlc %u";
         };
       }; # end of home-manager
     })

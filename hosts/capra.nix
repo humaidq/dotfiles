@@ -4,9 +4,6 @@
   pkgs,
   ...
 }: {
-  imports = [
-  ];
-
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
@@ -17,10 +14,6 @@
 
   # for CAN serial
   boot.initrd.kernelModules = ["ch341"];
-
-  networking.networkmanager.enable = true;
-  boot.binfmt.emulatedSystems = ["aarch64-linux"];
-  virtualisation.docker.enable = true;
   services.xserver.videoDrivers = lib.mkForce ["intel"];
 
   # My configuration specific settings
@@ -36,6 +29,11 @@
     profiles.laptop = true;
     development.enable = true;
     security.yubikey = true;
+    v18n = {
+      docker.enable = true;
+      emulation.enable = true;
+      emulation.systems = ["aarch64-linux"];
+    };
 
     tailscale = {
       enable = false;
@@ -91,6 +89,4 @@
       };
     };
   };
-
-  system.stateVersion = "23.05";
 }

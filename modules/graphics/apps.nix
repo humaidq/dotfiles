@@ -22,9 +22,9 @@ in {
       };
       # Fonts
       fonts = {
-        enableDefaultFonts = true;
+        enableDefaultPackages = true;
         enableGhostscriptFonts = true;
-        fonts = with pkgs; [
+        packages = with pkgs; [
           noto-fonts
           noto-fonts-cjk
           noto-fonts-emoji
@@ -51,7 +51,6 @@ in {
 
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
-        appimage-run
         zathura
         firefox
       ];

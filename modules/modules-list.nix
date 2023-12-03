@@ -15,4 +15,5 @@
   ./scripts
   ./tailscale
   ./caddy
+  ./v18n
 ]
