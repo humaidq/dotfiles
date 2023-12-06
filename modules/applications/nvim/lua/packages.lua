@@ -11,13 +11,22 @@ require("lazy").setup({
   -- Language support
   "lervag/vimtex",
   "LnL7/vim-nix",
+   {
+    "wuelnerdotexe/vim-astro",
+    ft = "astro",
+    init = function()
+      -- Astro configuration variables.
+      vim.g.astro_typescript = "enable"
+      vim.g.astro_stylus     = "disable"
+    end,
+  },
 
   -- Auto Complete and LSP stuff
   "folke/neodev.nvim",
   "L3MON4D3/LuaSnip",
   "williamboman/mason.nvim",
   "WhoIsSethDaniel/mason-tool-installer.nvim",
-  { 
+  {
     'VonHeikemen/lsp-zero.nvim',
     branch = 'v2.x',
     dependencies = {
@@ -40,6 +49,7 @@ require("lazy").setup({
   },
   'hrsh7th/cmp-path',
   'hrsh7th/cmp-buffer',
+  'github/copilot.vim',
 
   -- Theme
   {
@@ -73,11 +83,16 @@ require('mason-tool-installer').setup {
 	'dockerfile-language-server',
     'stylelint',
     'stylelint-lsp',
+	'css-lsp',
     'eslint-lsp',
     'rust-analyzer',
     'pyright',
 	'json-lsp',
 	'taplo',
+	'astro-language-server',
+	'prettierd',
+	'tailwindcss-language-server',
+	'hadolint',
   },
 }
 

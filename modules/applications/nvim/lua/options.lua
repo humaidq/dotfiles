@@ -35,17 +35,19 @@ opt.undolevels = 10000
 opt.undoreload = 10000
 
 -- Tabs
-opt.tabstop = 4
-opt.shiftwidth = 4
+opt.tabstop = 2
+opt.shiftwidth = 2
 opt.expandtab = false
 
 -- File preferences
 vim.api.nvim_command('autocmd FileType css setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType javascript setlocal et ts=2 sw=2')
+vim.api.nvim_command('autocmd FileType javascriptreact setlocal et ts=2 sw=2')
+vim.api.nvim_command('autocmd FileType typescriptreact setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType html setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType yaml setlocal et ts=2 sw=2')
 vim.api.nvim_command('autocmd FileType python setlocal et ts=4 sw=4')
-vim.api.nvim_command('autocmd FileType javascript setlocal et ts=2 sw=2')
+vim.api.nvim_command('autocmd FileType go setlocal ts=4 sw=4')
 
 -- Disable splash screen
 opt.shm:append("I")

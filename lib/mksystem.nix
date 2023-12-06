@@ -43,6 +43,7 @@ in {
           {
             networking.hostName = machine_name;
             environment.systemPackages = [alejandra.defaultPackage.${system}];
+            system.stateVersion = "23.11";
           }
         ]
         ++ allModules;

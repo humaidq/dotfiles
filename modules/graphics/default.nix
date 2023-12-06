@@ -143,7 +143,7 @@ in {
           settings = {
             font = {
               normal.family = "spleen";
-              size = 18;
+              size = 24;
             };
 
             # Without this, $TERM in tmux is set as xterm-256color which breaks

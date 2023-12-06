@@ -58,6 +58,7 @@ in {
         jre
         jdk
         lua
+        sass
         lua52Packages.luarocks
         python311Full
         python311Packages.pip
@@ -82,6 +83,7 @@ in {
         cmake
         cargo
         nodejs
+        corepack_21
 
         # documentation, generators
         mdbook
@@ -107,8 +109,14 @@ in {
         nodePackages.bash-language-server
         nodePackages.vscode-json-languageserver
         nodePackages.dockerfile-language-server-nodejs
+        nodePackages.typescript-language-server
         taplo
         lua-language-server
+        prettierd
+        hadolint
+        tailwindcss-language-server
+        vscode-langservers-extracted
+        nodePackages.jsdoc
       ];
     })
   ];
