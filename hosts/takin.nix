@@ -90,6 +90,7 @@
       "tailscale"
       "font-monaspace"
       "figma"
+      "inkscape"
     ];
   };
 }
