@@ -97,9 +97,29 @@ in {
         import general
       '';
 
+      virtualHosts."astro.huma.id".extraConfig = ''
+        root * /srv/astro
+        file_server
+        import header
+        import cors astro.huma.id
+        import general
+        handle_errors {
+          rewrite * /{http.error.status_code}.html
+          file_server
+        }
+      '';
+      virtualHosts."saleh.boo".extraConfig = ''
+        root * /srv/saleh
+        file_server
+        import header
+        import cors saleh.boo
+        import general
+      '';
+
       # Fun stuff
       virtualHosts."bot.huma.id".extraConfig = "respond \"beep boop\"";
       virtualHosts."car.huma.id".extraConfig = "respond \"vroom vroom\"";
+      virtualHosts."xn--e77hia.huma.id".extraConfig = "respond \"UAE flag day!\"";
 
       # Redirect all domains back to huma.id, preserving the path.
       virtualHosts."www.huma.id" = {
