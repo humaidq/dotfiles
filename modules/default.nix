@@ -10,9 +10,8 @@
 with lib; let
   cfg = config.sifr;
 in {
-
   config = mkMerge [
-    ( {
+    {
       users.users.${vars.user} = {
         isNormalUser = true;
         uid = 1000;
@@ -95,6 +94,6 @@ in {
           allowBroken = true;
         };
       };
-    })
+    }
   ];
 }

@@ -32,9 +32,10 @@ in {
           extraConfig = {
             core.editor = "nvim";
             init.defaultBranch = "master";
-            format.signOff = true;
+            format.signoff = true;
             commit.verbose = "yes";
             push.default = "current";
+            pull.rebase = true;
             safe.directory = "/mnt/hgfs/*";
             url = {
               "git@github.com:".insteadOf = "gh:";
@@ -111,10 +112,6 @@ in {
         shellcheck
         #cmake-language-server
         rust-analyzer
-        unstable.gopls
-        unstable.gotools
-        unstable.golangci-lint
-        unstable.govulncheck
         nodePackages.pyright
         nodePackages.eslint
         nodePackages.stylelint
@@ -129,6 +126,11 @@ in {
         tailwindcss-language-server
         vscode-langservers-extracted
         nodePackages.jsdoc
+        # We use latest version of Go
+        unstable.gopls
+        unstable.gotools
+        unstable.golangci-lint
+        unstable.govulncheck
       ];
     })
   ];

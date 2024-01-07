@@ -139,7 +139,7 @@ in {
         interval = "daily";
         localuser = null; # for 22.05
         # Sometimes indexing hgfs on VMWare causing CPU to go 100%
-        prunePaths = [ "/mnt" ];
+        prunePaths = ["/mnt"];
       };
 
       # Track highest uptime! :)

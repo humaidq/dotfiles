@@ -15,7 +15,6 @@
     root.initialHashedPassword = "";
   };
 
-
   sifr = {
     profiles.basePlus = true;
   };
