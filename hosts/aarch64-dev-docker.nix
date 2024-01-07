@@ -6,7 +6,7 @@
   ...
 }: {
   sifr = {
-    profiles.basePlus = true;
+    profiles.basePlus = false;
     #development.enable = true;
     security.harden = false;
   };

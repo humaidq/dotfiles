@@ -66,6 +66,7 @@ in {
         # utilities
         ffmpeg
         git-privacy
+        git-lfs
         gdb
         bvi
         minify
@@ -87,13 +88,24 @@ in {
 
         # documentation, generators
         mdbook
+        mdbook-mermaid
+        mdbook-toc
+        mdbook-pdf
+        mdbook-katex
         pandoc
         unstable.hugo
         plantuml
-        nodePackages.mermaid-cli
+        #nodePackages.mermaid-cli
+        mermaid-cli
         graphviz
         texlive.combined.scheme-full
         tectonic
+        imagemagick
+
+        # sbom, compliance
+        cyclonedx-gomod
+        cyclonedx-python
+        cdxgen
 
         # language servers, checkers, formatters
         shellcheck
