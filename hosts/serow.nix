@@ -1,8 +1,9 @@
-{ config, pkgs, nixpkgs-unstable, ... }: {
-  imports = [
-    ../common
-  ];
-
+{
+  config,
+  pkgs,
+  nixpkgs-unstable,
+  ...
+}: {
   boot.loader = {
     systemd-boot = {
       enable = true;
@@ -14,10 +15,18 @@
   };
 
   # My configuration specific settings
-  hsys = {
-    enablei3 = true;
-    getDevTools = true;
-    laptop = true;
+  sifr = {
+    graphics = {
+      i3.enable = true;
+      gnome.enable = true;
+    };
+    profiles.basePlus = true;
+    profiles.laptop = true;
+    development.enable = true;
+    security.yubikey = true;
+    v18n.emulation.enable = true;
+    v18n.emulation.systems = ["aarch64-linux"];
+
     #virtualisation = true;
     tailscale = {
       enable = true;
@@ -26,12 +35,5 @@
     };
   };
 
-  # enable qemu virtualisation
-  environment.systemPackages = with pkgs; [
-    qemu_kvm
-    OVMF
-  ];
   hardware.flipperzero.enable = true;
-
-  system.stateVersion = "23.0521.11";
 }

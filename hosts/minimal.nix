@@ -1,24 +1,22 @@
-{ config, pkgs, lib, ... }:
 {
-  imports = [
-    ../common
-  ];
-
+  config,
+  pkgs,
+  lib,
+  vars,
+  ...
+}: {
   # My configuration specific settings
-  hsys = {
-    enablei3 = true;
-    getDevTools = false;
-    getCliTools = false;
-    minimal = true;
-    hardenSystem = true;
+  sifr = {
+    graphics.i3.enable = true;
   };
-  users.users.humaid = {
+
+  users.users."${vars.user}" = {
     # Allow passwordless login
     initialHashedPassword = "";
   };
   services.xserver.displayManager.autoLogin = {
     enable = true;
-    user = "humaid";
+    user = "${vars.user}";
   };
   # Allow login to root with no password
   users.users.root.initialHashedPassword = "";
@@ -28,7 +26,4 @@
   security.polkit.enable = lib.mkForce false;
   security.rtkit.enable = lib.mkForce false;
   security.apparmor.enable = lib.mkForce false;
-
-
-  system.stateVersion = "23.05";
 }

@@ -1,8 +1,9 @@
-{ lib, config, pkgs, ... }: {
-  imports = [
-    ../common
-  ];
-
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}: {
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
@@ -10,12 +11,12 @@
   };
 
   # Annoying Nvidia configurations
-  services.xserver.videoDrivers = lib.mkForce [ "nvidia" ];
+  services.xserver.videoDrivers = lib.mkForce ["nvidia"];
   hardware.opengl = {
     enable = true;
     driSupport32Bit = true;
     driSupport = true;
-    extraPackages = with pkgs; [ vaapiVdpau ];
+    extraPackages = with pkgs; [vaapiVdpau];
   };
 
   hardware.nvidia = {
@@ -34,12 +35,16 @@
   #services.logind.lidSwitchExternalPower = "ignore";
 
   # My configuration specific settings
-  hsys = {
-    workProfile = true;
-    enablei3 = true;
-    getDevTools = true;
-    laptop = true;
-    git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKBG6luRkesOBp4w8cMb+d8yUwFZsF02whLR4f3O9+6c humaid.alqassimi+git@tii.ae";
+  sifr = {
+    graphics = {
+      i3.enable = true;
+      gnome.enable = true;
+    };
+
+    profiles.basePlus = true;
+    development.enable = true;
+    security.yubikey = true;
+    #git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKBG6luRkesOBp4w8cMb+d8yUwFZsF02whLR4f3O9+6c humaid.alqassimi+git@tii.ae";
 
     tailscale = {
       enable = false;
@@ -51,6 +56,4 @@
       #tsKey = "tskey-kKX8n35CNTRL-A76BPGh8jqVkuVFHWA3YJ";
     };
   };
-
-  system.stateVersion = "21.11";
 }

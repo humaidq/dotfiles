@@ -1,6 +1,11 @@
-{ config, pkgs, lib, ... }: {
+{
+  config,
+  pkgs,
+  lib,
+  unstable,
+  ...
+}: {
   imports = [
-    ../common
     ../lib/vmware-guest.nix
   ];
 
@@ -14,29 +19,46 @@
   };
 
   # We have our own module that works with aarch64.
-  disabledModules = [ "virtualisation/vmware-guest.nix" ];
+  disabledModules = ["virtualisation/vmware-guest.nix"];
   virtualisation.vmware.guest.enable = true;
-
-  virtualisation.docker.enable = true;
+  networking.firewall.enable = lib.mkForce false;
 
   # My configuration specific settings
-  hsys = {
-	enablei3 = true;
-    hidpi = true;
-    getDevTools = true;
-    git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr6WzdDnXBEBok4FGr0609j985aYZ82+wj/Vipp/pdg git@huma.id";
-
-    isVM = true;
+  sifr = {
+    graphics = {
+      i3.enable = true;
+      gnome.enable = true;
+      hidpi = true;
+      enableSound = false;
+      apps = true;
+    };
+    v18n.docker.enable = true;
+    v18n.emulation.systems = ["x86_64-linux"];
+    hardware.vm = true;
+    profiles.basePlus = true;
+    development.enable = true;
+    security.yubikey = true;
 
     tailscale = {
       enable = true;
       exitNode = false;
-      ssh = true;
+      ssh = false;
 
       auth = true;
-      tsKey = "tskey-auth-kqgVE14CNTRL-ik7eAL6b338aaXZxJeqrA8weWYNtUgwb";
+      tsKey = "tskey-auth-kJy3Zg2CNTRL-C2KHKDFpXUWioAwiSPs8bWPAuG346L6uM";
     };
   };
+  programs.nix-ld.enable = true;
 
-  system.stateVersion = "23.05";
+  services.openssh = {
+    enable = true;
+
+    # Security: do not allow password auth or root login.
+    settings = {
+      PasswordAuthentication = false;
+      PermitRootLogin = "no";
+    };
+
+    openFirewall = true;
+  };
 }

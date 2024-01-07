@@ -1,42 +1,81 @@
-# Humaid's NixOS configurations
+# sifrOS: My Secure NixOS Configuration
 
-## Hosts
+## Goal
 
-- goral: A VM that runs on my M2 Macbook Air (current daily driver)
-- serow: My ThinkPad T590
-- tahr: My work-provided ThinkPad P1
-- duisk: The server that runs huma.id
+sifrOS is an opinionated but modular framework for NixOS for my use case. The goal is to build a framework for me, so your use case and requirements might be different.
 
-## Setup
+### Features
 
-1. Get NixOS 23.05 or newer.
-2. Boot the image.
-3. Define and format the partition, mount it on `/mnt`.
-4. Install hsys:
-    ```
-    nix-shell -p git nixFlakes neovim
-    git clone https://git.sr.ht/~humaid/hsys /tmp/hsys
-    cd /tmp/hsys
+- Secure by default
+    - The system is configured to be secured by default, enabling firewall and hardening system and kernel settings.
+    - We aim with security through simplicity by using a minimal set of software per module.
+    - Firefox is configured to use uBlock Origin by default, and enable anti-fingerprinting settings and more.
+- Properly configured window manager/desktop environments
+    - i3wm is installed and configured to work out of the box, with media controls, locking, compositor and more.
+- Modular
+    - Components are separated by modules, and the configuration is available as Flakes.
+- Clean
+    - The system follows a common theme and branding.
+    - A minimal boot screen, login menu, and desktop.
+    - `$HOME` is mostly de-cluttered, and XDG user directories (e.g. Desktop, Downloads) are simplified.
 
-    HOST=...
+### Hosts
 
-    # Get HW configuration
-    nixos-generate-config --root /mnt --dir /tmp/nixconfig
+| Name | Arch/Kernel | Hardware | Description |
+| - | - | - | - |
+| serow | `x86_64-linux` | ThinkPad T590 | Development Laptop |
+| tahr | `x86_64-linux` | ThinkPad P1 Gen3 | Work Laptop |
+| takin | `aarch64-darwin` | MacBook Pro M2 Max | Main Laptop |
+| goral | `aarch64-linux` | VMWare under macOS | Development VM |
+| duisk | `x86_64-linux` | Vultr Cloud | Web Server for huma.id |
+| capra | `x86_64-linux` | Dell Latitude | Temp. Work Laptop |
+| argali | `aarch64-linux` | Raspberry Pi 4 | Tinkering Device (generator) |
 
-    cp /tmp/nixconfig/hardware-configuration.nix ./hardware/${HOST}.nix
-    nvim ./hardware/${HOST}.nix
+Installer will prompt the user to reuse a previous host configuration or create a new one.
 
-    # Create host configuration (if doesn't exist), base from similar host
-    cp ./hosts/serow.nix ./hosts/${HOST}.nix
-    nvim ./hosts/${HOST}.nix
+## General Information
 
-    # Add host to flake.nix
-    nvim flake.nix
+An overview, based on [NixOS Wiki Comparison definitions](https://nixos.wiki/wiki/Comparison_of_NixOS_setups).
 
-    nixos-install --flake .#${HOST}
+| Flakes | Home Manager | Secrets | File System | System Encryption | Opt-in state | Display Server | Desktop Environment |
+| - | - | - | - | - | - | - | - |
+| Yes | Yes | None (Yet) | Btrfs | Yes (LUKS) | No | X, Wayland | i3, Gnome |
 
-    cp -r /tmp/hsys /mnt/etc/hsys
-    ```
+## Building
+
+To build Raspberry Pi 4 image:
+```
+nix build .#argali
+```
+
+To build x86-64 installer image:
+```
+nix build .#x86-installer
+```
+
+## Installation
+
+Create an installer for the required architecture, and boot. After boot, you should automatically be logged in. A window should appear with the installer, the prompt will guide you through the installation process.
+
+## NixOS Example Usage
+
+To rebuild, run the following in the repository directory:
+```
+doas nixos-rebuild switch --flake .#goral
+```
+
+## macOS Example Setup & Usage
+
+These commands should be run after [installing Nix](https://nixos.org/download), and cloning this repository. The commands should be run while in this repository.
+
+First time run:
+```
+nix --extra-experimental-features 'flakes nix-command' run nix-darwin -- switch --flake .#takin
+```
+Then (without sudo):
+```
+darwin-rebuild switch --flake .#takin
+```
 
 ## TODOs
 
@@ -44,3 +83,4 @@
 - Raspberry Pi image
 - Docker image
 - Secret management
+- Deploy Tool (deploy-rs)

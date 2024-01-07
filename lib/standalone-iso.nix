@@ -1,15 +1,15 @@
-{nixpkgs}:{
+{nixpkgs}: {
   imports = ["${nixpkgs}/nixos/modules/installer/cd-dvd/iso-image.nix"];
   formatAttr = "isoImage";
   fileExtension = ".iso";
-  system.nixos.distroName = "hsys";
-  system.nixos.distroId = "hsys";
+  system.nixos.distroName = "sifr";
+  system.nixos.distroId = "sifr";
   isoImage = {
-    isoBaseName = "hsys";
+    isoBaseName = "sifr";
     #compressImage = true;
     squashfsCompression = "zstd -Xcompression-level 6";
-    efiSplashImage = ../common/assets/hsys-lightdm.png;
-    splashImage = ../common/assets/hsys-bios.png; # BIOS boot
+    efiSplashImage = ../assets/sifr-lightdm.png;
+    splashImage = ../assets/sifr-bios.png; # BIOS boot
     #grubTheme = null;
 
     # Make EFI & USB bootable

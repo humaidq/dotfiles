@@ -1,8 +1,9 @@
-{ lib, config, pkgs, ... }: {
-  imports = [
-    ../common
-  ];
-
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}: {
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
@@ -10,35 +11,44 @@
   boot.initrd.secrets = {
     "/crypto_keyfile.bin" = null;
   };
-  boot.initrd.kernelModules = [ "ch341" ];
 
-  networking.networkmanager.enable = true;
-  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
-  virtualisation.docker.enable = true;
-  services.xserver.videoDrivers = lib.mkForce [ "intel" ];
+  # for CAN serial
+  boot.initrd.kernelModules = ["ch341"];
+  services.xserver.videoDrivers = lib.mkForce ["intel"];
 
   # My configuration specific settings
-  hsys = {
-    workProfile = true;
-    enablei3 = true;
-    getDevTools = true;
-    laptop = false;
+  sifr = {
+    graphics = {
+      i3.enable = true;
+      hidpi = true;
+      enableSound = false;
+      apps = true;
+    };
+    hardware.vm = true;
+    profiles.basePlus = true;
+    profiles.laptop = true;
+    development.enable = true;
+    security.yubikey = true;
+    v18n = {
+      docker.enable = true;
+      emulation.enable = true;
+      emulation.systems = ["aarch64-linux"];
+    };
 
     tailscale = {
       enable = false;
-      exitNode = true;
-      ssh = true;
+      exitNode = false;
+      ssh = false;
 
-      # temp
-      #auth = true;
-      #tsKey = "tskey-kKX8n35CNTRL-A76BPGh8jqVkuVFHWA3YJ";
+      auth = false;
+      #tsKey = "";
     };
   };
 
   services.udev.extraRules = ''ACTION=="change", SUBSYSTEM=="drm", RUN+="${pkgs.autorandr}/bin/autorandr -c"'';
   services.autorandr = {
     enable = true;
-    
+
     profiles = {
       "dock" = {
         fingerprint = {
@@ -79,6 +89,4 @@
       };
     };
   };
-
-  system.stateVersion = "23.05";
 }

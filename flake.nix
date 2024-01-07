@@ -1,8 +1,8 @@
 {
-  description = "hsys is a declarative system configuration built by Humaid";
+  description = "sifr is a declarative system configuration built by Humaid";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nur.url = "github:nix-community/NUR";
@@ -13,7 +13,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-23.05";
+      url = "github:nix-community/home-manager/release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -24,6 +24,11 @@
 
     alejandra = {
       url = "github:kamadorueda/alejandra/3.0.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-darwin = {
+      url = "github:LnL7/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -38,105 +43,88 @@
     sops-nix,
     nur,
     alejandra,
+    nix-darwin,
     ...
   }: let
-    pkgs = import <nixpkgs> {};
-    mkMachine = import ./lib/mkmachine.nix;
-    overlays = [];
+    vars = {
+      user = "humaid";
+    };
+    mksystem = import ./lib/mksystem.nix {
+      inherit (nixpkgs) lib;
+      inherit nixpkgs nixpkgs-unstable home-manager alejandra sops-nix nixos-generators nix-darwin;
+    };
   in {
-    #formatter.${system} = alejandra.defaultPackage.${system};
+    # System Configurations for NixOS
+    nixosConfigurations = {
+      # System that runs on a VM on Macbook Pro, my main system
+      goral = mksystem.nixosSystem "goral" {
+        inherit vars;
+        system = "aarch64-linux";
+      };
 
-    # System that runs on a VM on Macbook Pro, my main system
-    nixosConfigurations.goral = mkMachine "goral" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "aarch64-linux";
-      user   = "humaid";
-    };
-
-    # Sytem that runs on Thinkpad
-    nixosConfigurations.serow = mkMachine "serow" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-
-    # System that runs on Vultr cloud hosting huma.id
-    nixosConfigurations.duisk = mkMachine "duisk" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-
-    # System that runs on my work laptop
-    nixosConfigurations.tahr = mkMachine "tahr" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-    
-    # System that runs on my temporary Dell laptop
-    nixosConfigurations.capra = mkMachine "capra" {
-      inherit overlays nixpkgs nixpkgs-unstable home-manager;
-      system = "x86_64-linux";
-      user   = "humaid";
-    };
-
-    packages.x86_64-linux = {
-      x86-iso = nixos-generators.nixosGenerate {
+      # Sytem that runs on Thinkpad T590
+      serow = mksystem.nixosSystem "serow" {
+        inherit vars;
         system = "x86_64-linux";
-        modules = [
-          ./hosts/minimal.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
+      };
+
+      # System that runs on Vultr cloud, hosting huma.id
+      duisk = mksystem.nixosSystem "duisk" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+
+      # System that runs on my work laptop
+      tahr = mksystem.nixosSystem "tahr" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+
+      # System that runs on my temporary Dell laptop
+      capra = mksystem.nixosSystem "capra" {
+        inherit vars;
+        system = "x86_64-linux";
+      };
+    };
+
+    # System Configurations for macOS
+    darwinConfigurations = {
+      takin = mksystem.darwinSystem "takin" {
+        inherit vars;
+      };
+    };
+
+    # Generators for x86_64
+    packages.x86_64-linux = let
+      system = "x86_64-linux";
+    in {
+      x86-installer = mksystem.nixosGenerate "x86-installer" {
+        inherit vars system;
         customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
         format = "standalone-iso";
       };
-      x86-docker = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        modules = [
-          ./hosts/docker.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
+      x86-docker = mksystem.nixosGenerate "x86-docker" {
+        inherit vars system;
         format = "docker";
       };
-      x86-installer = nixos-generators.nixosGenerate {
-        system = "x86_64-linux";
-        modules = [
-          ./hosts/install.nix
-          ./users/humaid
-          home-manager.nixosModules.home-manager {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.humaid = import ./users/humaid/home-manager.nix;
-          }
-        ];
+    };
+
+    # Generators for aarch64
+    packages.aarch64-linux = let
+      system = "aarch64-linux";
+    in {
+      aarch64-installer = mksystem.nixosGenerate "aarch64-installer" {
+        inherit vars system;
         customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
         format = "standalone-iso";
       };
-    };
-    packages.aarch64-linux = {
-      vmware = nixos-generators.nixosGenerate {
-        system = "aarch64-linux";
-        modules = [
-          ./hosts/install.nix
-          ./users/humaid
-          {
-            hsys = {
-              enablei3 = true;
-            };
-          }
-        ];
-        format = "vmware";
+      argali = mksystem.nixosGenerate "argali" {
+        inherit vars system;
+        format = "sd-aarch64";
+      };
+      aarch64-dev-docker = mksystem.nixosGenerate "aarch64-dev-docker" {
+        inherit vars system;
+        format = "docker";
       };
     };
   };
