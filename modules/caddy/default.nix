@@ -121,6 +121,18 @@ in {
       virtualHosts."car.huma.id".extraConfig = "respond \"vroom vroom\"";
       virtualHosts."xn--e77hia.huma.id".extraConfig = "respond \"UAE flag day!\"";
 
+      # Sarim Repository
+      virtualHosts."sarim.huma.id".extraConfig = ''
+        root * /srv/sarim
+        file_server
+        basicauth * {
+          sarim $2a$14$QbtiHp/b2Iaue/5At71guutf4XIeA2qANorbuI7dVTSCFli4KBfJa
+        }
+	header *.bundle {
+          Content-Type "application/octet-stream"
+	}
+      '';
+
       # Redirect all domains back to huma.id, preserving the path.
       virtualHosts."www.huma.id" = {
         serverAliases = ["humaidq.ae" "www.humaidq.ae"];
