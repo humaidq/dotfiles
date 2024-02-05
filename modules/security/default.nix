@@ -203,11 +203,12 @@ in {
       ];
       services.resolved = {
         enable = true;
-        dnssec = "true";
-        domains = ["~."];
-        extraConfig = ''
-          DNSOverTLS=yes
-        '';
+        # causing resolution failures
+        #dnssec = "false";
+        #domains = ["~."];
+        #extraConfig = ''
+        #  DNSOverTLS=yes
+        #'';
       };
 
       # StevenBlack's hosts file.

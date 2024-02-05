@@ -56,6 +56,8 @@ in {
       nix = {
         settings = {
           allowed-users = [cfg.username];
+          builders-use-substitutes = true;
+          trusted-users = ["root" cfg.username];
           auto-optimise-store = true;
 
           # Enable flakes
