@@ -18,7 +18,7 @@ in {
   config = mkMerge [
     (mkIf cfg.apps {
       boot.plymouth = {
-        font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
+        #font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
       # Fonts
       fonts = {
