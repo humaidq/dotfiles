@@ -240,6 +240,8 @@ in {
 
           # prevent home-manager from failing after rebuild
           configFile."mimeapps.list".force = true;
+          configFile."user-dirs.locale".force = true;
+          configFile."user-dirs.dirs".force = true;
 
           # Desktop entry aliases
           #dataFile."applications/img.desktop" =
