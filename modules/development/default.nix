@@ -28,7 +28,7 @@ in {
           userName = "Humaid Alqasimi";
           userEmail = "git@huma.id";
           signing.key = "54C2007DB93B5EC5";
-          signing.signByDefault = true;
+          signing.signByDefault = false;
           extraConfig = {
             core.editor = "nvim";
             init.defaultBranch = "master";
