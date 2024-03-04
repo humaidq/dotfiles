@@ -73,6 +73,8 @@
       "tmux"
       "pinentry-mac"
       "direnv"
+      "ffmpeg"
+      "neovim"
     ];
     casks = [
       "vlc"
@@ -91,6 +93,10 @@
       "font-monaspace"
       "figma"
       "inkscape"
+      "eqmac"
+      "iterm2"
+      "raycast"
+      "slack"
     ];
   };
 }
