@@ -16,6 +16,7 @@
 
     extraGroups = ["caddy"];
   };
+  services.tailscale.useRoutingFeatures = "both";
 
   sifr = {
     profiles.basePlus = true;
