@@ -6,6 +6,7 @@
   ...
 }: {
   sifr = {
+    security.harden = false;
     tailscale = {
       enable = true;
       exitNode = true;
@@ -13,9 +14,28 @@
 
       # temp
       auth = true;
-      tsKey = "tskey-auth-knws1K7CNTRL-EzBQvwQeW3UpdN4cxq7c1UdJYq67vSSM";
+      tsKey = "";
     };
   };
+
+  #boot.kernelPackages = pkgs.linuxPackages_rpi4;
+  hardware.enableRedistributableFirmware = true;
+  networking.networkmanager.enable = false;
+
+  networking.wireless = {
+    enable = true;
+    networks = {
+#      "SSID" = {
+#        psk = "PASSWORD";
+#      };
+    };
+  };
+
+  boot.initrd.kernelModules = ["sun4i-drm"];
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  services.openssh.enable = true;
+  networking.firewall.enable = false;
 
   documentation.enable = lib.mkForce false;
   documentation.nixos.enable = lib.mkForce false;

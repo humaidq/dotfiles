@@ -121,6 +121,9 @@
       argali = mksystem.nixosGenerate "argali" {
         inherit vars system;
         format = "sd-aarch64";
+        extraModules = [
+          nixos-hardware.nixosModules.raspberry-pi-4
+        ];
       };
       aarch64-dev-docker = mksystem.nixosGenerate "aarch64-dev-docker" {
         inherit vars system;

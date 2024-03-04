@@ -22,6 +22,7 @@ in {
   nixosSystem = machine_name: {
     system,
     vars,
+    extraModules ? [],
   }: let
     pkgs = import nixpkgs {
       inherit system;
@@ -46,7 +47,7 @@ in {
             system.stateVersion = "23.11";
           }
         ]
-        ++ allModules;
+        ++ allModules ++ extraModules;
     };
 
   darwinSystem = machine_name: {vars}:
@@ -71,6 +72,7 @@ in {
     vars,
     format,
     customFormats ? {},
+    extraModules ? [],
   }: let
     pkgs = import nixpkgs {
       inherit system;
@@ -93,6 +95,6 @@ in {
             environment.systemPackages = [alejandra.defaultPackage.${system}];
           }
         ]
-        ++ allModules;
+        ++ allModules ++ extraModules;
     };
 }

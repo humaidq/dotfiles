@@ -55,17 +55,6 @@ in {
         firefox
       ];
 
-      # 1password setup
-      programs._1password.enable = true;
-      programs._1password-gui = {
-        enable = true;
-        polkitPolicyOwners = ["${vars.user}"];
-      };
-      services.gnome.gnome-keyring.enable = true;
-
-      environment.variables = {
-        "SSH_AUTH_SOCK" = "~/.1password/agent.sock";
-      };
     })
     (mkIf (cfg.apps && !config.sifr.hardware.vm) {
       # On VMs, these applications would reside on the host.
