@@ -81,7 +81,7 @@ in {
       boot.plymouth = {
         enable = true;
         logo = ../../assets/sifr-icon-blue.png;
-        font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
+        #font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
       services.xserver.displayManager = {

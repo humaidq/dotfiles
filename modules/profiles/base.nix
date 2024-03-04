@@ -139,7 +139,7 @@ in {
         interval = "daily";
         localuser = null; # for 22.05
         # Sometimes indexing hgfs on VMWare causing CPU to go 100%
-        prunePaths = [ "/mnt" ];
+        prunePaths = ["/mnt"];
       };
 
       # Track highest uptime! :)
@@ -240,6 +240,8 @@ in {
 
           # prevent home-manager from failing after rebuild
           configFile."mimeapps.list".force = true;
+          configFile."user-dirs.locale".force = true;
+          configFile."user-dirs.dirs".force = true;
 
           # Desktop entry aliases
           #dataFile."applications/img.desktop" =

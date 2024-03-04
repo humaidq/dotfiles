@@ -2,12 +2,12 @@
   lib,
   config,
   pkgs,
+  vars,
   ...
 }: {
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
-    efi.efiSysMountPoint = "/boot/efi";
   };
 
   # Annoying Nvidia configurations
@@ -32,7 +32,10 @@
     };
   };
 
-  #services.logind.lidSwitchExternalPower = "ignore";
+  services.logind.lidSwitchExternalPower = "ignore";
+  services.logind.lidSwitch = "ignore";
+  users.users."${vars.user}".openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"];
+
 
   # My configuration specific settings
   sifr = {
@@ -47,13 +50,13 @@
     #git.sshkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKBG6luRkesOBp4w8cMb+d8yUwFZsF02whLR4f3O9+6c humaid.alqassimi+git@tii.ae";
 
     tailscale = {
-      enable = false;
+      enable = true;
       exitNode = true;
       ssh = true;
 
       # temp
-      #auth = true;
-      #tsKey = "tskey-kKX8n35CNTRL-A76BPGh8jqVkuVFHWA3YJ";
+      auth = true;
+      tsKey = "tskey-auth-kvPeH22CNTRL-xiNd1gFaJf56jwfxa6BVX5wKjEZXmtrL";
     };
   };
 }

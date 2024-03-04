@@ -10,9 +10,8 @@
 with lib; let
   cfg = config.sifr;
 in {
-
   config = mkMerge [
-    ( {
+    {
       users.users.${vars.user} = {
         isNormalUser = true;
         uid = 1000;
@@ -57,6 +56,8 @@ in {
       nix = {
         settings = {
           allowed-users = [cfg.username];
+          builders-use-substitutes = true;
+          trusted-users = ["root" cfg.username];
           auto-optimise-store = true;
 
           # Enable flakes
@@ -95,6 +96,6 @@ in {
           allowBroken = true;
         };
       };
-    })
+    }
   ];
 }

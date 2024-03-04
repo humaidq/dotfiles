@@ -1,4 +1,5 @@
- { lib, ...} : with lib;{ 
+{lib, ...}:
+with lib; {
   options.sifr.timezone = mkOption {
     description = "Sets the timezone";
     type = types.str;
@@ -15,4 +16,4 @@
     type = types.str;
     default = "Humaid Alqasimi";
   };
- }
+}
