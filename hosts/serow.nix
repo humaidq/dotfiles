@@ -2,6 +2,7 @@
   config,
   pkgs,
   nixpkgs-unstable,
+  vars,
   ...
 }: {
   boot.loader = {
@@ -32,8 +33,13 @@
       enable = true;
       exitNode = true;
       ssh = true;
+
+      auth = true;
+      tsKey = "tskey-auth-keeYRk6CNTRL-RiXjZ1RP3Qi3HrSxW48oRiF6rQYUsswuV";
     };
   };
+  users.users."${vars.user}" = {
+    openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"];
+  };
 
-  hardware.flipperzero.enable = true;
 }
