@@ -28,8 +28,7 @@ in {
     # Linux-only configurations
     (mkIf (cfg.zsh && pkgs.stdenv.isLinux) {
       home-manager.users."${vars.user}" = {
-        # nix-shell replacement
-        services.lorri.enable = true;
+        # none
       };
     })
     (mkIf cfg.zsh {
@@ -105,7 +104,7 @@ in {
             source ${lscolors}/lscolors.sh
             source ${zsh-extract}/extract.plugin.zsh
             export PATH=/opt/homebrew/bin:$PATH
-            eval "$(direnv hook zsh)"
+            #eval "$(direnv hook zsh)"
 
             function mkcd() {
               mkdir -p "$@" && cd "$@"
@@ -117,6 +116,9 @@ in {
             }
             function manwww() {
               curl -skL "$*" | pandoc -s -f html -t man | man -l -
+            }
+            function ghaf-rebuild() {
+              nixos-rebuild --flake "$1" --target-host root@ghafa --fast boot --builders 'ssh://humaid@builder.vedenemo.dev x86_64-linux' --show-trace && ssh root@ghafa reboot
             }
 
             echo "$fg[cyan]Welcome back Humaid to your local terminal."
@@ -201,6 +203,14 @@ in {
         programs.eza = {
           enable = true;
           enableAliases = true;
+        };
+
+        programs.direnv = {
+          enable = true;
+          enableZshIntegration = true;
+          nix-direnv.enable = true;
+          nix-direnv.package = unstable.nix-direnv;
+          package = unstable.direnv;
         };
       };
     })

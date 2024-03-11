@@ -31,6 +31,8 @@
       url = "github:LnL7/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    deploy-rs.url = "github:serokell/deploy-rs";
   };
 
   outputs = inputs @ {
@@ -44,6 +46,7 @@
     nur,
     alejandra,
     nix-darwin,
+    deploy-rs,
     ...
   }: let
     vars = {
@@ -87,12 +90,27 @@
       };
     };
 
+
     # System Configurations for macOS
     darwinConfigurations = {
       takin = mksystem.darwinSystem "takin" {
         inherit vars;
       };
     };
+
+    # Deployment
+    deploy.nodes = {
+      goral = {
+        hostname = "goral";
+        sudo = "doas -u";
+        user = "${vars.user}";
+        profiles.system = {
+          path = deploy-rs.lib.aarch64-linux.activate.nixos self.nixosConfigurations.goral;
+        };
+      };
+    };
+
+    checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
 
     # Generators for x86_64
     packages.x86_64-linux = let

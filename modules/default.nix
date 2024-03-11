@@ -28,7 +28,10 @@ in {
           "kvm"
         ];
         description = cfg.fullname;
+        openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"];
       };
+
+      users.users.root.openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"];
 
       home-manager.users.${vars.user} = {
         home.stateVersion = "23.05";

@@ -94,7 +94,7 @@ in {
         mdbook-pdf
         mdbook-katex
         pandoc
-        unstable.hugo
+        #unstable.hugo
         plantuml
         #nodePackages.mermaid-cli
         mermaid-cli

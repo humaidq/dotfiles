@@ -54,7 +54,7 @@
   home-manager.users."${vars.user}" = {
     programs.ssh.matchBlocks = {
       "ghafa" = {
-        user = "ghaf";
+        user = "root";
         hostname = "192.168.101.2";
         proxyJump = "ghafajump";
         checkHostIP = false;
@@ -65,7 +65,7 @@
         };
       };
       "ghafajump" = {
-        hostname = "192.168.1.60";
+        hostname = "192.168.1.29";
         identityFile = "~/.ssh/id_ed25519";
         extraOptions = {
           StrictHostKeyChecking = "no";
@@ -76,7 +76,6 @@
       };
     };
   };
-
   programs.ssh.knownHosts = {
     "builder.vedenemo.dev".publicKey = "builder.vedenemo.dev ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHSI8s/wefXiD2h3I3mIRdK+d9yDGMn0qS5fpKDnSGqj";
   };
