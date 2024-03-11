@@ -128,9 +128,7 @@ in {
         basicauth * {
           sarim $2a$14$QbtiHp/b2Iaue/5At71guutf4XIeA2qANorbuI7dVTSCFli4KBfJa
         }
-	header *.bundle {
-          Content-Type "application/octet-stream"
-	}
+        header *.bundle Content-Type "application/octet-stream"
       '';
 
       # Redirect all domains back to huma.id, preserving the path.
