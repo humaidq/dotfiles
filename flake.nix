@@ -100,6 +100,13 @@
 
     # Deployment
     deploy.nodes = {
+      duisk = {
+        hostname = "duisk";
+        user = "root";
+        profiles.system = {
+          path = deploy-rs.lib.aarch64-linux.activate.nixos self.nixosConfigurations.duisk;
+        };
+      };
       goral = {
         hostname = "goral";
         sudo = "doas -u";

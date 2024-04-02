@@ -41,11 +41,11 @@ in {
       #hardware.video.hidpi.enable = true;
       hardware.opengl.enable = true;
       services.xserver.dpi = 180;
-      environment.variables = {
-        GDK_SCALE = "2";
-        GDK_DPI_SCALE = "0.5";
-        _JAVA_OPTIONS = "-Dsun.java2d.uiScale=2";
-      };
+      #environment.variables = {
+      #  GDK_SCALE = "2";
+      #  GDK_DPI_SCALE = "0.5";
+      #  _JAVA_OPTIONS = "-Dsun.java2d.uiScale=2";
+      #};
     })
     (mkIf cfg.enableSound {
       # Enable audio only on non-VMs (I don't use audio on VMs)
@@ -84,17 +84,25 @@ in {
         #font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
+      #programs.regreet.enable = true;
+      #systemd.services.greetd.environment = {
+      #  # Fix vmware cursor not showing
+      #  WLR_NO_HARDWARE_CURSORS = "1"; #doesn't fix :(
+      #};
       services.xserver.displayManager = {
-        lightdm = {
-          enable = true;
-          background = ../../assets/sifr-lightdm.png;
-          greeters = {
-            gtk.theme.name = "Adwaita-dark";
-          };
-        };
-        #gdm = {
+        #lightdm = {
         #  enable = true;
+        #  background = ../../assets/sifr-lightdm.png;
+        #  greeters = {
+        #    gtk.theme.name = "Adwaita-dark";
+        #  };
         #};
+        gdm = {
+          enable = true;
+          banner = ''
+            some banner.
+          '';
+        };
         # Make the Caps Lock key both Esc and Ctrl (when long pressed)
         sessionCommands = ''
           ${pkgs.xorg.xmodmap}/bin/xmodmap ${xmodmapFile}
@@ -143,7 +151,7 @@ in {
           settings = {
             font = {
               normal.family = "spleen";
-              size = 24;
+              size = 12;
             };
 
             # Without this, $TERM in tmux is set as xterm-256color which breaks
@@ -156,19 +164,19 @@ in {
         xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
 
         # Notification service
-        services.dunst = {
-          enable = true;
-          settings = {
-            global = {
-              frame_color = "#1d2e86";
-            };
-            urgency_normal = {
-              background = "#130e24";
-              foreground = "#ffffff";
-              timeout = 8;
-            };
-          };
-        };
+        #services.dunst = {
+        #  enable = true;
+        #  settings = {
+        #    global = {
+        #      frame_color = "#1d2e86";
+        #    };
+        #    urgency_normal = {
+        #      background = "#130e24";
+        #      foreground = "#ffffff";
+        #      timeout = 8;
+        #    };
+        #  };
+        #};
       };
     })
   ];

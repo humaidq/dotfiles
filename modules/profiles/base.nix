@@ -64,6 +64,18 @@ in {
         file
         dig
         pv
+        # Crisis tools https://www.brendangregg.com/blog/2024-03-24/linux-crisis-tools.html
+        sysstat
+        tcpdump
+        trace-cmd
+        ethtool
+        tiptop
+        #cpuid
+        msr-tools
+        numactl
+      ] ++ lib.optionals pkgs.stdenv.isx86_64 [
+        # x86_64 specific tools
+        cpuid
       ];
 
       # Ensure zsh is recognised as a system shell.
@@ -110,7 +122,6 @@ in {
         # Other productivity
         yt-dlp
         biber
-        tcpdump
         strace
         netcat
         nmap
@@ -126,6 +137,7 @@ in {
         lf
         sshfs
         jq
+
 
         # TODO move to laptop config
         lm_sensors

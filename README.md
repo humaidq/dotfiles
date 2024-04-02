@@ -22,7 +22,7 @@ sifrOS is an opinionated but modular framework for NixOS for my use case. The go
 ### Hosts
 
 | Name | Arch/Kernel | Hardware | Description |
-| - | - | - | - |
+| ---- | ----------- | -------- | ----------- |
 | serow | `x86_64-linux` | ThinkPad T590 | Development Laptop |
 | tahr | `x86_64-linux` | ThinkPad P1 Gen3 | Work Laptop |
 | takin | `aarch64-darwin` | MacBook Pro M2 Max | Main Laptop |

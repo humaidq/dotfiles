@@ -149,7 +149,7 @@ in {
             g = "git";
             ga = "git add";
             gad = "git add .";
-            gc = "git commit";
+            gc = "git commit -s";
             gs = "git status";
             gd = "git diff";
             gds = "git diff --staged";

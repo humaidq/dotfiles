@@ -10,6 +10,30 @@
 }:
 with lib; let
   cfg = config.sifr.development;
+  personalGitConfig = pkgs.writeText "personal-git-config" ''
+    [user]
+      email = git@huma.id
+      signingkey = ~/.ssh/id_ed25519.pub
+    [commit]
+      gpgSign = true
+    [tag]
+      gpgSign = true
+    '';
+  tiiGitConfig = pkgs.writeText "tii-git-config" ''
+    [user]
+      email = humaid.alqassimi@tii.ae
+      signingkey = ~/.ssh/id_ed25519_tii.pub
+    [commit]
+      gpgSign = true
+    [tag]
+      gpgSign = true
+    [core]
+      sshCommand = "ssh -i ~/.ssh/id_ed25519_tii"
+    '';
+    allowedSigners = pkgs.writeText "allowed-signers" ''
+      git@huma.id ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW git@huma.id
+      humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
+    '';
 in {
   options.sifr.development.enable = mkOption {
     description = "Sets up the development environment, compilers, and tools";
@@ -26,9 +50,6 @@ in {
           aliases = {co = "checkout";};
           delta.enable = true;
           userName = "Humaid Alqasimi";
-          userEmail = "git@huma.id";
-          signing.key = "54C2007DB93B5EC5";
-          signing.signByDefault = false;
           extraConfig = {
             core.editor = "nvim";
             init.defaultBranch = "master";
@@ -36,11 +57,16 @@ in {
             commit.verbose = "yes";
             push.default = "current";
             pull.rebase = true;
-            safe.directory = "/mnt/hgfs/*";
+            gpg.format = "ssh";
+            gpg.ssh.allowedSignersFile = "${allowedSigners}";
+            #safe.directory = "/mnt/hgfs/*";
             url = {
               "git@github.com:".insteadOf = "gh:";
               "git@git.sr.ht:".insteadOf = "srht:";
             };
+
+            includeIf."gitdir:/".path = "${personalGitConfig}";
+            includeIf."gitdir:~/tii/".path = "${tiiGitConfig}";
 
             # Mailer
             sendemail.smtpserver = "smtp.mail.me.com";

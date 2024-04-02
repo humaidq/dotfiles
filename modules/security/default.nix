@@ -87,6 +87,8 @@ in {
           "net.ipv4.conf.all.rp_filter" = "1";
           "net.ipv4.conf.default.log_martians" = true;
           "net.ipv4.conf.default.rp_filter" = "1";
+          # Prevent bogus ICMP errors from filling logs
+          "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
 
           # Ignore all ICMP packets
           "net.ipv4.conf.all.accept_redirects" = false;
@@ -106,6 +108,9 @@ in {
           # Disable bpf() JIT (to eliminate spray attacks)
           "net.core.bpf_jit_enable" = false;
 
+          # TIME-WAIT Assassination fix
+          "net.ipv4.tcp_rfc1337" = 1;
+
           # Disable ftrace debugging
           "kernel.ftrace_enabled" = false;
 
@@ -114,7 +119,7 @@ in {
           "net.ipv4.conf.default.send_redirects" = false;
 
           # Use TCP fast open to speed up some requests
-          "net.ipv4.tcp_fastopen" = 1;
+          "net.ipv4.tcp_fastopen" = 3;
         };
 
         blacklistedKernelModules = [
