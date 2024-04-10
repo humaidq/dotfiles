@@ -18,7 +18,7 @@
   # My configuration specific settings
   sifr = {
     graphics = {
-      i3.enable = true;
+      #i3.enable = true;
       gnome.enable = true;
     };
     profiles.basePlus = true;
