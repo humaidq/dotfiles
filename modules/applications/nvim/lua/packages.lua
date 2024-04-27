@@ -71,7 +71,9 @@ require('mason-lspconfig').setup({
   handlers = {
     lsp_zero.default_setup,
   },
+	ensure_installed = {"nil_ls"},
 })
+require("lspconfig").nil_ls.setup {}
 require('mason-tool-installer').setup {
   ensure_installed = {
     'golangci-lint',

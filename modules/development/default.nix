@@ -149,6 +149,8 @@ in {
         lua-language-server
         prettierd
         hadolint
+        nixd
+        nil
         tailwindcss-language-server
         vscode-langservers-extracted
         nodePackages.jsdoc
