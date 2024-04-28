@@ -38,7 +38,7 @@
   # My configuration specific settings
   sifr = {
     graphics = {
-      i3.enable = true;
+      i3.enable = false;
       gnome.enable = true;
     };
 
