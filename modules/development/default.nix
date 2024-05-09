@@ -105,6 +105,7 @@ in {
         dmtx-utils
         fzf
         scc
+        nix-output-monitor
 
         # build tools
         gnumake

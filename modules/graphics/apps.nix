@@ -52,7 +52,7 @@ in {
       # Default applications for graphical systems
       environment.systemPackages = with pkgs; [
         zathura
-        firefox
+        #firefox # overridden in home-manager
       ];
 
     })

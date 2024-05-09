@@ -117,8 +117,11 @@ in {
             function manwww() {
               curl -skL "$*" | pandoc -s -f html -t man | man -l -
             }
-            function ghaf-rebuild() {
-              nixos-rebuild --flake "$1" --target-host root@ghafa --fast boot --builders 'ssh://humaid@builder.vedenemo.dev x86_64-linux' --show-trace && ssh root@ghafa reboot
+            function ghafa-rebuild() {
+              nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa reboot
+            }
+            function ghafa-orin-rebuild() {
+              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa-orin reboot
             }
 
             echo "$fg[cyan]Welcome back Humaid to your local terminal."

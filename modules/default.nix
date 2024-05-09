@@ -1,8 +1,6 @@
 {
   config,
   pkgs,
-  home-manager,
-  unstable,
   lib,
   vars,
   ...
@@ -30,6 +28,7 @@ in {
         description = cfg.fullname;
         openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"];
       };
+      users.motd = cfg.banner;
 
       users.users.root.openssh.authorizedKeys.keys = ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW"];
 
@@ -80,7 +79,7 @@ in {
           #];
         };
         gc = {
-          automatic = true;
+          automatic = false;
           dates = "weekly";
           options = "--delete-older-than 60d";
         };

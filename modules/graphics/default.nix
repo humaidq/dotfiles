@@ -99,9 +99,7 @@ in {
         #};
         gdm = {
           enable = true;
-          banner = ''
-            some banner.
-          '';
+          banner = config.sifr.banner;
         };
         # Make the Caps Lock key both Esc and Ctrl (when long pressed)
         sessionCommands = ''

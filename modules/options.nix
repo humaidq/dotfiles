@@ -16,4 +16,17 @@ with lib; {
     type = types.str;
     default = "Humaid Alqasimi";
   };
+  options.sifr.banner = mkOption {
+    description = "System use banner";
+    type = types.str;
+    default = ''
+      You are accessing a private computer system.
+
+      System usage may be monitored, recorded, and subject to audit.
+
+      Unauthorised use of the system is prohibited and subject to criminal and civil penalties.
+
+      Use of the system indicates consent to monitoring and recording.
+    '';
+  };
 }
