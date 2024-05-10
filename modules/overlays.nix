@@ -1,7 +1,4 @@
-{
-  lib,
-  ...
-}: let
+{lib, ...}: let
   overlayFunction = final: prev: {
     gnome = prev.gnome.overrideScope' (finalGnome: prevGnome: {
       gdm = let

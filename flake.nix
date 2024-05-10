@@ -84,7 +84,6 @@
       };
     };
 
-
     # System Configurations for macOS
     darwinConfigurations = {
       takin = mksystem.darwinSystem "takin" {

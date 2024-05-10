@@ -47,7 +47,8 @@ in {
             system.stateVersion = "23.11";
           }
         ]
-        ++ allModules ++ extraModules;
+        ++ allModules
+        ++ extraModules;
     };
 
   darwinSystem = machine_name: {vars}:
@@ -95,6 +96,7 @@ in {
             environment.systemPackages = [alejandra.defaultPackage.${system}];
           }
         ]
-        ++ allModules ++ extraModules;
+        ++ allModules
+        ++ extraModules;
     };
 }

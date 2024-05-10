@@ -1,7 +1,4 @@
-{
-  vars,
-  ...
-}: {
+{vars, ...}: {
   networking = {
     computerName = "takin";
     hostName = "takin";

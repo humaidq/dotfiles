@@ -49,7 +49,6 @@ in {
         zathura
         #firefox # overridden in home-manager
       ];
-
     })
     (mkIf (cfg.apps && !config.sifr.hardware.vm) {
       # On VMs, these applications would reside on the host.

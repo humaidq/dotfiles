@@ -20,52 +20,54 @@ in {
   };
   config = mkMerge [
     (mkIf cfg.base {
-      environment.systemPackages = with pkgs; [
-        # shell related
-        zsh
-        zsh-autosuggestions
-        zsh-nix-shell
+      environment.systemPackages = with pkgs;
+        [
+          # shell related
+          zsh
+          zsh-autosuggestions
+          zsh-nix-shell
 
-        # utilities
-        neovim
-        wget
-        htop
-        gitMinimal
-        rsync
-        bc
-        units
-        pfetch
+          # utilities
+          neovim
+          wget
+          htop
+          gitMinimal
+          rsync
+          bc
+          units
+          pfetch
 
-        # packages that must come with every Linux system
-        curl
-        lsof
-        xz
-        zip
-        pstree
-        lz4
-        unzip
-        tree
-        fd
-        acpi
-        usbutils
-        pciutils
-        killall
-        file
-        dig
-        pv
-        # Crisis tools https://www.brendangregg.com/blog/2024-03-24/linux-crisis-tools.html
-        sysstat
-        tcpdump
-        trace-cmd
-        ethtool
-        tiptop
-        #cpuid
-        msr-tools
-        numactl
-      ] ++ lib.optionals pkgs.stdenv.isx86_64 [
-        # x86_64 specific tools
-        cpuid
-      ];
+          # packages that must come with every Linux system
+          curl
+          lsof
+          xz
+          zip
+          pstree
+          lz4
+          unzip
+          tree
+          fd
+          acpi
+          usbutils
+          pciutils
+          killall
+          file
+          dig
+          pv
+          # Crisis tools https://www.brendangregg.com/blog/2024-03-24/linux-crisis-tools.html
+          sysstat
+          tcpdump
+          trace-cmd
+          ethtool
+          tiptop
+          #cpuid
+          msr-tools
+          numactl
+        ]
+        ++ lib.optionals pkgs.stdenv.isx86_64 [
+          # x86_64 specific tools
+          cpuid
+        ];
 
       # Ensure zsh is recognised as a system shell.
       environment.shells = [pkgs.zsh];

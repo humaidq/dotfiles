@@ -1,7 +1,4 @@
-{
-  vars,
-  ...
-}: {
+{vars, ...}: {
   boot.loader.grub = {
     enable = true;
     device = "/dev/vda";

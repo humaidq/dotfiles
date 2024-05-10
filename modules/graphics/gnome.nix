@@ -16,7 +16,8 @@ in {
 
   config = mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
-    environment.gnome.excludePackages = with pkgs; with gnome; [
+    environment.gnome.excludePackages = with pkgs;
+    with gnome; [
       geary
       gnome-music
       epiphany

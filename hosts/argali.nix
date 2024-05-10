@@ -25,9 +25,9 @@
   networking.wireless = {
     enable = true;
     networks = {
-#      "SSID" = {
-#        psk = "PASSWORD";
-#      };
+      #      "SSID" = {
+      #        psk = "PASSWORD";
+      #      };
     };
   };
 

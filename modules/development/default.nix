@@ -16,7 +16,7 @@ with lib; let
       gpgSign = true
     [tag]
       gpgSign = true
-    '';
+  '';
   tiiGitConfig = pkgs.writeText "tii-git-config" ''
     [user]
       email = humaid.alqassimi@tii.ae
@@ -27,11 +27,11 @@ with lib; let
       gpgSign = true
     [core]
       sshCommand = "ssh -i ~/.ssh/id_ed25519_tii"
-    '';
-    allowedSigners = pkgs.writeText "allowed-signers" ''
-      git@huma.id ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW git@huma.id
-      humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
-    '';
+  '';
+  allowedSigners = pkgs.writeText "allowed-signers" ''
+    git@huma.id ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/iv9RWMN6D9zmEU85XkaU8fAWJreWkv3znan87uqTW git@huma.id
+    humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
+  '';
 in {
   options.sifr.development.enable = mkOption {
     description = "Sets up the development environment, compilers, and tools";

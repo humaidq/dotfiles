@@ -20,7 +20,7 @@ in {
     programs.firefox = {
       enable = true;
       package = pkgs.firefox-esr;
-      languagePacks = [ "en-GB" "ar" ];
+      languagePacks = ["en-GB" "ar"];
       policies = {
         DisablePocket = true;
         DisableTelemetry = true;
