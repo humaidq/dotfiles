@@ -1,8 +1,6 @@
 {
   config,
   pkgs,
-  unstable,
-  home-manager,
   lib,
   ...
 }:
@@ -60,7 +58,7 @@ in {
         # Security: do not allow password auth or root login.
         settings = {
           PasswordAuthentication = false;
-          #PermitRootLogin = "no";
+          PermitRootLogin = "no";
         };
 
         # Do not open firewall rules, tailscale can access only.

@@ -1,8 +1,6 @@
 {
   config,
   pkgs,
-  home-manager,
-  unstable,
   lib,
   vars,
   ...

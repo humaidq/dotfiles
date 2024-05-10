@@ -1,23 +1,12 @@
 {
   config,
   pkgs,
-  unstable,
-  home-manager,
   lib,
   vars,
   ...
 }:
 with lib; let
   cfg = config.sifr.profiles;
-  desktopEntry = name: command: {
-    executable = true;
-    text = ''
-      [Desktop Entry]
-      Type=Application
-      Name=${name}
-      Exec=${command}
-    '';
-  };
 in {
   options.sifr.profiles.base = mkOption {
     description = "Sifr minimal base for all systems";
@@ -138,7 +127,6 @@ in {
         sshfs
         jq
 
-
         # TODO move to laptop config
         lm_sensors
       ];
@@ -203,14 +191,6 @@ in {
         xdg = {
           enable = true;
           mimeApps.enable = true;
-          #portal = {
-          #  enable = true;
-          #  extraPortals = with pkgs; [
-          #    xdg-desktop-portal-wlr
-          #    xdg-desktop-portal-gtk
-          #  ];
-          #  gtkUsePortal = true;
-          #};
           mimeApps.defaultApplications = {
             "inode/directory" = ["file.desktop"];
 

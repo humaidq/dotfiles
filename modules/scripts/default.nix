@@ -1,8 +1,5 @@
 {
   config,
-  pkgs,
-  unstable,
-  home-manager,
   lib,
   vars,
   ...
@@ -16,7 +13,6 @@ with lib; let
       ${text}
     '';
   };
-  wallpaper = ./wallhaven-13mk9v.jpg;
   screensDir = "~/inbox/screens";
 in {
   options.sifr.scripts.enable = mkOption {

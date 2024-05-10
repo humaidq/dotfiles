@@ -82,12 +82,6 @@
         inherit vars;
         system = "x86_64-linux";
       };
-
-      # System that runs on my temporary Dell laptop
-      capra = mksystem.nixosSystem "capra" {
-        inherit vars;
-        system = "x86_64-linux";
-      };
     };
 
 
@@ -98,61 +92,16 @@
       };
     };
 
-    # Deployment
-    deploy.nodes = {
-      duisk = {
-        hostname = "duisk";
-        user = "root";
-        profiles.system = {
-          path = deploy-rs.lib.aarch64-linux.activate.nixos self.nixosConfigurations.duisk;
-        };
-      };
-      goral = {
-        hostname = "goral";
-        sudo = "doas -u";
-        user = "${vars.user}";
-        profiles.system = {
-          path = deploy-rs.lib.aarch64-linux.activate.nixos self.nixosConfigurations.goral;
-        };
-      };
-    };
-
-    checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
-
-    # Generators for x86_64
-    packages.x86_64-linux = let
-      system = "x86_64-linux";
-    in {
-      x86-installer = mksystem.nixosGenerate "x86-installer" {
-        inherit vars system;
-        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
-        format = "standalone-iso";
-      };
-      x86-docker = mksystem.nixosGenerate "x86-docker" {
-        inherit vars system;
-        format = "docker";
-      };
-    };
-
     # Generators for aarch64
     packages.aarch64-linux = let
       system = "aarch64-linux";
     in {
-      aarch64-installer = mksystem.nixosGenerate "aarch64-installer" {
-        inherit vars system;
-        customFormats.standalone-iso = import ./lib/standalone-iso.nix {inherit nixpkgs;};
-        format = "standalone-iso";
-      };
       argali = mksystem.nixosGenerate "argali" {
         inherit vars system;
         format = "sd-aarch64";
         extraModules = [
           nixos-hardware.nixosModules.raspberry-pi-4
         ];
-      };
-      aarch64-dev-docker = mksystem.nixosGenerate "aarch64-dev-docker" {
-        inherit vars system;
-        format = "docker";
       };
     };
   };

@@ -1,10 +1,8 @@
 {
   config,
   pkgs,
-  home-manager,
   unstable,
   lib,
-  vars,
   ...
 }:
 with lib; let
@@ -17,9 +15,6 @@ in {
   };
   config = mkMerge [
     (mkIf cfg.apps {
-      boot.plymouth = {
-        #font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
-      };
       # Fonts
       fonts = {
         enableDefaultPackages = true;

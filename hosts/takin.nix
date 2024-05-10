@@ -1,6 +1,4 @@
 {
-  config,
-  pkgs,
   vars,
   ...
 }: {
@@ -17,13 +15,6 @@
   };
 
   nix = {
-    #gc = {
-    #  automatic = true;
-    #  #dates = "weekly"; #use interval instead
-    #  options = "--delete-older-than 60d";
-    #  user = "root";
-    #};
-
     settings.experimental-features = ["nix-command" "flakes"];
     extraOptions = ''
       auto-optimise-store = true

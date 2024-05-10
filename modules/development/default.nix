@@ -1,8 +1,6 @@
 {
-  self,
   config,
   pkgs,
-  home-manager,
   unstable,
   lib,
   vars,
@@ -77,6 +75,7 @@ in {
         };
       };
 
+      # TODO Can we remove all this once we move to devshells?
       environment.systemPackages = with pkgs; [
         # compilers, interpreters, runtimes, etc
         unstable.go_1_21

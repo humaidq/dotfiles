@@ -1,8 +1,5 @@
 {
   config,
-  pkgs,
-  unstable,
-  home-manager,
   lib,
   ...
 }:

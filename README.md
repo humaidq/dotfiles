@@ -28,7 +28,6 @@ sifrOS is an opinionated but modular framework for NixOS for my use case. The go
 | takin | `aarch64-darwin` | MacBook Pro M2 Max | Main Laptop |
 | goral | `aarch64-linux` | VMWare under macOS | Development VM |
 | duisk | `x86_64-linux` | Vultr Cloud | Web Server for huma.id |
-| capra | `x86_64-linux` | Dell Latitude | Temp. Work Laptop |
 | argali | `aarch64-linux` | Raspberry Pi 4 | Tinkering Device (generator) |
 
 Installer will prompt the user to reuse a previous host configuration or create a new one.
@@ -39,7 +38,7 @@ An overview, based on [NixOS Wiki Comparison definitions](https://nixos.wiki/wik
 
 | Flakes | Home Manager | Secrets | File System | System Encryption | Opt-in state | Display Server | Desktop Environment |
 | - | - | - | - | - | - | - | - |
-| Yes | Yes | None (Yet) | Btrfs | Yes (LUKS) | No | X, Wayland | i3, Gnome |
+| Yes | Yes | None (Yet) | Btrfs | Yes (LUKS) | No | X, Wayland | Gnome |
 
 ## Building
 
@@ -48,14 +47,11 @@ To build Raspberry Pi 4 image:
 nix build .#argali
 ```
 
-To build x86-64 installer image:
-```
-nix build .#x86-installer
-```
-
 ## Installation
 
-Create an installer for the required architecture, and boot. After boot, you should automatically be logged in. A window should appear with the installer, the prompt will guide you through the installation process.
+Create an installer for the required architecture, and boot. After boot, you
+should automatically be logged in. A window should appear with the installer,
+the prompt will guide you through the installation process.
 
 ## NixOS Example Usage
 
@@ -66,7 +62,9 @@ doas nixos-rebuild switch --flake .#goral
 
 ## macOS Example Setup & Usage
 
-These commands should be run after [installing Nix](https://nixos.org/download), and cloning this repository. The commands should be run while in this repository.
+These commands should be run after [installing
+Nix](https://nixos.org/download), and cloning this repository. The commands
+should be run while in this repository.
 
 First time run:
 ```
@@ -79,8 +77,5 @@ darwin-rebuild switch --flake .#takin
 
 ## TODOs
 
-- Automated install script/image
-- Raspberry Pi image
-- Docker image
-- Secret management
-- Deploy Tool (deploy-rs)
+- [ ] Raspberry Pi image
+- [ ] Secrets management

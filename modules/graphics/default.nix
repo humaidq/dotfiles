@@ -1,8 +1,6 @@
 {
   config,
   pkgs,
-  home-manager,
-  unstable,
   lib,
   vars,
   ...
@@ -16,14 +14,13 @@ with lib; let
   '';
 in {
   imports = [
-    ./i3.nix
     ./gnome.nix
     ./apps.nix
   ];
   options.sifr.graphics.enable = mkOption {
     description = "Sets up the graphical user environment with X11";
     type = types.bool;
-    default = cfg.i3.enable || cfg.gnome.enable;
+    default = cfg.gnome.enable;
   };
   options.sifr.graphics.hidpi = mkOption {
     description = "Configures the system for HiDPI screens";
@@ -38,14 +35,8 @@ in {
   config = mkMerge [
     # All HiDPI graphical systems
     (mkIf (cfg.enable && cfg.hidpi) {
-      #hardware.video.hidpi.enable = true;
       hardware.opengl.enable = true;
       services.xserver.dpi = 180;
-      #environment.variables = {
-      #  GDK_SCALE = "2";
-      #  GDK_DPI_SCALE = "0.5";
-      #  _JAVA_OPTIONS = "-Dsun.java2d.uiScale=2";
-      #};
     })
     (mkIf cfg.enableSound {
       # Enable audio only on non-VMs (I don't use audio on VMs)
@@ -81,22 +72,9 @@ in {
       boot.plymouth = {
         enable = true;
         logo = ../../assets/sifr-icon-blue.png;
-        #font = "${pkgs.inter}/share/fonts/opentype/Inter-Regular.otf";
       };
 
-      #programs.regreet.enable = true;
-      #systemd.services.greetd.environment = {
-      #  # Fix vmware cursor not showing
-      #  WLR_NO_HARDWARE_CURSORS = "1"; #doesn't fix :(
-      #};
       services.xserver.displayManager = {
-        #lightdm = {
-        #  enable = true;
-        #  background = ../../assets/sifr-lightdm.png;
-        #  greeters = {
-        #    gtk.theme.name = "Adwaita-dark";
-        #  };
-        #};
         gdm = {
           enable = true;
           banner = config.sifr.banner;
@@ -160,21 +138,6 @@ in {
 
         xsession.enable = true;
         xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
-
-        # Notification service
-        #services.dunst = {
-        #  enable = true;
-        #  settings = {
-        #    global = {
-        #      frame_color = "#1d2e86";
-        #    };
-        #    urgency_normal = {
-        #      background = "#130e24";
-        #      foreground = "#ffffff";
-        #      timeout = 8;
-        #    };
-        #  };
-        #};
       };
     })
   ];

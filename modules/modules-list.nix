@@ -6,9 +6,7 @@
   ./applications/firefox.nix
   ./applications/neovim.nix
   ./applications/emacs.nix
-  ./hardware/vm.nix
   ./profiles/base.nix
-  ./profiles/installer.nix
   ./profiles/laptop.nix
   ./security
   ./shell

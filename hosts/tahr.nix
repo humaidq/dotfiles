@@ -18,7 +18,6 @@
     driSupport = true;
     extraPackages = with pkgs; [vaapiVdpau];
   };
-
   hardware.nvidia = {
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     modesetting.enable = true;
@@ -32,14 +31,13 @@
     };
   };
 
+  # Most of the time the system has lid closed
   services.logind.lidSwitchExternalPower = "ignore";
   services.logind.lidSwitch = "ignore";
-  environment.systemPackages = with pkgs; [ appflowy ];
 
   # My configuration specific settings
   sifr = {
     graphics = {
-      i3.enable = false;
       gnome.enable = true;
       apps = true;
     };
@@ -54,13 +52,10 @@
       enable = true;
       exitNode = true;
       ssh = true;
-
-      # temp
-      auth = true;
-      tsKey = "tskey-auth-kvPeH22CNTRL-xiNd1gFaJf56jwfxa6BVX5wKjEZXmtrL";
     };
   };
 
+  # TODO Move all this to separate module, maybe way to abstract
   home-manager.users."${vars.user}" = {
     programs.ssh.matchBlocks = {
       "ghafa-orin" = {

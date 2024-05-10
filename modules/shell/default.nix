@@ -2,7 +2,6 @@
   config,
   pkgs,
   unstable,
-  home-manager,
   lib,
   vars,
   ...
@@ -124,7 +123,7 @@ in {
               nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa-orin reboot
             }
 
-            echo "$fg[cyan]Welcome back Humaid to your local terminal."
+            echo "$fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."
           '';
           shellAliases = {
             ka = "killall";

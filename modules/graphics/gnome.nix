@@ -1,15 +1,12 @@
 {
   config,
   pkgs,
-  home-manager,
-  unstable,
   lib,
   vars,
   ...
 }:
 with lib; let
   cfg = config.sifr.graphics;
-  mkTuple = lib.hm.gvariant.mkTuple;
 in {
   options.sifr.graphics.gnome.enable = mkOption {
     description = "Enables gnome";
