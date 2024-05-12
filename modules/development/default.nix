@@ -110,8 +110,8 @@ in {
         gnumake
         cmake
         cargo
-        nodejs
-        corepack_21
+        #nodejs
+        #corepack_21
 
         # documentation, generators
         mdbook
