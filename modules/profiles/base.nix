@@ -36,6 +36,7 @@ in {
           bc
           units
           pfetch
+          sops
 
           # packages that must come with every Linux system
           curl
