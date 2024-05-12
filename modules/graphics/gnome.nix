@@ -29,23 +29,11 @@ in {
       gnome-weather
       totem
       gnome-calendar
-      gnome-characters
-      gnome-calculator
-      gnome-console
-      gnome-text-editor
-      baobab
-      loupe
-      gnome-system-monitor
       totem
       yelp
       simple-scan
-      snapshot
-      gnome-logs
       gnome-connections
       seahorse
-      evince
-      gnome-font-viewer
-      gnome-disk-utility
     ];
     environment.systemPackages = with pkgs; [
       gnome.dconf-editor
