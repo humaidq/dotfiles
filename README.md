@@ -2,7 +2,11 @@
 
 ## Goal
 
-sifrOS is an opinionated but modular framework for NixOS for my use case. The goal is to build a framework for me, so your use case and requirements might be different.
+sifrOS is an opinionated but modular framework for NixOS for my use case. The
+goal is to build a framework for me, so your use case and requirements might be
+different.
+
+The repository is modular, you should be able to set your username
 
 ### Features
 
@@ -11,9 +15,9 @@ sifrOS is an opinionated but modular framework for NixOS for my use case. The go
     - We aim with security through simplicity by using a minimal set of software per module.
     - Firefox is configured to use uBlock Origin by default, and enable anti-fingerprinting settings and more.
 - Properly configured window manager/desktop environments
-    - i3wm is installed and configured to work out of the box, with media controls, locking, compositor and more.
 - Modular
     - Components are separated by modules, and the configuration is available as Flakes.
+    - User information can be set as an option.
 - Clean
     - The system follows a common theme and branding.
     - A minimal boot screen, login menu, and desktop.
@@ -49,11 +53,22 @@ nix build .#argali
 
 ## Installation
 
-Create an installer for the required architecture, and boot. After boot, you
-should automatically be logged in. A window should appear with the installer,
-the prompt will guide you through the installation process.
-
-## NixOS Example Usage
+1. Use the regular [NixOS installer image from
+   nixos.org](https://nixos.org/download/), install normally.
+2. Clone this repository and `cd` into it.
+3. Copy over `/etc/nixos/hardware-configuration.nix` to `hardware/<hostname>.nix`.
+4. Copy over `/etc/nixos/configuration.nix` to `hosts/<hostname>.nix`.
+5. Make sure these two filenames match.
+6. Edit `flake.nix` and add your system definition (copy an existing as a
+   template).
+7. Edit `hosts/<hostname>.nix`, include `sifr` configurations. See other hosts
+   for example.
+    - Remove everything, including comments, stateVersion, and the import for
+      hardware config.
+    - Only keep the `boot.loader` configuration.
+    - Look at other hosts, should be a minimal file.
+8. For the first build, better to use `boot` option:
+   `sudo nixos-rebuild boot --flake .#<hostname>`. Then reboot the system.
 
 To rebuild, run the following in the repository directory:
 ```
