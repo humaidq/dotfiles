@@ -16,24 +16,32 @@ in {
 
   config = mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
-    environment.gnome.excludePackages = with pkgs;
-    with gnome; [
-      geary
-      gnome-music
-      epiphany
-      gnome-tour
-      orca
+    services.gnome.core-os-services.enable = true;
+    # Disable some core-os-services we don't want
+    services.gnome.evolution-data-server.enable = lib.mkForce false;
+    services.gnome.gnome-online-accounts.enable = false;
+    services.gnome.gnome-online-miners.enable = lib.mkForce false;
+    services.gnome.tracker.enable = lib.mkForce false;
+
+    # Exclude some packages we don't want
+    environment.gnome.excludePackages = with pkgs; with gnome; [
+      baobab
       cheese
-      gnome-maps
-      gnome-clocks
-      gnome-weather
-      totem
+      epiphany
+      geary
       gnome-calendar
+      gnome-clocks
+      gnome-connections
+      gnome-contacts
+      gnome-maps
+      gnome-music
+      gnome-tour
+      gnome-weather
+      orca
+      seahorse
+      simple-scan
       totem
       yelp
-      simple-scan
-      gnome-connections
-      seahorse
     ];
     environment.systemPackages = with pkgs; [
       gnome.dconf-editor

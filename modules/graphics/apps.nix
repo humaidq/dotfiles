@@ -43,18 +43,10 @@ in {
           terminus_font
         ];
       };
-
-      # Default applications for graphical systems
-      environment.systemPackages = with pkgs; [
-        zathura
-        #firefox # overridden in home-manager
-      ];
     })
     (mkIf (cfg.apps && !config.sifr.hardware.vm) {
       # On VMs, these applications would reside on the host.
       environment.systemPackages = with pkgs; [
-        pavucontrol
-        pulseaudio # for pactl
         gimp
         pinta
         inkscape
@@ -62,8 +54,23 @@ in {
         vlc
         rpi-imager
         prusa-slicer
-        unstable.ollama
+        gnome-firmware
+
+        # Re-add GNOME apps that are needed
+        baobab
+        evince
+        gnome.gnome-system-monitor
+        gnome-text-editor
+        loupe
+
+        # GNOME circle apps
+        curtail
+        eyedropper
+        gaphor
+        fragments
       ];
+      services.fwupd.enable = true;
+      services.power-profiles-daemon.enable = true;
     })
   ];
 }

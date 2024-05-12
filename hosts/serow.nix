@@ -13,6 +13,7 @@
   sifr = {
     graphics = {
       gnome.enable = true;
+      apps = true;
     };
     profiles.basePlus = true;
     profiles.laptop = true;
@@ -27,4 +28,6 @@
       ssh = true;
     };
   };
+
+  virtualisation.virtualbox.host.enable = true;
 }

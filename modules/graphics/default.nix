@@ -87,16 +87,17 @@ in {
       };
 
       # Default applications for graphical systems
-      environment.systemPackages = with pkgs; [
-        xorg.xkill
-        xorg.xmodmap
-        xcape
-        xcolor
-        xdotool
-        lxrandr
-        xclip
-        nsxiv
-      ];
+      # OLD xorg applications
+      #environment.systemPackages = with pkgs; [
+      #  xorg.xkill
+      #  xorg.xmodmap
+      #  xcape
+      #  xcolor
+      #  xdotool
+      #  lxrandr
+      #  xclip
+      #  nsxiv
+      #];
 
       home-manager.users."${vars.user}" = {
         # Default themeing for GTK and Qt
