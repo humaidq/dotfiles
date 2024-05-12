@@ -44,7 +44,6 @@
     nur,
     alejandra,
     nix-darwin,
-    deploy-rs,
     ...
   }: let
     vars = {

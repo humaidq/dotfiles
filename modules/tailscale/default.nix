@@ -29,10 +29,6 @@ in {
     type = types.bool;
     default = false;
   };
-  options.sifr.tailscale.tsKey = mkOption {
-    description = "The oneshot key";
-    type = types.str;
-  };
 
   config = mkMerge [
     (mkIf cfg.enable {
@@ -73,7 +69,7 @@ in {
         description = "Automatic connection to Tailscale";
 
         # make sure tailscale is running before trying to connect to tailscale
-        after = ["network-pre.target" "tailscale.service"];
+        after = ["network-pre.target" "tailscale.service" "sops-nix.service"];
         wants = ["network-pre.target" "tailscale.service"];
         wantedBy = ["multi-user.target"];
 
@@ -91,8 +87,11 @@ in {
             exit 0
           fi
 
+          # get tailscale secret key
+          tskey=$(cat ${config.sops.secrets.tskey.path})
+
           # otherwise authenticate with tailscale
-          ${tailscale}/bin/tailscale up -authkey ${cfg.tsKey}
+          ${tailscale}/bin/tailscale up -authkey $tskey
         '';
       };
     })

@@ -7,14 +7,16 @@
   alejandra,
   home-manager,
   nix-darwin,
-}: let
+}@inputs: let
   allModules =
     [
-      sops-nix.nixosModules.sops
       home-manager.nixosModules.home-manager
       {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
+        home-manager.sharedModules = [
+          sops-nix.homeManagerModules.sops
+        ];
       }
     ]
     ++ (import ../modules/modules-list.nix);
@@ -35,9 +37,10 @@ in {
   in
     nixpkgs.lib.nixosSystem rec {
       inherit system;
-      specialArgs = {inherit vars lib unstable;};
+      specialArgs = {inherit vars lib unstable inputs;};
 
       modules =
+        allModules ++
         [
           ../hosts/${machine_name}.nix
           ../hardware/${machine_name}.nix
@@ -47,7 +50,6 @@ in {
             system.stateVersion = "23.11";
           }
         ]
-        ++ allModules
         ++ extraModules;
     };
 

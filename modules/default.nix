@@ -3,11 +3,15 @@
   pkgs,
   lib,
   vars,
+  inputs,
   ...
 }:
 with lib; let
   cfg = config.sifr;
 in {
+  imports = [
+    inputs.sops-nix.nixosModules.sops
+  ];
   config = mkMerge [
     {
       users.users.${vars.user} = {
@@ -36,6 +40,12 @@ in {
       users.users.root.openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
       ];
+
+      sops.defaultSopsFile = ../secrets/secrets.yaml;
+      sops.defaultSopsFormat = "yaml";
+      sops.age.keyFile = "/home/${vars.user}/.config/sops/age/keys.txt";
+      sops.age.generateKey = true;
+      sops.secrets.tskey = {};
 
       home-manager.users.${vars.user} = {
         home.stateVersion = "23.05";

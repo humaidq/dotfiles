@@ -26,6 +26,7 @@
       enable = true;
       exitNode = true;
       ssh = true;
+      auth = true;
     };
   };
 
