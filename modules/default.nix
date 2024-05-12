@@ -24,6 +24,7 @@ in {
           "wheel"
           "lp"
           "kvm"
+          "bluetooth"
         ];
         description = cfg.fullname;
         openssh.authorizedKeys.keys = [

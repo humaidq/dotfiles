@@ -24,6 +24,7 @@ in {
       "bgrt_disable"
     ];
     services.logind.lidSwitch = "suspend";
+    hardware.bluetooth.enable = true;
 
     # Also assuming all laptops are ThinkPads for now...
     # Fix Thinkpad specific issue of throttling

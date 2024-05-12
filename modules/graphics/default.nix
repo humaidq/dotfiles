@@ -7,11 +7,6 @@
 }:
 with lib; let
   cfg = config.sifr.graphics;
-  xmodmapFile = pkgs.writeText "xmodmap" ''
-    remove Lock = Caps_Lock
-    keysym Caps_Lock = Control_L
-    add Control = Control_L
-  '';
 in {
   imports = [
     ./gnome.nix
@@ -51,22 +46,12 @@ in {
       hardware.pulseaudio.enable = false; # replaced with pipewire above
     })
     (mkIf cfg.enable {
-      # Global Xorg/wayland and desktop settings go here
-      services = {
-        # Display server (X11)
-        xserver = {
-          enable = true;
-          #layout = "us,ar";
-          xkbOptions = "grp:win_space_toggle";
-          enableCtrlAltBackspace = false; # prevent lockscreen bypass
-          screenSection = ''
-            Option  "TripleBuffer" "on"
-          '';
-        };
-      };
-
       # home-manager can get angry if dconf is not enabled.
       programs.dconf.enable = true;
+
+      services.xserver.enable = true;
+      services.xserver.excludePackages = [ pkgs.xterm ];
+      services.xserver.displayManager.gdm.enable = true;
 
       # We need to make system look better overall when we have a graphical system
       boot.plymouth = {
@@ -74,36 +59,11 @@ in {
         logo = ../../assets/sifr-icon-blue.png;
       };
 
-      services.xserver.displayManager = {
-        gdm = {
-          enable = true;
-          banner = config.sifr.banner;
-        };
-        # Make the Caps Lock key both Esc and Ctrl (when long pressed)
-        sessionCommands = ''
-          ${pkgs.xorg.xmodmap}/bin/xmodmap ${xmodmapFile}
-          ${pkgs.xcape}/bin/xcape -e 'Control_L=Escape'
-        '';
-      };
-
-      # Default applications for graphical systems
-      # OLD xorg applications
-      #environment.systemPackages = with pkgs; [
-      #  xorg.xkill
-      #  xorg.xmodmap
-      #  xcape
-      #  xcolor
-      #  xdotool
-      #  lxrandr
-      #  xclip
-      #  nsxiv
-      #];
-
       home-manager.users."${vars.user}" = {
         # Default themeing for GTK and Qt
         qt = {
           enable = true;
-          platformTheme = "gtk";
+          platformTheme.name = "gtk";
           style.package = pkgs.adwaita-qt;
           style.name = "adwaita-dark";
         };
