@@ -66,7 +66,7 @@ in {
         # GNOME circle apps
         curtail
         eyedropper
-        gaphor
+        #gaphor
         fragments
       ];
       services.fwupd.enable = true;

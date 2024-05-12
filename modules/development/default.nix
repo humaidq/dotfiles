@@ -96,7 +96,7 @@ in {
         gdb
         bvi
         minify
-        pkg-config
+        #pkg-config
         licensor
         gnupg
         bat
@@ -114,25 +114,25 @@ in {
         #corepack_21
 
         # documentation, generators
-        mdbook
-        mdbook-mermaid
-        mdbook-toc
-        mdbook-pdf
-        mdbook-katex
-        pandoc
+        #mdbook
+        #mdbook-mermaid
+        #mdbook-toc
+        #mdbook-pdf
+        #mdbook-katex
+        #pandoc
         #unstable.hugo
-        plantuml
+        #plantuml
         #nodePackages.mermaid-cli
-        mermaid-cli
-        graphviz
-        texlive.combined.scheme-full
-        tectonic
+        #mermaid-cli
+        #graphviz
+        #texlive.combined.scheme-full
+        #tectonic
         imagemagick
 
         # sbom, compliance
-        cyclonedx-gomod
-        cyclonedx-python
-        cdxgen
+        #cyclonedx-gomod
+        #cyclonedx-python
+        #cdxgen
 
         # language servers, checkers, formatters
         shellcheck
