@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   lib,
   vars,
@@ -11,11 +10,8 @@
       enable = true;
       exitNode = true;
       ssh = true;
-
-      # temp
-      auth = true;
-      tsKey = "";
     };
+    profiles.base = false;
   };
 
   #boot.kernelPackages = pkgs.linuxPackages_rpi4;

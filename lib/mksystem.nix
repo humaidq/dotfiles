@@ -88,9 +88,10 @@ in {
   in
     nixos-generators.nixosGenerate rec {
       inherit system format customFormats;
-      specialArgs = {inherit vars lib unstable;};
+      specialArgs = {inherit vars lib unstable inputs;};
 
       modules =
+        allModules ++
         [
           ../hosts/${machine_name}.nix
           {
@@ -98,7 +99,6 @@ in {
             environment.systemPackages = [alejandra.defaultPackage.${system}];
           }
         ]
-        ++ allModules
         ++ extraModules;
     };
 }
