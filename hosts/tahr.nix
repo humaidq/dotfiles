@@ -95,7 +95,7 @@
   nix = {
     buildMachines = [
       {
-        hostName = "awsarm";
+        hostName = "hetzarm";
         system = "aarch64-linux";
         maxJobs = 8;
         speedFactor = 1;
@@ -125,6 +125,9 @@
            HostName awsarm.vedenemo.dev
            Port 20220
            user humaid
+      Host hetzarm
+           user humaid
+           HostName 65.21.20.242
       Host vedenemo-builder
            user humaid
            hostname builder.vedenemo.dev
@@ -134,6 +137,10 @@
       vedenemo-builder = {
         hostNames = ["builder.vedenemodev"];
         publicKey = "builder.vedenemo.dev ssh-ed25519 AAAAC3NzaC1    lZDI1NTE5AAAAIHSI8s/wefXiD2h3I3mIRdK+d9yDGMn0qS5fpKDnSGqj";
+      };
+      hetzarm-ed25519 = {
+        hostNames = ["65.21.20.242"];
+        publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
       };
       awsarm = {
         hostNames = ["awsarm.vedenemo.dev"];

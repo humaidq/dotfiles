@@ -2,22 +2,26 @@
 
 ## Goal
 
-sifrOS is an opinionated but modular framework for NixOS for my use case. The
-goal is to build a framework for me, so your use case and requirements might be
-different.
-
-The repository is modular, you should be able to set your username
+sifrOS is an opinionated but modular framework for NixOS, tailored to my use
+case. The goal is to create a reusable configuration for all my computer
+systems. This repository is modular, you should be able to set your username by
+setting a single option.
 
 ### Features
 
 - Secure by default
-    - The system is configured to be secured by default, enabling firewall and hardening system and kernel settings.
-    - We aim with security through simplicity by using a minimal set of software per module.
-    - Firefox is configured to use uBlock Origin by default, and enable anti-fingerprinting settings and more.
-- Properly configured window manager/desktop environments
+    - The system is configured to be secured by default, enabling firewall and
+      hardening system and kernel settings.
+    - We aim with security through simplicity by using a minimal set of
+      software per module.
+    - Firefox is configured to use uBlock Origin by default, and enable
+      anti-fingerprinting settings, DuckDuckGo by default.
+- Properly configured desktop environment
+    - Gnome only for now.
 - Modular
-    - Components are separated by modules, and the configuration is available as Flakes.
-    - User information can be set as an option.
+    - Components are separated by modules, and the configuration is available
+      as Flakes.
+    - User information can be set as an option, username is not hardcoded.
 - Clean
     - The system follows a common theme and branding.
     - A minimal boot screen, login menu, and desktop.
@@ -42,7 +46,7 @@ An overview, based on [NixOS Wiki Comparison definitions](https://nixos.wiki/wik
 
 | Flakes | Home Manager | Secrets | File System | System Encryption | Opt-in state | Display Server | Desktop Environment |
 | - | - | - | - | - | - | - | - |
-| Yes | Yes | None (Yet) | Btrfs | Yes (LUKS) | No | X, Wayland | Gnome |
+| Yes | Yes | sops-nix | Btrfs | Yes (LUKS) | No | Wayland and X | Gnome |
 
 ## Building
 
@@ -92,5 +96,5 @@ darwin-rebuild switch --flake .#takin
 
 ## TODOs
 
+- [ ] Disko for disk configuration
 - [ ] Raspberry Pi image
-- [ ] Secrets management

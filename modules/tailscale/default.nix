@@ -21,13 +21,13 @@ in {
   options.sifr.tailscale.ssh = mkOption {
     description = "Enables openssh for access through tailscale only";
     type = types.bool;
-    default = false;
+    default = true;
   };
 
   options.sifr.tailscale.auth = mkOption {
     description = "Performs a oneshot authentication with an auth-key";
     type = types.bool;
-    default = false;
+    default = true;
   };
 
   config = mkMerge [
@@ -89,6 +89,10 @@ in {
 
           # get tailscale secret key
           tskey=$(cat ${config.sops.secrets.tskey.path})
+          if [ -z $tskey ]; then
+            echo "Empty auth key!"
+            exit 1
+          fi
 
           # otherwise authenticate with tailscale
           ${tailscale}/bin/tailscale up -authkey $tskey
