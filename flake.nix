@@ -79,6 +79,12 @@
         inherit vars;
         system = "x86_64-linux";
       };
+
+      # System that runs on a Raspberry Pi 4
+      argali = mksystem.nixosSystem "argali" {
+        inherit vars;
+        system = "aarch64-linux";
+      };
     };
 
     # System Configurations for macOS
