@@ -7,7 +7,7 @@
   alejandra,
   home-manager,
   nix-darwin,
-}@inputs: let
+} @ inputs: let
   allModules =
     [
       home-manager.nixosModules.home-manager
@@ -40,8 +40,8 @@ in {
       specialArgs = {inherit vars lib unstable inputs;};
 
       modules =
-        allModules ++
-        [
+        allModules
+        ++ [
           ../hosts/${machine_name}.nix
           ../hardware/${machine_name}.nix
           {
@@ -91,8 +91,8 @@ in {
       specialArgs = {inherit vars lib unstable inputs;};
 
       modules =
-        allModules ++
-        [
+        allModules
+        ++ [
           ../hosts/${machine_name}.nix
           {
             networking.hostName = machine_name;

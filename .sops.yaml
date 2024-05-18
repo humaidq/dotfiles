@@ -2,6 +2,8 @@ keys:
   - &serow age17va7vnasx8e9dtfvfxcd8epzmc87renc4f7t357m4xaqu7qp24wsgcztj6
   - &tahr age1v7mnrpev5qc7ylyjuh2prclelh9zyk069gd7um3wvc8kv4gmnv9s8e9a2r
   - &goral age1nnvt7g9achpl2sd7v4d2yga7s4uuq6erpawla587c0x6nhy49u7qzk3wep
+  - &argali age1rjftxc2ezxvrwuff4y6v0qydfngf3f59falvfyr3kfda2k68wsuq2kgjuu
+  - &duisk age1pj6s2egqvseryr3eu7xhzuqdmnf3hsghp3fr6z48haptzlmggyvqvhg9v5
 creation_rules:
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:

@@ -50,7 +50,7 @@ in {
       programs.dconf.enable = true;
 
       services.xserver.enable = true;
-      services.xserver.excludePackages = [ pkgs.xterm ];
+      services.xserver.excludePackages = [pkgs.xterm];
       services.xserver.displayManager.gdm.enable = true;
 
       # We need to make system look better overall when we have a graphical system

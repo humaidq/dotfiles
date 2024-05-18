@@ -24,7 +24,8 @@ in {
     services.gnome.tracker.enable = lib.mkForce false;
 
     # Exclude some packages we don't want
-    environment.gnome.excludePackages = with pkgs; with gnome; [
+    environment.gnome.excludePackages = with pkgs;
+    with gnome; [
       baobab
       cheese
       epiphany
