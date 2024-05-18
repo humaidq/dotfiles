@@ -53,7 +53,7 @@
       inherit (nixpkgs) lib;
       inherit nixpkgs nixpkgs-unstable home-manager alejandra sops-nix nixos-generators nix-darwin;
     };
-  in {
+  in rec {
     # System Configurations for NixOS
     nixosConfigurations = {
       # System that runs on a VM on Macbook Pro, my main system
@@ -79,6 +79,11 @@
         inherit vars;
         system = "x86_64-linux";
       };
+
+      boerbok = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit nixos-hardware vars; };
+        modules = [ ./hosts/boerbok.nix ];
+      };
     };
 
     # System Configurations for macOS
@@ -99,6 +104,11 @@
           nixos-hardware.nixosModules.raspberry-pi-4
         ];
       };
+    };
+
+    # Generators for riscv64
+    packages.riscv64-linux = {
+      boerbok-sd = nixosConfigurations.boerbok.config.system.build.sdImage;
     };
   };
 }
