@@ -104,16 +104,16 @@ in {
         optipng
 
         # Spell checking
-        languagetool
-        ispell
-        aspell
-        aspellDicts.ar
-        aspellDicts.en
-        aspellDicts.fi
+        #languagetool
+        #ispell
+        #aspell
+        #aspellDicts.ar
+        #aspellDicts.en
+        #aspellDicts.fi
 
         # Other productivity
         yt-dlp
-        biber
+        #biber
         strace
         netcat
         nmap

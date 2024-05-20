@@ -20,7 +20,7 @@
     development.enable = true;
     security.yubikey = true;
     v18n.emulation.enable = true;
-    v18n.emulation.systems = ["aarch64-linux"];
+    v18n.emulation.systems = ["aarch64-linux" "riscv64-linux"];
 
     tailscale = {
       enable = true;

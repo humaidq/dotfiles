@@ -2,6 +2,7 @@
   pkgs,
   lib,
   vars,
+  config,
   ...
 }: {
   sifr = {
@@ -20,9 +21,10 @@
 
   networking.wireless = {
     enable = true;
+    environmentFile = config.sops.secrets.wifi-2g.path;
     networks = {
-      "SSID" = {
-        psk = "PASSWORD";
+      "@ssid@" = {
+        psk = "@pass@";
       };
     };
   };

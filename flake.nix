@@ -113,7 +113,13 @@
 
     # Generators for riscv64
     packages.riscv64-linux = {
-      boerbok-sd = nixosConfigurations.boerbok.config.system.build.sdImage;
+      boerbok-sd = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit nixos-hardware vars; };
+        modules = [
+          ./hosts/boerbok.nix 
+          { nixpkgs.buildPlatform = ""; }
+        ];
+      }.config.system.build.sdImage;
     };
   };
 }

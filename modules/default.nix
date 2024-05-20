@@ -45,7 +45,11 @@ in {
       sops.defaultSopsFormat = "yaml";
       sops.age.keyFile = "/home/${vars.user}/.config/sops/age/keys.txt";
       sops.age.generateKey = true;
-      sops.secrets.tskey = {};
+      sops.secrets = {
+        tskey = {};
+        wifi-2g = {};
+        wifi-5g = {};
+      };
 
       home-manager.users.${vars.user} = {
         home.stateVersion = "23.05";
