@@ -12,12 +12,66 @@
       exitNode = true;
       ssh = true;
     };
-    profiles.base = false;
+		profiles.base = true;
+    profiles.basePlus = true;
   };
 
   #boot.kernelPackages = pkgs.linuxPackages_rpi4;
   hardware.enableRedistributableFirmware = true;
   networking.networkmanager.enable = false;
+
+	services.adguardhome = {
+		enable = true;
+    openFirewall = true;
+    settings = {
+      port = "3001";
+      host = "0.0.0.0";
+      dns = {
+        port = "53";
+        ratelimit = "60";
+        upstream_dns = [
+          "https://dns.cloudflare.com/dns-query"
+          "https://dns.google/dns-query"
+        ];
+        fallback_dns = [
+          "tls://1dot1dot1dot1.cloudflare-dns.com"
+          "tls://dns.google"
+        ];
+        bootstrap_dns = [
+          "1.1.1.1"
+          "8.8.8.8"
+        ];
+        upstream_mode = "parallel";
+      };
+      filters = [
+        {
+          name = "AdGuard DNS filter";
+          url = "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt";
+          enabled = true;
+        }
+        {
+          name = "AdAway Default Blocklist";
+          url = "https://adaway.org/hosts.txt";
+          enabled = true;
+        }
+        {
+          name = "StevenBack Hosts Big Three";
+          url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts";
+          enable = true;
+        }
+        {
+          name = "OISD (Big)";
+          url = "https://big.oisd.nl";
+          enabled = true;
+        }
+        {
+          name = "Phishing Army";
+          url = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_18.txt";
+          enabled = true;
+        }
+      ];
+    };
+	};
 
   boot.loader.grub.enable = false;
   boot.loader.generic-extlinux-compatible.enable = true;
