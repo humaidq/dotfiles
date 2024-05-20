@@ -12,7 +12,7 @@
       exitNode = true;
       ssh = true;
     };
-		profiles.base = true;
+    profiles.base = true;
     profiles.basePlus = true;
   };
 
@@ -20,8 +20,8 @@
   hardware.enableRedistributableFirmware = true;
   networking.networkmanager.enable = false;
 
-	services.adguardhome = {
-		enable = true;
+  services.adguardhome = {
+    enable = true;
     openFirewall = true;
     settings = {
       port = "3001";
@@ -71,7 +71,7 @@
         }
       ];
     };
-	};
+  };
 
   boot.loader.grub.enable = false;
   boot.loader.generic-extlinux-compatible.enable = true;

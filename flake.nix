@@ -81,8 +81,8 @@
       };
 
       boerbok = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit nixos-hardware vars; };
-        modules = [ ./hosts/boerbok.nix ];
+        specialArgs = {inherit nixos-hardware vars;};
+        modules = [./hosts/boerbok.nix];
       };
       # System that runs on a Raspberry Pi 4
       argali = mksystem.nixosSystem "argali" {
@@ -113,13 +113,19 @@
 
     # Generators for riscv64
     packages.riscv64-linux = {
-      boerbok-sd = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit nixos-hardware vars; };
-        modules = [
-          ./hosts/boerbok.nix 
-          { nixpkgs.buildPlatform = ""; }
-        ];
-      }.config.system.build.sdImage;
+      boerbok-sd =
+        nixpkgs.lib.nixosSystem
+        {
+          specialArgs = {inherit nixos-hardware vars;};
+          modules = [
+            ./hosts/boerbok.nix
+            {nixpkgs.buildPlatform = "";}
+          ];
+        }
+        .config
+        .system
+        .build
+        .sdImage;
     };
   };
 }

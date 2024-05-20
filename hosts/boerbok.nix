@@ -20,10 +20,12 @@
   #  profiles.base = false;
   #};
 
-  hardware.deviceTree.overlays = [{
-    name = "8GB-patch";
-    dtsFile = "${nixos-hardware}/pine64/star64/star64-8GB.dts";
-  }];
+  hardware.deviceTree.overlays = [
+    {
+      name = "8GB-patch";
+      dtsFile = "${nixos-hardware}/pine64/star64/star64-8GB.dts";
+    }
+  ];
 
   system.stateVersion = "24.05";
   nixpkgs.hostPlatform = "riscv64-linux";
@@ -35,7 +37,7 @@
 
   users.users.${vars.user} = {
     isNormalUser = true;
-    extraGroups = [ "wheel" ];
+    extraGroups = ["wheel"];
     hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
@@ -55,8 +57,8 @@
   # Alternatively, sdImage.storePaths will not tie the packages to the system, allowing GC.
   # system.includeBuildDependencies is another alternative, but results in a WAY bigger image.
   system.extraDependencies = with pkgs;
-    # Include only in native builds.
-    # Use normalized platforms from stdenv.
+  # Include only in native builds.
+  # Use normalized platforms from stdenv.
     lib.optionals (stdenv.buildPlatform == stdenv.hostPlatform)
     (builtins.concatMap (x: x.all) [
       autoconf
@@ -107,4 +109,3 @@
       zlib
     ]);
 }
-
