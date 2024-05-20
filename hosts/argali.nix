@@ -19,6 +19,9 @@
   hardware.enableRedistributableFirmware = true;
   networking.networkmanager.enable = false;
 
+  boot.loader.grub.enable = false;
+  boot.loader.generic-extlinux-compatible.enable = true;
+
   networking.wireless = {
     enable = true;
     environmentFile = config.sops.secrets.wifi-2g.path;
