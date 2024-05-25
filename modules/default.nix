@@ -49,6 +49,7 @@ in {
         tskey = {};
         wifi-2g = {};
         wifi-5g = {};
+        lldap-env = {};
       };
 
       home-manager.users.${vars.user} = {
