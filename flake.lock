@@ -70,6 +70,22 @@
     "flake-compat": {
       "flake": false,
       "locked": {
+        "lastModified": 1687265871,
+        "narHash": "sha256-P8AOiQk/XN8/ia4289hDHlTfWB70cRQ5pc9GRfmEdpc=",
+        "owner": "inclyc",
+        "repo": "flake-compat",
+        "rev": "70e56389c58bbd300d11778913b255477ebbae22",
+        "type": "github"
+      },
+      "original": {
+        "owner": "inclyc",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
+    "flake-compat_2": {
+      "flake": false,
+      "locked": {
         "lastModified": 1696426674,
         "narHash": "sha256-kvjfFW7WAETZlt09AgDn1MrtKzP7t90Vf7vypd3OL1U=",
         "owner": "edolstra",
@@ -228,6 +244,26 @@
         "owner": "LnL7",
         "ref": "master",
         "repo": "nix-darwin",
+        "type": "github"
+      }
+    },
+    "nix-index-database": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1716692972,
+        "narHash": "sha256-gz3UiLa5mdd+AoOD/p//sdTty0vWk0BLOieTM+F6dGQ=",
+        "owner": "nix-community",
+        "repo": "nix-index-database",
+        "rev": "6e4a2b3b7c60aae5dac8c21117a134a4a56648da",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nix-index-database",
         "type": "github"
       }
     },
@@ -397,7 +433,7 @@
     },
     "pre-commit-hooks": {
       "inputs": {
-        "flake-compat": "flake-compat",
+        "flake-compat": "flake-compat_2",
         "flake-utils": [
           "nix-topology",
           "flake-utils"
@@ -426,10 +462,12 @@
     "root": {
       "inputs": {
         "alejandra": "alejandra",
+        "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",
         "flake-root": "flake-root",
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
+        "nix-index-database": "nix-index-database",
         "nix-topology": "nix-topology",
         "nixos-generators": "nixos-generators",
         "nixos-hardware": "nixos-hardware",

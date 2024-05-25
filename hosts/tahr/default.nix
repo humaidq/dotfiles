@@ -11,6 +11,8 @@
     (import ./hardware.nix)
   ];
 
+  networking.hostName = "tahr";
+
   # My configuration specific settings
   sifr = {
     graphics = {

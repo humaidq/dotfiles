@@ -8,6 +8,7 @@
     (import ./hardware.nix)
     ../../lib/vmware-guest.nix
   ];
+  networking.hostName = "goral";
 
   # My configuration specific settings
   sifr = {

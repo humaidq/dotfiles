@@ -13,7 +13,6 @@ in {
     [
       inputs.sops-nix.nixosModules.sops
       inputs.home-manager.nixosModules.home-manager
-      inputs.nix-topology.nixosModules.default
     ]
     ++ (import ./modules-list.nix);
 
@@ -23,6 +22,7 @@ in {
     home-manager.useUserPackages = true;
     home-manager.sharedModules = [
       inputs.sops-nix.homeManagerModules.sops
+      inputs.nix-index-database.hmModules.nix-index
     ];
 
     # Setup sops-nix
@@ -35,6 +35,7 @@ in {
       wifi-2g = {};
       wifi-5g = {};
       lldap-env = {};
+      github-token = {};
     };
 
     users.users.${vars.user} = {
@@ -102,6 +103,11 @@ in {
         dates = "weekly";
         options = "--delete-older-than 60d";
       };
+
+      # API Rate limit for GitHub
+      extraOptions = ''
+        !include ${config.sops.secrets.github-token.path}
+      '';
     };
 
     # Use spleen font for console (tty)

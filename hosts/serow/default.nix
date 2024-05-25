@@ -3,6 +3,7 @@
     self.nixosModules.sifrOS
     (import ./hardware.nix)
   ];
+  networking.hostName = "serow";
 
   # My configuration specific settings
   sifr = {

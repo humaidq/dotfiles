@@ -9,6 +9,7 @@
     self.nixosModules.sifrOS
     (import ./hardware.nix)
   ];
+  networking.hostName = "argali";
 
   sifr = {
     security.harden = false;

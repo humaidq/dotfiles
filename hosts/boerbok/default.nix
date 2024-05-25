@@ -9,6 +9,7 @@
     #self.nixosModules.sifrOS
     "${inputs.nixos-hardware}/pine64/star64/sd-image.nix"
   ];
+  networking.hostName = "boerbok";
 
   #sifr = {
   #  security.harden = false;

@@ -7,6 +7,7 @@
     self.nixosModules.sifrOS
     (import ./hardware.nix)
   ];
+  networking.name = "duisk";
 
   boot.loader.grub = {
     enable = true;
