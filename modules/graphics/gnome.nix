@@ -49,7 +49,7 @@ in {
     ];
 
     home-manager.users."${vars.user}" = {lib, ...}: let
-      mkTuple = lib.hm.gvariant.mkTuple;
+      inherit (lib.hm.gvariant) mkTuple;
     in {
       # dconf (gsettings) for Gnome applications
       dconf.settings = {

@@ -1,7 +1,6 @@
 {
   config,
   pkgs,
-  unstable,
   lib,
   vars,
   ...
@@ -211,8 +210,8 @@ in {
           enable = true;
           enableZshIntegration = true;
           nix-direnv.enable = true;
-          nix-direnv.package = unstable.nix-direnv;
-          package = unstable.direnv;
+          #nix-direnv.package = unstable.nix-direnv;
+          #package = unstable.direnv;
         };
       };
     })

@@ -1,13 +1,8 @@
-{...}: {
-  boot.loader = {
-    systemd-boot = {
-      enable = true;
-      memtest86.enable = true;
-      consoleMode = "auto";
-    };
-
-    efi.canTouchEfiVariables = true;
-  };
+{self, ...}: {
+  imports = [
+    self.nixosModules.sifrOS
+    (import ./hardware.nix)
+  ];
 
   # My configuration specific settings
   sifr = {
@@ -30,5 +25,17 @@
     };
   };
 
+  boot.loader = {
+    systemd-boot = {
+      enable = true;
+      memtest86.enable = true;
+      consoleMode = "auto";
+    };
+
+    efi.canTouchEfiVariables = true;
+  };
   virtualisation.virtualbox.host.enable = true;
+
+  nixpkgs.hostPlatform = "x86_64-linux";
+  system.stateVersion = "23.11";
 }

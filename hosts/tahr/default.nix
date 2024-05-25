@@ -3,8 +3,37 @@
   config,
   pkgs,
   vars,
+  self,
   ...
 }: {
+  imports = [
+    self.nixosModules.sifrOS
+    (import ./hardware.nix)
+  ];
+
+  # My configuration specific settings
+  sifr = {
+    graphics = {
+      gnome.enable = true;
+      apps = true;
+    };
+
+    v18n.emulation.enable = true;
+    v18n.emulation.systems = ["aarch64-linux"];
+    profiles.basePlus = true;
+    development.enable = true;
+    security.yubikey = true;
+
+    tailscale = {
+      enable = true;
+      exitNode = true;
+      ssh = true;
+    };
+  };
+
+  nixpkgs.hostPlatform = "x86_64-linux";
+  system.stateVersion = "23.11";
+
   boot.loader = {
     systemd-boot.enable = true;
     efi.canTouchEfiVariables = true;
@@ -34,26 +63,6 @@
   # Most of the time the system has lid closed
   services.logind.lidSwitchExternalPower = "ignore";
   services.logind.lidSwitch = "ignore";
-
-  # My configuration specific settings
-  sifr = {
-    graphics = {
-      gnome.enable = true;
-      apps = true;
-    };
-
-    v18n.emulation.enable = true;
-    v18n.emulation.systems = ["aarch64-linux"];
-    profiles.basePlus = true;
-    development.enable = true;
-    security.yubikey = true;
-
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      ssh = true;
-    };
-  };
 
   # TODO Move all this to separate module, maybe way to abstract
   home-manager.users."${vars.user}" = {

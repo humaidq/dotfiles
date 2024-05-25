@@ -1,4 +1,13 @@
-{vars, ...}: {
+{
+  self,
+  vars,
+  ...
+}: {
+  imports = [
+    self.nixosModules.sifrOS
+    (import ./hardware.nix)
+  ];
+
   boot.loader.grub = {
     enable = true;
     device = "/dev/vda";
@@ -20,4 +29,7 @@
       ssh = true;
     };
   };
+
+  nixpkgs.hostPlatform = "x86_64-linux";
+  system.stateVersion = "23.11";
 }

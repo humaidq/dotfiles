@@ -1,6 +1,5 @@
 [
   ./options.nix
-  ./default.nix
   ./development
   ./graphics
   ./applications/firefox.nix
@@ -14,4 +13,7 @@
   ./tailscale
   ./caddy
   ./v18n
+  ./homelab/adguard.nix
+  ./homelab/web-server.nix
+  ./homelab/misc.nix
 ]

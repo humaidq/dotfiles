@@ -3,9 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
-    nur.url = "github:nix-community/NUR";
+    #nur.url = "github:nix-community/NUR";
+    nix-topology.url = "github:oddlama/nix-topology";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-root.url = "github:srid/flake-root";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
 
     sops-nix = {
       url = "github:Mic92/sops-nix";
@@ -34,98 +37,58 @@
   };
 
   outputs = inputs @ {
-    self,
-    home-manager,
     nixpkgs,
-    nixpkgs-unstable,
-    nixos-hardware,
-    nixos-generators,
-    sops-nix,
-    nur,
-    alejandra,
-    nix-darwin,
+    flake-parts,
     ...
-  }: let
-    vars = {
-      user = "humaid";
-    };
-    mksystem = import ./lib/mksystem.nix {
-      inherit (nixpkgs) lib;
-      inherit nixpkgs nixpkgs-unstable home-manager alejandra sops-nix nixos-generators nix-darwin;
-    };
-  in rec {
-    # System Configurations for NixOS
-    nixosConfigurations = {
-      # System that runs on a VM on Macbook Pro, my main system
-      goral = mksystem.nixosSystem "goral" {
-        inherit vars;
-        system = "aarch64-linux";
+  }:
+    flake-parts.lib.mkFlake {
+      inherit inputs;
+      specialArgs = {
+        inherit (nixpkgs) lib;
+        vars = {
+          user = "humaid";
+        };
       };
-
-      # Sytem that runs on Thinkpad T590
-      serow = mksystem.nixosSystem "serow" {
-        inherit vars;
-        system = "x86_64-linux";
+    } {
+      imports = [
+        inputs.flake-root.flakeModule
+        inputs.treefmt-nix.flakeModule
+        ./hosts
+      ];
+      flake.nixosModules = {
+        sifrOS = import ./modules;
       };
-
-      # System that runs on Vultr cloud, hosting huma.id
-      duisk = mksystem.nixosSystem "duisk" {
-        inherit vars;
-        system = "x86_64-linux";
-      };
-
-      # System that runs on my work laptop
-      tahr = mksystem.nixosSystem "tahr" {
-        inherit vars;
-        system = "x86_64-linux";
-      };
-
-      boerbok = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit nixos-hardware vars;};
-        modules = [./hosts/boerbok.nix];
-      };
-      # System that runs on a Raspberry Pi 4
-      argali = mksystem.nixosSystem "argali" {
-        inherit vars;
-        system = "aarch64-linux";
-      };
-    };
-
-    # System Configurations for macOS
-    darwinConfigurations = {
-      takin = mksystem.darwinSystem "takin" {
-        inherit vars;
-      };
-    };
-
-    # Generators for aarch64
-    packages.aarch64-linux = let
-      system = "aarch64-linux";
-    in {
-      argali = mksystem.nixosGenerate "argali" {
-        inherit vars system;
-        format = "sd-aarch64";
-        extraModules = [
-          nixos-hardware.nixosModules.raspberry-pi-4
-        ];
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+        "riscv64-linux"
+      ];
+      debug = true;
+      perSystem = {
+        config,
+        system,
+        pkgs,
+        ...
+      }: {
+        devShells.default = pkgs.mkShell {
+          inputsFrom = [config.flake-root.devShell];
+        };
+        treefmt.config = {
+          package = pkgs.treefmt;
+          inherit (config.flake-root) projectRootFile;
+          programs = {
+            alejandra.enable = true;
+            deadnix.enable = true;
+            statix.enable = true;
+            shellcheck.enable = true;
+          };
+        };
+        formatter = config.treefmt.build.wrapper;
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system inputs;
+          config.allowUnfree = true;
+        };
       };
     };
-
-    # Generators for riscv64
-    packages.riscv64-linux = {
-      boerbok-sd =
-        nixpkgs.lib.nixosSystem
-        {
-          specialArgs = {inherit nixos-hardware vars;};
-          modules = [
-            ./hosts/boerbok.nix
-            {nixpkgs.buildPlatform = "";}
-          ];
-        }
-        .config
-        .system
-        .build
-        .sdImage;
-    };
-  };
 }

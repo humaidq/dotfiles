@@ -1,4 +1,5 @@
 {vars, ...}: {
+  # TODO fix this target
   networking = {
     computerName = "takin";
     hostName = "takin";

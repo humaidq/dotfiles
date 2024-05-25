@@ -2,12 +2,12 @@
   pkgs,
   lib,
   vars,
-  nixos-hardware,
+  inputs,
   ...
 }: {
   imports = [
-    #inputs.nixos-hardware.nixosModules.pine64-star64
-    "${nixos-hardware}/pine64/star64/sd-image.nix"
+    #self.nixosModules.sifrOS
+    "${inputs.nixos-hardware}/pine64/star64/sd-image.nix"
   ];
 
   #sifr = {
@@ -23,7 +23,7 @@
   hardware.deviceTree.overlays = [
     {
       name = "8GB-patch";
-      dtsFile = "${nixos-hardware}/pine64/star64/star64-8GB.dts";
+      dtsFile = "${inputs.nixos-hardware}/pine64/star64/star64-8GB.dts";
     }
   ];
 

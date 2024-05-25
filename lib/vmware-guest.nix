@@ -17,7 +17,6 @@ with lib; let
     if cfg.headless
     then pkgs.open-vm-tools-headless
     else pkgs.open-vm-tools;
-  xf86inputvmmouse = pkgs.xorg.xf86inputvmmouse;
 in {
   imports = [
     (mkRenamedOptionModule ["services" "vmwareGuest"] ["virtualisation" "vmware" "guest"])

@@ -1,7 +1,6 @@
 {
   config,
   pkgs,
-  unstable,
   lib,
   vars,
   ...
@@ -78,7 +77,7 @@ in {
       # TODO Can we remove all this once we move to devshells?
       environment.systemPackages = with pkgs; [
         # compilers, interpreters, runtimes, etc
-        unstable.go_1_21
+        go_1_21
         gcc
         rustc
         jre
@@ -155,10 +154,10 @@ in {
         vscode-langservers-extracted
         nodePackages.jsdoc
         # We use latest version of Go
-        unstable.gopls
-        unstable.gotools
-        unstable.golangci-lint
-        unstable.govulncheck
+        gopls
+        gotools
+        golangci-lint
+        govulncheck
       ];
     })
   ];
