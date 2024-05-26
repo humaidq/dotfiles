@@ -1,4 +1,8 @@
 # sifrOS: My Secure NixOS Configuration
+![NixOS Flake](https://img.shields.io/badge/NixOS-flake-blue?logo=nixos)
+![Wayland By Default](https://img.shields.io/badge/Wayland-196f5e?logo=wayland)
+![secrets sops-nix](https://img.shields.io/badge/secrets-sops--nix-blue)
+
 
 ## Goal
 
@@ -27,26 +31,25 @@ setting a single option.
     - A minimal boot screen, login menu, and desktop.
     - `$HOME` is mostly de-cluttered, and XDG user directories (e.g. Desktop, Downloads) are simplified.
 
-### Hosts
+## Hosts
 
-| Name | Arch/Kernel | Hardware | Description |
-| ---- | ----------- | -------- | ----------- |
-| serow | `x86_64-linux` | ThinkPad T590 | Development Laptop |
-| tahr | `x86_64-linux` | ThinkPad P1 Gen3 | Work Laptop |
-| takin | `aarch64-darwin` | MacBook Pro M2 Max | Main Laptop |
-| goral | `aarch64-linux` | VMWare under macOS | Development VM |
-| duisk | `x86_64-linux` | Vultr Cloud | Web Server for huma.id |
-| argali | `aarch64-linux` | Raspberry Pi 4 | Tinkering Device (generator) |
+Systems managed by this flake.
 
-Installer will prompt the user to reuse a previous host configuration or create a new one.
+| Name | System | CPU | RAM | GPU | Role | OS | State |
+| ---- | ----- | --- | --- | --- | ---- | -- | ----- |
+| `serow` | ThinkPad T590 | i7-8565U | 16GB | Intel UHD 8th Gen | 💻️ | ❄️ | ✅ |
+| `tahr` | ThinkPad P1 Gen3 | i9-10885H | 32GB | NVIDIA Quadro T2000 | 💻️ | ❄️ | ✅ |
+| `takin` | MacBook Pro | M2 Max | 64GB | M2 Max | 💻️ |  | 🚧 |
+| `goral` | VMWare Fusion | M2 Max | 64GB | M2 Max | 💻️ | ❄️ | ✅ |
+| `duisk` | Vultr VPS | vCPU | 4GB | None | ☁️ | ❄️ | ✅ |
+| `argali` | RPi 4B | BCM2711 | 8GB | None | ☁️ | ❄️ | ✅ |
+| `boerbok` | Star64 | SiFive | 8GB | None | ☁️ | ❄️ | 🚧 |
 
-## General Information
+## Desktop
 
-An overview, based on [NixOS Wiki Comparison definitions](https://nixos.wiki/wiki/Comparison_of_NixOS_setups).
-
-| Flakes | Home Manager | Secrets | File System | System Encryption | Opt-in state | Display Server | Desktop Environment |
-| - | - | - | - | - | - | - | - |
-| Yes | Yes | sops-nix | Btrfs | Yes (LUKS) | No | Wayland and X | Gnome |
+There are two options:
+- Gnome: For a fully featured, stacking, desktop environment.
+- Sway: For a minimal, tiling, window manager & compositor.
 
 ## Building
 

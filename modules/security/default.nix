@@ -197,13 +197,6 @@ in {
         forcePageTableIsolation = true;
       };
 
-      # VMs should use host's DNS.
-      networking.nameservers = [
-        "1.1.1.1#one.one.one.one"
-        "1.0.0.1#one.one.one.one"
-      ];
-      services.resolved.enable = true;
-
       # StevenBlack's hosts file.
       networking.extraHosts = builtins.readFile hosts;
     })

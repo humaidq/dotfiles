@@ -32,6 +32,11 @@ in {
       type = types.bool;
       default = false;
     };
+    ntp.enable = mkOption {
+      description = "Enables NTP server";
+      type = types.bool;
+      default = false;
+    };
   };
   config = {
     services.lldap = mkIf cfg.lldap.enable {
@@ -58,6 +63,9 @@ in {
       enable = true;
     };
     services.jellyseerr = mkIf cfg.jellyseerr.enable {
+      enable = true;
+    };
+    services.chrony = mkIf cfg.ntp.enable {
       enable = true;
     };
   };

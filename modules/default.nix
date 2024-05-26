@@ -78,15 +78,25 @@ in {
     # We enable DHCP for all network interfaces by default.
     networking.useDHCP = lib.mkDefault true;
 
-    services.timesyncd = {
-      enable = true;
-      servers = [
-        "0.asia.pool.ntp.org"
-        "1.asia.pool.ntp.org"
-        "2.asia.pool.ntp.org"
-        "3.asia.pool.ntp.org"
-      ];
-    };
+    # Time server stuff
+    services.timesyncd.enable = false;
+    services.chrony.enable = true;
+    services.chrony.extraConfig = ''
+      server time.apple.com iburst maxsources 5 xleave
+      server 0.pool.ntp.org iburst maxsources 5 xleave
+      server 1.pool.ntp.org iburst maxsources 5 xleave
+      server 2.pool.ntp.org iburst maxsources 5 xleave
+      server 3.pool.ntp.org iburst maxsources 5 xleave
+    '';
+    networking.timeServers = [];
+
+    # DNS configuration
+    services.resolved.enable = true;
+    networking.nameservers = [
+      # Reliable worldwide
+      "8.8.8.8#dns.google"
+      "1.0.0.1#cloudflare-dns.com"
+    ];
 
     nix = {
       settings = {
