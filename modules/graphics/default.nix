@@ -10,12 +10,13 @@ with lib; let
 in {
   imports = [
     ./gnome.nix
+    ./sway.nix
     ./apps.nix
   ];
   options.sifr.graphics.enable = mkOption {
     description = "Sets up the graphical user environment with X11";
     type = types.bool;
-    default = cfg.gnome.enable;
+    default = cfg.gnome.enable || cfg.sway.enable;
   };
   options.sifr.graphics.hidpi = mkOption {
     description = "Configures the system for HiDPI screens";

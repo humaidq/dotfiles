@@ -14,6 +14,7 @@
   sifr = {
     graphics = {
       gnome.enable = true;
+      sway.enable = true;
       hidpi = true;
       enableSound = false;
       apps = true;
