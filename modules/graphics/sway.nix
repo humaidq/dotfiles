@@ -16,6 +16,8 @@ in {
   };
 
   config = mkIf cfg.sway.enable {
+    programs.sway.enable = true;
+    programs.sway.package = null;
     #programs.sway = {
     #  enable = true;
     #  extraSessionCommands = ''

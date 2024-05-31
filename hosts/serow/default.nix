@@ -9,6 +9,7 @@
   sifr = {
     graphics = {
       gnome.enable = true;
+      sway.enable = true;
       apps = true;
     };
     profiles.basePlus = true;

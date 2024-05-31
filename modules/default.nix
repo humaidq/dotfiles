@@ -93,11 +93,11 @@ in {
 
     # DNS configuration
     services.resolved.enable = true;
-    networking.nameservers = [
-      # Reliable worldwide
-      "8.8.8.8#dns.google"
-      "1.0.0.1#cloudflare-dns.com"
-    ];
+    #networking.nameservers = [
+    #  # Reliable worldwide
+    #  "8.8.8.8#dns.google"
+    #  "1.0.0.1#cloudflare-dns.com"
+    #];
 
     nix = {
       settings = {
