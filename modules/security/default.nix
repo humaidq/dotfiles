@@ -4,13 +4,13 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.security;
   hosts = pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/StevenBlack/hosts/199df730514da981d1522d4d21a67d1bab6726de/hosts";
+    url = "https://raw.githubusercontent.com/StevenBlack/hosts/6b6cba7dc79b459f80ffc44b3dd9973effdbed34/hosts";
     sha256 = "492fe39b260e811ed1c556e6c4abfacf54b2094b8f931cf3c80562505bc04b4c";
   };
+  inherit (lib) mkOption types mkMerge mkIf mkDefault;
 in {
   options.sifr.security.harden = mkOption {
     description = "Hardens the system settings";

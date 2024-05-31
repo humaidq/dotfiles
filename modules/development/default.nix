@@ -4,8 +4,7 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.development;
   personalGitConfig = pkgs.writeText "personal-git-config" ''
     [user]
@@ -32,14 +31,14 @@ with lib; let
     humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
   '';
 in {
-  options.sifr.development.enable = mkOption {
+  options.sifr.development.enable = lib.mkOption {
     description = "Sets up the development environment, compilers, and tools";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
 
-  config = mkMerge [
-    (mkIf cfg.enable {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.enable {
       home-manager.users."${vars.user}" = {
         programs.git = {
           enable = true;

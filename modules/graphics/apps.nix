@@ -3,17 +3,16 @@
   pkgs,
   lib,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.graphics;
 in {
-  options.sifr.graphics.apps = mkOption {
+  options.sifr.graphics.apps = lib.mkOption {
     description = "Enables workstation graphical applications";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkMerge [
-    (mkIf cfg.apps {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.apps {
       # Fonts
       fonts = {
         enableDefaultPackages = true;
@@ -43,7 +42,7 @@ in {
         ];
       };
     })
-    (mkIf (cfg.apps && !config.sifr.hardware.vm) {
+    (lib.mkIf (cfg.apps && !config.sifr.hardware.vm) {
       # On VMs, these applications would reside on the host.
       environment.systemPackages = with pkgs; [
         gimp

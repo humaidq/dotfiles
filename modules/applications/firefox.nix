@@ -3,20 +3,19 @@
   lib,
   pkgs,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.applications;
   extension = name: {
     installation_mode = "force_installed";
     install_url = "https://addons.mozilla.org/firefox/downloads/latest/${name}/latest.xpi";
   };
 in {
-  options.sifr.applications.firefox.enable = mkOption {
+  options.sifr.applications.firefox.enable = lib.mkOption {
     description = "Enables firefox configurations";
-    type = types.bool;
+    type = lib.types.bool;
     default = config.sifr.graphics.apps;
   };
-  config = mkIf cfg.firefox.enable {
+  config = lib.mkIf cfg.firefox.enable {
     programs.firefox = {
       enable = true;
       package = pkgs.firefox-esr;

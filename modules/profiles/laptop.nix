@@ -2,16 +2,15 @@
   config,
   lib,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.profiles;
 in {
-  options.sifr.profiles.laptop = mkOption {
+  options.sifr.profiles.laptop = lib.mkOption {
     description = "Laptop profile";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkIf cfg.laptop {
+  config = lib.mkIf cfg.laptop {
     # Assumption: all laptops use SSDs
     services.fstrim.enable = true;
 

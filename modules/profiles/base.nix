@@ -4,24 +4,23 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.profiles;
 in {
-  options.sifr.profiles.base = mkOption {
+  options.sifr.profiles.base = lib.mkOption {
     description = "Sifr minimal base for all systems";
-    type = types.bool;
+    type = lib.types.bool;
     default = pkgs.stdenv.isLinux;
   };
-  options.sifr.profiles.basePlus = mkOption {
+  options.sifr.profiles.basePlus = lib.mkOption {
     description = "Additional productivity command-line tools";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkMerge [
-    (mkIf cfg.base {
-      environment.systemPackages = with pkgs;
-        [
+  config = lib.mkMerge [
+    (lib.mkIf cfg.base {
+      environment.systemPackages =
+        (with pkgs; [
           # shell related
           zsh
           zsh-autosuggestions
@@ -64,10 +63,10 @@ in {
           #cpuid
           msr-tools
           numactl
-        ]
+        ])
         ++ lib.optionals pkgs.stdenv.isx86_64 [
           # x86_64 specific tools
-          cpuid
+          pkgs.cpuid
         ];
 
       # Ensure zsh is recognised as a system shell.
@@ -97,7 +96,7 @@ in {
         _JAVA_AWT_WM_NONREPARENTING = "1";
       };
     })
-    (mkIf cfg.basePlus {
+    (lib.mkIf cfg.basePlus {
       environment.systemPackages = with pkgs; [
         # File processing
         jpegoptim

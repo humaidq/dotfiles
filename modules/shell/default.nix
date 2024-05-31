@@ -4,8 +4,7 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.shell;
   lscolors = fetchGit {
     url = "https://github.com/trapd00r/LS_COLORS";
@@ -17,19 +16,19 @@ with lib; let
     rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
   };
 in {
-  options.sifr.shell.zsh = mkOption {
+  options.sifr.shell.zsh = lib.mkOption {
     description = "Enables zsh with customisations";
-    type = types.bool;
+    type = lib.types.bool;
     default = true;
   };
-  config = mkMerge [
+  config = lib.mkMerge [
     # Linux-only configurations
-    (mkIf (cfg.zsh && pkgs.stdenv.isLinux) {
+    (lib.mkIf (cfg.zsh && pkgs.stdenv.isLinux) {
       home-manager.users."${vars.user}" = {
         # none
       };
     })
-    (mkIf cfg.zsh {
+    (lib.mkIf cfg.zsh {
       programs.zsh.enable = true;
       users.users."${vars.user}".shell = pkgs.zsh;
       home-manager.users."${vars.user}" = {

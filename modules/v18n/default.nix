@@ -4,9 +4,9 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.v18n;
+  inherit (lib) mkOption types mkMerge mkIf;
 in {
   options.sifr.v18n.docker.enable = mkOption {
     description = "Enable docker";

@@ -4,17 +4,16 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.graphics;
 in {
-  options.sifr.graphics.gnome.enable = mkOption {
+  options.sifr.graphics.gnome.enable = lib.mkOption {
     description = "Enables gnome";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
 
-  config = mkIf cfg.gnome.enable {
+  config = lib.mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
     services.gnome.core-os-services.enable = true;
     # Disable some core-os-services we don't want

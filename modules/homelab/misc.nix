@@ -2,9 +2,9 @@
   config,
   lib,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.homelab;
+  inherit (lib) mkOption types mkIf;
 in {
   options.sifr.homelab = {
     lldap.enable = mkOption {

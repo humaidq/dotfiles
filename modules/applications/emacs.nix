@@ -3,16 +3,15 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.applications;
 in {
-  options.sifr.applications.emacs.enable = mkOption {
+  options.sifr.applications.emacs.enable = lib.mkOption {
     description = "Enable emacs configuration";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkIf cfg.emacs.enable {
+  config = lib.mkIf cfg.emacs.enable {
     home-manager.users.${vars.user} = {
       programs.emacs.enable = true;
       home.file.".emacs.d".source = ./emacsconfig;

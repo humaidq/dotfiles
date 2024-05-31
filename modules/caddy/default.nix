@@ -2,16 +2,15 @@
   config,
   lib,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.caddy;
 in {
-  options.sifr.caddy.enable = mkOption {
+  options.sifr.caddy.enable = lib.mkOption {
     description = "Enables caddy server configuration";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Open ports for Caddy
     networking.firewall.allowedTCPPorts = [443 80];
 

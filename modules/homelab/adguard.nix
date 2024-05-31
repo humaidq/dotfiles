@@ -2,16 +2,15 @@
   config,
   lib,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.homelab.adguard;
 in {
-  options.sifr.homelab.adguard.enable = mkOption {
+  options.sifr.homelab.adguard.enable = lib.mkOption {
     description = "Enables AdGuard Home configuration";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.adguardhome = {
       enable = true;
       openFirewall = true;

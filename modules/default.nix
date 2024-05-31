@@ -5,8 +5,7 @@
   vars,
   inputs,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr;
 in {
   imports =

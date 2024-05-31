@@ -1,5 +1,6 @@
-{lib, ...}:
-with lib; {
+{lib, ...}: let
+  inherit (lib) mkOption types;
+in {
   options.sifr.timezone = mkOption {
     description = "Sets the timezone";
     type = types.str;

@@ -2,16 +2,15 @@
   config,
   lib,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.homelab.web-server;
 in {
-  options.sifr.homelab.web-server.enable = mkOption {
+  options.sifr.homelab.web-server.enable = lib.mkOption {
     description = "Enables home web server configuration";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     services.caddy = {
       enable = true;
       virtualHosts."http://home.alq".extraConfig = ''

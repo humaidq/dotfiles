@@ -4,18 +4,17 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.graphics;
   mod = "Mod4";
 in {
-  options.sifr.graphics.sway.enable = mkOption {
+  options.sifr.graphics.sway.enable = lib.mkOption {
     description = "Enables sway";
-    type = types.bool;
+    type = lib.types.bool;
     default = false;
   };
 
-  config = mkIf cfg.sway.enable {
+  config = lib.mkIf cfg.sway.enable {
     programs.sway.enable = true;
     programs.sway.package = null;
     #programs.sway = {

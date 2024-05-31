@@ -3,8 +3,7 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.scripts;
   script = text: {
     executable = true;
@@ -15,12 +14,12 @@ with lib; let
   };
   screensDir = "~/inbox/screens";
 in {
-  options.sifr.scripts.enable = mkOption {
+  options.sifr.scripts.enable = lib.mkOption {
     description = "Enable custom home scripts";
-    type = types.bool;
+    type = lib.types.bool;
     default = true;
   };
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     home-manager.users."${vars.user}" = {
       home.file = {
         # Simple tool that tells you which process uses a specific port.

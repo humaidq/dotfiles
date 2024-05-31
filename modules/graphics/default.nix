@@ -4,9 +4,9 @@
   lib,
   vars,
   ...
-}:
-with lib; let
+}: let
   cfg = config.sifr.graphics;
+  inherit (lib) mkOption types mkMerge mkIf;
 in {
   imports = [
     ./gnome.nix

@@ -4,8 +4,7 @@
   vars,
   pkgs,
   ...
-}:
-let
+}: let
   cfg = config.sifr.applications;
 in {
   options.sifr.applications.neovim.enable = lib.mkOption {
