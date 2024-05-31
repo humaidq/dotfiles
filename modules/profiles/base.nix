@@ -28,7 +28,7 @@ in {
           zsh-nix-shell
 
           # utilities
-          neovim
+          #neovim # nixvim
           wget
           htop
           gitMinimal
@@ -163,6 +163,7 @@ in {
             keyMode = "vi";
             clock24 = false;
             extraConfig = ''
+              set-option -g default-terminal "screen-256color"
               set-option -sa terminal-features ',*:RGB'
             '';
           };

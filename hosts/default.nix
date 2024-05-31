@@ -12,6 +12,8 @@
     host-tahr = import ./tahr;
     host-boerbok = import ./boerbok;
     host-argali = import ./argali;
+
+    host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
   };
   flake.nixosConfigurations = let
     specialArgs = {
@@ -41,6 +43,10 @@
     argali = lib.nixosSystem {
       inherit specialArgs;
       modules = [self.nixosModules.host-argali];
+    };
+    rpi4-bootstrap = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [self.nixosModules.host-rpi4-bootstrap];
     };
   };
 }

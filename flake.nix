@@ -2,7 +2,7 @@
   description = "sifr is a declarative system configuration built by Humaid";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     #nur.url = "github:nix-community/NUR";
     nix-topology.url = "github:oddlama/nix-topology";
@@ -15,6 +15,7 @@
       url = "github:inclyc/flake-compat";
       flake = false;
     };
+
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -32,6 +33,11 @@
 
     nixos-generators = {
       url = "github:nix-community/nixos-generators";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

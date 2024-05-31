@@ -23,6 +23,7 @@ in {
     home-manager.sharedModules = [
       inputs.sops-nix.homeManagerModules.sops
       inputs.nix-index-database.hmModules.nix-index
+      inputs.nixvim.homeManagerModules.nixvim
     ];
 
     # Setup sops-nix
