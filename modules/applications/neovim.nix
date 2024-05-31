@@ -5,16 +5,16 @@
   pkgs,
   ...
 }:
-with lib; let
+let
   cfg = config.sifr.applications;
 in {
-  options.sifr.applications.neovim.enable = mkOption {
+  options.sifr.applications.neovim.enable = lib.mkOption {
     description = "Enables neovim configurations";
-    type = types.bool;
+    type = lib.types.bool;
     default = true;
   };
-  config = mkMerge [
-    (mkIf cfg.neovim.enable {
+  config = lib.mkMerge [
+    (lib.mkIf cfg.neovim.enable {
       home-manager.users."${vars.user}" = let
         inherit (config.home-manager.users."${vars.user}".xdg) configHome;
       in {
@@ -96,7 +96,11 @@ in {
                 bashls.enable = true;
                 nixd.enable = true;
                 clangd.enable = true;
-                rust-analyzer.enable = true;
+                rust-analyzer = {
+                  enable = true;
+                  installCargo = true;
+                  installRustc = true;
+                };
                 pyright.enable = true;
 
                 # Markup & Config
@@ -128,7 +132,7 @@ in {
             cmp-nvim-lsp.enable = true;
             cmp-path.enable = true;
             cmp-buffer.enable = true;
-            hardtime.enable = true;
+            hardtime.enable = false;
             neogit.enable = true;
 
             gitsigns.enable = true;
@@ -142,26 +146,12 @@ in {
           };
 
           extraPlugins = with pkgs.vimPlugins; [
-            plenary-nvim
-            #vim-css-color
             vim-repeat
-            #vim-surround
-            #vim-fugitive
-            #vim-commentary
-            #telescope-nvim
-            #vimtex
 
             # Auto completion
-            neodev-nvim
-            #luasnip
-            lsp-zero-nvim
-            nvim-lspconfig
-            #nvim-cmp
-            #cmp-nvim-lsp
-
-            #cmp-path
-            #cmp-buffer
-            #copilot-vim # GitHub copilot
+            #neodev-nvim
+            #lsp-zero-nvim
+            #nvim-lspconfig
 
             # Theme
             tokyonight-nvim
