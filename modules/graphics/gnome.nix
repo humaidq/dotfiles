@@ -68,14 +68,14 @@ in {
           disable-external = true;
         };
         "org/gnome/desktop/interface" = {
-          gtk-theme = "Adwaita-dark";
+          #gtk-theme = "Adwaita-dark";
           clock-format = "12h";
           show-battery-percentage = true;
           clock-show-weekday = true;
           color-scheme = "prefer-dark";
           # Inter font
-          document-font-name = "Inter 11";
-          font-name = "Inter 11";
+          #document-font-name = "Inter 11";
+          #font-name = "Inter 11";
         };
         "org/gnome/desktop/background" = {
           picture-uri = "file://${./wallhaven-13mk9v.jpg}";

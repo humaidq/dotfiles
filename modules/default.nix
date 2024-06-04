@@ -12,6 +12,7 @@ in {
     [
       inputs.sops-nix.nixosModules.sops
       inputs.home-manager.nixosModules.home-manager
+      inputs.stylix.nixosModules.stylix
     ]
     ++ (import ./modules-list.nix);
 
@@ -59,7 +60,7 @@ in {
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
       ];
     };
-    users.motd = cfg.banner;
+    #users.motd = cfg.banner;
 
     users.users.root.openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"

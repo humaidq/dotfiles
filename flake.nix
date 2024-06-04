@@ -8,9 +8,12 @@
     nix-topology.url = "github:oddlama/nix-topology";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-root.url = "github:srid/flake-root";
+    stylix.url = "github:danth/stylix";
+
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
     };
+
     flake-compat = {
       url = "github:inclyc/flake-compat";
       flake = false;
@@ -27,7 +30,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-24.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

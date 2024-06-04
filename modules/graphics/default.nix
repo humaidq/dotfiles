@@ -64,18 +64,18 @@ in {
         # Default themeing for GTK and Qt
         qt = {
           enable = true;
-          platformTheme.name = "gtk";
-          style.package = pkgs.adwaita-qt;
-          style.name = "adwaita-dark";
+          #platformTheme.name = "gtk";
+          #style.package = pkgs.adwaita-qt;
+          #style.name = "adwaita-dark";
         };
 
         gtk = {
           enable = true;
-          theme.name = "Adwaita-dark";
-          gtk3.extraConfig = {
-            gtk-application-prefer-dark-theme = true;
-            gtk-cursor-theme-name = "Adwaita";
-          };
+          #theme.name = "Adwaita-dark";
+          #gtk3.extraConfig = {
+          #  gtk-application-prefer-dark-theme = true;
+          #  gtk-cursor-theme-name = "Adwaita";
+          #};
           gtk3.bookmarks = [
             "file:///home/${vars.user}/docs"
             "file:///home/${vars.user}/repos"
