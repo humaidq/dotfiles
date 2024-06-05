@@ -23,9 +23,20 @@ in {
           cache_ttl_min = 2400; # 40 min
           cache_ttl_max = 86400; # 24 hr
           cache_optimistic = true;
+          anonymize_client_ip = true;
+
+          safe_search = {
+            enabled = true;
+            google = true;
+            duckduckgo = true;
+            bing = true;
+            youtube = false;
+          };
           upstream_dns = [
+            # Etisalat
             "213.42.20.20"
             "195.229.241.222"
+            # Public
             "1.1.1.1"
             "8.8.8.8"
           ];
@@ -41,6 +52,8 @@ in {
         };
         user_rules = [
           "@@||.wiki^"
+          "@@||rargb.to^"
+          "@@||tracker.coppersurfer.tk^"
         ];
         filtering = {
           blocked_response_ttl = 2400;
@@ -48,36 +61,40 @@ in {
         };
         filtering.rewrites = [
           {
-            domain = "adguard.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "adguard.alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "home.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "lldap.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "lldap.alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "catalogue.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "catalogue.alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "books.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "books.alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "recipes.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "recipes.alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "audiobooks.alq";
-            answer = "${config.networking.hostName}.alq";
+            domain = "audiobooks.alq.ae";
+            answer = "192.168.1.250";
           }
           {
-            domain = "tv.alq";
-            answer = "nas.alq";
+            domain = "nas.alq.ae";
+            answer = "192.168.1.44";
+          }
+          {
+            domain = "tv.alq.ae";
+            answer = "nas.alq.ae";
           }
         ];
         dhcp = {
@@ -89,7 +106,7 @@ in {
             range_start = "192.168.1.10";
             range_end = "192.168.1.200";
           };
-          local_domain_name = "alq";
+          local_domain_name = "alq.ae";
         };
         filters = [
           {

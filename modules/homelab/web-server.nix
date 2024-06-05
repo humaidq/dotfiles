@@ -11,34 +11,52 @@ in {
     default = false;
   };
   config = lib.mkIf cfg.enable {
-    services.caddy = {
+    services.caddy = let
+      tls = ''
+        tls /etc/certs/fullchain.pem /etc/certs/privkey.pem
+      '';
+    in {
       enable = true;
-      virtualHosts."http://home.alq".extraConfig = ''
-        reverse_proxy :8082
+      #extraConfig = tls;
+      virtualHosts."alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :8082
       '';
-      virtualHosts."http://lldap.alq".extraConfig = ''
-        reverse_proxy :17170
+      virtualHosts."lldap.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :17170
       '';
-      virtualHosts."http://adguard.alq".extraConfig = ''
-        reverse_proxy :3000
+      virtualHosts."adguard.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :3000
       '';
-      virtualHosts."http://catalogue.alq".extraConfig = ''
-        reverse_proxy :${builtins.toString config.services.jellyseerr.port}
+      virtualHosts."catalogue.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :${builtins.toString config.services.jellyseerr.port}
       '';
-      virtualHosts."http://books.alq".extraConfig = ''
-        reverse_proxy :5000
+      virtualHosts."books.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :5000
       '';
-      virtualHosts."http://audiobooks.alq".extraConfig = ''
-        reverse_proxy :8000
+      virtualHosts."audiobooks.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :8000
       '';
-      virtualHosts."http://tv.alq".extraConfig = ''
-        reverse_proxy http://nas:8096
+      virtualHosts."tv.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy https://192.168.1.44:8096
       '';
-      virtualHosts."http://recipes.alq".extraConfig = ''
-        reverse_proxy :9000
+      virtualHosts."recipes.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :9000
       '';
-      virtualHosts."http://search.alq".extraConfig = ''
-        reverse_proxy :3342
+      virtualHosts."search.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :3342
+      '';
+      virtualHosts."gertruda.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy 192.168.1.40:80
       '';
     };
 
@@ -46,8 +64,8 @@ in {
       enable = true;
       listenPort = 8082;
       settings = {
-        title = "home.alq";
-        startURL = "http://home.alq";
+        title = "alq.ae";
+        startURL = "https://alq.ae";
         background = "https://images.unsplash.com/photo-1502790671504-542ad42d5189?auto=format&fit=crop&w=2560&q=80";
       };
       widgets = [
@@ -74,16 +92,16 @@ in {
             {
               "TV" = {
                 description = "Movie Streaming (Jellyfish)";
-                href = "http://tv.alq/";
-                siteMonitor = "http://nas:8096";
+                href = "https://tv.alq.ae/";
+                siteMonitor = "https://tv.alq.ae";
                 icon = "mdi-youtube-tv";
               };
             }
             {
               "Catalogue" = {
                 description = "Movie Search Catalogue";
-                href = "http://catalogue.alq/";
-                siteMonitor = "http://catalogue.alq/";
+                href = "https://catalogue.alq.ae/";
+                siteMonitor = "https://catalogue.alq.ae/";
                 icon = "mdi-movie-search";
               };
             }
@@ -94,24 +112,24 @@ in {
             {
               "Recipes" = {
                 description = "Recipe Book (Mealie)";
-                href = "http://recipes.alq/";
-                siteMonitor = "http://recipes.alq/";
+                href = "https://recipes.alq.ae/";
+                siteMonitor = "https://recipes.alq.ae/";
                 icon = "mdi-silverware-fork-knife";
               };
             }
             {
               "Books" = {
                 description = "eBooks Library";
-                href = "http://books.alq/";
-                siteMonitor = "http://books.alq/";
+                href = "https://books.alq.ae/";
+                siteMonitor = "https://books.alq.ae/";
                 icon = "mdi-bookshelf";
               };
             }
             {
               "Audio Books" = {
                 description = "Audio Books Library";
-                href = "http://audiobooks.alq/";
-                siteMonitor = "http://audiobooks.alq/";
+                href = "https://audiobooks.alq.ae/";
+                siteMonitor = "https://audiobooks.alq.ae/";
                 icon = "mdi-book-music";
               };
             }
@@ -122,16 +140,16 @@ in {
             {
               "NAS" = {
                 description = "Network Attached Storage (Synology)";
-                href = "http://nas.alq/";
-                siteMonitor = "http://nas.alq/";
+                href = "https://nas.alq.ae/";
+                siteMonitor = "https://nas.alq.ae/";
                 icon = "mdi-nas";
               };
             }
             {
               "Gertruda" = {
                 description = "Prusa MK3S+ 3D Printer";
-                href = "http://gertruda.alq/";
-                siteMonitor = "http://gertruda.alq/";
+                href = "https://gertruda.alq.ae/";
+                siteMonitor = "https://gertruda.alq.ae/";
                 icon = "mdi-printer-3d-nozzle";
               };
             }
@@ -142,16 +160,16 @@ in {
             {
               "AdGuard" = {
                 description = "Network DNS & DHCP server (AdGuard Home)";
-                href = "http://adguard.alq/";
-                siteMonitor = "http://adguard.alq/";
+                href = "https://adguard.alq.ae/";
+                siteMonitor = "https://adguard.alq.ae/";
                 icon = "mdi-security";
               };
             }
             {
               "Etisalat" = {
                 description = "Etisalat Router";
-                href = "http://192.168.1.1/";
-                siteMonitor = "http://192.168.1.1/";
+                href = "http://192.168.1.1/login.html";
+                siteMonitor = "http://192.168.1.1/login.html";
                 icon = "mdi-router-network";
               };
             }

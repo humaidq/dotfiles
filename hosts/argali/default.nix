@@ -3,6 +3,7 @@
   vars,
   config,
   self,
+  lib,
   ...
 }: {
   imports = [
@@ -10,6 +11,17 @@
     (import ./hardware.nix)
   ];
   networking.hostName = "argali";
+  networking.useDHCP = lib.mkForce false;
+  networking.interfaces.end0 = {
+    ipv4.addresses = [
+      {
+        address = "192.168.1.250";
+        prefixLength = 24;
+      }
+    ];
+  };
+  networking.defaultGateway = "192.168.1.1";
+  networking.resolvconf.useLocalResolver = true;
 
   sifr = {
     security.harden = false;
@@ -31,7 +43,7 @@
     profiles.basePlus = true;
   };
 
-  nixpkgs.hostPlatform = "x86_64-linux";
+  nixpkgs.hostPlatform = "aarch64-linux";
   system.stateVersion = "23.11";
 
   #boot.kernelPackages = pkgs.linuxPackages_rpi4;
