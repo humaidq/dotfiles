@@ -44,7 +44,15 @@
       inherit specialArgs;
       modules = [self.nixosModules.host-argali];
     };
-    rpi4-bootstrap = lib.nixosSystem {
+  };
+  flake.packages.aarch64-linux = let
+    specialArgs = {
+      inherit self inputs vars;
+    };
+  in {
+    rpi4-bootstrap = inputs.nixos-generators.nixosGenerate {
+      format = "sd-aarch64";
+      system = "aarch64-linux";
       inherit specialArgs;
       modules = [self.nixosModules.host-rpi4-bootstrap];
     };

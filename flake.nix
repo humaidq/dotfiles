@@ -74,8 +74,10 @@
         inputs.treefmt-nix.flakeModule
         ./hosts
       ];
-      flake.nixosModules = {
-        sifrOS = import ./modules;
+      flake = {
+        nixosModules = {
+          sifrOS = import ./modules;
+        };
       };
       systems = [
         "x86_64-linux"
