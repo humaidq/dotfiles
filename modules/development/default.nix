@@ -38,13 +38,12 @@ in {
   };
 
   config = lib.mkMerge [
-    (lib.mkIf cfg.enable {
+    {
+      # We need basic git on all computers, needed for flakes too.
       home-manager.users."${vars.user}" = {
         programs.git = {
           enable = true;
-          package = pkgs.gitAndTools.gitFull;
           aliases = {co = "checkout";};
-          delta.enable = true;
           userName = "Humaid Alqasimi";
           extraConfig = {
             core.editor = "nvim";
@@ -70,6 +69,14 @@ in {
             sendemail.smtpencryption = "tls";
             sendemail.smtpserverport = "587";
           };
+        };
+      };
+    }
+    (lib.mkIf cfg.enable {
+      home-manager.users."${vars.user}" = {
+        programs.git = {
+          package = pkgs.gitAndTools.gitFull;
+          delta.enable = true;
         };
       };
 
@@ -133,30 +140,30 @@ in {
         #cdxgen
 
         # language servers, checkers, formatters
-        shellcheck
-        #cmake-language-server
-        rust-analyzer
-        nodePackages.pyright
-        nodePackages.eslint
-        nodePackages.stylelint
-        nodePackages.bash-language-server
-        nodePackages.vscode-json-languageserver
-        nodePackages.dockerfile-language-server-nodejs
-        nodePackages.typescript-language-server
-        taplo
-        lua-language-server
-        prettierd
-        hadolint
-        nixd
-        nil
-        tailwindcss-language-server
-        vscode-langservers-extracted
-        nodePackages.jsdoc
-        # We use latest version of Go
-        gopls
-        gotools
-        golangci-lint
-        govulncheck
+        #shellcheck
+        ##cmake-language-server
+        #rust-analyzer
+        #nodePackages.pyright
+        #nodePackages.eslint
+        #nodePackages.stylelint
+        #nodePackages.bash-language-server
+        #nodePackages.vscode-json-languageserver
+        #nodePackages.dockerfile-language-server-nodejs
+        #nodePackages.typescript-language-server
+        #taplo
+        #lua-language-server
+        #prettierd
+        #hadolint
+        #nixd
+        #nil
+        #tailwindcss-language-server
+        #vscode-langservers-extracted
+        #nodePackages.jsdoc
+        ## We use latest version of Go
+        #gopls
+        #gotools
+        #golangci-lint
+        #govulncheck
       ];
     })
   ];

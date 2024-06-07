@@ -92,7 +92,7 @@ in {
     networking.timeServers = [];
 
     # DNS configuration
-    services.resolved.enable = true;
+    #services.resolved.enable = true;
     #networking.nameservers = [
     #  # Reliable worldwide
     #  "8.8.8.8#dns.google"

@@ -30,6 +30,20 @@ in {
         ${tls}
            reverse_proxy :3000
       '';
+
+      virtualHosts."deluge.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :8112
+      '';
+      virtualHosts."radarr.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :7878
+      '';
+      virtualHosts."prowlarr.alq.ae".extraConfig = ''
+        ${tls}
+           reverse_proxy :9696
+      '';
+
       virtualHosts."catalogue.alq.ae".extraConfig = ''
         ${tls}
            reverse_proxy :${builtins.toString config.services.jellyseerr.port}

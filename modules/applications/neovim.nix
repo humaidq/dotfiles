@@ -6,6 +6,7 @@
   ...
 }: let
   cfg = config.sifr.applications;
+  dev = config.sifr.development.enable;
 in {
   options.sifr.applications.neovim.enable = lib.mkOption {
     description = "Enables neovim configurations";
@@ -87,31 +88,31 @@ in {
           };
           plugins = {
             lsp = {
-              enable = true;
+              enable = dev;
               servers = {
                 # Programming & Scripts
-                golangci-lint-ls.enable = true;
-                gopls.enable = true;
-                bashls.enable = true;
-                nixd.enable = true;
-                clangd.enable = true;
+                golangci-lint-ls.enable = dev;
+                gopls.enable = dev;
+                bashls.enable = dev;
+                nixd.enable = dev;
+                clangd.enable = dev;
                 rust-analyzer = {
-                  enable = true;
-                  installCargo = true;
-                  installRustc = true;
+                  enable = dev;
+                  installCargo = dev;
+                  installRustc = dev;
                 };
-                pyright.enable = true;
+                pyright.enable = dev;
 
                 # Markup & Config
-                marksman.enable = true;
-                jsonls.enable = true;
-                yamlls.enable = true;
+                marksman.enable = dev;
+                jsonls.enable = dev;
+                yamlls.enable = dev;
 
                 # Web
-                html.enable = true;
-                eslint.enable = true;
-                cssls.enable = true;
-                tsserver.enable = true;
+                html.enable = dev;
+                eslint.enable = dev;
+                cssls.enable = dev;
+                tsserver.enable = dev;
               };
             };
 
@@ -123,7 +124,7 @@ in {
             # TODO configure
             telescope.enable = true;
 
-            vimtex.enable = true;
+            vimtex.enable = dev;
             nix.enable = true;
 
             luasnip.enable = true;

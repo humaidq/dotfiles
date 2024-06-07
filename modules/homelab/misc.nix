@@ -32,6 +32,26 @@ in {
       type = types.bool;
       default = false;
     };
+    nas-media.enable = mkOption {
+      description = "Enables nas media mount configuration";
+      type = types.bool;
+      default = false;
+    };
+    deluge.enable = mkOption {
+      description = "Enables deluge web configuration";
+      type = types.bool;
+      default = false;
+    };
+    prowlarr.enable = mkOption {
+      description = "Enables prowlarr configuration";
+      type = types.bool;
+      default = false;
+    };
+    radarr.enable = mkOption {
+      description = "Enables radarr configuration";
+      type = types.bool;
+      default = false;
+    };
   };
   config = {
     services.lldap = mkIf cfg.lldap.enable {
@@ -59,6 +79,29 @@ in {
     };
     services.jellyseerr = mkIf cfg.jellyseerr.enable {
       enable = true;
+    };
+
+    services.deluge = mkIf cfg.deluge.enable {
+      enable = true;
+      #authFile = config.sops.secrets."deluge-auth".path;
+      #declarative = true;
+      web.enable = true;
+    };
+    services.radarr = mkIf cfg.radarr.enable {
+      enable = true;
+    };
+    services.prowlarr = mkIf cfg.prowlarr.enable {
+      enable = true;
+    };
+
+    sops.secrets."nas/media" = {};
+    fileSystems."/mnt/nas-media" = mkIf cfg.nas-media.enable {
+      device = "//nas.alq.ae/video";
+      fsType = "cifs";
+      options = [
+        "credentials=${config.sops.secrets."nas/media".path}"
+        "dir_mode=0777,file_mode=0777,iocharset=utf8,auto"
+      ];
     };
   };
 }

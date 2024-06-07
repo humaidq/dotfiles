@@ -65,6 +65,18 @@ in {
             answer = "192.168.1.250";
           }
           {
+            domain = "deluge.alq.ae";
+            answer = "192.168.1.250";
+          }
+          {
+            domain = "radarr.alq.ae";
+            answer = "192.168.1.250";
+          }
+          {
+            domain = "prowlarr.alq.ae";
+            answer = "192.168.1.250";
+          }
+          {
             domain = "alq.ae";
             answer = "192.168.1.250";
           }

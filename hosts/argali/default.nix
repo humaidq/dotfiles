@@ -38,6 +38,10 @@
       mealie.enable = true;
       audiobookshelf.enable = true;
       jellyseerr.enable = true;
+      nas-media.enable = true;
+      deluge.enable = true;
+      radarr.enable = true;
+      prowlarr.enable = true;
     };
     profiles.base = true;
     profiles.basePlus = true;
