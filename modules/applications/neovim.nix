@@ -133,7 +133,7 @@ in {
             cmp-path.enable = true;
             cmp-buffer.enable = true;
             hardtime.enable = false;
-            neogit.enable = true;
+            #neogit.enable = true;
 
             gitsigns.enable = true;
             dashboard = {

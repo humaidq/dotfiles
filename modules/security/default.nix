@@ -25,7 +25,7 @@ in {
   options.sifr.security.doas = mkOption {
     description = "Replaces sudo with minimal alternative (doas)";
     type = types.bool;
-    default = pkgs.stdenv.isLinux;
+    default = false;
   };
 
   config = mkMerge [
@@ -56,7 +56,7 @@ in {
       boot = {
         # /tmp uses tmpfs and cleans on boot
         tmp.cleanOnBoot = true;
-        tmp.useTmpfs = true;
+        #tmp.useTmpfs = true; # runs out of space sometimes
 
         # Block boot menu editor.
         loader.systemd-boot.editor = mkDefault false;
@@ -110,7 +110,7 @@ in {
           "net.ipv4.tcp_rfc1337" = 1;
 
           # Disable ftrace debugging
-          "kernel.ftrace_enabled" = false;
+          #"kernel.ftrace_enabled" = false;
 
           # Ignore outgoing ICMP redirects (IPv4 only)
           "net.ipv4.conf.all.send_redirects" = false;
@@ -181,10 +181,10 @@ in {
           "pcspkr"
 
           # Might use
-          "bluetooth"
-          "ccid"
-          "wwan"
-          "nfc"
+          #"bluetooth"
+          #"ccid"
+          #"wwan"
+          #"nfc"
         ];
       };
 
@@ -192,9 +192,6 @@ in {
         polkit.enable = true;
         rtkit.enable = true;
         apparmor.enable = true;
-
-        protectKernelImage = true;
-        forcePageTableIsolation = true;
       };
 
       # StevenBlack's hosts file.

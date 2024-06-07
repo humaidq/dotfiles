@@ -8,7 +8,7 @@
   cfg = config.sifr.shell;
   lscolors = fetchGit {
     url = "https://github.com/trapd00r/LS_COLORS";
-    rev = "14ed0f0e7c8e531bbb4adaae799521cdd8acfbd3"; # 13 Mar, 2022
+    rev = "a283d79dcbb23a8679f4b1a07d04a80cab01c0ba"; # Dec 14, 2023
   };
   zsh-extract = fetchGit {
     url = "https://github.com/le0me55i/zsh-extract";
@@ -101,19 +101,7 @@ in {
             source ${lscolors}/lscolors.sh
             source ${zsh-extract}/extract.plugin.zsh
             export PATH=/opt/homebrew/bin:$PATH
-            #eval "$(direnv hook zsh)"
 
-            function mkcd() {
-              mkdir -p "$@" && cd "$@"
-            }
-
-            # from https://github.com/xero/dotfiles/blob/master/zsh/.zsh/06-aliases.zsh#L120=
-            function md() {
-              pandoc -s -f markdown -t man "$*" | man -l -
-            }
-            function manwww() {
-              curl -skL "$*" | pandoc -s -f html -t man | man -l -
-            }
             function ghafa-rebuild() {
               nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa reboot
             }
@@ -134,7 +122,8 @@ in {
             c = "clear";
             t = "tmux";
             #sudo = "doas";
-            ptop = "doas powertop";
+            doas = "sudo";
+            ptop = "sudo powertop";
             gpa = "git remote | xargs -L1 git push --all";
             bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
             agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
@@ -167,8 +156,8 @@ in {
             # Less verbosity
             bc = "bc -ql";
 
-            turbo = "doas cpupower -c all frequency-set -g performance";
-            unturbo = "doas cpupower -c all frequency-set -g powersave";
+            turbo = "sudo cpupower -c all frequency-set -g performance";
+            unturbo = "sudo cpupower -c all frequency-set -g powersave";
 
             units = "units --history /dev/null";
 
@@ -200,20 +189,11 @@ in {
           };
         };
 
+        # ls replacement
         programs.eza = {
           enable = true;
           enableZshIntegration = true;
         };
-
-        programs.direnv = {
-          enable = true;
-          enableZshIntegration = true;
-          nix-direnv.enable = true;
-          #nix-direnv.package = unstable.nix-direnv;
-          #package = unstable.direnv;
-        };
-        programs.nix-index-database.comma.enable = true;
-        programs.nix-index.enable = true;
       };
     })
   ];

@@ -78,92 +78,34 @@ in {
           package = pkgs.gitAndTools.gitFull;
           delta.enable = true;
         };
+
+        programs.direnv = {
+          enable = true;
+          enableZshIntegration = true;
+          nix-direnv.enable = true;
+          #nix-direnv.package = unstable.nix-direnv;
+          #package = unstable.direnv;
+        };
+        programs.nix-index-database.comma.enable = true;
+        programs.nix-index.enable = true;
       };
 
-      # TODO Can we remove all this once we move to devshells?
+      # Only include general helpful development tools
       environment.systemPackages = with pkgs; [
-        # compilers, interpreters, runtimes, etc
-        go_1_21
-        gcc
-        rustc
-        jre
-        jdk
-        lua
-        sass
-        lua52Packages.luarocks
-        python311Full
-        python311Packages.pip
-
-        # utilities
         ffmpeg
         git-privacy
         git-lfs
         gdb
         bvi
         minify
-        #pkg-config
         licensor
         gnupg
         bat
         sqlite
         dmtx-utils
-        fzf
         scc
         nix-output-monitor
-
-        # build tools
-        gnumake
-        cmake
-        cargo
-        #nodejs
-        #corepack_21
-
-        # documentation, generators
-        #mdbook
-        #mdbook-mermaid
-        #mdbook-toc
-        #mdbook-pdf
-        #mdbook-katex
-        #pandoc
-        #unstable.hugo
-        #plantuml
-        #nodePackages.mermaid-cli
-        #mermaid-cli
-        #graphviz
-        #texlive.combined.scheme-full
-        #tectonic
         imagemagick
-
-        # sbom, compliance
-        #cyclonedx-gomod
-        #cyclonedx-python
-        #cdxgen
-
-        # language servers, checkers, formatters
-        #shellcheck
-        ##cmake-language-server
-        #rust-analyzer
-        #nodePackages.pyright
-        #nodePackages.eslint
-        #nodePackages.stylelint
-        #nodePackages.bash-language-server
-        #nodePackages.vscode-json-languageserver
-        #nodePackages.dockerfile-language-server-nodejs
-        #nodePackages.typescript-language-server
-        #taplo
-        #lua-language-server
-        #prettierd
-        #hadolint
-        #nixd
-        #nil
-        #tailwindcss-language-server
-        #vscode-langservers-extracted
-        #nodePackages.jsdoc
-        ## We use latest version of Go
-        #gopls
-        #gotools
-        #golangci-lint
-        #govulncheck
       ];
     })
   ];

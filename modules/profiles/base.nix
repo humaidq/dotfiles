@@ -128,6 +128,7 @@ in {
         lf
         sshfs
         jq
+        fzf
 
         # TODO move to laptop config
         lm_sensors
