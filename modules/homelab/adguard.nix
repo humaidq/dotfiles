@@ -23,7 +23,7 @@ in {
           cache_ttl_min = 2400; # 40 min
           cache_ttl_max = 86400; # 24 hr
           cache_optimistic = true;
-          anonymize_client_ip = true;
+          anonymize_client_ip = false;
 
           safe_search = {
             enabled = true;
@@ -209,6 +209,26 @@ in {
           {
             name = "OSINT Digitalside.it Threat-Intel";
             url = "https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt";
+            enabled = true;
+          }
+          {
+            name = "ShadowWhisperer's Ads";
+            url = "https://raw.githubusercontent.com/ShadowWhisperer/BlockLists/master/Lists/Ads";
+            enabled = true;
+          }
+          {
+            name = "ShadowWhisperer's Marketing";
+            url = "https://raw.githubusercontent.com/ShadowWhisperer/BlockLists/master/Lists/Marketing";
+            enabled = true;
+          }
+          {
+            name = "ShadowWhisperer's Shock";
+            url = "https://raw.githubusercontent.com/ShadowWhisperer/BlockLists/master/Lists/Shock";
+            enabled = true;
+          }
+          {
+            name = "ShadowWhisperer's Typo";
+            url = "https://raw.githubusercontent.com/ShadowWhisperer/BlockLists/master/Lists/Typo";
             enabled = true;
           }
         ];
