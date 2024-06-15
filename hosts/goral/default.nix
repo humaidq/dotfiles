@@ -20,7 +20,7 @@
       apps = true;
     };
     v18n.docker.enable = true;
-    v18n.emulation.systems = ["x86_64-linux" "riscv64-linux"];
+    v18n.emulation.systems = ["x86_64-linux"];
     hardware.vm = true;
     profiles.basePlus = true;
     development.enable = true;
