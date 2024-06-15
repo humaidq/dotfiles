@@ -52,20 +52,13 @@ in {
       networking.networkmanager.wifi.macAddress = "random";
     })
     (mkIf cfg.harden {
-      # Boot and kernel hardening
       boot = {
-        # /tmp uses tmpfs and cleans on boot
         tmp.cleanOnBoot = true;
-        #tmp.useTmpfs = true; # runs out of space sometimes
 
         # Block boot menu editor.
         loader.systemd-boot.editor = mkDefault false;
 
         kernelParams = [
-          # Enable sanity check, redzoning, poisoning.
-          "slub_debug=FZP"
-          # Page allocator randomisatoin
-          "page_alloc.shuffle=1"
           # Reduce boot TTY output
           "quiet"
           "vga=current"
@@ -73,22 +66,17 @@ in {
 
         kernel.sysctl = {
           "fs.suid_dumpable" = 0;
-          "kernel.yama.ptrace_scope" = 1;
-          # Why isn't this default on NixOS?
           "kernel.dmesg_restrict" = 1;
           "kernel.sysrq" = 0;
-          # Disable broadcast ICMP
-          "net.ipv4.icmp_echo_ignore_broadcasts" = true;
 
-          # Enables strict reverse path filtering, and log them
-          "net.ipv4.conf.all.log_martians" = true;
-          "net.ipv4.conf.all.rp_filter" = "1";
-          "net.ipv4.conf.default.log_martians" = true;
-          "net.ipv4.conf.default.rp_filter" = "1";
+          # Enables strict reverse path filtering
+          #"net.ipv4.conf.all.rp_filter" = "1";
+          #"net.ipv4.conf.default.rp_filter" = "1";
+
           # Prevent bogus ICMP errors from filling logs
           "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
 
-          # Ignore all ICMP packets
+          # Ignore all ICMP redirects (breaks routers)
           "net.ipv4.conf.all.accept_redirects" = false;
           "net.ipv4.conf.all.secure_redirects" = false;
           "net.ipv4.conf.default.accept_redirects" = false;
@@ -96,21 +84,12 @@ in {
           "net.ipv6.conf.all.accept_redirects" = false;
           "net.ipv6.conf.default.accept_redirects" = false;
 
-          # hide kptr
-          "kernel.kptr_restrict" = 2;
-
           # Prevent syn flood attack
           "net.ipv4.tcp_syncookies" = 1;
           "net.ipv4.tcp_synack_retries" = 5;
 
-          # Disable bpf() JIT (to eliminate spray attacks)
-          "net.core.bpf_jit_enable" = false;
-
           # TIME-WAIT Assassination fix
           "net.ipv4.tcp_rfc1337" = 1;
-
-          # Disable ftrace debugging
-          #"kernel.ftrace_enabled" = false;
 
           # Ignore outgoing ICMP redirects (IPv4 only)
           "net.ipv4.conf.all.send_redirects" = false;
@@ -118,7 +97,14 @@ in {
 
           # Use TCP fast open to speed up some requests
           "net.ipv4.tcp_fastopen" = 3;
+
+          # Enable "TCP Bottleneck Bandwidth and Round-Trip Time Algorithm"
+          "net.inet.tcp.functions_default" = "bbr";
+          # Use CAKE instead of CoDel
+          "net.core.default_qdisc" = "cake";
         };
+
+        kernelModules = ["tcp_bbr"];
 
         blacklistedKernelModules = [
           "adfs"
@@ -129,9 +115,7 @@ in {
           "ax25"
           "befs"
           "bfs"
-          "btusb"
           "can"
-          "cifs"
           "cramfs"
           "dccp"
           "decnet"
