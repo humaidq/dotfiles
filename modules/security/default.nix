@@ -8,7 +8,7 @@
   cfg = config.sifr.security;
   hosts = pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/StevenBlack/hosts/6b6cba7dc79b459f80ffc44b3dd9973effdbed34/hosts";
-    sha256 = "492fe39b260e811ed1c556e6c4abfacf54b2094b8f931cf3c80562505bc04b4c";
+    sha256 = "sha256-aJDgvCQL1IZBTOXpy8VY4/oHOmz+4NVJX8jPCFQJZtk";
   };
   inherit (lib) mkOption types mkMerge mkIf mkDefault;
 in {
