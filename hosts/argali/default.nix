@@ -67,8 +67,8 @@
     };
   };
 
-  boot.initrd.kernelModules = ["sun4i-drm"];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  #boot.initrd.kernelModules = ["sun4i-drm"];
+  boot.kernelPackages = pkgs.linuxPackages_rpi4;
 
   services.openssh.enable = true;
   networking.firewall.enable = false;

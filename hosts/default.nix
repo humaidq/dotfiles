@@ -54,7 +54,16 @@
       format = "sd-aarch64";
       system = "aarch64-linux";
       inherit specialArgs;
-      modules = [self.nixosModules.host-rpi4-bootstrap];
+      modules = [
+        self.nixosModules.host-rpi4-bootstrap
+        {
+          sdImage.compressImage = false;
+        }
+      ];
     };
+  };
+  flake.packages.riscv64-linux = {
+    #boerbok-sd = self.nixosModules.host-boerbok.config.system.build.sdImage;
+    boerbok-sd = self.nixosConfigurations.boerbok.config.system.build.sdImage;
   };
 }

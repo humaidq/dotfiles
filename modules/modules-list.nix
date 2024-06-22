@@ -1,6 +1,6 @@
 [
   ./options.nix
-  ./theme.nix
+  #  ./theme.nix
   ./development
   ./graphics
   ./applications/firefox.nix
