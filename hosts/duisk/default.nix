@@ -1,6 +1,7 @@
 {
   self,
   vars,
+  config,
   ...
 }: {
   imports = [
@@ -29,6 +30,13 @@
       exitNode = true;
       ssh = true;
     };
+  };
+
+  system.autoUpgrade = {
+    enable = true;
+    allowReboot = true;
+    flake = "github:humaidq/dotfiles#${config.networking.hostName}";
+    flags = ["--refresh"];
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";

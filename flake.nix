@@ -9,10 +9,8 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     #nur.url = "github:nix-community/NUR";
-    nix-topology.url = "github:oddlama/nix-topology";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-root.url = "github:srid/flake-root";
-    stylix.url = "github:danth/stylix";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -76,7 +74,6 @@
         inputs.flake-root.flakeModule
         inputs.treefmt-nix.flakeModule
         ./hosts
-        ./topology/flake-modules.nix
       ];
       flake = {
         nixosModules = {
@@ -87,7 +84,7 @@
         "x86_64-linux"
         "aarch64-linux"
         "aarch64-darwin"
-        "riscv64-linux"
+        #"riscv64-linux"
       ];
       debug = true;
       perSystem = {

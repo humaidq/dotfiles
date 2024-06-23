@@ -12,8 +12,6 @@ in {
     [
       inputs.sops-nix.nixosModules.sops
       inputs.home-manager.nixosModules.home-manager
-      inputs.nix-topology.nixosModules.default
-      #inputs.stylix.nixosModules.stylix
     ]
     ++ (import ./modules-list.nix);
 
@@ -133,11 +131,8 @@ in {
       config = {
         allowUnfree = true;
         allowBroken = true;
+        allowUnsupportedSystem = true;
       };
-
-      overlays = [
-        inputs.nix-topology.overlays.default
-      ];
     };
   };
 }

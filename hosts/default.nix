@@ -10,7 +10,7 @@
     host-serow = import ./serow;
     host-duisk = import ./duisk;
     host-tahr = import ./tahr;
-    host-boerbok = import ./boerbok;
+    #host-boerbok = import ./boerbok;
     host-argali = import ./argali;
 
     host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
@@ -36,10 +36,10 @@
       inherit specialArgs;
       modules = [self.nixosModules.host-tahr];
     };
-    boerbok = lib.nixosSystem {
-      inherit specialArgs;
-      modules = [self.nixosModules.host-boerbok];
-    };
+    #boerbok = lib.nixosSystem {
+    #  inherit specialArgs;
+    #  modules = [self.nixosModules.host-boerbok];
+    #};
     argali = lib.nixosSystem {
       inherit specialArgs;
       modules = [self.nixosModules.host-argali];
@@ -63,7 +63,6 @@
     };
   };
   flake.packages.riscv64-linux = {
-    #boerbok-sd = self.nixosModules.host-boerbok.config.system.build.sdImage;
-    boerbok-sd = self.nixosConfigurations.boerbok.config.system.build.sdImage;
+    #boerbok-sd = self.nixosConfigurations.boerbok.config.system.build.sdImage;
   };
 }

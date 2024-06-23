@@ -2,7 +2,6 @@
   pkgs,
   vars,
   self,
-  lib,
   inputs,
   ...
 }: {
