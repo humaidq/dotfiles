@@ -1,9 +1,12 @@
 {
   config,
   lib,
+  pkgs,
+  inputs,
   ...
 }: let
   cfg = config.sifr.caddy;
+  humaid-site = inputs.humaid-site.defaultPackage.${pkgs.system};
 in {
   options.sifr.caddy.enable = lib.mkOption {
     description = "Enables caddy server configuration";
@@ -73,7 +76,7 @@ in {
 
       # Main website configuration
       virtualHosts."huma.id".extraConfig = ''
-        root * /srv/root
+        root * ${humaid-site}
         file_server
         import header
         import cors huma.id

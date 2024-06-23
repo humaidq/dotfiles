@@ -2,6 +2,10 @@
   description = "sifr is a declarative system configuration built by Humaid";
 
   inputs = {
+    # Personal imports
+    humaid-site.url = "github:humaidq/huma.id";
+
+    # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     #nur.url = "github:nix-community/NUR";
@@ -41,10 +45,6 @@
 
     nixvim = {
       url = "github:nix-community/nixvim";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
-      inputs.treefmt-nix.follows = "treefmt-nix";
-      inputs.nix-darwin.follows = "nix-darwin";
     };
 
     alejandra = {
@@ -76,6 +76,7 @@
         inputs.flake-root.flakeModule
         inputs.treefmt-nix.flakeModule
         ./hosts
+        ./topology/flake-modules.nix
       ];
       flake = {
         nixosModules = {

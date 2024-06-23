@@ -13,6 +13,7 @@ in {
       inputs.sops-nix.nixosModules.sops
       inputs.home-manager.nixosModules.home-manager
       inputs.stylix.nixosModules.stylix
+      inputs.nix-topology.nixosModules.default
     ]
     ++ (import ./modules-list.nix);
 
@@ -133,6 +134,10 @@ in {
         allowUnfree = true;
         allowBroken = true;
       };
+
+      overlays = [
+        inputs.nix-topology.overlays.default
+      ];
     };
   };
 }

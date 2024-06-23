@@ -105,7 +105,7 @@ in {
                 # Programming & Scripts
                 golangci-lint-ls.enable = dev;
                 gopls.enable = dev;
-                bashls.enable = dev;
+                #bashls.enable = dev;
                 nixd = {
                   enable = dev;
                   rootDir = "require('lspconfig.util').root_pattern('flake.nix','.git')";
