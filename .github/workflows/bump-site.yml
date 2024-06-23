@@ -19,7 +19,6 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           title: Bump huma.id site
-          branch: humaid-site-bump
           commit-message: Bump huma.id site
           body: |
             Update the [humaid-site flake](https://github.com/humaidq/huma.id) to latest.
