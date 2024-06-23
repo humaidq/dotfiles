@@ -1,7 +1,6 @@
 {
   pkgs,
   vars,
-  config,
   self,
   lib,
   inputs,
@@ -12,6 +11,7 @@
     self.nixosModules.sifrOS
   ];
   networking.hostName = "sifrOS-rpi";
+  nixpkgs.hostPlatform = "aarch64-linux";
 
   sifr = {
     security.harden = false;
@@ -21,40 +21,35 @@
       ssh = true;
     };
     profiles.base = true;
-    profiles.basePlus = false;
+    profiles.basePlus = true;
   };
 
-  nixpkgs.hostPlatform = "aarch64-linux";
-  system.stateVersion = "23.11";
+  system.stateVersion = "24.05";
 
   #boot.kernelPackages = pkgs.linuxPackages_rpi4;
-  hardware.enableRedistributableFirmware = true;
+  #hardware.enableRedistributableFirmware = true;
   networking.networkmanager.enable = false;
 
-  boot.loader.grub.enable = false;
-  boot.loader.generic-extlinux-compatible.enable = true;
+  #boot.loader.grub.enable = false;
+  #boot.loader.generic-extlinux-compatible.enable = true;
 
   networking.wireless = {
     enable = true;
-    environmentFile = config.sops.secrets.wifi-2g.path;
     networks = {
-      "@ssid@" = {
-        psk = "@pass@";
+      "WIFI" = {
+        psk = "psk";
       };
     };
   };
 
+  environment.systemPackages = with pkgs; [
+    libraspberrypi
+    raspberrypi-eeprom
+  ];
   boot.initrd.kernelModules = ["sun4i-drm"];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   services.openssh.enable = true;
   networking.firewall.enable = false;
-
-  documentation.enable = lib.mkForce false;
-  documentation.nixos.enable = lib.mkForce false;
-  security.polkit.enable = lib.mkForce false;
-  security.rtkit.enable = lib.mkForce false;
-  security.apparmor.enable = lib.mkForce false;
 
   users.users.${vars.user} = {
     isNormalUser = true;

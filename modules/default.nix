@@ -12,8 +12,8 @@ in {
     [
       inputs.sops-nix.nixosModules.sops
       inputs.home-manager.nixosModules.home-manager
-      inputs.stylix.nixosModules.stylix
       inputs.nix-topology.nixosModules.default
+      #inputs.stylix.nixosModules.stylix
     ]
     ++ (import ./modules-list.nix);
 
