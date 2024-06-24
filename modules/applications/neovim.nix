@@ -236,9 +236,8 @@ in {
             trouble.enable = true;
             comment.enable = true;
             fidget.enable = true;
-
-            # Need to renew subscription :)
-            #copilot-vim.enable = true; # GtHub Copilot
+            bufferline.enable = true;
+            copilot-vim.enable = true;
           };
           keymaps = [
             {

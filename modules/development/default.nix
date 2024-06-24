@@ -106,6 +106,7 @@ in {
         scc
         nix-output-monitor
         imagemagick
+        gh
       ];
     })
   ];
