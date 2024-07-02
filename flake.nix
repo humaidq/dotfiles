@@ -14,6 +14,7 @@
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     flake-compat = {
@@ -43,6 +44,7 @@
 
     nixvim = {
       url = "github:nix-community/nixvim/nixos-24.05";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     alejandra = {

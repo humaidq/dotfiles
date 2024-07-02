@@ -35,7 +35,9 @@ in {
       wifi-2g = {};
       wifi-5g = {};
       lldap-env = {};
-      github-token = {};
+      github-token = {
+        owner = vars.user;
+      };
     };
 
     users.users.${vars.user} = {
