@@ -36,11 +36,6 @@
       echo "level $1" | doas tee /proc/acpi/ibm/fan
     '';
   };
-  mkcd = pkgs.writeShellApplication {
-    name = "mkcd";
-    runtimeInputs = [pkgs.coreutils];
-    text = "mkdir -p \"$@\" && cd \"$@\"";
-  };
 in {
   options.sifr.scripts.enable = lib.mkOption {
     description = "Enable custom home scripts";
@@ -48,11 +43,13 @@ in {
     default = config.sifr.profiles.basePlus;
   };
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [
-      whoseport
-      lacheck
-      fan
-      mkcd
-    ];
+    environment.systemPackages =
+      [
+        whoseport
+        fan
+      ]
+      ++ lib.optionals config.sifr.development.enable [
+        lacheck
+      ];
   };
 }

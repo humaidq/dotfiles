@@ -155,12 +155,12 @@ in {
             luasnip = {
               enable = dev;
               extraConfig = {
-                enable_autosnippets = true;
+                enable_autosnippets = dev;
                 store_selection_keys = "<Tab>";
               };
               fromVscode = [
                 {
-                  lazyLoad = true;
+                  lazyLoad = dev;
                   paths = "${pkgs.vimPlugins.friendly-snippets}";
                 }
               ];
@@ -197,14 +197,14 @@ in {
             cmp-path.enable = dev;
             cmp_luasnip.enable = dev;
             cmp-emoji.enable = dev;
-            lspkind.enable = true;
+            lspkind.enable = dev;
             git-worktree = {
-              enable = true;
-              enableTelescope = true;
+              enable = dev;
+              enableTelescope = dev;
             };
 
             conform-nvim = {
-              enable = true;
+              enable = dev;
               formatOnSave = {
                 lspFallback = true;
                 timeoutMs = 500;
@@ -231,13 +231,13 @@ in {
               };
             };
 
-            gitsigns.enable = true;
-            gitlinker.enable = true;
-            trouble.enable = true;
-            comment.enable = true;
+            gitsigns.enable = dev;
+            gitlinker.enable = dev;
+            trouble.enable = dev;
+            comment.enable = dev;
             fidget.enable = true;
             bufferline.enable = true;
-            copilot-vim.enable = true;
+            copilot-vim.enable = dev;
           };
           keymaps = [
             {
