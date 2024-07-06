@@ -151,9 +151,6 @@ in {
         programs = {
           ssh = {
             enable = true;
-            #matchBlocks."*" = {
-            #  extraOptions.IdentityAgent = "~/.1password/agent.sock";
-            #};
           };
           tmux = {
             enable = true;
@@ -196,38 +193,38 @@ in {
           enable = true;
           mimeApps.enable = true;
           mimeApps.defaultApplications = {
-            "inode/directory" = ["file.desktop"];
-
-            # Images
-            "image/png" = ["img.desktop"];
-            "image/jpeg" = ["img.desktop"];
-            "image/gif" = ["img.desktop"];
-
-            # Text
-            "text/x-shellscript" = ["text.desktop"];
-            "text/x-c" = ["text.desktop"];
-            "text/x-lisp" = ["text.desktop"];
-            "text/html" = ["text.desktop"];
-            "text/plain" = ["text.desktop"];
-
-            # PDF
-            "application/pdf" = ["pdf.desktop"];
-            "application/postscript" = ["pdf.desktop"];
-
-            # Videos
-            "video/mp4" = ["video.desktop"];
-            "video/x-msvideo" = ["video.desktop"];
-            "video/quicktime" = ["video.desktop"];
+            #"inode/directory" = ["file.desktop"];
+            #
+            ## Images
+            #"image/png" = ["img.desktop"];
+            #"image/jpeg" = ["img.desktop"];
+            #"image/gif" = ["img.desktop"];
+            #
+            ## Text
+            #"text/x-shellscript" = ["text.desktop"];
+            #"text/x-c" = ["text.desktop"];
+            #"text/x-lisp" = ["text.desktop"];
+            #"text/html" = ["text.desktop"];
+            #"text/plain" = ["text.desktop"];
+            #
+            ## PDF
+            #"application/pdf" = ["pdf.desktop"];
+            #"application/postscript" = ["pdf.desktop"];
+            #
+            ## Videos
+            #"video/mp4" = ["video.desktop"];
+            #"video/x-msvideo" = ["video.desktop"];
+            #"video/quicktime" = ["video.desktop"];
           };
           userDirs = {
             enable = true;
-            createDirectories = false;
+            createDirectories = true;
             desktop = "$HOME";
             documents = "$HOME/docs";
             download = "$HOME/inbox/web";
-            music = "$HOME/docs/music";
             pictures = "$HOME/docs/pics";
             videos = "$HOME/docs/vids";
+            music = "";
             publicShare = "";
             templates = "";
           };

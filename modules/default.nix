@@ -26,20 +26,25 @@ in {
     ];
 
     # Setup sops-nix
-    sops.defaultSopsFile = ../secrets/secrets.yaml;
-    sops.defaultSopsFormat = "yaml";
-    sops.age.keyFile = "/home/${vars.user}/.config/sops/age/keys.txt";
-    sops.age.generateKey = true;
-    sops.secrets = {
-      tskey = {};
-      wifi-2g = {};
-      wifi-5g = {};
-      lldap-env = {};
-      github-token = {
-        owner = vars.user;
+    sops = {
+      defaultSopsFile = ../secrets/secrets.yaml;
+      defaultSopsFormat = "yaml";
+      #age.keyFile = "/home/${vars.user}/.config/sops/age/keys.txt";
+      age.keyFile = "/var/lib/sops-nix/key.txt";
+      age.generateKey = true;
+      secrets = {
+        tskey = {};
+        wifi-2g = {};
+        wifi-5g = {};
+        lldap-env = {};
+        github-token = {
+          owner = vars.user;
+        };
+        user-passwd = {};
       };
     };
 
+    users.mutableUsers = false;
     users.users.${vars.user} = {
       isNormalUser = true;
       uid = 1000;
@@ -57,11 +62,9 @@ in {
         "bluetooth"
       ];
       description = cfg.fullname;
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
-      ];
+      openssh.authorizedKeys.keys = config.users.users.root.openssh.authorizedKeys.keys;
+      hashedPasswordFile = config.sops.secrets.user-passwd.path;
     };
-    #users.motd = cfg.banner;
 
     users.users.root.openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"

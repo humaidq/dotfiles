@@ -13,7 +13,9 @@
     #host-boerbok = import ./boerbok;
     host-argali = import ./argali;
 
+    # Generators hosts
     host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
+    host-x86-installer = import ./x86-installer.nix;
   };
   flake.nixosConfigurations = let
     specialArgs = {
@@ -45,6 +47,27 @@
       modules = [self.nixosModules.host-argali];
     };
   };
+
+  flake.packages.x86_64-linux = let
+    specialArgs = {
+      inherit self inputs vars;
+    };
+  in {
+    installer = inputs.nixos-generators.nixosGenerate {
+      format = "iso";
+      system = "x86_64-linux";
+      inherit specialArgs;
+      modules = [
+        self.nixosModules.host-x86-installer
+        {
+          isoImage = {
+            squashfsCompression = "zstd -Xcompression-level 6";
+          };
+        }
+      ];
+    };
+  };
+
   flake.packages.aarch64-linux = let
     specialArgs = {
       inherit self inputs vars;
