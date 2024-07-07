@@ -218,7 +218,7 @@ in {
           };
           userDirs = {
             enable = true;
-            createDirectories = true;
+            createDirectories = false;
             desktop = "$HOME";
             documents = "$HOME/docs";
             download = "$HOME/inbox/web";

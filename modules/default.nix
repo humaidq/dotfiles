@@ -40,10 +40,11 @@ in {
         github-token = {
           owner = vars.user;
         };
-        user-passwd = {};
+        user-passwd.neededForUsers = true;
       };
     };
 
+    # Define default system user.
     users.mutableUsers = false;
     users.users.${vars.user} = {
       isNormalUser = true;
@@ -83,25 +84,24 @@ in {
     # We enable DHCP for all network interfaces by default.
     networking.useDHCP = lib.mkDefault true;
 
-    # Time server stuff
-    services.timesyncd.enable = false;
-    services.chrony.enable = true;
-    services.chrony.extraConfig = ''
-      server time.apple.com iburst maxsources 5 xleave
-      server 0.pool.ntp.org iburst maxsources 5 xleave
-      server 1.pool.ntp.org iburst maxsources 5 xleave
-      server 2.pool.ntp.org iburst maxsources 5 xleave
-      server 3.pool.ntp.org iburst maxsources 5 xleave
-    '';
+    # Use chrony as timeserver. Although chrony is more heavy (includs server
+    # implementation), but it implements full NTP protocol.
+    services.timesyncd.enable = true;
+    # Don't let Nix add timeservers in chrony config, we want to do them
+    # manually to add multiple options.
     networking.timeServers = [];
+    services.chrony = {
+      enable = true;
+      extraConfig = ''
+        server time.cloudflare.com iburst maxsources 5 xleave nts trust
+        server 0.pool.ntp.org iburst maxsources 5 xleave
+        server 1.pool.ntp.org iburst maxsources 5 xleave
+        server 2.pool.ntp.org iburst maxsources 5 xleave
 
-    # DNS configuration
-    #services.resolved.enable = true;
-    #networking.nameservers = [
-    #  # Reliable worldwide
-    #  "8.8.8.8#dns.google"
-    #  "1.0.0.1#cloudflare-dns.com"
-    #];
+        makestep 1.0 3
+      '';
+      enableNTS = true;
+    };
 
     nix = {
       settings = {
@@ -126,9 +126,7 @@ in {
     };
 
     # Use spleen font for console (tty)
-    fonts.packages = with pkgs; [
-      spleen
-    ];
+    fonts.packages = [pkgs.spleen];
     console.font = "${pkgs.spleen}/share/consolefonts/spleen-12x24.psfu";
 
     nixpkgs = {

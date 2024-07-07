@@ -123,10 +123,9 @@ in {
             t = "tmux";
             #sudo = "doas";
             doas = "sudo";
-            ptop = "sudo powertop";
-            gpa = "git remote | xargs -L1 git push --all";
-            bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
-            agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
+            #ptop = "sudo powertop";
+            #bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
+            #agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
             yt = "yt-dlp --add-metadata -ic";
             yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
             pf = "pfetch";
@@ -148,6 +147,7 @@ in {
             grs = "git restore --staged";
             gco = "git checkout";
             gcb = "git checkout -b";
+            gpa = "git remote | xargs -L1 git push --all";
 
             # Always recursive
             cp = "cp -r";
@@ -170,8 +170,8 @@ in {
             nrp = "nix repl '<nixpkgs>'";
 
             # Better ls
-            ls = lib.mkForce "exa --group-directories-first";
-            l = "exa -a -l -h --git --group-directories-first";
+            ls = lib.mkForce "eza --group-directories-first";
+            l = "eza -a -l -h --git --group-directories-first";
 
             # set color=always for some commands
             grep = "grep --color=always";

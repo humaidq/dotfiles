@@ -29,7 +29,7 @@ in {
           roboto
           ubuntu_font_family
           fira-code
-          fira-code-symbols
+          fira-code-nerdfont
           cantarell-fonts
           freefont_ttf
           inconsolata
@@ -37,6 +37,8 @@ in {
           lmodern
           ttf_bitstream_vera
           inter
+          ibm-plex
+          merriweather
           # Bitmap fonts
           terminus_font
         ];
@@ -49,13 +51,11 @@ in {
         pinta
         inkscape
         libreoffice
-        vlc
         rpi-imager
         prusa-slicer
         gnome-firmware
 
         # Re-add GNOME apps that are needed
-        baobab
         evince
         gnome.gnome-system-monitor
         gnome-text-editor
@@ -66,6 +66,18 @@ in {
         eyedropper
         #gaphor
         fragments
+
+        khronos
+        hieroglyphic
+        impression
+        junction
+        #letterpress
+        lorem
+        gnome-obfuscate
+        paper-clip
+        solanum
+        textpieces
+        forge-sparks
       ];
       services.fwupd.enable = true;
       services.power-profiles-daemon.enable = true;

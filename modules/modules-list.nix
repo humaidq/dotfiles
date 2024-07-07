@@ -8,6 +8,7 @@
   ./applications/emacs.nix
   ./profiles/base.nix
   ./profiles/laptop.nix
+  ./profiles/work.nix
   ./security
   ./shell
   ./scripts

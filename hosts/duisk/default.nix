@@ -2,6 +2,7 @@
   self,
   vars,
   config,
+  lib,
   ...
 }: {
   imports = [
@@ -17,6 +18,7 @@
 
   users.users."${vars.user}" = {
     hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
+    hashedPasswordFile = lib.mkForce null;
     extraGroups = ["caddy"];
   };
   services.tailscale.useRoutingFeatures = "both";

@@ -15,33 +15,21 @@ in {
 
   config = lib.mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
-    services.gnome.core-os-services.enable = true;
-    # Disable some core-os-services we don't want
-    services.gnome.evolution-data-server.enable = lib.mkForce false;
     services.gnome.gnome-online-accounts.enable = false;
     services.gnome.gnome-online-miners.enable = lib.mkForce false;
-    services.gnome.tracker.enable = lib.mkForce false;
 
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs;
     with gnome; [
-      baobab
       cheese
       epiphany
       geary
-      gnome-calendar
-      gnome-clocks
-      gnome-connections
       gnome-contacts
-      gnome-maps
       gnome-music
       gnome-tour
-      gnome-weather
       orca
       seahorse
       simple-scan
-      totem
-      yelp
     ];
     environment.systemPackages = with pkgs; [
       gnome.dconf-editor
@@ -54,8 +42,8 @@ in {
       dconf.settings = {
         "org/gnome/shell" = {
           favorite-apps = [
-            "firefox.desktop"
-            "Alacritty.desktop"
+            "firefox-esr.desktop"
+            "org.gnome.Console.desktop"
             "org.gnome.Nautilus.desktop"
           ];
           welcome-dialog-last-shown-version = "9999";
@@ -73,9 +61,9 @@ in {
           show-battery-percentage = true;
           clock-show-weekday = true;
           color-scheme = "prefer-dark";
-          # Inter font
-          #document-font-name = "Inter 11";
-          #font-name = "Inter 11";
+          document-font-name = "Merriweather 11";
+          font-name = "IBM Plex Sans 11";
+          monospace-font-name = "FiraCode Nerd Font Mono Medium 13";
         };
         "org/gnome/desktop/background" = {
           picture-uri = "file://${./wallhaven-13mk9v.jpg}";

@@ -9,7 +9,6 @@
   sifr = {
     graphics = {
       gnome.enable = true;
-      sway.enable = true;
       apps = true;
     };
     profiles.basePlus = true;
@@ -30,7 +29,6 @@
   boot.loader = {
     systemd-boot = {
       enable = true;
-      memtest86.enable = true;
       consoleMode = "auto";
     };
 

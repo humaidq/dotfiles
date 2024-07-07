@@ -2,6 +2,7 @@
   pkgs,
   vars,
   inputs,
+  lib,
   ...
 }: {
   imports = [
@@ -39,6 +40,7 @@
     isNormalUser = true;
     extraGroups = ["wheel"];
     hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
+    hashedPasswordFile = lib.mkForce null;
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
     ];

@@ -33,8 +33,25 @@
       coreutils
     ];
     text = ''
-      echo "level $1" | doas tee /proc/acpi/ibm/fan
+      if [ $# -eq 0 ]; then
+        echo "usage: $0 <level>"
+        exit
+      fi
+      if [ "$EUID" -ne 0 ]; then
+        echo "Please run as root"
+        exit
+      fi
+
+      echo "level $1" | tee /proc/acpi/ibm/fan
     '';
+  };
+  watchsync = pkgs.writeShellApplication {
+    name = "watchsync";
+    runtimeInputs = with pkgs; [
+      procps
+      gnugrep
+    ];
+    text = "watch -d grep -e Dirty: -e Writeback: /proc/meminfo";
   };
 in {
   options.sifr.scripts.enable = lib.mkOption {
@@ -50,6 +67,7 @@ in {
       ]
       ++ lib.optionals config.sifr.development.enable [
         lacheck
+        watchsync
       ];
   };
 }
