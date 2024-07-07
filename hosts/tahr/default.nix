@@ -45,6 +45,7 @@
 
   # Keep system on when lid closed on power
   services.logind.lidSwitchExternalPower = "ignore";
+  services.xserver.displayManager.gdm.autoSuspend = false;
 
   ### All the annoying hardware-specific fixes
 
