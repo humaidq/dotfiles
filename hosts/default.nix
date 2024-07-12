@@ -12,6 +12,7 @@
     host-tahr = import ./tahr;
     #host-boerbok = import ./boerbok;
     host-argali = import ./argali;
+    host-arkelli = import ./arkelli;
 
     # Generators hosts
     host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
@@ -45,6 +46,10 @@
     argali = lib.nixosSystem {
       inherit specialArgs;
       modules = [self.nixosModules.host-argali];
+    };
+    arkelli = lib.nixosSystem {
+      inherit specialArgs;
+      modules = [self.nixosModules.host-arkelli];
     };
   };
 
