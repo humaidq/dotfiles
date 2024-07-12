@@ -10,46 +10,45 @@
     inputs.nixos-hardware.nixosModules.raspberry-pi-4
     self.nixosModules.sifrOS
   ];
-  networking.hostName = "sifrOS-rpi";
-  nixpkgs.hostPlatform = "aarch64-linux";
+  nixpkgs = {
+    hostPlatform = "aarch64-linux";
+    # Temporary fix for kernel build fail
+    # https://github.com/NixOS/nixpkgs/issues/154163
+    overlays = [
+      (final: super: {
+        makeModulesClosure = x:
+          super.makeModulesClosure (x // {allowMissing = true;});
+      })
+    ];
+  };
 
   sifr = {
     security.harden = false;
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      ssh = true;
-    };
     profiles.base = true;
     profiles.basePlus = true;
   };
 
   system.stateVersion = "24.05";
 
-  #boot.kernelPackages = pkgs.linuxPackages_rpi4;
-  #hardware.enableRedistributableFirmware = true;
-  networking.networkmanager.enable = false;
-
-  #boot.loader.grub.enable = false;
-  #boot.loader.generic-extlinux-compatible.enable = true;
-
-  networking.wireless = {
-    enable = true;
-    networks = {
-      "WIFI" = {
-        psk = "psk";
-      };
-    };
+  networking = {
+    firewall.enable = false;
+    hostName = "sifrOS-rpi";
   };
 
+  services.openssh.enable = true;
   environment.systemPackages = with pkgs; [
     libraspberrypi
     raspberrypi-eeprom
   ];
-  boot.initrd.kernelModules = ["sun4i-drm"];
 
-  services.openssh.enable = true;
-  networking.firewall.enable = false;
+  users.motd = ''
+    Welcome to the bootstrap system.
+    Steps:
+      1. Clone dotfiles
+      2. Run nixos-generate-config, copy over hardware-configuration.nix.
+      3. Configure your host.
+      4. Rebuild.
+  '';
 
   users.users.${vars.user} = {
     isNormalUser = true;

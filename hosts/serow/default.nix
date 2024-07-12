@@ -1,6 +1,11 @@
-{self, ...}: {
+{
+  self,
+  inputs,
+  ...
+}: {
   imports = [
     self.nixosModules.sifrOS
+    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t590
     (import ./hardware.nix)
   ];
   networking.hostName = "serow";
@@ -11,8 +16,10 @@
       gnome.enable = true;
       apps = true;
     };
-    profiles.basePlus = true;
-    profiles.laptop = true;
+    profiles = {
+      basePlus = true;
+      laptop = true;
+    };
     development.enable = true;
     security.yubikey = true;
     v18n.emulation.enable = true;

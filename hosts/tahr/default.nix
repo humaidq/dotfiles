@@ -1,12 +1,11 @@
 {
-  lib,
-  config,
-  pkgs,
+  inputs,
   self,
   ...
 }: {
   imports = [
     self.nixosModules.sifrOS
+    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-p1-gen3
     (import ./hardware.nix)
   ];
 
@@ -43,33 +42,7 @@
     efi.canTouchEfiVariables = true;
   };
 
-  # Keep system on when lid closed on power
-  services.logind.lidSwitchExternalPower = "ignore";
-  services.xserver.displayManager.gdm.autoSuspend = false;
-
-  ### All the annoying hardware-specific fixes
-
-  # Annoying Nvidia configurations
-  services.xserver.videoDrivers = lib.mkForce ["nvidia"];
-  hardware.opengl = {
-    enable = true;
-    driSupport32Bit = true;
-    driSupport = true;
-    extraPackages = with pkgs; [vaapiVdpau];
-  };
-  hardware.nvidia = {
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
-    modesetting.enable = true;
-    #nvidiaPersistenced = true;
-    nvidiaSettings = true;
-    prime = {
-      #offload.enable = true;
-      sync.enable = true;
-      intelBusId = lib.mkDefault "PCI:0:2:0";
-      nvidiaBusId = lib.mkDefault "PCI:1:0:0";
-    };
-  };
-
   # Fix touchpad click not working
+  # Kenel bug since 6.1+. See: https://nixos.wiki/wiki/Touchpad
   boot.kernelParams = ["psmouse.synaptics_intertouch=0"];
 }

@@ -85,7 +85,7 @@ in {
         "org/gnome/desktop/input-sources" = {
           # Add three keyboad layouts (en, ar, fi)
           sources = [(mkTuple ["xkb" "us"]) (mkTuple ["xkb" "ara"]) (mkTuple ["xkb" "fi"])];
-          xkb-options = ["caps:escape"];
+          xkb-options = ["caps:ctrl_modifier"];
         };
         "org/gnome/desktop/media-handling" = {
           # Don't mount devices when plugged in

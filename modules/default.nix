@@ -93,7 +93,7 @@ in {
     services.chrony = {
       enable = true;
       extraConfig = ''
-        server time.cloudflare.com iburst maxsources 5 xleave nts trust
+        server time.cloudflare.com iburst maxsources 5 xleave nts
         server 0.pool.ntp.org iburst maxsources 5 xleave
         server 1.pool.ntp.org iburst maxsources 5 xleave
         server 2.pool.ntp.org iburst maxsources 5 xleave
@@ -129,6 +129,12 @@ in {
     fonts.packages = [pkgs.spleen];
     console.font = "${pkgs.spleen}/share/consolefonts/spleen-12x24.psfu";
 
+    services.getty = {
+      greetingLine = lib.mkOverride 50 ''<<< Welcome to ${config.networking.hostName} (\l) >>>'';
+      helpLine = lib.mkOverride 50 ''\nHelp: https://github.com/humaidq/dotfiles'';
+    };
+
+    hardware.enableAllFirmware = true;
     nixpkgs = {
       # Allow proprietary packages and packages marked as broken
       config = {

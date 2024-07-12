@@ -1,7 +1,6 @@
 {
   config,
   self,
-  lib,
   inputs,
   ...
 }: {
@@ -12,20 +11,7 @@
   ];
 
   networking = {
-    hostName = "argali";
-
-    # This device is a DHCP server
-    useDHCP = lib.mkForce false;
-    defaultGateway = "192.168.1.1";
-    interfaces.end0 = {
-      ipv4.addresses = [
-        {
-          address = "192.168.1.250";
-          prefixLength = 24;
-        }
-      ];
-    };
-    resolvconf.useLocalResolver = true;
+    hostName = "arkelli";
 
     # TODO properly configure firewall rules
     firewall.enable = false;
@@ -47,29 +33,26 @@
     security.harden = false;
     tailscale = {
       enable = true;
-      exitNode = true;
       ssh = true;
     };
     homelab = {
-      adguard.enable = true;
-      web-server.enable = true;
-      # TODO move to arkelli
-      lldap.enable = false;
-      kavita.enable = false;
-      mealie.enable = false;
-      audiobookshelf.enable = false;
-      jellyseerr.enable = false;
+      lldap.enable = true;
+      kavita.enable = true;
+      mealie.enable = true;
+      audiobookshelf.enable = true;
+      jellyseerr.enable = true;
       nas-media.enable = false;
-      deluge.enable = false;
-      radarr.enable = false;
-      prowlarr.enable = false;
+      deluge.enable = true;
+      radarr.enable = true;
+      prowlarr.enable = true;
     };
+
     profiles.base = true;
     profiles.basePlus = true;
   };
 
   nixpkgs.hostPlatform = "aarch64-linux";
-  system.stateVersion = "23.11";
+  system.stateVersion = "24.05";
 
   services.openssh.enable = true;
 }
