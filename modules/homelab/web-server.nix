@@ -33,15 +33,15 @@ in {
 
       virtualHosts."deluge.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :8112
+           reverse_proxy http://192.168.1.98:8112
       '';
       virtualHosts."radarr.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :7878
+           reverse_proxy http://192.168.1.98:7878
       '';
       virtualHosts."prowlarr.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :9696
+           reverse_proxy http://192.168.1.98:9696
       '';
 
       virtualHosts."catalogue.alq.ae".extraConfig = ''
@@ -50,23 +50,23 @@ in {
       '';
       virtualHosts."books.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :5000
+           reverse_proxy http://192.168.1.98:5000
       '';
       virtualHosts."audiobooks.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :8000
+           reverse_proxy http://192.168.1.98:8000
       '';
       virtualHosts."tv.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy https://192.168.1.44:8096
+           reverse_proxy https://192.168.1.98:8096
       '';
       virtualHosts."recipes.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :9000
+           reverse_proxy http://192.168.1.98:9000
       '';
       virtualHosts."search.alq.ae".extraConfig = ''
         ${tls}
-           reverse_proxy :3342
+           reverse_proxy http://192.168.1.98:3342
       '';
       virtualHosts."gertruda.alq.ae".extraConfig = ''
         ${tls}
