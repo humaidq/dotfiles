@@ -34,8 +34,7 @@ in {
     };
 
     specialisation.server-mode.configuration = {
-      #system.nixos.tags = ["ServerMode"];
-      services.getty.helpLine = ''
+      services.getty.helpLine = lib.mkOverride 10 ''
           _____                            __  __           _
          / ____|                          |  \/  |         | |
         | (___   ___ _ ____   _____ _ __  | \  / | ___   __| | ___
@@ -48,8 +47,12 @@ in {
 
              You may close the lid, laptop will not suspend.
       '';
+
+      # Don't suspend
       services.logind.lidSwitch = lib.mkForce "ignore";
       services.logind.lidSwitchExternalPower = lib.mkForce "ignore";
+
+      # We don't want GUI
       services.xserver.displayManager.gdm.autoSuspend = lib.mkForce false;
       sifr.graphics.gnome.enable = lib.mkForce false;
       sifr.graphics.apps = lib.mkForce false;

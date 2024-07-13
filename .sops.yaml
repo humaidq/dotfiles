@@ -6,6 +6,15 @@ keys:
   - &duisk age1pj6s2egqvseryr3eu7xhzuqdmnf3hsghp3fr6z48haptzlmggyvqvhg9v5
   - &arkelli age13phmq9ak3grl6aah8q2fslnn6qknn4a54fvl2smwfrwljprdu38q4qp7ku
 creation_rules:
+  - path_regex: secrets/all.yaml$
+    key_groups:
+      - age:
+        - *serow
+        - *tahr
+        - *goral
+        - *argali
+        - *duisk
+        - *arkelli
   - path_regex: secrets/duisk.yaml$
     key_groups:
       - age:

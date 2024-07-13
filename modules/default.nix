@@ -27,20 +27,32 @@ in {
 
     # Setup sops-nix
     sops = {
-      defaultSopsFile = ../secrets/secrets.yaml;
+      defaultSopsFile = ../secrets/all.yaml;
       defaultSopsFormat = "yaml";
       #age.keyFile = "/home/${vars.user}/.config/sops/age/keys.txt";
       age.keyFile = "/var/lib/sops-nix/key.txt";
       age.generateKey = true;
       secrets = {
-        tskey = {};
-        wifi-2g = {};
-        wifi-5g = {};
-        lldap-env = {};
+        user-passwd = {
+          sopsFile = ../secrets/all.yaml;
+          neededForUsers = true;
+        };
+        tskey = {
+          sopsFile = ../secrets/gadgets.yaml;
+        };
+        wifi-2g = {
+          sopsFile = ../secrets/gadgets.yaml;
+        };
+        wifi-5g = {
+          sopsFile = ../secrets/gadgets.yaml;
+        };
+        lldap-env = {
+          sopsFile = ../secrets/gadgets.yaml;
+        };
         github-token = {
+          sopsFile = ../secrets/gadgets.yaml;
           owner = vars.user;
         };
-        user-passwd.neededForUsers = true;
       };
     };
 
@@ -114,9 +126,9 @@ in {
         experimental-features = ["nix-command" "flakes"];
       };
       gc = {
-        automatic = false;
+        automatic = true;
         dates = "weekly";
-        options = "--delete-older-than 60d";
+        options = "--delete-older-than 30d";
       };
 
       # API Rate limit for GitHub

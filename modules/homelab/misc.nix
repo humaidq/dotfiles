@@ -64,7 +64,9 @@ in {
       };
     };
 
-    sops.secrets.kavita-token = {};
+    sops.secrets.kavita-token = {
+      sopsFile = ../../secrets/gadgets.yaml;
+    };
     services.kavita = mkIf cfg.kavita.enable {
       enable = true;
       tokenKeyFile = config.sops.secrets.kavita-token.path;
@@ -94,7 +96,9 @@ in {
       enable = true;
     };
 
-    sops.secrets."nas/media" = {};
+    sops.secrets."nas/media" = {
+      sopsFile = ../../secrets/gadgets.yaml;
+    };
     fileSystems."/mnt/nas-media" = mkIf cfg.nas-media.enable {
       device = "//nas.alq.ae/video";
       fsType = "cifs";
