@@ -46,6 +46,12 @@ in {
         wifi-5g = {
           sopsFile = ../secrets/gadgets.yaml;
         };
+        nm-5g = {
+          sopsFile = ../secrets/gadgets.yaml;
+          path = "/etc/NetworkManager/system-connections/5g.nmconnection";
+          owner = "root";
+          mode = "600";
+        };
         lldap-env = {
           sopsFile = ../secrets/gadgets.yaml;
         };

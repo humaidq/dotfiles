@@ -154,15 +154,22 @@ in {
           };
           tmux = {
             enable = true;
+
+            plugins = with pkgs.tmuxPlugins; [
+              sensible
+              resurrect
+              copycat
+              continuum
+            ];
             # This fixes esc delay issue with vim
-            escapeTime = 0;
+            #escapeTime = 0;
             # Use vi-like keys to move in scroll mode
-            keyMode = "vi";
+            #keyMode = "vi";
             clock24 = false;
-            extraConfig = ''
-              set-option -g default-terminal "screen-256color"
-              set-option -sa terminal-features ',*:RGB'
-            '';
+            #extraConfig = ''
+            #  set-option -g default-terminal "screen-256color"
+            #  set-option -sa terminal-features ',*:RGB'
+            #'';
           };
           lf = {
             enable = true;

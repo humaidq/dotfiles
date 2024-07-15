@@ -32,6 +32,16 @@ in {
         epson-escpr
       ];
     };
+    hardware.printers.ensurePrinters = [
+      {
+        name = "L4150";
+        description = "Epson L4150";
+        deviceUri = "dnssd://EPSON%20L4150%20Series._pdl-datastream._tcp.local/";
+        location = "Office";
+        model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
+        ppdOptions.PageSize = "A4";
+      }
+    ];
 
     specialisation.server-mode.configuration = {
       services.getty.helpLine = lib.mkOverride 10 ''
