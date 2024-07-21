@@ -38,7 +38,7 @@
     enable = true;
     allowReboot = true;
     flake = "github:humaidq/dotfiles#${config.networking.hostName}";
-    flags = ["--refresh"];
+    flags = ["--refresh" "-L"];
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";

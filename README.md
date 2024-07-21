@@ -1,103 +1,104 @@
 # sifrOS: My Secure NixOS Configuration
+
 ![NixOS Flake](https://img.shields.io/badge/NixOS-flake-blue?logo=nixos)
 ![Wayland By Default](https://img.shields.io/badge/Wayland-196f5e?logo=wayland)
 ![secrets sops-nix](https://img.shields.io/badge/secrets-sops--nix-blue)
 
-
 ## Goal
 
-sifrOS is an opinionated but modular framework for NixOS, tailored to my use
-case. The goal is to create a reusable configuration for all my computer
-systems. This repository is modular, you should be able to set your username by
-setting a single option.
+sifrOS should be a secure, minimal, and modular NixOS framework tailored to my
+use case.
 
 ### Features
 
-- Secure by default
-    - The system is configured to be secured by default, enabling firewall and
-      hardening system and kernel settings.
-    - We aim with security through simplicity by using a minimal set of
-      software per module.
-    - Firefox is configured to use uBlock Origin by default, and enable
-      anti-fingerprinting settings, DuckDuckGo by default.
-- Properly configured desktop environment
-    - Gnome only for now.
-- Modular
-    - Components are separated by modules, and the configuration is available
-      as Flakes.
-    - User information can be set as an option, username is not hardcoded.
-- Clean
-    - The system follows a common theme and branding.
-    - A minimal boot screen, login menu, and desktop.
-    - `$HOME` is mostly de-cluttered, and XDG user directories (e.g. Desktop, Downloads) are simplified.
+- Properly configured desktop environment with Gnome and useful desktop apps.
+- Neovim (NixVim) configured with LSP, telescope, and other QoL plugins.
+- Secrets management with `sops-nix`.
+- Browser configured with uBlock Origin, DuckDuckGo, and other extensions.
+- Shell configured with modern tools & improvements, such as nix-direnv,
+  zoxide, eza, zsh-autocomplete, ls-colors, useful aliases, and more.
+- Tailscale with auto-authentication (using sops-nix).
+- Home Lab setup
+  - Logging and monitoring using Grafana
+  - AdGuard Home configured
+  - Media server
+- Web server for my personal website and other services.
+- "Server Mode" specialisation for laptops.
+- System hardening for kernel, web server, etc.
 
 ## Hosts
 
 Systems managed by this flake.
 
-| Name | System | CPU | RAM | GPU | Role | OS | State |
-| ---- | ----- | --- | --- | --- | ---- | -- | ----- |
-| `serow` | ThinkPad T590 | i7-8565U | 16GB | Intel UHD 8th Gen | 💻️ | ❄️ | ✅ |
-| `tahr` | ThinkPad P1 Gen3 | i9-10885H | 32GB | NVIDIA Quadro T2000 | 💻️ | ❄️ | ✅ |
-| `takin` | MacBook Pro | M2 Max | 64GB | M2 Max | 💻️ |  | 🚧 |
-| `goral` | VMWare Fusion | M2 Max | 64GB | M2 Max | 💻️ | ❄️ | ✅ |
-| `duisk` | Vultr VPS | vCPU | 4GB | None | ☁️ | ❄️ | ✅ |
-| `argali` | RPi 4B | BCM2711 | 8GB | None | ☁️ | ❄️ | ✅ |
-| `boerbok` | Star64 | SiFive | 8GB | None | ☁️ | ❄️ | 🚧 |
+| Name      | System           | CPU       | RAM  | GPU                 | Role | OS  | State |
+| --------- | ---------------- | --------- | ---- | ------------------- | ---- | --- | ----- |
+| `serow`   | ThinkPad T590    | i7-8565U  | 16GB | Intel UHD 8th Gen   | 💻️  | ❄️  | ✅    |
+| `tahr`    | ThinkPad P1 Gen3 | i9-10885H | 32GB | NVIDIA Quadro T2000 | 💻️  | ❄️  | ✅    |
+| `takin`   | MacBook Pro      | M2 Max    | 64GB | M2 Max              | 💻️  |    | 🚧    |
+| `goral`   | VMWare Fusion    | M2 Max    | 64GB | M2 Max              | 💻️  | ❄️  | ✅    |
+| `duisk`   | Vultr VPS        | vCPU      | 4GB  | None                | ☁️   | ❄️  | ✅    |
+| `argali`  | RPi 4B           | BCM2711   | 8GB  | None                | ☁️   | ❄️  | ✅    |
+| `arkelli` | RPi 4B           | BCM2711   | 8GB  | None                | ☁️   | ❄️  | ✅    |
+| `boerbok` | Star64           | SiFive    | 8GB  | None                | ☁️   | ❄️  | 🚧    |
 
-## Desktop
+Rebuilding a system:
 
-There are two options:
-- Gnome: For a fully featured, stacking, desktop environment.
-- Sway: For a minimal, tiling, window manager & compositor.
-
-## Building
-
-To build Raspberry Pi 4 image:
 ```
-nix build .#argali
+sudo nixos-rebuild switch --flake github:humaidq/dotfiles#<hostname> --refresh
 ```
 
-## Installation
+## Bootstrapping
 
-1. Use the regular [NixOS installer image from
-   nixos.org](https://nixos.org/download/), install normally.
-2. Clone this repository and `cd` into it.
-3. Copy over `/etc/nixos/hardware-configuration.nix` to `hardware/<hostname>.nix`.
-4. Copy over `/etc/nixos/configuration.nix` to `hosts/<hostname>.nix`.
-5. Make sure these two filenames match.
-6. Edit `flake.nix` and add your system definition (copy an existing as a
-   template).
-7. Edit `hosts/<hostname>.nix`, include `sifr` configurations. See other hosts
-   for example.
-    - Remove everything, including comments, stateVersion, and the import for
-      hardware config.
-    - Only keep the `boot.loader` configuration.
-    - Look at other hosts, should be a minimal file.
-8. For the first build, better to use `boot` option:
-   `sudo nixos-rebuild boot --flake .#<hostname>`. Then reboot the system.
+### x86 Machine
 
-To rebuild, run the following in the repository directory:
+Build and flash the installer image:
+
 ```
-doas nixos-rebuild switch --flake .#goral
+nix build github:humaidq/dotfiles#installer
+sudo cp ./result/iso/*.iso /dev/sdX
 ```
 
-## macOS Example Setup & Usage
+Alternatively, this ISO works with [Ventoy].
 
-These commands should be run after [installing
-Nix](https://nixos.org/download), and cloning this repository. The commands
-should be run while in this repository.
+After booting, either partition manually or use the disko configuration. Copy
+the hardware configuration and configure the host on another machine, push it
+to the repository.
 
-First time run:
+Then you may finally install with:
+
 ```
-nix --extra-experimental-features 'flakes nix-command' run nix-darwin -- switch --flake .#takin
-```
-Then (without sudo):
-```
-darwin-rebuild switch --flake .#takin
+sudo nixos-install --root /mnt --flake github:humaidq/dotfiles#<host>
 ```
 
-## TODOs
+### Raspberry Pi
 
-- [ ] Disko for disk configuration
-- [ ] Raspberry Pi image
+Build and flash the SD card image:
+
+```
+nix build github:humaidq/dotfiles#packages.aarch64-linux.rpi4-bootstrap
+sudo cp ./result/*.img /dev/mmcblkX
+```
+
+When booted, the image should auto-resize to fill the card. You should be able
+to SSH into the device using SSH key.
+
+Once a new host is configured for this machine, simply rebuild the system
+directly from the GitHub repository.
+
+Don't forget to add the age public key into `.sops.yaml` and update the keys.
+
+## macOS Setup & Usage
+
+Install Nix using the [Determinate Systems installer](https://zero-to-nix.com/start/install).
+
+```
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+```
+
+Then run the following (without sudo):
+
+```
+darwin-rebuild switch --flake github:humaidq/dotfiles#takin --refresh
+```
+
+[Ventoy]: https://www.ventoy.net/en/index.html

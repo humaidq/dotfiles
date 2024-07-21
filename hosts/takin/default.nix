@@ -30,6 +30,13 @@
         orientation = "bottom";
         tilesize = 40;
       };
+      CustomUserPreferences = {
+        "com.apple.desktopservices" = {
+          # Avoid creating .DS_Store files on network or USB volumes
+          DSDontWriteNetworkStores = true;
+          DSDontWriteUSBStores = true;
+        };
+      };
     };
 
     stateVersion = 4;
@@ -52,40 +59,34 @@
       "homebrew/cask-fonts"
     ];
     brews = [
-      "jython"
-      "python@3.11"
-      "tmux"
-      "gnupg"
-      "go"
-      "mosquitto"
-      "openjdk"
-      "tmux"
-      "pinentry-mac"
       "direnv"
       "ffmpeg"
+      "gnupg"
+      "go"
+      "jython"
       "neovim"
+      "openjdk"
+      "pinentry-mac"
+      "python@3.11"
+      "tmux"
+      "tmux"
     ];
     casks = [
-      "vlc"
-      "rectangle-pro"
+      "coconutbattery"
+      "eloston-chromium" # ungoogled-chromium
+      "figma"
+      "firefox"
+      "font-monaspace"
+      "font-fira-code-nerd-font"
+      "inkscape"
+      "iterm2"
+      "logi-options-plus"
       "slack"
       "stats"
-      "transmission"
-      "firefox"
-      "coconutbattery"
-      "docker"
-      "eloston-chromium" # ungoogled-chromium
-      "logi-options-plus"
-      "diffusionbee"
-      "bartender"
       "tailscale"
-      "font-monaspace"
-      "figma"
-      "inkscape"
-      "eqmac"
-      "iterm2"
-      "raycast"
-      "slack"
+      "textmate"
+      "transmission"
+      "vlc"
     ];
   };
 }

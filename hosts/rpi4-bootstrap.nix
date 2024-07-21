@@ -15,7 +15,7 @@
     # Temporary fix for kernel build fail
     # https://github.com/NixOS/nixpkgs/issues/154163
     overlays = [
-      (final: super: {
+      (_final: super: {
         makeModulesClosure = x:
           super.makeModulesClosure (x // {allowMissing = true;});
       })

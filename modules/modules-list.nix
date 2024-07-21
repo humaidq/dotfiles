@@ -18,4 +18,5 @@
   ./homelab/adguard.nix
   ./homelab/web-server.nix
   ./homelab/misc.nix
+  ./homelab/logging.nix
 ]

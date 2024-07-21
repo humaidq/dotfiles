@@ -24,6 +24,7 @@
     security.yubikey = true;
     v18n.emulation.enable = true;
     v18n.emulation.systems = ["aarch64-linux" "riscv64-linux"];
+    homelab.log-server.enable = true;
 
     tailscale = {
       enable = true;

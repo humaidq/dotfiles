@@ -24,6 +24,7 @@
     profiles = {
       basePlus = true;
       work = true;
+      laptop = true;
     };
     development.enable = true;
 
