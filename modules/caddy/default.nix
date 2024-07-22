@@ -110,6 +110,16 @@ in {
         import general
       '';
 
+      virtualHosts."consultant-ai.app".extraConfig = ''
+        reverse_proxy localhost:8080
+        basicauth * {
+          consultant $2a$14$Ok89VTgJRUb39ljS15Qw..RwA4pzdKE0flplasODlwQHbLOTLo7Li
+        }
+      '';
+      virtualHosts."www.consultant-ai.app".extraConfig = ''
+        redir https://consultant-ai.app{uri} permanent";
+      '';
+
       # Fun stuff
       virtualHosts."bot.huma.id".extraConfig = "respond \"beep boop\"";
       virtualHosts."car.huma.id".extraConfig = "respond \"vroom vroom\"";
