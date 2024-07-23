@@ -117,7 +117,7 @@ in {
         }
       '';
       virtualHosts."www.consultant-ai.app".extraConfig = ''
-        redir https://consultant-ai.app{uri} permanent";
+        redir https://consultant-ai.app{uri} permanent
       '';
 
       # Fun stuff

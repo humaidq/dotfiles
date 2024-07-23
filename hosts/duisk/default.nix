@@ -36,11 +36,6 @@
   };
 
   ## START case study
-  sops.secrets.openai_key = {
-    sopsFile = ../../secrets/duisk.yaml;
-    owner = "casestudy";
-    group = "casestudy";
-  };
   users.users.casestudy = {
     isSystemUser = true;
     group = "casestudy";
@@ -51,7 +46,7 @@
     description = "Case Study";
     wantedBy = ["multi-user.target"];
     environment = {
-      "OPENAI_KEY_PATH" = config.sops.secrets.openai_key.path;
+      "OPENAI_KEY_PATH" = "/var/lib/casestudy/key";
     };
     path = [pkgs.chromium pkgs.ibm-plex];
     serviceConfig = let
@@ -61,7 +56,7 @@
           owner = "humaidq";
           repo = "case-study-generator";
           rev = "93a6b281732d3325e800d322048850539e628c84";
-          sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          sha256 = "sha256-WL+fczsBqA6QdiYhu/LQxYZTpdC+02tADALRc477M8U=";
         };
         vendorHash = null;
       };
