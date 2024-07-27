@@ -19,8 +19,8 @@
       enableSound = false;
       apps = true;
     };
-    v18n.docker.enable = true;
-    v18n.emulation.systems = ["x86_64-linux"];
+    v12n.docker.enable = true;
+    v12n.emulation.systems = ["x86_64-linux"];
     hardware.vm = true;
     profiles.basePlus = true;
     development.enable = true;

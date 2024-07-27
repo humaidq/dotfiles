@@ -7,10 +7,8 @@
 }: let
   cfg = config.sifr.graphics;
 in {
-  options.sifr.graphics.gnome.enable = lib.mkOption {
-    description = "Enables gnome";
-    type = lib.types.bool;
-    default = false;
+  options.sifr.graphics = {
+    gnome.enable = lib.mkEnableOption "GNOME desktop environment";
   };
 
   config = lib.mkIf cfg.gnome.enable {

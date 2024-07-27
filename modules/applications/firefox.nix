@@ -16,6 +16,8 @@ in {
     default = config.sifr.graphics.apps;
   };
   config = lib.mkIf cfg.firefox.enable {
+    environment.variables.BROWSER = "firefox";
+
     programs.firefox = {
       enable = true;
       package = pkgs.firefox-esr;

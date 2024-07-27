@@ -4,16 +4,11 @@
   ...
 }: let
   cfg = config.sifr.homelab;
-  inherit (lib) mkOption types mkIf;
 in {
   options.sifr.homelab = {
-    log-server.enable = mkOption {
-      description = "Enables logserver";
-      type = types.bool;
-      default = false;
-    };
+    log-server.enable = lib.mkEnableOption "log server using Grafana";
   };
-  config = mkIf cfg.log-server.enable {
+  config = lib.mkIf cfg.log-server.enable {
     services.grafana = {
       enable = true;
       settings.server = {

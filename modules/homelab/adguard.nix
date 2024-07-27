@@ -5,10 +5,8 @@
 }: let
   cfg = config.sifr.homelab.adguard;
 in {
-  options.sifr.homelab.adguard.enable = lib.mkOption {
-    description = "Enables AdGuard Home configuration";
-    type = lib.types.bool;
-    default = false;
+  options.sifr.homelab = {
+    adguard.enable = lib.mkEnableOption "AdGuard Home";
   };
   config = lib.mkIf cfg.enable {
     services.adguardhome = {

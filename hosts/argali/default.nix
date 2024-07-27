@@ -11,6 +11,22 @@
     (import ./hardware.nix)
   ];
 
+  sifr = {
+    tailscale = {
+      enable = true;
+      exitNode = true;
+      ssh = true;
+    };
+    homelab = {
+      adguard.enable = true;
+      web-server.enable = true;
+    };
+    profiles.server = true;
+
+    # TODO re-enable
+    security.harden = false;
+  };
+
   networking = {
     hostName = "argali";
 
@@ -41,31 +57,6 @@
         };
       };
     };
-  };
-
-  sifr = {
-    security.harden = false;
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      ssh = true;
-    };
-    homelab = {
-      adguard.enable = true;
-      web-server.enable = true;
-      # TODO move to arkelli
-      lldap.enable = false;
-      kavita.enable = false;
-      mealie.enable = false;
-      audiobookshelf.enable = false;
-      jellyseerr.enable = false;
-      nas-media.enable = false;
-      deluge.enable = false;
-      radarr.enable = false;
-      prowlarr.enable = false;
-    };
-    profiles.base = true;
-    profiles.basePlus = true;
   };
 
   nixpkgs.hostPlatform = "aarch64-linux";

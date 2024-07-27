@@ -1,22 +1,25 @@
 [
-  ./options.nix
   #  ./theme.nix
-  ./development
-  ./graphics
+  ./applications/emacs.nix
   ./applications/firefox.nix
   ./applications/neovim.nix
-  ./applications/emacs.nix
+  ./development
+  ./graphics
+  ./homelab/adguard.nix
+  ./homelab/logging.nix
+  ./homelab/misc.nix
+  ./homelab/web-server.nix
+  ./options.nix
   ./profiles/base.nix
   ./profiles/laptop.nix
+  ./profiles/server.nix
   ./profiles/work.nix
+  ./profiles/webserver.nix
+  ./scripts
   ./security
   ./shell
-  ./scripts
-  ./tailscale
-  ./caddy
-  ./v18n
-  ./homelab/adguard.nix
-  ./homelab/web-server.nix
-  ./homelab/misc.nix
-  ./homelab/logging.nix
+  ./tailscale.nix
+  ./v12n.nix
+  ./autoupgrade.nix
+  ./backup.nix
 ]

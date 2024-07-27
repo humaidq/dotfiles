@@ -6,10 +6,8 @@
 }: let
   cfg = config.sifr.graphics;
 in {
-  options.sifr.graphics.apps = lib.mkOption {
-    description = "Enables workstation graphical applications";
-    type = lib.types.bool;
-    default = false;
+  options.sifr.graphics = {
+    apps = lib.mkEnableOption "workstation graphical applications";
   };
   config = lib.mkMerge [
     (lib.mkIf cfg.apps {
@@ -17,31 +15,41 @@ in {
       fonts = {
         enableDefaultPackages = true;
         enableGhostscriptFonts = true;
-        packages = with pkgs; [
-          noto-fonts
-          noto-fonts-cjk
-          noto-fonts-emoji
-          source-code-pro
-          source-sans-pro
-          source-serif-pro
-          amiri
-          #corefonts
-          roboto
-          ubuntu_font_family
-          fira-code
-          fira-code-nerdfont
-          cantarell-fonts
-          freefont_ttf
-          inconsolata
-          liberation_ttf
-          lmodern
-          ttf_bitstream_vera
-          inter
-          ibm-plex
-          merriweather
-          # Bitmap fonts
-          terminus_font
-        ];
+        packages = with pkgs;
+          [
+            noto-fonts
+            noto-fonts-cjk
+            noto-fonts-emoji
+            source-code-pro
+            source-sans-pro
+            source-serif-pro
+            amiri
+            #corefonts
+            roboto
+            ubuntu_font_family
+            fira-code
+            cantarell-fonts
+            freefont_ttf
+            inconsolata
+            liberation_ttf
+            lmodern
+            ttf_bitstream_vera
+            inter
+            ibm-plex
+            merriweather
+            # Bitmap fonts
+            terminus_font
+          ]
+          ++ [
+            (
+              nerdfonts.override {
+                # Anything included here must be included above too
+                fonts = [
+                  "FiraCode"
+                ];
+              }
+            )
+          ];
       };
     })
     (lib.mkIf (cfg.apps && !config.sifr.hardware.vm) {

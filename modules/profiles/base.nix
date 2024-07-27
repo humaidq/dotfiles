@@ -27,14 +27,11 @@ in {
           zsh-nix-shell
 
           # utilities
-          #neovim # nixvim
           wget
           htop
-          gitMinimal
           rsync
           bc
           units
-          pfetch
           sops
 
           # packages that must come with every Linux system
@@ -72,11 +69,14 @@ in {
       # Ensure zsh is recognised as a system shell.
       environment.shells = [pkgs.zsh];
 
+      security.sudo.extraConfig = ''
+        Defaults lecture = never
+      '';
+
       environment.variables = {
         EDITOR = "nvim";
         VISUAL = "nvim";
-        TERMINAL = "alacritty";
-        BROWSER = "firefox";
+        BROWSER = lib.mkDefault "echo";
 
         # clean up
         #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority"; # breaking DMs
@@ -128,7 +128,6 @@ in {
         lf
         sshfs
         jq
-        fzf
 
         # TODO move to laptop config
         lm_sensors
@@ -164,12 +163,8 @@ in {
             # This fixes esc delay issue with vim
             #escapeTime = 0;
             # Use vi-like keys to move in scroll mode
-            #keyMode = "vi";
+            keyMode = "vi";
             clock24 = false;
-            #extraConfig = ''
-            #  set-option -g default-terminal "screen-256color"
-            #  set-option -sa terminal-features ',*:RGB'
-            #'';
           };
           lf = {
             enable = true;
@@ -189,12 +184,21 @@ in {
               "<enter>" = "open";
             };
           };
+
+          fzf = {
+            enable = true;
+            # https://github.com/brianmcgillion/dotfiles/blob/9d95e3aa57c52a5c6bcec671f13b880f86626bce/home/shell/fzf.nix
+            defaultCommand = "git ls-files --cached --others --exclude-standard | fd --type f --type l --hidden --follow --exclude .git";
+            defaultOptions = [
+              "--reverse"
+              "--multi --inline-info --preview='[[ \\$(file --mine {}) =~ binary ]] && echo {} is a binary file || (bat --style=numbers --color=always {} || cat {}) 2>/dev/null | head -300' --preview-window='right:hidden:wrap' --bind='f3:execute(bat --style=numbers {} || less -f {}),f2:toggle-preview,ctrl-d:half-page-down,ctrl-u:half-page-up,ctrl-a:select-all+accept,ctrl-y:execute-silent(echo {+} | pbcopy)'"
+            ];
+            changeDirWidgetCommand = "fd --type d --hidden --follow --exclude .git"; # ALT_C command
+            fileWidgetCommand = "fd --hidden --follow --exclude .git"; # CTRL_T command
+          };
         };
-        services.gpg-agent = {
-          enable = true;
-          enableZshIntegration = true;
-          #pinentryFlavor = "qt";
-        };
+
+        services.ssh-agent.enable = true;
 
         xdg = {
           enable = true;

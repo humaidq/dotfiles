@@ -1,7 +1,6 @@
 {
   self,
   vars,
-  config,
   lib,
   pkgs,
   ...
@@ -26,7 +25,9 @@
 
   sifr = {
     profiles.basePlus = true;
-    caddy.enable = true;
+    profiles.server = true;
+    profiles.webserver = true;
+    autoupgrade.enable = true;
 
     tailscale = {
       enable = true;
@@ -71,13 +72,6 @@
     };
   };
   ## END case study
-
-  system.autoUpgrade = {
-    enable = true;
-    allowReboot = true;
-    flake = "github:humaidq/dotfiles#${config.networking.hostName}";
-    flags = ["--refresh" "-L"];
-  };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";

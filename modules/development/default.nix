@@ -10,19 +10,11 @@
     [user]
       email = git@huma.id
       signingkey = ~/.ssh/id_ed25519.pub
-    [commit]
-      gpgSign = true
-    [tag]
-      gpgSign = true
   '';
   tiiGitConfig = pkgs.writeText "tii-git-config" ''
     [user]
       email = humaid.alqassimi@tii.ae
       signingkey = ~/.ssh/id_ed25519_tii.pub
-    [commit]
-      gpgSign = true
-    [tag]
-      gpgSign = true
     [core]
       sshCommand = "ssh -i ~/.ssh/id_ed25519_tii"
   '';
@@ -47,18 +39,21 @@ in {
           userName = "Humaid Alqasimi";
           extraConfig = {
             core.editor = "nvim";
+
+            # TODO switch to main eventually
             init.defaultBranch = "master";
             format.signoff = true;
             commit.verbose = "yes";
+            merge.conflictStyle = "zdiff3";
+
             push.default = "current";
             pull.rebase = true;
+
+            # Sign commits with SSH key
             gpg.format = "ssh";
             gpg.ssh.allowedSignersFile = "${allowedSigners}";
-            #safe.directory = "/mnt/hgfs/*";
-            url = {
-              "git@github.com:".insteadOf = "gh:";
-              "git@git.sr.ht:".insteadOf = "srht:";
-            };
+            tag.gpgSign = true;
+            commit.gpgSign = true;
 
             includeIf."gitdir:/".path = "${personalGitConfig}";
             includeIf."gitdir:~/tii/".path = "${tiiGitConfig}";
@@ -74,20 +69,20 @@ in {
     }
     (lib.mkIf cfg.enable {
       home-manager.users."${vars.user}" = {
-        programs.git = {
-          package = pkgs.gitAndTools.gitFull;
-          delta.enable = true;
-        };
+        programs = {
+          git = {
+            package = pkgs.gitAndTools.gitFull;
+            delta.enable = true;
+          };
 
-        programs.direnv = {
-          enable = true;
-          enableZshIntegration = true;
-          nix-direnv.enable = true;
-          #nix-direnv.package = unstable.nix-direnv;
-          #package = unstable.direnv;
+          direnv = {
+            enable = true;
+            enableZshIntegration = true;
+            nix-direnv.enable = true;
+          };
+          nix-index-database.comma.enable = true;
+          nix-index.enable = true;
         };
-        programs.nix-index-database.comma.enable = true;
-        programs.nix-index.enable = true;
       };
 
       # Only include general helpful development tools

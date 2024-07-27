@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  vars,
   ...
 }: let
   cfg = config.sifr.profiles;
@@ -23,6 +24,7 @@ in {
     ];
     services.logind.lidSwitch = "suspend";
     hardware.bluetooth.enable = true;
+    users.users.${vars.user}.extraGroups = ["bluetooth" "lp"];
 
     services.printing = {
       enable = true;
@@ -42,6 +44,15 @@ in {
         ppdOptions.PageSize = "A4";
       }
     ];
+    services.avahi = {
+      enable = true;
+      nssmdns4 = true;
+      nssmdns6 = true;
+      publish = {
+        enable = true;
+        addresses = true;
+      };
+    };
 
     specialisation.server-mode.configuration = {
       services.getty.helpLine = lib.mkOverride 10 ''

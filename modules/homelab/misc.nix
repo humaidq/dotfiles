@@ -4,54 +4,18 @@
   ...
 }: let
   cfg = config.sifr.homelab;
-  inherit (lib) mkOption types mkIf;
+  inherit (lib) mkIf mkEnableOption;
 in {
   options.sifr.homelab = {
-    lldap.enable = mkOption {
-      description = "Enables lldap configuration";
-      type = types.bool;
-      default = false;
-    };
-    kavita.enable = mkOption {
-      description = "Enables Kavita configuration";
-      type = types.bool;
-      default = false;
-    };
-    mealie.enable = mkOption {
-      description = "Enables Mealie configuration";
-      type = types.bool;
-      default = false;
-    };
-    audiobookshelf.enable = mkOption {
-      description = "Enables Audiobookshelf configuration";
-      type = types.bool;
-      default = false;
-    };
-    jellyseerr.enable = mkOption {
-      description = "Enables Jellyseerr configuration";
-      type = types.bool;
-      default = false;
-    };
-    nas-media.enable = mkOption {
-      description = "Enables nas media mount configuration";
-      type = types.bool;
-      default = false;
-    };
-    deluge.enable = mkOption {
-      description = "Enables deluge web configuration";
-      type = types.bool;
-      default = false;
-    };
-    prowlarr.enable = mkOption {
-      description = "Enables prowlarr configuration";
-      type = types.bool;
-      default = false;
-    };
-    radarr.enable = mkOption {
-      description = "Enables radarr configuration";
-      type = types.bool;
-      default = false;
-    };
+    lldap.enable = mkEnableOption "lldap configuration";
+    kavita.enable = mkEnableOption "Kavita configuration";
+    mealie.enable = mkEnableOption "Mealie configuration";
+    audiobookshelf.enable = mkEnableOption "Audiobookshelf configuration";
+    jellyseerr.enable = mkEnableOption "Jellyseerr configuration";
+    nas-media.enable = mkEnableOption "nas media mount configuration";
+    deluge.enable = mkEnableOption "deluge web configuration";
+    prowlarr.enable = mkEnableOption "prowlarr configuration";
+    radarr.enable = mkEnableOption "radarr configuration";
   };
   config = {
     services.lldap = mkIf cfg.lldap.enable {

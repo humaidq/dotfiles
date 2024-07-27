@@ -17,7 +17,7 @@
       gnome.enable = true;
       apps = true;
     };
-    v18n.emulation = {
+    v12n.emulation = {
       enable = true;
       systems = ["aarch64-linux"];
     };

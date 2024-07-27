@@ -72,13 +72,10 @@ in {
         "dialout"
         "video"
         "audio"
-        "docker"
         "disk"
         "networkmanager"
         "wheel"
-        "lp"
         "kvm"
-        "bluetooth"
       ];
       description = cfg.fullname;
       openssh.authorizedKeys.keys = config.users.users.root.openssh.authorizedKeys.keys;
@@ -102,11 +99,11 @@ in {
     # We enable DHCP for all network interfaces by default.
     networking.useDHCP = lib.mkDefault true;
 
-    # Use chrony as timeserver. Although chrony is more heavy (includs server
+    # Use chrony as timeserver. Although chrony is more heavy (includes server
     # implementation), but it implements full NTP protocol.
     services.timesyncd.enable = true;
-    # Don't let Nix add timeservers in chrony config, we want to do them
-    # manually to add multiple options.
+    # Don't let Nix add timeservers in chrony config, we want to manually add
+    # multiple options.
     networking.timeServers = [];
     services.chrony = {
       enable = true;
@@ -151,6 +148,9 @@ in {
       greetingLine = lib.mkOverride 50 ''<<< Welcome to ${config.networking.hostName} (\l) >>>'';
       helpLine = lib.mkOverride 50 ''\nHelp: https://github.com/humaidq/dotfiles'';
     };
+
+    systemd.services.NetworkManager-wait-online.enable = false;
+    systemd.network.wait-online.enable = false;
 
     hardware.enableAllFirmware = true;
     nixpkgs = {

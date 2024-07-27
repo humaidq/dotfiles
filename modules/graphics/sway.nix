@@ -8,28 +8,55 @@
   cfg = config.sifr.graphics;
   mod = "Mod4";
 in {
-  options.sifr.graphics.sway.enable = lib.mkOption {
-    description = "Enables sway";
-    type = lib.types.bool;
-    default = false;
+  options.sifr.graphics = {
+    sway.enable = lib.mkEnableOption "desktop environment with sway";
   };
 
   config = lib.mkIf cfg.sway.enable {
-    programs.sway.enable = true;
-    #programs.sway.package = null;
-    #programs.sway = {
-    #  enable = true;
-    #  extraSessionCommands = ''
-    #    # SDL:
-    #    export SDL_VIDEODRIVER=wayland
-    #    # QT (needs qt5.qtwayland in systemPackages):
-    #    export QT_QPA_PLATFORM=wayland-egl
-    #    export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
-    #    # Fix for some Java AWT applications (e.g. Android Studio),
-    #    # use this if they aren't displayed properly:
-    #    export _JAVA_AWT_WM_NONREPARENTING=1
-    #  '';
-    #};
+    programs.sway = {
+      enable = true;
+      wrapperFeatures.gtk = true; # so that gtk works properly
+      extraPackages = with pkgs; [
+        swaylock-effects # lockscreen
+        pavucontrol
+        swayidle
+        xwayland
+        (i3pystatus.override {
+          extraLibs = [
+            python3.pkgs.keyrings-alt
+            python3.pkgs.paho-mqtt
+          ];
+        })
+        rofi-wayland
+        libnotify
+        dunst # notification daemon
+        kanshi # auto-configure display outputs
+        wdisplays
+        wl-clipboard
+        blueberry
+        sway-contrib.grimshot # screenshots
+        wtype
+
+        libnotify
+        pamixer
+        networkmanagerapplet
+      ];
+      extraSessionCommands = ''
+        # SDL:
+        export SDL_VIDEODRIVER=wayland
+        # QT (needs qt5.qtwayland in systemPackages):
+        export QT_QPA_PLATFORM=wayland-egl
+        export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
+        # Fix for some Java AWT applications (e.g. Android Studio),
+        # use this if they aren't displayed properly:
+        export _JAVA_AWT_WM_NONREPARENTING=1
+        # Others
+        export MOZ_ENABLE_WAYLAND=1
+        export XDG_SESSION_TYPE=wayland
+        export XDG_CURRENT_DESKTOP=sway
+      '';
+    };
+
     environment.systemPackages = with pkgs; [foot];
     home-manager.users."${vars.user}".wayland.windowManager.sway = {
       enable = true;

@@ -6,27 +6,26 @@
   ...
 }: let
   cfg = config.sifr.graphics;
-  inherit (lib) mkOption types mkMerge mkIf;
+  inherit (lib) mkOption types mkMerge mkIf mkEnableOption;
 in {
   imports = [
     ./gnome.nix
     ./sway.nix
     ./apps.nix
   ];
-  options.sifr.graphics.enable = mkOption {
-    description = "Sets up the graphical user environment with X11";
-    type = types.bool;
-    default = cfg.gnome.enable || cfg.sway.enable;
-  };
-  options.sifr.graphics.hidpi = mkOption {
-    description = "Configures the system for HiDPI screens";
-    type = types.bool;
-    default = false;
-  };
-  options.sifr.graphics.enableSound = mkOption {
-    description = "Enables sound server and configurations";
-    type = types.bool;
-    default = cfg.enable;
+  options.sifr.graphics = {
+    enable = mkOption {
+      description = "Sets up the graphical user environment with X11";
+      type = types.bool;
+      default = cfg.gnome.enable || cfg.sway.enable;
+    };
+    hidpi = mkEnableOption "HIDPI screen configuration";
+    # Have separate option as we want the ability to disable for VMs with GUI
+    enableSound = mkOption {
+      description = "Enables sound server and configurations";
+      type = types.bool;
+      default = cfg.enable;
+    };
   };
   config = mkMerge [
     # All HiDPI graphical systems
@@ -35,7 +34,6 @@ in {
       services.xserver.dpi = 180;
     })
     (mkIf cfg.enableSound {
-      # Enable audio only on non-VMs (I don't use audio on VMs)
       services.pipewire = {
         enable = true;
         alsa.enable = true;
@@ -54,7 +52,7 @@ in {
       services.xserver.excludePackages = [pkgs.xterm];
       services.xserver.displayManager.gdm.enable = true;
 
-      # We need to make system look better overall when we have a graphical system
+      # Make system look better overall when we have a graphical system
       boot.plymouth = {
         enable = true;
         logo = ../../assets/sifr-icon-blue.png;

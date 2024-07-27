@@ -10,22 +10,16 @@
     url = "https://raw.githubusercontent.com/StevenBlack/hosts/6b6cba7dc79b459f80ffc44b3dd9973effdbed34/hosts";
     sha256 = "sha256-aJDgvCQL1IZBTOXpy8VY4/oHOmz+4NVJX8jPCFQJZtk";
   };
-  inherit (lib) mkOption types mkMerge mkIf mkDefault;
+  inherit (lib) mkOption types mkMerge mkIf mkDefault mkEnableOption;
 in {
-  options.sifr.security.harden = mkOption {
-    description = "Hardens the system settings";
-    type = types.bool;
-    default = pkgs.stdenv.isLinux;
-  };
-  options.sifr.security.yubikey = mkOption {
-    description = "Enables YubiKey support";
-    type = types.bool;
-    default = false;
-  };
-  options.sifr.security.doas = mkOption {
-    description = "Replaces sudo with minimal alternative (doas)";
-    type = types.bool;
-    default = false;
+  options.sifr.security = {
+    harden = mkOption {
+      description = "Whether to harden the system";
+      type = types.bool;
+      default = pkgs.stdenv.isLinux;
+    };
+    yubikey = mkEnableOption "YubiKey support";
+    doas = mkEnableOption "OpenBSD's doas utility";
   };
 
   config = mkMerge [
@@ -180,6 +174,18 @@ in {
 
       # StevenBlack's hosts file.
       networking.extraHosts = builtins.readFile hosts;
+
+      # Set known public keys to prevent MITM
+      programs.ssh.knownHosts = {
+        "github.com".hostNames = ["github.com"];
+        "github.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+
+        "gitlab.com".hostNames = ["gitlab.com"];
+        "gitlab.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf";
+
+        "git.sr.ht".hostNames = ["git.sr.ht"];
+        "git.sr.ht".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZvRd4EtM7R+IHVMWmDkVU3VLQTSwQDSAvW0t2Tkj60";
+      };
     })
   ];
 }

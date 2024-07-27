@@ -10,6 +10,28 @@
     (import ./hardware.nix)
   ];
 
+  sifr = {
+    tailscale = {
+      enable = true;
+      ssh = true;
+    };
+    homelab = {
+      lldap.enable = true;
+      kavita.enable = true;
+      mealie.enable = true;
+      audiobookshelf.enable = true;
+      jellyseerr.enable = true;
+      nas-media.enable = false;
+      deluge.enable = true;
+      radarr.enable = true;
+      prowlarr.enable = true;
+    };
+    profiles.server = true;
+
+    # TODO re-enable
+    security.harden = false;
+  };
+
   networking = {
     hostName = "arkelli";
 
@@ -27,28 +49,6 @@
         };
       };
     };
-  };
-
-  sifr = {
-    security.harden = false;
-    tailscale = {
-      enable = true;
-      ssh = true;
-    };
-    homelab = {
-      lldap.enable = true;
-      kavita.enable = true;
-      mealie.enable = true;
-      audiobookshelf.enable = true;
-      jellyseerr.enable = true;
-      nas-media.enable = false;
-      deluge.enable = true;
-      radarr.enable = true;
-      prowlarr.enable = true;
-    };
-
-    profiles.base = true;
-    profiles.basePlus = true;
   };
 
   nixpkgs.hostPlatform = "aarch64-linux";

@@ -5,29 +5,21 @@
   ...
 }: let
   cfg = config.sifr.tailscale;
-  inherit (lib) mkOption types mkMerge mkIf;
+  inherit (lib) mkOption types mkMerge mkIf mkEnableOption;
 in {
-  options.sifr.tailscale.enable = mkOption {
-    description = "Enable tailscale configuration";
-    type = types.bool;
-    default = false;
-  };
-  options.sifr.tailscale.exitNode = mkOption {
-    description = "Sets up the system as an exit node";
-    type = types.bool;
-    default = false;
-  };
-
-  options.sifr.tailscale.ssh = mkOption {
-    description = "Enables openssh for access through tailscale only";
-    type = types.bool;
-    default = true;
-  };
-
-  options.sifr.tailscale.auth = mkOption {
-    description = "Performs a oneshot authentication with an auth-key";
-    type = types.bool;
-    default = true;
+  options.sifr.tailscale = {
+    enable = mkEnableOption "Tailscale configuration";
+    exitNode = mkEnableOption "exit node configuration";
+    ssh = mkOption {
+      description = "Enables openssh for access through tailscale only";
+      type = types.bool;
+      default = true;
+    };
+    auth = mkOption {
+      description = "Performs a oneshot authentication with an auth-key";
+      type = types.bool;
+      default = true;
+    };
   };
 
   config = mkMerge [

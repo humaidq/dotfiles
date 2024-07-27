@@ -7,15 +7,26 @@
 }: let
   cfg = config.sifr.profiles;
 in {
-  options.sifr.profiles.work = lib.mkOption {
-    description = "Work profile";
-    type = lib.types.bool;
-    default = false;
+  options.sifr.profiles = {
+    work = lib.mkEnableOption "work profile";
   };
   config = lib.mkIf cfg.work {
     environment.systemPackages = with pkgs; [
       slack
     ];
+
+    # TODO
+    # see cups-kyodialog, and:
+    # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/by-name/cu/cups-kyocera-3500-4500/package.nix
+    #hardware.printers.ensurePrinters = [
+    #  {
+    #    name = "TII_Secure";
+    #    #model = "${./assets/taskalfa4053ci-driverless-cupsfilters.ppd}";
+    #    location = "TII Any Printer";
+    #    deviceUri = "lpd://10.161.10.41";
+    #    ppdOptions = {PageSize = "A4";};
+    #  }
+    #];
 
     # SSH config for Ghaf development
     home-manager.users."${vars.user}" = {

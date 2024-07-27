@@ -168,6 +168,7 @@ in {
             np = "nix-shell -p";
             nr = "nix repl";
             nrp = "nix repl '<nixpkgs>'";
+            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v |& nom --json";
 
             # Better ls
             ls = lib.mkForce "eza --group-directories-first";
