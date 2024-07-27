@@ -109,6 +109,14 @@ in {
               nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa-orin reboot
             }
 
+            function mkcd() {
+              if [[ -z $1 ]]; then
+                echo "Usage: mkcd <directory>"
+                return 1
+              fi
+              mkdir -p $1 && cd $1
+            }
+
             echo "$fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."
           '';
           shellAliases = {
