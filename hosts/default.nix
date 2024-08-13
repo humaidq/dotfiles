@@ -16,6 +16,7 @@
 
     # Generators hosts
     host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
+    host-rpi5-bootstrap = import ./rpi5-bootstrap.nix;
     host-x86-installer = import ./x86-installer.nix;
   };
   flake.nixosConfigurations = let
@@ -84,6 +85,17 @@
       inherit specialArgs;
       modules = [
         self.nixosModules.host-rpi4-bootstrap
+        {
+          sdImage.compressImage = false;
+        }
+      ];
+    };
+    rpi5-bootstrap = inputs.nixos-generators.nixosGenerate {
+      format = "sd-aarch64";
+      system = "aarch64-linux";
+      inherit specialArgs;
+      modules = [
+        self.nixosModules.host-rpi5-bootstrap
         {
           sdImage.compressImage = false;
         }
