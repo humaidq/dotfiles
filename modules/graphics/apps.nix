@@ -37,6 +37,7 @@ in {
             inter
             ibm-plex
             merriweather
+            jetbrains-mono
             # Bitmap fonts
             terminus_font
           ]
@@ -46,6 +47,7 @@ in {
                 # Anything included here must be included above too
                 fonts = [
                   "FiraCode"
+                  "JetBrainsMono"
                 ];
               }
             )

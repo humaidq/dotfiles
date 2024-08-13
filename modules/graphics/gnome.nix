@@ -61,7 +61,7 @@ in {
           color-scheme = "prefer-dark";
           document-font-name = "Merriweather 11";
           font-name = "IBM Plex Sans 11";
-          monospace-font-name = "FiraCode Nerd Font Mono Medium 13";
+          monospace-font-name = "JetBrainsMono Nerd Font 13";
         };
         "org/gnome/desktop/background" = {
           picture-uri = "file://${./wallhaven-13mk9v.jpg}";

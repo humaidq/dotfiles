@@ -59,7 +59,6 @@ in {
       '';
     };
 
-    environment.systemPackages = with pkgs; [foot];
     home-manager.users."${vars.user}" = {
       programs = {
         i3status = {
@@ -83,6 +82,7 @@ in {
             main = {
               term = "xterm-256color";
               dpi-aware = "yes";
+              font = "JetBrainsMono Nerd Font:size=8";
             };
           };
         };
@@ -116,7 +116,7 @@ in {
           global = {
             origin = "top-right";
             frame_color = "#130e24";
-            font = "FiraCode Nerd Font 11";
+            font = "JetBrainsMono Nerd Font 11";
           };
           urgency_normal = {
             background = "#1d2e86";
@@ -163,7 +163,7 @@ in {
           floating.modifier = mod;
           output."*".bg = "${./wallhaven-13mk9v.jpg} fill #000000";
           fonts = {
-            names = ["FiraCode Nerd Font"];
+            names = ["JetBrainsMono Nerd Font"];
             size = 11.0;
           };
           defaultWorkspace = "1";

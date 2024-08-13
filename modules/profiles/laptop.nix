@@ -76,6 +76,7 @@ in {
       # We don't want GUI
       services.xserver.displayManager.gdm.autoSuspend = lib.mkForce false;
       sifr.graphics.gnome.enable = lib.mkForce false;
+      sifr.graphics.sway.enable = lib.mkForce false;
       sifr.graphics.apps = lib.mkForce false;
 
       # Make sure network manager is enabled
