@@ -13,6 +13,7 @@
     flake-root.url = "github:srid/flake-root";
 
     impermanence.url = "github:nix-community/impermanence";
+    nix-topology.url = "github:oddlama/nix-topology";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -82,6 +83,7 @@
       imports = [
         inputs.flake-root.flakeModule
         inputs.treefmt-nix.flakeModule
+        inputs.nix-topology.flakeModule
         ./hosts
       ];
       flake = {
@@ -119,6 +121,9 @@
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system inputs;
           config.allowUnfree = true;
+          overlays = [
+            inputs.nix-topology.overlays.default
+          ];
         };
       };
     };

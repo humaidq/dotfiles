@@ -3,6 +3,8 @@
   ./applications/emacs.nix
   ./applications/firefox.nix
   ./applications/neovim.nix
+  ./autoupgrade.nix
+  ./backup.nix
   ./development
   ./graphics
   ./homelab/adguard.nix
@@ -13,13 +15,13 @@
   ./profiles/base.nix
   ./profiles/laptop.nix
   ./profiles/server.nix
-  ./profiles/work.nix
   ./profiles/webserver.nix
+  ./profiles/work.nix
   ./scripts
-  ./security
+  ./security/default.nix
+  ./security/dns.nix
   ./shell
   ./tailscale.nix
+  ./time.nix
   ./v12n.nix
-  ./autoupgrade.nix
-  ./backup.nix
 ]

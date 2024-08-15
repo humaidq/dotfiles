@@ -109,6 +109,13 @@ in {
               nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa-orin reboot
             }
 
+            function ntp() {
+              chronyd -Q -t 3 "server $1 iburst maxsamples 1"
+            }
+            function nts() {
+              chronyd -Q -t 3 "server $1 iburst nts maxsamples 1"
+            }
+
             function mkcd() {
               if [[ -z $1 ]]; then
                 echo "Usage: mkcd <directory>"

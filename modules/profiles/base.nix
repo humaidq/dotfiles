@@ -159,6 +159,7 @@ in {
               resurrect
               copycat
               continuum
+              tmux-thumbs
             ];
             # This fixes esc delay issue with vim
             #escapeTime = 0;

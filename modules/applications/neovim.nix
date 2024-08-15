@@ -33,33 +33,33 @@ in {
         programs.nixvim = {
           enable = true;
           colorscheme = "tokyonight-night";
-          autoCmd = [
-            # Tab = 2 spaces
-            {
-              event = ["FileType"];
-              pattern = [
-                "css"
-                "javascript"
-                "javascriptreact"
-                "typescriptreact"
-                "html"
-                "yaml"
-              ];
-              command = "setlocal et ts=2 sw=2";
-            }
-            # Tab = 4 spaces
-            {
-              event = ["FileType"];
-              pattern = ["python"];
-              command = "setlocal et ts=4 sw=4";
-            }
-            # Tab = 4-col Tab
-            {
-              event = ["FileType"];
-              pattern = ["go"];
-              command = "setlocal ts=4 sw=4";
-            }
-          ];
+          #autoCmd = [
+          #  # Tab = 2 spaces
+          #  {
+          #    event = ["FileType"];
+          #    pattern = [
+          #      "css"
+          #      "javascript"
+          #      "javascriptreact"
+          #      "typescriptreact"
+          #      "html"
+          #      "yaml"
+          #    ];
+          #    command = "setlocal et ts=2 sw=2";
+          #  }
+          #  # Tab = 4 spaces
+          #  {
+          #    event = ["FileType"];
+          #    pattern = ["python"];
+          #    command = "setlocal et ts=4 sw=4";
+          #  }
+          #  # Tab = 4-col Tab
+          #  {
+          #    event = ["FileType"];
+          #    pattern = ["go"];
+          #    command = "setlocal ts=4 sw=4";
+          #  }
+          #];
           opts = {
             # Character encoding
             encoding = "utf-8";

@@ -12,6 +12,7 @@ in {
     [
       inputs.sops-nix.nixosModules.sops
       inputs.home-manager.nixosModules.home-manager
+      inputs.nix-topology.nixosModules.default
     ]
     ++ (import ./modules-list.nix);
 
@@ -24,6 +25,7 @@ in {
       inputs.nix-index-database.hmModules.nix-index
       inputs.nixvim.homeManagerModules.nixvim
     ];
+    topology.self.name = config.networking.hostName;
 
     # Setup sops-nix
     sops = {
@@ -99,25 +101,6 @@ in {
     # We enable DHCP for all network interfaces by default.
     networking.useDHCP = lib.mkDefault true;
 
-    # Use chrony as timeserver. Although chrony is more heavy (includes server
-    # implementation), but it implements full NTP protocol.
-    services.timesyncd.enable = true;
-    # Don't let Nix add timeservers in chrony config, we want to manually add
-    # multiple options.
-    networking.timeServers = [];
-    services.chrony = {
-      enable = true;
-      extraConfig = ''
-        server time.cloudflare.com iburst maxsources 5 xleave nts
-        server 0.pool.ntp.org iburst maxsources 5 xleave
-        server 1.pool.ntp.org iburst maxsources 5 xleave
-        server 2.pool.ntp.org iburst maxsources 5 xleave
-
-        makestep 1.0 3
-      '';
-      enableNTS = true;
-    };
-
     nix = {
       settings = {
         allowed-users = [cfg.username];
@@ -146,7 +129,7 @@ in {
 
     services.getty = {
       greetingLine = lib.mkOverride 50 ''<<< Welcome to ${config.networking.hostName} (\l) >>>'';
-      helpLine = lib.mkOverride 50 ''\nHelp: https://github.com/humaidq/dotfiles'';
+      helpLine = lib.mkOverride 50 ''Help: https://github.com/humaidq/dotfiles'';
     };
 
     systemd.services.NetworkManager-wait-online.enable = false;

@@ -83,13 +83,34 @@ in {
           nix-index-database.comma.enable = true;
           nix-index.enable = true;
         };
+
+        editorconfig = {
+          enable = true;
+          settings = {
+            "*" = {
+              charset = "utf-8";
+              end_of_line = "lf";
+              trim_trailing_whitespace = true;
+              insert_final_newline = true;
+              indent_style = "space";
+              indent_size = 2;
+            };
+            "*.go" = {
+              indent_style = "tab";
+            };
+            "Makefile" = {
+              indent_style = "tab";
+            };
+            "*.py" = {
+              indent_size = 4;
+            };
+          };
+        };
       };
 
       # Only include general helpful development tools
       environment.systemPackages = with pkgs; [
         ffmpeg
-        git-privacy
-        git-lfs
         gdb
         bvi
         minify
@@ -99,9 +120,18 @@ in {
         sqlite
         dmtx-utils
         scc
-        nix-output-monitor
         imagemagick
+
+        # git
         gh
+        git-privacy
+        git-lfs
+        git-extras
+        git-absorb
+
+        # Nix
+        nix-output-monitor
+        nix-tree
       ];
     })
   ];

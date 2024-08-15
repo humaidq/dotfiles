@@ -6,10 +6,6 @@
   ...
 }: let
   cfg = config.sifr.security;
-  hosts = pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/StevenBlack/hosts/6b6cba7dc79b459f80ffc44b3dd9973effdbed34/hosts";
-    sha256 = "sha256-aJDgvCQL1IZBTOXpy8VY4/oHOmz+4NVJX8jPCFQJZtk";
-  };
   inherit (lib) mkOption types mkMerge mkIf mkDefault mkEnableOption;
 in {
   options.sifr.security = {
@@ -169,11 +165,19 @@ in {
       security = {
         polkit.enable = true;
         rtkit.enable = true;
-        apparmor.enable = true;
+        apparmor = {
+          enable = true;
+          packages = with pkgs; [
+            apparmor-utils
+            apparmor-profiles
+          ];
+        };
       };
 
-      # StevenBlack's hosts file.
-      networking.extraHosts = builtins.readFile hosts;
+      networking.stevenblack = {
+        enable = true;
+        block = ["fakenews" "gambling" "porn"];
+      };
 
       # Set known public keys to prevent MITM
       programs.ssh.knownHosts = {
