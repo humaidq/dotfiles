@@ -8,7 +8,6 @@
   ./development
   ./graphics
   ./homelab/adguard.nix
-  ./homelab/logging.nix
   ./homelab/misc.nix
   ./homelab/web-server.nix
   ./options.nix
@@ -25,4 +24,6 @@
   ./time.nix
   ./v12n.nix
   ./topology/home.nix
+  ./o11y/server.nix
+  ./o11y/client.nix
 ]

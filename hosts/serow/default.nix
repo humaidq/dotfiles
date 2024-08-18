@@ -30,8 +30,12 @@
       encryptDNS = true;
     };
     development.enable = true;
-    homelab.log-server.enable = true;
     ntp.useNTS = false;
+
+    o11y = {
+      server.enable = true;
+      client.enable = true;
+    };
 
     tailscale = {
       enable = true;
