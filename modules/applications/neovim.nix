@@ -33,33 +33,6 @@ in {
         programs.nixvim = {
           enable = true;
           colorscheme = "tokyonight-night";
-          #autoCmd = [
-          #  # Tab = 2 spaces
-          #  {
-          #    event = ["FileType"];
-          #    pattern = [
-          #      "css"
-          #      "javascript"
-          #      "javascriptreact"
-          #      "typescriptreact"
-          #      "html"
-          #      "yaml"
-          #    ];
-          #    command = "setlocal et ts=2 sw=2";
-          #  }
-          #  # Tab = 4 spaces
-          #  {
-          #    event = ["FileType"];
-          #    pattern = ["python"];
-          #    command = "setlocal et ts=4 sw=4";
-          #  }
-          #  # Tab = 4-col Tab
-          #  {
-          #    event = ["FileType"];
-          #    pattern = ["go"];
-          #    command = "setlocal ts=4 sw=4";
-          #  }
-          #];
           opts = {
             # Character encoding
             encoding = "utf-8";
@@ -154,7 +127,7 @@ in {
 
             luasnip = {
               enable = dev;
-              extraConfig = {
+              settings = {
                 enable_autosnippets = dev;
                 store_selection_keys = "<Tab>";
               };
@@ -218,7 +191,7 @@ in {
                 typescript = [["prettierd" "prettier"]];
                 typescriptreact = [["prettierd" "prettier"]];
                 python = ["black"];
-                nix = ["alejandra"];
+                nix = ["nixfmt"];
                 markdown = [["prettierd" "prettier"]];
                 yaml = ["yamllint" "yamlfmt"];
               };

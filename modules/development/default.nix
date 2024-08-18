@@ -72,7 +72,7 @@ in {
         programs = {
           git = {
             package = pkgs.gitAndTools.gitFull;
-            delta.enable = true;
+            #delta.enable = true;
           };
 
           direnv = {
@@ -110,28 +110,31 @@ in {
 
       # Only include general helpful development tools
       environment.systemPackages = with pkgs; [
+        bat
+        bvi
+        dmtx-utils
         ffmpeg
         gdb
-        bvi
-        minify
-        licensor
         gnupg
-        bat
-        sqlite
-        dmtx-utils
-        scc
         imagemagick
+        licensor
+        minify
+        scc
+        sqlite
 
         # git
         gh
-        git-privacy
-        git-lfs
-        git-extras
         git-absorb
+        git-extras
+        git-lfs
+        git-privacy
 
         # Nix
+        nix-info
         nix-output-monitor
         nix-tree
+        nixfmt-rfc-style
+        nixpkgs-review
       ];
     })
   ];

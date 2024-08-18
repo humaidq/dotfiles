@@ -17,20 +17,19 @@ in {
     services.gnome.gnome-online-miners.enable = lib.mkForce false;
 
     # Exclude some packages we don't want
-    environment.gnome.excludePackages = with pkgs;
-    with gnome; [
+    environment.gnome.excludePackages = with pkgs; [
       cheese
       epiphany
       geary
-      gnome-contacts
-      gnome-music
+      gnome.gnome-contacts
+      gnome.gnome-music
       gnome-tour
       orca
       seahorse
       simple-scan
     ];
     environment.systemPackages = with pkgs; [
-      gnome.dconf-editor
+      dconf-editor
     ];
 
     home-manager.users."${vars.user}" = {lib, ...}: let

@@ -6,7 +6,7 @@
     humaid-site.url = "github:humaidq/huma.id";
 
     # External imports
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     #nur.url = "github:nix-community/NUR";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -41,7 +41,8 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.05";
+      #url = "github:nix-community/home-manager/release-24.05";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -51,7 +52,8 @@
     };
 
     nixvim = {
-      url = "github:nix-community/nixvim/nixos-24.05";
+      # url = "github:nix-community/nixvim/nixos-24.05";
+      url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

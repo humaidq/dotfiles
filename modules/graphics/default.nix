@@ -41,7 +41,6 @@ in {
         pulse.enable = true;
         wireplumber.enable = true;
       };
-      sound.enable = true;
       hardware.pulseaudio.enable = false; # replaced with pipewire above
     })
     (mkIf cfg.enable {
