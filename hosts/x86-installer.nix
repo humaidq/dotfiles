@@ -3,10 +3,9 @@
   self,
   lib,
   ...
-}: {
-  imports = [
-    self.nixosModules.sifrOS
-  ];
+}:
+{
+  imports = [ self.nixosModules.sifrOS ];
   networking.hostName = "sifrOS-installer";
   nixpkgs.hostPlatform = "x86_64-linux";
 

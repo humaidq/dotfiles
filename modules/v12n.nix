@@ -4,22 +4,30 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.v12n;
-  inherit (lib) mkOption types mkMerge mkIf mkEnableOption;
-in {
+  inherit (lib)
+    mkOption
+    types
+    mkMerge
+    mkIf
+    mkEnableOption
+    ;
+in
+{
   options.sifr.v12n = {
     docker.enable = mkEnableOption "docker";
     emulation.enable = mkEnableOption "QEMU emulation of other systems";
     emulation.systems = mkOption {
       description = "List of systems to emulate with binfmt";
       type = types.listOf types.str;
-      default = [];
+      default = [ ];
     };
   };
   config = mkMerge [
     (mkIf cfg.docker.enable {
-      users.users.${vars.user}.extraGroups = ["docker"];
+      users.users.${vars.user}.extraGroups = [ "docker" ];
       virtualisation.docker.enable = true;
       virtualisation.oci-containers.backend = "docker";
     })
@@ -29,8 +37,6 @@ in {
         OVMF
       ];
     })
-    (mkIf (cfg.emulation.systems != []) {
-      boot.binfmt.emulatedSystems = cfg.emulation.systems;
-    })
+    (mkIf (cfg.emulation.systems != [ ]) { boot.binfmt.emulatedSystems = cfg.emulation.systems; })
   ];
 }

@@ -1,8 +1,5 @@
+{ self, inputs, ... }:
 {
-  self,
-  inputs,
-  ...
-}: {
   imports = [
     self.nixosModules.sifrOS
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t590
@@ -23,7 +20,10 @@
     };
     v12n.emulation = {
       enable = true;
-      systems = ["aarch64-linux" "riscv64-linux"];
+      systems = [
+        "aarch64-linux"
+        "riscv64-linux"
+      ];
     };
     security = {
       yubikey = true;

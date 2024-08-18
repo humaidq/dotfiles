@@ -1,10 +1,8 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{ config, lib, ... }:
+let
   cfg = config.sifr.security;
-in {
+in
+{
   options.sifr.security.encryptDNS = lib.mkEnableOption "encrypted DNS over TLS";
 
   config = lib.mkIf cfg.encryptDNS {
@@ -20,7 +18,7 @@ in {
     services.resolved = {
       enable = true;
       dnssec = "allow-downgrade";
-      domains = ["~."];
+      domains = [ "~." ];
       dnsovertls = "true";
     };
   };

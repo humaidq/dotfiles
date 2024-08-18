@@ -1,8 +1,5 @@
+{ self, lib, ... }:
 {
-  self,
-  lib,
-  ...
-}: {
   imports = [
     self.nixosModules.sifrOS
     (import ./hardware.nix)
@@ -20,7 +17,7 @@
       apps = true;
     };
     v12n.docker.enable = true;
-    v12n.emulation.systems = ["x86_64-linux"];
+    v12n.emulation.systems = [ "x86_64-linux" ];
     hardware.vm = true;
     profiles.basePlus = true;
     development.enable = true;
@@ -43,7 +40,7 @@
   };
 
   # We have our own module that works with aarch64.
-  disabledModules = ["virtualisation/vmware-guest.nix"];
+  disabledModules = [ "virtualisation/vmware-guest.nix" ];
   virtualisation.vmware.guest.enable = true;
   networking.firewall.enable = lib.mkForce false;
 

@@ -5,16 +5,16 @@
   vars,
   inputs,
   ...
-}: let
+}:
+let
   cfg = config.sifr;
-in {
-  imports =
-    [
-      inputs.sops-nix.nixosModules.sops
-      inputs.home-manager.nixosModules.home-manager
-      inputs.nix-topology.nixosModules.default
-    ]
-    ++ (import ./modules-list.nix);
+in
+{
+  imports = [
+    inputs.sops-nix.nixosModules.sops
+    inputs.home-manager.nixosModules.home-manager
+    inputs.nix-topology.nixosModules.default
+  ] ++ (import ./modules-list.nix);
 
   config = {
     # Setup home-manager
@@ -100,7 +100,7 @@ in {
 
     home-manager.users.${vars.user} = {
       home.stateVersion = "23.05";
-      home.sessionPath = ["$HOME/.bin"];
+      home.sessionPath = [ "$HOME/.bin" ];
 
       nixpkgs.config.allowUnfree = true;
     };
@@ -113,13 +113,19 @@ in {
 
     nix = {
       settings = {
-        allowed-users = [cfg.username];
+        allowed-users = [ cfg.username ];
         builders-use-substitutes = true;
-        trusted-users = ["root" cfg.username];
+        trusted-users = [
+          "root"
+          cfg.username
+        ];
         auto-optimise-store = true;
 
         # Enable flakes
-        experimental-features = ["nix-command" "flakes"];
+        experimental-features = [
+          "nix-command"
+          "flakes"
+        ];
       };
       gc = {
         automatic = true;
@@ -134,7 +140,7 @@ in {
     };
 
     # Use spleen font for console (tty)
-    fonts.packages = [pkgs.spleen];
+    fonts.packages = [ pkgs.spleen ];
     console.font = "${pkgs.spleen}/share/consolefonts/spleen-12x24.psfu";
 
     services.getty = {

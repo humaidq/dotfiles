@@ -1,10 +1,8 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{ config, lib, ... }:
+let
   cfg = config.sifr.homelab.adguard;
-in {
+in
+{
   options.sifr.homelab = {
     adguard.enable = lib.mkEnableOption "AdGuard Home";
   };

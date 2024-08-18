@@ -3,9 +3,11 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   cfg = config.sifr.graphics;
-in {
+in
+{
   options.sifr.graphics = {
     apps = lib.mkEnableOption "workstation graphical applications";
   };
@@ -15,7 +17,8 @@ in {
       fonts = {
         enableDefaultPackages = true;
         enableGhostscriptFonts = true;
-        packages = with pkgs;
+        packages =
+          with pkgs;
           [
             noto-fonts
             noto-fonts-cjk
@@ -42,15 +45,13 @@ in {
             terminus_font
           ]
           ++ [
-            (
-              nerdfonts.override {
-                # Anything included here must be included above too
-                fonts = [
-                  "FiraCode"
-                  "JetBrainsMono"
-                ];
-              }
-            )
+            (nerdfonts.override {
+              # Anything included here must be included above too
+              fonts = [
+                "FiraCode"
+                "JetBrainsMono"
+              ];
+            })
           ];
       };
     })

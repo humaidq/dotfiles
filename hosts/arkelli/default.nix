@@ -3,7 +3,8 @@
   self,
   inputs,
   ...
-}: {
+}:
+{
   imports = [
     self.nixosModules.sifrOS
     inputs.nixos-hardware.nixosModules.raspberry-pi-4

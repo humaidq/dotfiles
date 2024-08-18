@@ -4,7 +4,8 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.development;
   personalGitConfig = pkgs.writeText "personal-git-config" ''
     [user]
@@ -22,7 +23,8 @@
     git@huma.id ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii git@huma.id
     humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
   '';
-in {
+in
+{
   options.sifr.development.enable = lib.mkOption {
     description = "Sets up the development environment, compilers, and tools";
     type = lib.types.bool;
@@ -35,7 +37,9 @@ in {
       home-manager.users."${vars.user}" = {
         programs.git = {
           enable = true;
-          aliases = {co = "checkout";};
+          aliases = {
+            co = "checkout";
+          };
           userName = "Humaid Alqasimi";
           extraConfig = {
             core.editor = "nvim";

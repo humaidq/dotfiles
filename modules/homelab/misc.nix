@@ -1,11 +1,9 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{ config, lib, ... }:
+let
   cfg = config.sifr.homelab;
   inherit (lib) mkIf mkEnableOption;
-in {
+in
+{
   options.sifr.homelab = {
     lldap.enable = mkEnableOption "lldap configuration";
     kavita.enable = mkEnableOption "Kavita configuration";
@@ -36,16 +34,10 @@ in {
       tokenKeyFile = config.sops.secrets.kavita-token.path;
     };
 
-    services.mealie = mkIf cfg.mealie.enable {
-      enable = true;
-    };
+    services.mealie = mkIf cfg.mealie.enable { enable = true; };
 
-    services.audiobookshelf = mkIf cfg.audiobookshelf.enable {
-      enable = true;
-    };
-    services.jellyseerr = mkIf cfg.jellyseerr.enable {
-      enable = true;
-    };
+    services.audiobookshelf = mkIf cfg.audiobookshelf.enable { enable = true; };
+    services.jellyseerr = mkIf cfg.jellyseerr.enable { enable = true; };
 
     services.deluge = mkIf cfg.deluge.enable {
       enable = true;
@@ -53,12 +45,8 @@ in {
       #declarative = true;
       web.enable = true;
     };
-    services.radarr = mkIf cfg.radarr.enable {
-      enable = true;
-    };
-    services.prowlarr = mkIf cfg.prowlarr.enable {
-      enable = true;
-    };
+    services.radarr = mkIf cfg.radarr.enable { enable = true; };
+    services.prowlarr = mkIf cfg.prowlarr.enable { enable = true; };
 
     sops.secrets."nas/media" = {
       sopsFile = ../../secrets/gadgets.yaml;

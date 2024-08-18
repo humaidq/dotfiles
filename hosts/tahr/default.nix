@@ -1,8 +1,5 @@
+{ inputs, self, ... }:
 {
-  inputs,
-  self,
-  ...
-}: {
   imports = [
     self.nixosModules.sifrOS
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-p1-gen3
@@ -19,7 +16,7 @@
     };
     v12n.emulation = {
       enable = true;
-      systems = ["aarch64-linux"];
+      systems = [ "aarch64-linux" ];
     };
     profiles = {
       basePlus = true;
@@ -45,5 +42,5 @@
 
   # Fix touchpad click not working
   # Kenel bug since 6.1+. See: https://nixos.wiki/wiki/Touchpad
-  boot.kernelParams = ["psmouse.synaptics_intertouch=0"];
+  boot.kernelParams = [ "psmouse.synaptics_intertouch=0" ];
 }

@@ -1,10 +1,8 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{ config, lib, ... }:
+let
   cfg = config.sifr.profiles;
-in {
+in
+{
   options.sifr.profiles.server = lib.mkOption {
     description = "Server profile";
     type = lib.types.bool;

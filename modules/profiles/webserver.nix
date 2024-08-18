@@ -4,14 +4,19 @@
   pkgs,
   inputs,
   ...
-}: let
+}:
+let
   cfg = config.sifr.profiles;
   humaid-site = inputs.humaid-site.defaultPackage.${pkgs.system};
-in {
+in
+{
   options.sifr.profiles.webserver = lib.mkEnableOption "web server profile (huma.id)";
   config = lib.mkIf cfg.webserver {
     # Open ports for Caddy
-    networking.firewall.allowedTCPPorts = [443 80];
+    networking.firewall.allowedTCPPorts = [
+      443
+      80
+    ];
 
     # Extra hardening
     systemd.services.caddy.serviceConfig = {
@@ -88,7 +93,7 @@ in {
           extraConfig = ''
             respond "Not connected to Tailscale"
           '';
-          serverAliases = ["alq.ae"];
+          serverAliases = [ "alq.ae" ];
         };
         # For serving files
         "f.huma.id".extraConfig = ''
@@ -134,7 +139,10 @@ in {
 
         # Redirect all domains back to huma.id, preserving the path.
         "www.huma.id" = {
-          serverAliases = ["humaidq.ae" "www.humaidq.ae"];
+          serverAliases = [
+            "humaidq.ae"
+            "www.humaidq.ae"
+          ];
           extraConfig = "redir https://huma.id{uri} permanent";
         };
       };

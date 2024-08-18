@@ -3,10 +3,18 @@
   pkgs,
   lib,
   ...
-}: let
+}:
+let
   cfg = config.sifr.tailscale;
-  inherit (lib) mkOption types mkMerge mkIf mkEnableOption;
-in {
+  inherit (lib)
+    mkOption
+    types
+    mkMerge
+    mkIf
+    mkEnableOption
+    ;
+in
+{
   options.sifr.tailscale = {
     enable = mkEnableOption "Tailscale configuration";
     exitNode = mkEnableOption "exit node configuration";
@@ -26,12 +34,12 @@ in {
     (mkIf cfg.enable {
       services.tailscale.enable = true;
       networking.firewall = {
-        trustedInterfaces = ["tailscale0"];
+        trustedInterfaces = [ "tailscale0" ];
         # This allows local discovery/connection.
-        allowedUDPPorts = [config.services.tailscale.port];
+        allowedUDPPorts = [ config.services.tailscale.port ];
       };
       topology.self.interfaces.tailscale0 = {
-        addresses = [config.networking.hostName];
+        addresses = [ config.networking.hostName ];
         network = "tailscale0";
         virtual = true;
         type = "tun";
@@ -59,7 +67,7 @@ in {
         openFirewall = false;
       };
 
-      environment.systemPackages = with pkgs; [mosh];
+      environment.systemPackages = with pkgs; [ mosh ];
     })
     (mkIf cfg.auth {
       # Source: https://tailscale.com/blog/nixos-minecraft/
@@ -67,9 +75,16 @@ in {
         description = "Automatic connection to Tailscale";
 
         # make sure tailscale is running before trying to connect to tailscale
-        after = ["network-pre.target" "tailscale.service" "sops-nix.service"];
-        wants = ["network-pre.target" "tailscale.service"];
-        wantedBy = ["multi-user.target"];
+        after = [
+          "network-pre.target"
+          "tailscale.service"
+          "sops-nix.service"
+        ];
+        wants = [
+          "network-pre.target"
+          "tailscale.service"
+        ];
+        wantedBy = [ "multi-user.target" ];
 
         # set this service as a oneshot job
         serviceConfig.Type = "oneshot";

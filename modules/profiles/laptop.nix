@@ -4,9 +4,11 @@
   pkgs,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.profiles;
-in {
+in
+{
   options.sifr.profiles.laptop = lib.mkOption {
     description = "Laptop profile";
     type = lib.types.bool;
@@ -24,7 +26,10 @@ in {
     ];
     services.logind.lidSwitch = "suspend";
     hardware.bluetooth.enable = true;
-    users.users.${vars.user}.extraGroups = ["bluetooth" "lp"];
+    users.users.${vars.user}.extraGroups = [
+      "bluetooth"
+      "lp"
+    ];
 
     services.printing = {
       enable = true;

@@ -5,7 +5,8 @@
   inputs,
   lib,
   ...
-}: {
+}:
+{
   imports = [
     inputs.nixos-hardware.nixosModules.raspberry-pi-5
     self.nixosModules.sifrOS
@@ -16,8 +17,7 @@
     # https://github.com/NixOS/nixpkgs/issues/154163
     overlays = [
       (_final: super: {
-        makeModulesClosure = x:
-          super.makeModulesClosure (x // {allowMissing = true;});
+        makeModulesClosure = x: super.makeModulesClosure (x // { allowMissing = true; });
       })
     ];
   };

@@ -1,10 +1,8 @@
-{
-  lib,
-  config,
-  ...
-}: let
+{ lib, config, ... }:
+let
   cfg = config.sifr.homelab;
-in {
+in
+{
   options.sifr.homelab = {
     log-server.enable = lib.mkEnableOption "log server using Grafana";
   };
@@ -27,21 +25,22 @@ in {
         {
           job_name = "serow";
           static_configs = [
-            {
-              targets = ["127.0.0.1:${toString config.services.prometheus.exporters.node.port}"];
-            }
+            { targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.node.port}" ]; }
           ];
         }
       ];
       exporters = {
         node = {
           enable = true;
-          enabledCollectors = ["systemd"];
+          enabledCollectors = [ "systemd" ];
           port = 9002;
         };
       };
     };
 
-    networking.firewall.allowedTCPPorts = [9001 3000];
+    networking.firewall.allowedTCPPorts = [
+      9001
+      3000
+    ];
   };
 }

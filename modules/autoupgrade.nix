@@ -1,10 +1,8 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{ config, lib, ... }:
+let
   cfg = config.sifr;
-in {
+in
+{
   options.sifr.autoupgrade.enable = lib.mkEnableOption "autoupgrades";
   config = lib.mkIf cfg.autoupgrade.enable {
     system.autoUpgrade = {
@@ -17,7 +15,10 @@ in {
       };
       dates = "01:30";
       flake = "github:humaidq/dotfiles#${config.networking.hostName}";
-      flags = ["--refresh" "-L"];
+      flags = [
+        "--refresh"
+        "-L"
+      ];
     };
   };
 }

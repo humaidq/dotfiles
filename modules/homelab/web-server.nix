@@ -1,78 +1,78 @@
-{
-  config,
-  lib,
-  ...
-}: let
+{ config, lib, ... }:
+let
   cfg = config.sifr.homelab.web-server;
-in {
+in
+{
   options.sifr.homelab.web-server.enable = lib.mkOption {
     description = "Enables home web server configuration";
     type = lib.types.bool;
     default = false;
   };
   config = lib.mkIf cfg.enable {
-    services.caddy = let
-      tls = ''
-        tls /etc/certs/fullchain.pem /etc/certs/privkey.pem
-      '';
-    in {
-      enable = true;
-      #extraConfig = tls;
-      virtualHosts."alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy :8082
-      '';
-      virtualHosts."lldap.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy :17170
-      '';
-      virtualHosts."adguard.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy :3000
-      '';
+    services.caddy =
+      let
+        tls = ''
+          tls /etc/certs/fullchain.pem /etc/certs/privkey.pem
+        '';
+      in
+      {
+        enable = true;
+        #extraConfig = tls;
+        virtualHosts."alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy :8082
+        '';
+        virtualHosts."lldap.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy :17170
+        '';
+        virtualHosts."adguard.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy :3000
+        '';
 
-      virtualHosts."deluge.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:8112
-      '';
-      virtualHosts."radarr.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:7878
-      '';
-      virtualHosts."prowlarr.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:9696
-      '';
+        virtualHosts."deluge.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:8112
+        '';
+        virtualHosts."radarr.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:7878
+        '';
+        virtualHosts."prowlarr.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:9696
+        '';
 
-      virtualHosts."catalogue.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy :${builtins.toString config.services.jellyseerr.port}
-      '';
-      virtualHosts."books.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:5000
-      '';
-      virtualHosts."audiobooks.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:8000
-      '';
-      virtualHosts."tv.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy https://192.168.1.98:8096
-      '';
-      virtualHosts."recipes.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:9000
-      '';
-      virtualHosts."search.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy http://192.168.1.98:3342
-      '';
-      virtualHosts."gertruda.alq.ae".extraConfig = ''
-        ${tls}
-           reverse_proxy 192.168.1.40:80
-      '';
-    };
+        virtualHosts."catalogue.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy :${builtins.toString config.services.jellyseerr.port}
+        '';
+        virtualHosts."books.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:5000
+        '';
+        virtualHosts."audiobooks.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:8000
+        '';
+        virtualHosts."tv.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy https://192.168.1.98:8096
+        '';
+        virtualHosts."recipes.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:9000
+        '';
+        virtualHosts."search.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy http://192.168.1.98:3342
+        '';
+        virtualHosts."gertruda.alq.ae".extraConfig = ''
+          ${tls}
+             reverse_proxy 192.168.1.40:80
+        '';
+      };
 
     services.homepage-dashboard = {
       enable = true;

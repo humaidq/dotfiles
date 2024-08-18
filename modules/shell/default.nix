@@ -4,7 +4,8 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.shell;
   lscolors = fetchGit {
     url = "https://github.com/trapd00r/LS_COLORS";
@@ -15,7 +16,8 @@
     # Project is stagnant (Dec 2019), though works perfectly fine.
     rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
   };
-in {
+in
+{
   options.sifr.shell.zsh = lib.mkOption {
     description = "Enables zsh with customisations";
     type = lib.types.bool;

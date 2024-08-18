@@ -4,9 +4,11 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.profiles;
-in {
+in
+{
   options.sifr.profiles.base = lib.mkOption {
     description = "Sifr minimal base for all systems";
     type = lib.types.bool;
@@ -67,7 +69,7 @@ in {
         ];
 
       # Ensure zsh is recognised as a system shell.
-      environment.shells = [pkgs.zsh];
+      environment.shells = [ pkgs.zsh ];
 
       security.sudo.extraConfig = ''
         Defaults lecture = never
@@ -140,7 +142,7 @@ in {
         interval = "daily";
         localuser = null; # for 22.05
         # Sometimes indexing hgfs on VMWare causing CPU to go 100%
-        prunePaths = ["/mnt"];
+        prunePaths = [ "/mnt" ];
       };
 
       # Track highest uptime! :)

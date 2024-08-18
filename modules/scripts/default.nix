@@ -3,7 +3,8 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.sifr.scripts;
   # Simple tool that tells you which process uses a specific port.
   whoseport = pkgs.writeShellApplication {
@@ -29,9 +30,7 @@
   };
   fan = pkgs.writeShellApplication {
     name = "fan";
-    runtimeInputs = with pkgs; [
-      coreutils
-    ];
+    runtimeInputs = with pkgs; [ coreutils ];
     text = ''
       if [ $# -eq 0 ]; then
         echo "usage: $0 <level>"
@@ -53,7 +52,8 @@
     ];
     text = "watch -d grep -e Dirty: -e Writeback: /proc/meminfo";
   };
-in {
+in
+{
   options.sifr.scripts.enable = lib.mkOption {
     description = "Enable custom home scripts";
     type = lib.types.bool;

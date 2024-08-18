@@ -4,10 +4,18 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.graphics;
-  inherit (lib) mkOption types mkMerge mkIf mkEnableOption;
-in {
+  inherit (lib)
+    mkOption
+    types
+    mkMerge
+    mkIf
+    mkEnableOption
+    ;
+in
+{
   imports = [
     ./gnome.nix
     ./sway.nix
@@ -48,7 +56,7 @@ in {
       programs.dconf.enable = true;
 
       services.xserver.enable = true;
-      services.xserver.excludePackages = [pkgs.xterm];
+      services.xserver.excludePackages = [ pkgs.xterm ];
       services.xserver.displayManager.gdm.enable = true;
 
       # Make system look better overall when we have a graphical system

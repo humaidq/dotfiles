@@ -4,16 +4,16 @@
   pkgs,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.profiles;
-in {
+in
+{
   options.sifr.profiles = {
     work = lib.mkEnableOption "work profile";
   };
   config = lib.mkIf cfg.work {
-    environment.systemPackages = with pkgs; [
-      slack
-    ];
+    environment.systemPackages = with pkgs; [ slack ];
 
     # TODO
     # see cups-kyodialog, and:
@@ -73,8 +73,13 @@ in {
           system = "aarch64-linux";
           maxJobs = 8;
           speedFactor = 1;
-          supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-          mandatoryFeatures = [];
+          supportedFeatures = [
+            "nixos-test"
+            "benchmark"
+            "big-parallel"
+            "kvm"
+          ];
+          mandatoryFeatures = [ ];
           sshUser = "humaid";
           sshKey = "/home/humaid/.ssh/id_ed25519";
         }
@@ -83,8 +88,13 @@ in {
           system = "x86_64-linux";
           maxJobs = 8;
           speedFactor = 1;
-          supportedFeatures = ["nixos-test" "benchmark" "big-parallel" "kvm"];
-          mandatoryFeatures = [];
+          supportedFeatures = [
+            "nixos-test"
+            "benchmark"
+            "big-parallel"
+            "kvm"
+          ];
+          mandatoryFeatures = [ ];
           sshUser = "humaid";
           sshKey = "/home/humaid/.ssh/id_ed25519";
         }
@@ -109,15 +119,15 @@ in {
 
       knownHosts = {
         vedenemo-builder = {
-          hostNames = ["builder.vedenemodev"];
+          hostNames = [ "builder.vedenemodev" ];
           publicKey = "builder.vedenemo.dev ssh-ed25519 AAAAC3NzaC1    lZDI1NTE5AAAAIHSI8s/wefXiD2h3I3mIRdK+d9yDGMn0qS5fpKDnSGqj";
         };
         hetzarm-ed25519 = {
-          hostNames = ["65.21.20.242"];
+          hostNames = [ "65.21.20.242" ];
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILx4zU4gIkTY/1oKEOkf9gTJChdx/jR3lDgZ7p/c7LEK";
         };
         awsarm = {
-          hostNames = ["awsarm.vedenemo.dev"];
+          hostNames = [ "awsarm.vedenemo.dev" ];
           publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3f7tAAO3Fc+8BqemsBQc/Yl/NmRfyhzr5SFOSKqrv0";
         };
       };

@@ -57,78 +57,71 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    alejandra = {
-      url = "github:kamadorueda/alejandra/3.0.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nix-darwin = {
       url = "github:LnL7/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = inputs @ {
-    nixpkgs,
-    flake-parts,
-    ...
-  }:
-    flake-parts.lib.mkFlake {
-      inherit inputs;
-      specialArgs = {
-        inherit (nixpkgs) lib;
-        vars = {
-          user = "humaid";
-        };
-      };
-    } {
-      imports = [
-        inputs.flake-root.flakeModule
-        inputs.treefmt-nix.flakeModule
-        inputs.nix-topology.flakeModule
-        ./hosts
-      ];
-      flake = {
-        nixosModules = {
-          sifrOS = import ./modules;
-        };
-      };
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
-        #"riscv64-linux"
-      ];
-      debug = true;
-      perSystem = {
-        config,
-        system,
-        pkgs,
-        ...
-      }: {
-        #topology.modules = [./topology/default.nix];
-
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [config.flake-root.devShell];
-        };
-        treefmt.config = {
-          package = pkgs.treefmt;
-          inherit (config.flake-root) projectRootFile;
-          programs = {
-            alejandra.enable = true;
-            deadnix.enable = true;
-            statix.enable = true;
-            shellcheck.enable = true;
+  outputs =
+    inputs@{ nixpkgs, flake-parts, ... }:
+    flake-parts.lib.mkFlake
+      {
+        inherit inputs;
+        specialArgs = {
+          inherit (nixpkgs) lib;
+          vars = {
+            user = "humaid";
           };
         };
-        formatter = config.treefmt.build.wrapper;
-        _module.args.pkgs = import inputs.nixpkgs {
-          inherit system inputs;
-          config.allowUnfree = true;
-          overlays = [
-            inputs.nix-topology.overlays.default
-          ];
+      }
+      {
+        imports = [
+          inputs.flake-root.flakeModule
+          inputs.treefmt-nix.flakeModule
+          inputs.nix-topology.flakeModule
+          ./hosts
+        ];
+        flake = {
+          nixosModules = {
+            sifrOS = import ./modules;
+          };
         };
+        systems = [
+          "x86_64-linux"
+          "aarch64-linux"
+          "aarch64-darwin"
+          #"riscv64-linux"
+        ];
+        debug = true;
+        perSystem =
+          {
+            config,
+            system,
+            pkgs,
+            ...
+          }:
+          {
+            #topology.modules = [./topology/default.nix];
+
+            devShells.default = pkgs.mkShell { inputsFrom = [ config.flake-root.devShell ]; };
+            treefmt.config = {
+              package = pkgs.treefmt;
+              inherit (config.flake-root) projectRootFile;
+              programs = {
+                nixfmt.enable = true;
+                nixfmt.package = pkgs.nixfmt-rfc-style;
+                deadnix.enable = true;
+                statix.enable = true;
+                shellcheck.enable = true;
+              };
+            };
+            formatter = config.treefmt.build.wrapper;
+            _module.args.pkgs = import inputs.nixpkgs {
+              inherit system inputs;
+              config.allowUnfree = true;
+              overlays = [ inputs.nix-topology.overlays.default ];
+            };
+          };
       };
-    };
 }

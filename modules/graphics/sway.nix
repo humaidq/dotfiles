@@ -4,11 +4,13 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.graphics.sway;
   mod = config.sifr.graphics.sway.modifier;
-  screen = pkgs.callPackage ./screenshot.nix {};
-in {
+  screen = pkgs.callPackage ./screenshot.nix { };
+in
+{
   options.sifr.graphics = {
     sway.enable = lib.mkEnableOption "desktop environment with sway";
     sway.modifier = lib.mkOption {
@@ -163,7 +165,7 @@ in {
           floating.modifier = mod;
           output."*".bg = "${./wallhaven-13mk9v.jpg} fill #000000";
           fonts = {
-            names = ["JetBrainsMono Nerd Font"];
+            names = [ "JetBrainsMono Nerd Font" ];
             size = 11.0;
           };
           defaultWorkspace = "1";

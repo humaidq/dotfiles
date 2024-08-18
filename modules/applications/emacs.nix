@@ -3,9 +3,11 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.applications;
-in {
+in
+{
   options.sifr.applications.emacs.enable = lib.mkOption {
     description = "Enable emacs configuration";
     type = lib.types.bool;

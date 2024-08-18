@@ -15,9 +15,9 @@
               end = "-4G";
               content = {
                 type = "btrfs";
-                extraArgs = ["-f"];
+                extraArgs = [ "-f" ];
                 mountpoint = "/";
-                mountOptions = ["noatime"];
+                mountOptions = [ "noatime" ];
               };
             };
             swap = {

@@ -3,13 +3,15 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.sifr.applications;
   extension = name: {
     installation_mode = "force_installed";
     install_url = "https://addons.mozilla.org/firefox/downloads/latest/${name}/latest.xpi";
   };
-in {
+in
+{
   options.sifr.applications.firefox.enable = lib.mkOption {
     description = "Enables firefox configurations";
     type = lib.types.bool;
@@ -21,7 +23,10 @@ in {
     programs.firefox = {
       enable = true;
       package = pkgs.firefox-esr;
-      languagePacks = ["en-GB" "ar"];
+      languagePacks = [
+        "en-GB"
+        "ar"
+      ];
       policies = {
         DisablePocket = true;
         DisableTelemetry = true;

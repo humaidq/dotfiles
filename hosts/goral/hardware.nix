@@ -1,10 +1,17 @@
-{lib, ...}: {
-  imports = [];
+{ lib, ... }:
+{
+  imports = [ ];
 
-  boot.initrd.availableKernelModules = ["ahci" "xhci_pci" "nvme" "usbhid" "sr_mod"];
-  boot.initrd.kernelModules = [];
-  boot.kernelModules = [];
-  boot.extraModulePackages = [];
+  boot.initrd.availableKernelModules = [
+    "ahci"
+    "xhci_pci"
+    "nvme"
+    "usbhid"
+    "sr_mod"
+  ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ ];
+  boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/87c46ad8-7ad8-42b8-9e5f-53f823524a0b";
@@ -16,9 +23,7 @@
     fsType = "vfat";
   };
 
-  swapDevices = [
-    {device = "/dev/disk/by-uuid/7fbb6317-dfd6-4a3b-bf9e-a6fb7d0e05a4";}
-  ];
+  swapDevices = [ { device = "/dev/disk/by-uuid/7fbb6317-dfd6-4a3b-bf9e-a6fb7d0e05a4"; } ];
 
   networking.useDHCP = lib.mkDefault true;
 

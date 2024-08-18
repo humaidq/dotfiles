@@ -10,15 +10,24 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.virtualisation.vmware.guest;
-  open-vm-tools =
-    if cfg.headless
-    then pkgs.open-vm-tools-headless
-    else pkgs.open-vm-tools;
-in {
+  open-vm-tools = if cfg.headless then pkgs.open-vm-tools-headless else pkgs.open-vm-tools;
+in
+{
   imports = [
-    (lib.mkRenamedOptionModule ["services" "vmwareGuest"] ["virtualisation" "vmware" "guest"])
+    (lib.mkRenamedOptionModule
+      [
+        "services"
+        "vmwareGuest"
+      ]
+      [
+        "virtualisation"
+        "vmware"
+        "guest"
+      ]
+    )
   ];
 
   options.virtualisation.vmware.guest = {
@@ -38,15 +47,15 @@ in {
       }
     ];
 
-    boot.initrd.availableKernelModules = ["mptspi"];
+    boot.initrd.availableKernelModules = [ "mptspi" ];
     # boot.initrd.kernelModules = [ "vmw_pvscsi" ];
 
-    environment.systemPackages = [open-vm-tools];
+    environment.systemPackages = [ open-vm-tools ];
 
     systemd.services.vmware = {
       description = "VMWare Guest Service";
-      wantedBy = ["multi-user.target"];
-      after = ["display-manager.service"];
+      wantedBy = [ "multi-user.target" ];
+      after = [ "display-manager.service" ];
       unitConfig.ConditionVirtualization = "vmware";
       serviceConfig.ExecStart = "${open-vm-tools}/bin/vmtoolsd";
     };
@@ -55,13 +64,15 @@ in {
     systemd.mounts = [
       {
         description = "VMware vmblock fuse mount";
-        documentation = ["https://github.com/vmware/open-vm-tools/blob/master/open-vm-tools/vmblock-fuse/design.txt"];
+        documentation = [
+          "https://github.com/vmware/open-vm-tools/blob/master/open-vm-tools/vmblock-fuse/design.txt"
+        ];
         unitConfig.ConditionVirtualization = "vmware";
         what = "${open-vm-tools}/bin/vmware-vmblock-fuse";
         where = "/run/vmblock-fuse";
         type = "fuse";
         options = "subtype=vmware-vmblock,default_permissions,allow_other";
-        wantedBy = ["multi-user.target"];
+        wantedBy = [ "multi-user.target" ];
       }
     ];
 
@@ -92,6 +103,6 @@ in {
       '';
     };
 
-    services.udev.packages = [open-vm-tools];
+    services.udev.packages = [ open-vm-tools ];
   };
 }

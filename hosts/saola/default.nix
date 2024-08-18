@@ -3,7 +3,8 @@
   vars,
   lib,
   ...
-}: {
+}:
+{
   imports = [
     self.nixosModules.sifrOS
     (import ./hardware.nix)

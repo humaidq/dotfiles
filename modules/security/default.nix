@@ -4,10 +4,19 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr.security;
-  inherit (lib) mkOption types mkMerge mkIf mkDefault mkEnableOption;
-in {
+  inherit (lib)
+    mkOption
+    types
+    mkMerge
+    mkIf
+    mkDefault
+    mkEnableOption
+    ;
+in
+{
   options.sifr.security = {
     harden = mkOption {
       description = "Whether to harden the system";
@@ -25,7 +34,7 @@ in {
         enable = true;
         extraRules = [
           {
-            users = ["${vars.user}"];
+            users = [ "${vars.user}" ];
             persist = true;
             keepEnv = true;
           }
@@ -33,7 +42,10 @@ in {
       };
     })
     (mkIf cfg.yubikey {
-      services.udev.packages = with pkgs; [libu2f-host yubikey-personalization];
+      services.udev.packages = with pkgs; [
+        libu2f-host
+        yubikey-personalization
+      ];
       services.pcscd.enable = true;
     })
     (mkIf (cfg.harden && !config.sifr.hardware.vm) {
@@ -94,7 +106,7 @@ in {
           "net.core.default_qdisc" = "cake";
         };
 
-        kernelModules = ["tcp_bbr"];
+        kernelModules = [ "tcp_bbr" ];
 
         blacklistedKernelModules = [
           "adfs"
@@ -176,18 +188,22 @@ in {
 
       networking.stevenblack = {
         enable = true;
-        block = ["fakenews" "gambling" "porn"];
+        block = [
+          "fakenews"
+          "gambling"
+          "porn"
+        ];
       };
 
       # Set known public keys to prevent MITM
       programs.ssh.knownHosts = {
-        "github.com".hostNames = ["github.com"];
+        "github.com".hostNames = [ "github.com" ];
         "github.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
-        "gitlab.com".hostNames = ["gitlab.com"];
+        "gitlab.com".hostNames = [ "gitlab.com" ];
         "gitlab.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf";
 
-        "git.sr.ht".hostNames = ["git.sr.ht"];
+        "git.sr.ht".hostNames = [ "git.sr.ht" ];
         "git.sr.ht".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZvRd4EtM7R+IHVMWmDkVU3VLQTSwQDSAvW0t2Tkj60";
       };
     })

@@ -1,4 +1,5 @@
-{vars, ...}: {
+{ vars, ... }:
+{
   # TODO fix this target
   networking = {
     computerName = "takin";
@@ -13,7 +14,10 @@
   };
 
   nix = {
-    settings.experimental-features = ["nix-command" "flakes"];
+    settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     extraOptions = ''
       auto-optimise-store = true
     '';
@@ -55,9 +59,7 @@
       upgrade = true;
       cleanup = "zap";
     };
-    taps = [
-      "homebrew/cask-fonts"
-    ];
+    taps = [ "homebrew/cask-fonts" ];
     brews = [
       "direnv"
       "ffmpeg"

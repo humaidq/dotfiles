@@ -5,10 +5,17 @@
   lib,
   vars,
   ...
-}: let
+}:
+let
   cfg = config.sifr;
-  inherit (lib) mkIf mkEnableOption mkOption types;
-in {
+  inherit (lib)
+    mkIf
+    mkEnableOption
+    mkOption
+    types
+    ;
+in
+{
   options.sifr.backups = {
     enable = mkEnableOption "backups to rsync.net";
     paths = mkOption {
