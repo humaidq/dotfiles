@@ -27,6 +27,7 @@
     security.harden = false;
   };
 
+  topology.self.interfaces.end0.network = "home";
   networking = {
     hostName = "argali";
 

@@ -30,6 +30,12 @@ in {
         # This allows local discovery/connection.
         allowedUDPPorts = [config.services.tailscale.port];
       };
+      topology.self.interfaces.tailscale0 = {
+        addresses = [config.networking.hostName];
+        network = "tailscale0";
+        virtual = true;
+        type = "tun";
+      };
     })
     (mkIf cfg.exitNode {
       # We need to relax some settings so that we can be an exit node.

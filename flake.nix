@@ -104,6 +104,8 @@
         pkgs,
         ...
       }: {
+        #topology.modules = [./topology/default.nix];
+
         devShells.default = pkgs.mkShell {
           inputsFrom = [config.flake-root.devShell];
         };

@@ -27,6 +27,16 @@ in {
     ];
     topology.self.name = config.networking.hostName;
 
+    topology.networks.tailscale0 = {
+      name = "Tailscale";
+      cidrv4 = "100.64.0.0/10";
+    };
+
+    topology.networks.home = {
+      name = "Home LAN";
+      cidrv4 = "192.168.1.0/24";
+    };
+
     # Setup sops-nix
     sops = {
       defaultSopsFile = ../secrets/all.yaml;

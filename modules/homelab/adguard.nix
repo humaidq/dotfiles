@@ -9,6 +9,7 @@ in {
     adguard.enable = lib.mkEnableOption "AdGuard Home";
   };
   config = lib.mkIf cfg.enable {
+    topology.self.services.adguardhome.info = "https://adguard.alq.ae";
     services.adguardhome = {
       enable = true;
       openFirewall = true;

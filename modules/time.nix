@@ -63,7 +63,7 @@ in {
         # Set DSCP for networks with QoS
         dscp 46
 
-        minsources 3
+        minsources 5
       '';
     };
   };

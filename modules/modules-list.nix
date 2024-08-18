@@ -24,4 +24,5 @@
   ./tailscale.nix
   ./time.nix
   ./v12n.nix
+  ./topology/home.nix
 ]

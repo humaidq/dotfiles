@@ -49,6 +49,9 @@
 
     efi.canTouchEfiVariables = true;
   };
+  topology.self = {
+    hardware.info = "Lenovo ThinkPad T590";
+  };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";

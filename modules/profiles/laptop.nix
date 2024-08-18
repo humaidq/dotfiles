@@ -78,6 +78,7 @@ in {
       sifr.graphics.gnome.enable = lib.mkForce false;
       sifr.graphics.sway.enable = lib.mkForce false;
       sifr.graphics.apps = lib.mkForce false;
+      sifr.graphics.enableSound = true;
 
       # Make sure network manager is enabled
       networking.networkmanager.enable = true;
