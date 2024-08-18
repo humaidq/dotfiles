@@ -23,6 +23,7 @@
       web-server.enable = true;
     };
     profiles.server = true;
+    o11y.client.enable = true;
 
     # TODO re-enable
     security.harden = false;

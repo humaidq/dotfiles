@@ -29,6 +29,7 @@
     profiles.server = true;
     profiles.webserver = true;
     autoupgrade.enable = true;
+    o11y.client.enable = true;
 
     tailscale = {
       enable = true;

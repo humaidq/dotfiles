@@ -24,6 +24,7 @@
       laptop = true;
     };
     development.enable = true;
+    o11y.client.enable = true;
 
     tailscale = {
       enable = true;
