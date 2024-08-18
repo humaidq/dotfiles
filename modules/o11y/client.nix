@@ -5,6 +5,11 @@ in
 {
   options.sifr.o11y.client = {
     enable = lib.mkEnableOption "observability client using Grafana Alloy";
+    serverHost = lib.mkOption {
+      type = lib.types.str;
+      default = "serow.barred-banana.ts.net";
+      description = "The hostname of the observability server";
+    };
   };
   config = {
     services.alloy.enable = true;
@@ -25,7 +30,7 @@ in
           }
           loki.write "remote" {
             endpoint {
-              url = "http://serow:3100/loki/api/v1/push"
+              url = "http://${cfg.serverHost}:3100/loki/api/v1/push"
             }
           }
 
@@ -38,7 +43,7 @@ in
           }
           prometheus.remote_write "default" {
             endpoint {
-              url = "http://serow:9001/api/v1/write"
+              url = "http://${cfg.serverHost}:9001/api/v1/write"
             }
           }
         '';
