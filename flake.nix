@@ -2,17 +2,8 @@
   description = "sifr is a declarative system configuration built by Humaid";
 
   nixConfig = {
-    # riscv64
-    extra-substituters = [
-      "https://cache.ztier.in"
-      "https://cache.nichi.co"
-      "https://beam.attic.rs/riscv"
-    ];
-    extra-trusted-public-keys = [
-      "cache.ztier.link-1:3P5j2ZB9dNgFFFVkCQWT3mh0E+S3rIWtZvoql64UaXM="
-      "hydra.nichi.co-0:P3nkYHhmcLR3eNJgOAnHDjmQLkfqheGyhZ6GLrUVHwk="
-      "riscv:TZX1ReuoIGt7QiSQups+92ym8nKJUSV0O2NkS4HAqH8="
-    ];
+    extra-substituters = [ "https://cache.huma.id" ];
+    extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
   };
 
   inputs = {

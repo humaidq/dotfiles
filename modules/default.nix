@@ -124,6 +124,7 @@ in
         substituters = trusted-substituters;
 
         trusted-substituters = [
+          "https://cache.huma.id"
           "https://nix-community.cachix.org"
           "https://cache.garnix.io"
           "https://numtide.cachix.org"
@@ -163,10 +164,7 @@ in
     };
 
     networking.hosts = {
-      "100.115.60.127" = [
-        "serow.alq.ae"
-        "cache.alq.ae"
-      ];
+      "100.115.60.127" = [ "serow.alq.ae" ];
     };
 
     # Use spleen font for console (tty)
