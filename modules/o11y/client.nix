@@ -13,6 +13,12 @@ in
   };
   config = {
     services.alloy.enable = true;
+    # When it fails to send log, it doesn't quit. It usually takes a few
+    # seconds to successfully send logs. 8 seconds should be enough.
+    systemd.services.alloy = {
+      reloadTriggers = [ "/etc/alloy/client.alloy" ];
+      serviceConfig.TimeoutStopSec = 8;
+    };
     environment.etc = lib.mkIf cfg.enable {
       "alloy/client.alloy" = {
         text = ''

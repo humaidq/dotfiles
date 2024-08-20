@@ -129,7 +129,9 @@ in
         tmux
         lf
         sshfs
-        jq
+        jq # json query
+        ouch # compression
+        hexyl # hex viewer
 
         # TODO move to laptop config
         lm_sensors

@@ -112,7 +112,7 @@ in
     networking.useDHCP = lib.mkDefault true;
 
     nix = {
-      settings = {
+      settings = rec {
         allowed-users = [ cfg.username ];
         builders-use-substitutes = true;
         trusted-users = [
@@ -121,6 +121,27 @@ in
         ];
         auto-optimise-store = true;
 
+        substituters = trusted-substituters;
+
+        trusted-substituters = [
+          "https://cache.nixos.org"
+          "https://nix-community.cachix.org"
+
+          # riscv cache
+          "https://cache.ztier.in"
+          "https://cache.nichi.co"
+          "https://beam.attic.rs/riscv"
+        ];
+
+        trusted-public-keys = [
+          "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+          "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+          "cache.alq.ae:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="
+
+          "cache.ztier.link-1:3P5j2ZB9dNgFFFVkCQWT3mh0E+S3rIWtZvoql64UaXM="
+          "hydra.nichi.co-0:P3nkYHhmcLR3eNJgOAnHDjmQLkfqheGyhZ6GLrUVHwk="
+          "riscv:TZX1ReuoIGt7QiSQups+92ym8nKJUSV0O2NkS4HAqH8="
+        ];
         # Enable flakes
         experimental-features = [
           "nix-command"
@@ -137,6 +158,13 @@ in
       extraOptions = ''
         !include ${config.sops.secrets.github-token.path}
       '';
+    };
+
+    networking.hosts = {
+      "100.115.60.127" = [
+        "serow.alq.ae"
+        "cache.alq.ae"
+      ];
     };
 
     # Use spleen font for console (tty)

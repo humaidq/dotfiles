@@ -54,6 +54,7 @@ in
     networking.firewall.allowedTCPPorts = lib.mkIf cfg.enable [
       9001
       3000
+      3100
     ];
   };
 }

@@ -1,4 +1,10 @@
-{ self, inputs, ... }:
+{
+  self,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 {
   imports = [
     self.nixosModules.sifrOS
@@ -45,6 +51,10 @@
     };
   };
 
+  # Doing riscv64 xcomp, manually gc
+  nix.gc.automatic = lib.mkForce false;
+  nix.package = pkgs.nixVersions.git;
+
   boot.loader = {
     systemd-boot = {
       enable = true;
@@ -56,6 +66,17 @@
   topology.self = {
     hardware.info = "Lenovo ThinkPad T590";
   };
+
+  services.nix-serve = {
+    enable = true;
+    package = pkgs.nix-serve-ng;
+    secretKeyFile = "/var/cache-priv-key.pem";
+  };
+  users.users.nix-serve = {
+    isSystemUser = true;
+    group = "nix-serve";
+  };
+  users.groups.nix-serve = { };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";

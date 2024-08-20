@@ -132,6 +132,7 @@ in
         git-extras
         git-lfs
         git-privacy
+        tig
 
         # Nix
         nix-info

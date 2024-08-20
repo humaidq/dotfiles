@@ -126,6 +126,10 @@ in
               mkdir -p $1 && cd $1
             }
 
+            if [[ $OSTYPE == linux* ]]; then
+              alias open="xdg-open"
+            fi
+
             echo "$fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."
           '';
           shellAliases = {
@@ -147,7 +151,6 @@ in
             yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
             pf = "pfetch";
             pgr = "ps aux | grep";
-            open = "xdg-open";
             ex = "extract";
 
             # Git
