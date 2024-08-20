@@ -137,6 +137,13 @@ in
           header *.bundle Content-Type "application/octet-stream"
         '';
 
+        "cache.huma.id".extraConfig = ''
+          reverse_proxy 100.115.60.127:5000
+          handle / {
+            respond "Humaid's Nix binary cache - https://github.com/humaidq/dotfiles"
+          }
+        '';
+
         # Redirect all domains back to huma.id, preserving the path.
         "www.huma.id" = {
           serverAliases = [
