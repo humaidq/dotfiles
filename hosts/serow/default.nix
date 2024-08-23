@@ -67,16 +67,36 @@
     hardware.info = "Lenovo ThinkPad T590";
   };
 
-  services.nix-serve = {
+  services.harmonia = {
     enable = true;
-    package = pkgs.nix-serve-ng;
-    secretKeyFile = "/var/cache-priv-key.pem";
+    signKeyPath = "/var/cache-priv-key.pem";
+    settings = {
+      bind = "0.0.0.0:5000";
+    };
   };
-  users.users.nix-serve = {
-    isSystemUser = true;
-    group = "nix-serve";
+
+  networking.firewall.allowedTCPPorts = [ 5000 ];
+
+  services.hydra = {
+    enable = true;
+    hydraURL = "http://serow:3300";
+    port = 3300;
+    notificationSender = "hydra@localhost"; # e-mail of hydra service
+    buildMachinesFiles = [ ];
+    # you will probably also want, otherwise *everything* will be built from scratch
+    useSubstitutes = true;
   };
-  users.groups.nix-serve = { };
+  nix.settings.allowed-uris = [
+    "github:"
+    "git+https://github.com/"
+    "git+ssh://github.com/"
+    "https://github.com/"
+  ];
+  nix.settings.trusted-users = [
+    "root"
+    "hydra"
+    "hydra-www"
+  ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";

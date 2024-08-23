@@ -120,9 +120,9 @@
       argali = self.nixosConfigurations.argali.config.system.build.toplevel;
       arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;
 
-      boerbok-sd = self.packages.riscv64-linux.boerbok-sd;
-      rpi4-bootstrap = self.packages.aarch64-linux.rpi4-bootstrap;
-      rpi5-bootstrap = self.packages.aarch64-linux.rpi5-bootstrap;
+      inherit (self.packages.riscv64-linux) boerbok-sd;
+      inherit (self.packages.aarch64-linux) rpi4-bootstrap;
+      inherit (self.packages.aarch64-linux) rpi5-bootstrap;
     };
   };
 }

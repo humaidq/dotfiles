@@ -113,7 +113,6 @@ in
         '';
 
         "consultant-ai.app".extraConfig = ''
-          reverse_proxy localhost:8080
           basicauth * {
             consultant $2a$14$Ok89VTgJRUb39ljS15Qw..RwA4pzdKE0flplasODlwQHbLOTLo7Li
           }

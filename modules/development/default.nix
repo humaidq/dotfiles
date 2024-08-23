@@ -76,7 +76,7 @@ in
         programs = {
           git = {
             package = pkgs.gitAndTools.gitFull;
-            #delta.enable = true;
+            delta.enable = true;
           };
 
           direnv = {
