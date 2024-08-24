@@ -121,15 +121,16 @@
           boerbok-sd-from-x86_64 = self.packages.x86_64-linux.boerbok-sd-from-x86_64;
         };
         aarch64-linux = {
-          rpi4-bootstrap = self.packages.x86_64-linux.rpi4-bootstrap;
-          rpi5-bootstrap = self.packages.x86_64-linux.rpi5-bootstrap;
+          rpi4-bootstrap = self.packages.aarch64-linux.rpi4-bootstrap;
+          rpi5-bootstrap = self.packages.aarch64-linux.rpi5-bootstrap;
           goral = self.nixosConfigurations.goral.config.system.build.toplevel;
           argali = self.nixosConfigurations.argali.config.system.build.toplevel;
           arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;
         };
-        riscv64-linux = {
-          boerbok = self.nixosConfigurations.boerbok.config.system.build.toplevel;
-        };
+        # hydra doesn't support riscv (due to GHC not available)
+        #riscv64-linux = {
+        #  boerbok = self.nixosConfigurations.boerbok.config.system.build.toplevel;
+        #};
       };
     };
 }
