@@ -17,7 +17,7 @@
     security.harden = false;
     # LuaJIT not available for riscv64
     applications.neovim.enable = false;
-    profiles.base = false;
+    profiles.base = true;
   };
 
   hardware.deviceTree.overlays = [

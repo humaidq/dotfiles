@@ -58,14 +58,14 @@ in
           tcpdump
           trace-cmd
           ethtool
-          tiptop
           #cpuid
-          msr-tools
           numactl
         ])
         ++ lib.optionals pkgs.stdenv.isx86_64 [
           # x86_64 specific tools
           pkgs.cpuid
+          pkgs.msr-tools
+          pkgs.tiptop
         ];
 
       # Ensure zsh is recognised as a system shell.
