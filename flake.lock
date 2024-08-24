@@ -518,6 +518,22 @@
         "type": "github"
       }
     },
+    "nixos-hardware-star64": {
+      "locked": {
+        "lastModified": 1724478416,
+        "narHash": "sha256-GMtCKZp/LLNMnGULhsZ2xEJfnZ67fBc/3K/ef27gySI=",
+        "owner": "humaidq",
+        "repo": "nixos-hardware",
+        "rev": "1d80ca39335442296a275a9b3e2b0de73bdca93c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "humaidq",
+        "ref": "star64",
+        "repo": "nixos-hardware",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1710097495,
@@ -702,6 +718,7 @@
         "nix-topology": "nix-topology",
         "nixos-generators": "nixos-generators",
         "nixos-hardware": "nixos-hardware",
+        "nixos-hardware-star64": "nixos-hardware-star64",
         "nixpkgs": "nixpkgs_3",
         "nixvim": "nixvim",
         "sops-nix": "sops-nix",
