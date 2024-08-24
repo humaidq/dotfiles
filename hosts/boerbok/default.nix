@@ -3,24 +3,22 @@
   vars,
   inputs,
   lib,
+  self,
   ...
 }:
 {
   imports = [
-    #self.nixosModules.sifrOS
+    self.nixosModules.sifrOS
     "${inputs.nixos-hardware-star64}/pine64/star64/sd-image.nix"
   ];
   networking.hostName = "boerbok";
 
-  #sifr = {
-  #  security.harden = false;
-  #  tailscale = {
-  #    enable = false;
-  #    exitNode = true;
-  #    ssh = true;
-  #  };
-  #  profiles.base = false;
-  #};
+  sifr = {
+    security.harden = false;
+    # LuaJIT not available for riscv64
+    applications.neovim.enable = false;
+    profiles.base = false;
+  };
 
   hardware.deviceTree.overlays = [
     {
@@ -31,7 +29,6 @@
 
   system.stateVersion = "24.05";
   nixpkgs.hostPlatform = "riscv64-linux";
-  nixpkgs.buildPlatform = "x86_64-linux";
 
   networking.networkmanager.enable = false;
 

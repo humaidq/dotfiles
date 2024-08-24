@@ -45,7 +45,7 @@ in
         type = "tun";
       };
     })
-    (mkIf cfg.exitNode {
+    (mkIf (cfg.enable && cfg.exitNode) {
       # We need to relax some settings so that we can be an exit node.
       networking.firewall.checkReversePath = "loose";
       boot.kernel.sysctl = {
@@ -53,7 +53,7 @@ in
         "net.ipv6.conf.all.forwarding" = 1;
       };
     })
-    (mkIf cfg.ssh {
+    (mkIf (cfg.enable && cfg.ssh) {
       services.openssh = {
         enable = true;
 
@@ -69,7 +69,7 @@ in
 
       environment.systemPackages = with pkgs; [ mosh ];
     })
-    (mkIf cfg.auth {
+    (mkIf (cfg.enable && cfg.auth) {
       # Source: https://tailscale.com/blog/nixos-minecraft/
       systemd.services.tailscale-autoconnect = {
         description = "Automatic connection to Tailscale";

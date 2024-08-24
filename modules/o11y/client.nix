@@ -11,7 +11,7 @@ in
       description = "The hostname of the observability server";
     };
   };
-  config = {
+  config = lib.mkIf cfg.enable {
     services.alloy.enable = true;
     # When it fails to send log, it doesn't quit. It usually takes a few
     # seconds to successfully send logs. 8 seconds should be enough.

@@ -20,11 +20,14 @@ in
     # Setup home-manager
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
-    home-manager.sharedModules = [
-      inputs.sops-nix.homeManagerModules.sops
-      inputs.nix-index-database.hmModules.nix-index
-      inputs.nixvim.homeManagerModules.nixvim
-    ];
+    home-manager.sharedModules =
+      [
+        inputs.sops-nix.homeManagerModules.sops
+        inputs.nixvim.homeManagerModules.nixvim
+      ]
+      ++ lib.optionals (pkgs.hostPlatform.system != "riscv64-linux") [
+        inputs.nix-index-database.hmModules.nix-index
+      ];
     topology.self.name = config.networking.hostName;
 
     topology.networks.tailscale0 = {
@@ -130,9 +133,7 @@ in
           "https://numtide.cachix.org"
 
           # riscv cache
-          "https://cache.ztier.in"
           "https://cache.nichi.co"
-          "https://beam.attic.rs/riscv"
         ];
 
         trusted-public-keys = [
@@ -141,9 +142,7 @@ in
           "numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="
           "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="
 
-          "cache.ztier.link-1:3P5j2ZB9dNgFFFVkCQWT3mh0E+S3rIWtZvoql64UaXM="
           "hydra.nichi.co-0:P3nkYHhmcLR3eNJgOAnHDjmQLkfqheGyhZ6GLrUVHwk="
-          "riscv:TZX1ReuoIGt7QiSQups+92ym8nKJUSV0O2NkS4HAqH8="
         ];
         # Enable flakes
         experimental-features = [
