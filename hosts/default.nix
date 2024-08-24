@@ -73,33 +73,6 @@
           ];
         };
 
-        rpi4-bootstrap-from-x86_64 = inputs.nixos-generators.nixosGenerate {
-          format = "sd-aarch64";
-          system = "aarch64-linux";
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-rpi4-bootstrap
-            {
-              sdImage.compressImage = false;
-
-              nixpkgs.buildPlatform = "x86_64-linux";
-            }
-          ];
-        };
-        rpi5-bootstrap-from-x86_64 = inputs.nixos-generators.nixosGenerate {
-          format = "sd-aarch64";
-          system = "aarch64-linux";
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-rpi5-bootstrap
-            {
-              sdImage.compressImage = false;
-
-              nixpkgs.buildPlatform = "x86_64-linux";
-            }
-          ];
-        };
-
         boerbok-sd-from-x86_64 =
           (lib.nixosSystem {
             inherit specialArgs;
@@ -113,18 +86,50 @@
           }).config.system.build.sdImage;
       };
 
-      hydraJobs = {
-        serow = self.nixosConfigurations.serow.config.system.build.toplevel;
-        tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
-        duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
-        #goral = self.nixosConfigurations.goral.config.system.build.toplevel;
-        #boerbok = self.nixosConfigurations.boerbok.config.system.build.toplevel;
-        #argali = self.nixosConfigurations.argali.config.system.build.toplevel;
-        #arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;
+      packages.aarch64-linux = {
+        rpi4-bootstrap = inputs.nixos-generators.nixosGenerate {
+          format = "sd-aarch64";
+          system = "aarch64-linux";
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-rpi4-bootstrap
+            { sdImage.compressImage = false; }
+          ];
+        };
+        rpi5-bootstrap = inputs.nixos-generators.nixosGenerate {
+          format = "sd-aarch64";
+          system = "aarch64-linux";
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-rpi5-bootstrap
+            {
+              sdImage.compressImage = false;
 
-        boerbok-sd-from-x86_64 = self.packages.x86_64-linux.boerbok-sd-from-x86_64;
-        rpi4-bootstrap-from-x86_64 = self.packages.x86_64-linux.rpi4-bootstrap-from-x86_64;
-        rpi5-bootstrap-from-x86_64 = self.packages.x86_64-linux.rpi5-bootstrap-from-x86_64;
+              nixpkgs.buildPlatform = "x86_64-linux";
+            }
+          ];
+        };
+
+      };
+
+      hydraJobs = {
+        x86_64-linux = {
+          serow = self.nixosConfigurations.serow.config.system.build.toplevel;
+          tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
+          duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
+
+          boerbok-sd-from-x86_64 = self.packages.x86_64-linux.boerbok-sd-from-x86_64;
+        };
+        aarch64-linux = {
+          rpi4-bootstrap = self.packages.x86_64-linux.rpi4-bootstrap;
+          rpi5-bootstrap = self.packages.x86_64-linux.rpi5-bootstrap;
+          goral = self.nixosConfigurations.goral.config.system.build.toplevel;
+          argali = self.nixosConfigurations.argali.config.system.build.toplevel;
+          arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;
+        };
+        riscv64-linux = {
+          boerbok = self.nixosConfigurations.boerbok.config.system.build.toplevel;
+        };
       };
     };
 }
