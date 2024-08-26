@@ -107,7 +107,7 @@ in
           }
         ];
         dhcp = {
-          enabled = true;
+          enabled = false;
           interface_name = "end0";
           dhcpv4 = {
             gateway_ip = "192.168.1.1";
