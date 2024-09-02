@@ -18,6 +18,7 @@
     # LuaJIT not available for riscv64
     applications.neovim.enable = false;
     profiles.base = true;
+    profiles.basePlus = true;
   };
 
   hardware.deviceTree.overlays = [
@@ -58,4 +59,60 @@
     htop
     tmux
   ];
+
+  system.extraDependencies =
+    with pkgs;
+    # Include only in native builds.
+    # Use normalized platforms from stdenv.
+    lib.optionals (stdenv.buildPlatform == stdenv.hostPlatform) (
+      builtins.concatMap (x: x.all) [
+        autoconf
+        automake
+        bash
+        binutils
+        bison
+        busybox
+        cargo
+        clang
+        cmake
+        config.boot.kernelPackages.kernel
+        curl
+        dtc
+        elfutils
+        flex
+        gcc
+        gitMinimal
+        glibc
+        glibcLocales
+        jq
+        llvm
+        meson
+        ninja
+        openssl
+        pkg-config
+        python3
+        rustc
+        stdenv
+        # Bootstrap stages. Yes, this is the right way to do it.
+        stdenv.__bootPackages.stdenv
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv
+        stdenv.cc
+        stdenv.__bootPackages.stdenv.cc
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.cc
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.cc
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.cc
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.cc
+        stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.__bootPackages.stdenv.cc
+        stdenvNoCC
+        unzip
+        util-linux
+        zip
+        zlib
+      ]
+    );
 }

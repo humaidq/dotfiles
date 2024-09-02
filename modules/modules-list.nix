@@ -17,13 +17,9 @@
   ./profiles/webserver.nix
   ./profiles/work.nix
   ./scripts
-  ./security/default.nix
-  ./security/dns.nix
+  ./security
   ./shell
-  ./tailscale.nix
-  ./time.nix
-  ./v12n.nix
+  ./networking
   ./topology/home.nix
-  ./o11y/server.nix
-  ./o11y/client.nix
+  ./o11y
 ]

@@ -127,13 +127,13 @@ in
         substituters = trusted-substituters;
 
         trusted-substituters = [
-          "https://cache.huma.id"
-          "https://nix-community.cachix.org"
-          "https://cache.garnix.io"
-          "https://numtide.cachix.org"
+          #"https://cache.huma.id?priority=51"
+          "https://nix-community.cachix.org?priority=60"
+          "https://cache.garnix.io?priority=70"
+          "https://numtide.cachix.org?priority=80"
 
           # riscv cache
-          "https://cache.nichi.co"
+          "https://cache.nichi.co?priority=90"
         ];
 
         trusted-public-keys = [
@@ -162,10 +162,6 @@ in
       '';
     };
 
-    networking.hosts = {
-      "100.115.60.127" = [ "serow.alq.ae" ];
-    };
-
     # Use spleen font for console (tty)
     fonts.packages = [ pkgs.spleen ];
     console.font = "${pkgs.spleen}/share/consolefonts/spleen-12x24.psfu";
@@ -174,9 +170,6 @@ in
       greetingLine = lib.mkOverride 50 ''<<< Welcome to ${config.networking.hostName} (\l) >>>'';
       helpLine = lib.mkOverride 50 ''Help: https://github.com/humaidq/dotfiles'';
     };
-
-    systemd.services.NetworkManager-wait-online.enable = false;
-    systemd.network.wait-online.enable = false;
 
     hardware.enableAllFirmware = true;
     nixpkgs = {

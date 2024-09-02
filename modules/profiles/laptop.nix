@@ -30,6 +30,8 @@ in
       "bluetooth"
       "lp"
     ];
+    # Allow setting cpupower
+    environment.systemPackages = with pkgs; [ config.boot.kernelPackages.cpupower ];
 
     services.printing = {
       enable = true;

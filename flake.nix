@@ -2,8 +2,8 @@
   description = "sifr is a declarative system configuration built by Humaid";
 
   nixConfig = {
-    extra-substituters = [ "https://cache.huma.id" ];
-    extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
+    #extra-substituters = [ "https://cache.huma.id" ];
+    #extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
   };
 
   inputs = {
@@ -11,7 +11,7 @@
     humaid-site.url = "github:humaidq/huma.id";
 
     # External imports
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixos-hardware-star64.url = "github:humaidq/nixos-hardware/star64";
     #nur.url = "github:nix-community/NUR";
@@ -47,8 +47,8 @@
     };
 
     home-manager = {
-      #url = "github:nix-community/home-manager/release-24.05";
-      url = "github:nix-community/home-manager";
+      url = "github:nix-community/home-manager/release-24.05";
+      #url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -58,8 +58,8 @@
     };
 
     nixvim = {
-      # url = "github:nix-community/nixvim/nixos-24.05";
-      url = "github:nix-community/nixvim";
+      url = "github:nix-community/nixvim/nixos-24.05";
+      #url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

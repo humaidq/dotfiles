@@ -118,11 +118,11 @@
           tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
           duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
 
-          boerbok-sd-from-x86_64 = self.packages.x86_64-linux.boerbok-sd-from-x86_64;
+          inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
         };
         aarch64-linux = {
-          rpi4-bootstrap = self.packages.aarch64-linux.rpi4-bootstrap;
-          rpi5-bootstrap = self.packages.aarch64-linux.rpi5-bootstrap;
+          inherit (self.packages.aarch64-linux) rpi4-bootstrap;
+          inherit (self.packages.aarch64-linux) rpi5-bootstrap;
           goral = self.nixosConfigurations.goral.config.system.build.toplevel;
           argali = self.nixosConfigurations.argali.config.system.build.toplevel;
           arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;

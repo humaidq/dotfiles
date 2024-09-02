@@ -1,7 +1,6 @@
 {
   self,
   lib,
-  pkgs,
   inputs,
   ...
 }:
@@ -36,7 +35,7 @@
       encryptDNS = true;
     };
     development.enable = true;
-    ntp.useNTS = false;
+    ntp.useNTS = true;
 
     o11y = {
       server.enable = true;
@@ -53,7 +52,6 @@
 
   # Doing riscv64 xcomp, manually gc
   nix.gc.automatic = lib.mkForce false;
-  nix.package = pkgs.nixVersions.git;
 
   boot.loader = {
     systemd-boot = {
@@ -72,10 +70,18 @@
     signKeyPath = "/var/cache-priv-key.pem";
     settings = {
       bind = "0.0.0.0:5000";
+      priority = 50;
     };
   };
 
   networking.firewall.allowedTCPPorts = [ 5000 ];
+
+  networking.firewall.allowedUDPPorts = [ 123 ];
+
+  services.chrony.extraConfig = lib.mkAfter ''
+    allow all
+    peer 100.75.159.21
+  '';
 
   services.hydra = {
     enable = true;
@@ -96,6 +102,13 @@
     "root"
     "hydra"
     "hydra-www"
+  ];
+
+  swapDevices = [
+    {
+      device = "/swap";
+      size = 32 * 1024;
+    }
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";

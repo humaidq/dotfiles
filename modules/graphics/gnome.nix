@@ -16,21 +16,20 @@ in
   config = lib.mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
     services.gnome.gnome-online-accounts.enable = false;
-    services.gnome.gnome-online-miners.enable = lib.mkForce false;
 
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs; [
-      cheese
+      gnome.cheese
       epiphany
-      geary
+      gnome.geary
       gnome.gnome-contacts
       gnome.gnome-music
       gnome-tour
       orca
-      seahorse
-      simple-scan
+      gnome.seahorse
+      gnome.simple-scan
     ];
-    environment.systemPackages = with pkgs; [ dconf-editor ];
+    environment.systemPackages = with pkgs; [ gnome.dconf-editor ];
 
     home-manager.users."${vars.user}" =
       { lib, ... }:

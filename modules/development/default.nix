@@ -7,18 +7,6 @@
 }:
 let
   cfg = config.sifr.development;
-  personalGitConfig = pkgs.writeText "personal-git-config" ''
-    [user]
-      email = git@huma.id
-      signingkey = ~/.ssh/id_ed25519.pub
-  '';
-  tiiGitConfig = pkgs.writeText "tii-git-config" ''
-    [user]
-      email = humaid.alqassimi@tii.ae
-      signingkey = ~/.ssh/id_ed25519_tii.pub
-    [core]
-      sshCommand = "ssh -i ~/.ssh/id_ed25519_tii"
-  '';
   allowedSigners = pkgs.writeText "allowed-signers" ''
     git@huma.id ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii git@huma.id
     humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
@@ -31,8 +19,11 @@ in
     default = false;
   };
 
+  imports = [ ./v12n.nix ];
+
   config = lib.mkMerge [
     {
+
       # We need basic git on all computers, needed for flakes too.
       home-manager.users."${vars.user}" = {
         programs.git = {
@@ -40,12 +31,24 @@ in
           aliases = {
             co = "checkout";
           };
+          includes = [
+            {
+              condition = "gitdir:~/tii/";
+              contents = {
+                user.email = "humaid.alqassimi@tii.ae";
+                user.signingkey = "~/.ssh/id_ed25519_tii.pub";
+                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_tii";
+              };
+            }
+          ];
+
           userName = "Humaid Alqasimi";
+          userEmail = "git@huma.id";
+          signing.key = "~/.ssh/id_ed25519.pub";
+          signing.signByDefault = true;
           extraConfig = {
             core.editor = "nvim";
 
-            # TODO switch to main eventually
-            init.defaultBranch = "master";
             format.signoff = true;
             commit.verbose = "yes";
             merge.conflictStyle = "zdiff3";
@@ -59,9 +62,6 @@ in
             tag.gpgSign = true;
             commit.gpgSign = true;
 
-            includeIf."gitdir:/".path = "${personalGitConfig}";
-            includeIf."gitdir:~/tii/".path = "${tiiGitConfig}";
-
             # Mailer
             sendemail.smtpserver = "smtp.mail.me.com";
             sendemail.smtpuser = "me@huma.id";
@@ -72,6 +72,10 @@ in
       };
     }
     (lib.mkIf cfg.enable {
+      documentation = {
+        dev.enable = true;
+        man.generateCaches = true;
+      };
       home-manager.users."${vars.user}" = {
         programs = {
           git = {

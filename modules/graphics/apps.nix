@@ -68,7 +68,7 @@ in
 
         # Re-add GNOME apps that are needed
         evince
-        gnome-system-monitor
+        gnome.gnome-system-monitor
         gnome-text-editor
         loupe
 

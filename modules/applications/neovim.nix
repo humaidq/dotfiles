@@ -130,7 +130,8 @@ in
 
               luasnip = {
                 enable = dev;
-                settings = {
+                # 24.11 TODO rename to settings
+                extraConfig = {
                   enable_autosnippets = dev;
                   store_selection_keys = "<Tab>";
                 };
@@ -183,6 +184,7 @@ in
 
               conform-nvim = {
                 enable = dev;
+                # 24.11 TODO, put under settings = {
                 formatOnSave = {
                   lspFallback = true;
                   timeoutMs = 500;
