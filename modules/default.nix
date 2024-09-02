@@ -127,7 +127,7 @@ in
         substituters = trusted-substituters;
 
         trusted-substituters = [
-          #"https://cache.huma.id?priority=51"
+          "https://cache.huma.id?priority=51"
           "https://nix-community.cachix.org?priority=60"
           "https://cache.garnix.io?priority=70"
           "https://numtide.cachix.org?priority=80"
