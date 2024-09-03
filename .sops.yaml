@@ -1,4 +1,5 @@
 keys:
+  - &oreamnos age1p75e7j6vzfcexheyzztpy7yklrxwt3vh4wrlakmttvc7ry042veqn0pq78
   - &serow age17va7vnasx8e9dtfvfxcd8epzmc87renc4f7t357m4xaqu7qp24wsgcztj6
   - &tahr age1v7mnrpev5qc7ylyjuh2prclelh9zyk069gd7um3wvc8kv4gmnv9s8e9a2r
   - &goral age1nnvt7g9achpl2sd7v4d2yga7s4uuq6erpawla587c0x6nhy49u7qzk3wep
@@ -9,6 +10,7 @@ creation_rules:
   - path_regex: secrets/all.yaml$
     key_groups:
       - age:
+        - *oreamnos
         - *serow
         - *tahr
         - *goral
@@ -18,12 +20,14 @@ creation_rules:
   - path_regex: secrets/duisk.yaml$
     key_groups:
       - age:
+        - *oreamnos
         - *serow
         - *duisk
         - *goral
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
       - age:
+        - *oreamnos
         - *serow
         - *tahr
         - *goral
