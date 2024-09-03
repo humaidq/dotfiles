@@ -1,11 +1,8 @@
 { config, lib, ... }:
 let
-  cfg = config.sifr.homelab.adguard;
+  cfg = config.sifr.home-server;
 in
 {
-  options.sifr.homelab = {
-    adguard.enable = lib.mkEnableOption "AdGuard Home";
-  };
   config = lib.mkIf cfg.enable {
     topology.self.services.adguardhome.info = "https://adguard.alq.ae";
     services.adguardhome = {

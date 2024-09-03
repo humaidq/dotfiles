@@ -7,9 +7,7 @@
   ./backup.nix
   ./development
   ./graphics
-  ./homelab/adguard.nix
-  ./homelab/misc.nix
-  ./homelab/web-server.nix
+  ./home-server
   ./options.nix
   ./profiles/base.nix
   ./profiles/laptop.nix

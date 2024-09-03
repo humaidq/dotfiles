@@ -7,6 +7,7 @@
 {
   imports = [ self.nixosModules.sifrOS ];
   networking.hostName = "sifrOS-installer";
+  networking.hostId = "00000000";
   nixpkgs.hostPlatform = "x86_64-linux";
 
   sifr = {
@@ -24,6 +25,9 @@
 
   system.stateVersion = "24.05";
 
+  boot.supportedFilesystems = {
+    zfs = lib.mkForce true;
+  };
   hardware.enableRedistributableFirmware = true;
   services.openssh.enable = true;
   networking.firewall.enable = false;

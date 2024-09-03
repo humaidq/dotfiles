@@ -15,6 +15,11 @@ in
         isRelay = cfg.isLighthouse;
         tun.device = "sifr0";
         listen.host = "[::]";
+
+        cert = "/etc/nebula/node.crt";
+        key = "/etc/nebula/node.key";
+        ca = "/etc/nebula/ca.crt";
+
         lighthouses = lib.mkIf cfg.isLighthouse [ "10.10.0.1" ];
         relays = lib.mkIf cfg.isLighthouse [ "10.10.0.1" ];
         staticHostMap = {

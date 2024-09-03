@@ -1,13 +1,8 @@
 { config, lib, ... }:
 let
-  cfg = config.sifr.homelab.web-server;
+  cfg = config.sifr.home-server;
 in
 {
-  options.sifr.homelab.web-server.enable = lib.mkOption {
-    description = "Enables home web server configuration";
-    type = lib.types.bool;
-    default = false;
-  };
   config = lib.mkIf cfg.enable {
     services.caddy =
       let

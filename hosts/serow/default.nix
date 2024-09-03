@@ -48,6 +48,7 @@
       ssh = true;
       auth = true;
     };
+    net.sifr0 = true;
   };
 
   # Doing riscv64 xcomp, manually gc

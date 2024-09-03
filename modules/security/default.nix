@@ -58,7 +58,7 @@ in
         tmp.cleanOnBoot = true;
 
         # Block boot menu editor.
-        loader.systemd-boot.editor = mkDefault false;
+        #loader.systemd-boot.editor = mkDefault false;
 
         kernelParams = [
           # Reduce boot TTY output

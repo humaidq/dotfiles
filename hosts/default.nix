@@ -14,6 +14,7 @@
     in
     {
       nixosModules = {
+        host-oreamnos = import ./oreamnos;
         host-goral = import ./goral;
         host-serow = import ./serow;
         host-duisk = import ./duisk;
@@ -28,6 +29,10 @@
         host-x86-installer = import ./x86-installer.nix;
       };
       nixosConfigurations = {
+        oreamnos = lib.nixosSystem {
+          inherit specialArgs;
+          modules = [ self.nixosModules.host-oreamnos ];
+        };
         goral = lib.nixosSystem {
           inherit specialArgs;
           modules = [ self.nixosModules.host-goral ];
@@ -114,6 +119,7 @@
 
       hydraJobs = {
         x86_64-linux = {
+          oreamnos = self.nixosConfigurations.oreamnos.config.system.build.toplevel;
           serow = self.nixosConfigurations.serow.config.system.build.toplevel;
           tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
           duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
