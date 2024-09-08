@@ -127,6 +127,17 @@
                 };
               };
 
+              #swap = {
+              #  type = "zfs_fs";
+              #  size = "16G";
+              #  options = {
+              #    volblocksize = "4096";
+              #    logbias = "throughput";
+              #    sync = "always";
+              #    primarycache = "metadata";
+              #  };
+              #};
+
               # persistent data
               "persist" = {
                 type = "zfs_fs";
@@ -154,19 +165,23 @@
             datasets = {
               "humaid/files" = {
                 type = "zfs_fs";
-                mountpoint = "/mnt/humaid/files";
                 options = {
+                  mountpoint = "/mnt/humaid/files";
                   dedup = "on";
                   compression = "zstd";
                 };
               };
               "humaid/borg" = {
                 type = "zfs_fs";
-                mountpoint = "/mnt/humaid/borg";
+                options.mountpoint = "/mnt/humaid/borg";
               };
               "humaid/timemachine" = {
                 type = "zfs_fs";
-                mountpoint = "/mnt/humaid/timemachine";
+                options.mountpoint = "/mnt/humaid/timemachine";
+              };
+              "movies" = {
+                type = "zfs_fs";
+                options.mountpoint = "/mnt/movies";
               };
               # For home-lab services that don't need fast storage
               "services" = {
@@ -177,8 +192,8 @@
               # Really old archives storage
               "archive" = {
                 type = "zfs_fs";
-                mountpoint = "/mnt/archive";
                 options = {
+                  mountpoint = "/mnt/archive";
                   dedup = "on";
                   compression = "zstd";
                 };

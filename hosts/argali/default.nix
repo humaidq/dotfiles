@@ -1,7 +1,6 @@
 {
   config,
   self,
-  lib,
   inputs,
   ...
 }:
@@ -18,10 +17,6 @@
       exitNode = true;
       ssh = true;
     };
-    homelab = {
-      adguard.enable = true;
-      web-server.enable = true;
-    };
     profiles.server = true;
     o11y.client.enable = true;
 
@@ -32,19 +27,6 @@
   topology.self.interfaces.end0.network = "home";
   networking = {
     hostName = "argali";
-
-    # This device is a DHCP server
-    useDHCP = lib.mkForce false;
-    defaultGateway = "192.168.1.1";
-    interfaces.end0 = {
-      ipv4.addresses = [
-        {
-          address = "192.168.1.250";
-          prefixLength = 24;
-        }
-      ];
-    };
-    resolvconf.useLocalResolver = true;
 
     # TODO properly configure firewall rules
     firewall.enable = false;

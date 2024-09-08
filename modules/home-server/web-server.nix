@@ -4,10 +4,20 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+    sops.secrets."web/fullchain" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "caddy";
+      mode = "600";
+    };
+    sops.secrets."web/privkey" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "caddy";
+      mode = "600";
+    };
     services.caddy =
       let
         tls = ''
-          tls /etc/certs/fullchain.pem /etc/certs/privkey.pem
+          tls ${config.sops.secrets."web/fullchain".path} ${config.sops.secrets."web/privkey".path}
         '';
       in
       {
@@ -15,57 +25,73 @@ in
         #extraConfig = tls;
         virtualHosts."alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy :8082
+          reverse_proxy :8082
         '';
         virtualHosts."lldap.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy :17170
+          reverse_proxy :17170
+        '';
+        virtualHosts."cache.alq.ae".extraConfig = ''
+          ${tls}
+          reverse_proxy :5000
         '';
         virtualHosts."adguard.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy :3000
+          reverse_proxy :3333
+        '';
+        virtualHosts."grafana.alq.ae".extraConfig = ''
+          ${tls}
+          reverse_proxy :3000
         '';
 
         virtualHosts."deluge.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:8112
+          reverse_proxy :8112
         '';
         virtualHosts."radarr.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:7878
+          reverse_proxy :7878
+        '';
+        virtualHosts."sonarr.alq.ae".extraConfig = ''
+          ${tls}
+          reverse_proxy :8989
         '';
         virtualHosts."prowlarr.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:9696
+          reverse_proxy :9696
+        '';
+        virtualHosts."hydra.alq.ae".extraConfig = ''
+          ${tls}
+          reverse_proxy :3300
         '';
 
         virtualHosts."catalogue.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy :${builtins.toString config.services.jellyseerr.port}
+          reverse_proxy :${builtins.toString config.services.jellyseerr.port}
         '';
         virtualHosts."books.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:5000
+          reverse_proxy :5555
         '';
         virtualHosts."audiobooks.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:8000
+          reverse_proxy :8000
         '';
         virtualHosts."tv.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy https://192.168.1.98:8096
+          reverse_proxy :8096
         '';
         virtualHosts."recipes.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:9000
+          reverse_proxy :9000
         '';
         virtualHosts."search.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy http://192.168.1.98:3342
+          reverse_proxy :3342
         '';
         virtualHosts."gertruda.alq.ae".extraConfig = ''
           ${tls}
-             reverse_proxy 192.168.1.40:80
+          reverse_proxy 192.168.1.40:80
         '';
       };
 
@@ -147,11 +173,35 @@ in
         {
           "Services" = [
             {
-              "NAS" = {
+              "Synology NAS" = {
                 description = "Network Attached Storage (Synology)";
                 href = "https://nas.alq.ae/";
                 siteMonitor = "https://nas.alq.ae/";
                 icon = "mdi-nas";
+              };
+            }
+            {
+              "Grafana" = {
+                description = "Observability Platform";
+                href = "https://grafana.alq.ae/";
+                siteMonitor = "https://grafana.alq.ae/";
+                icon = "mdi-chart-box-multiple";
+              };
+            }
+            {
+              "Hydra" = {
+                description = "Hydra CI Server";
+                href = "https://hydra.alq.ae/";
+                siteMonitor = "https://hydra.alq.ae/";
+                icon = "mdi-autorenew";
+              };
+            }
+            {
+              "Cache" = {
+                description = "Nix Binary Cache";
+                href = "https://cache.alq.ae/";
+                siteMonitor = "https://cache.alq.ae/";
+                icon = "mdi-database-clock";
               };
             }
             {
@@ -172,14 +222,6 @@ in
                 href = "https://adguard.alq.ae/";
                 siteMonitor = "https://adguard.alq.ae/";
                 icon = "mdi-security";
-              };
-            }
-            {
-              "Etisalat" = {
-                description = "Etisalat Router";
-                href = "http://192.168.1.1/login.html";
-                siteMonitor = "http://192.168.1.1/login.html";
-                icon = "mdi-router-network";
               };
             }
           ];

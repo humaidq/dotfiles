@@ -8,6 +8,7 @@
 
 ;; Display line numbers in every buffer
 (global-display-line-numbers-mode 1)
+(setq user-emacs-directory "~/.config/emacsud")
 
 ;(set-face-attribute 'default nil :font "Fira Code" :height 150)
 (setq default-frame-alist '((font . "spleen-20")))

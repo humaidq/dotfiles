@@ -54,6 +54,7 @@ in
 
               # Disable splash screen
               #shm = [ "I" ];
+              ruler = true;
 
               # Tabs
               expandtab = false;

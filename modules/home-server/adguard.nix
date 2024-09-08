@@ -5,9 +5,12 @@ in
 {
   config = lib.mkIf cfg.enable {
     topology.self.services.adguardhome.info = "https://adguard.alq.ae";
+    services.resolved.enable = lib.mkForce false;
+    networking.resolvconf.useLocalResolver = true;
     services.adguardhome = {
       enable = true;
       openFirewall = true;
+      port = 3333;
       settings = {
         host = "0.0.0.0";
         dns = {
@@ -63,7 +66,15 @@ in
             answer = "192.168.1.250";
           }
           {
+            domain = "hydra.alq.ae";
+            answer = "192.168.1.250";
+          }
+          {
             domain = "radarr.alq.ae";
+            answer = "192.168.1.250";
+          }
+          {
+            domain = "sonarr.alq.ae";
             answer = "192.168.1.250";
           }
           {
@@ -100,7 +111,7 @@ in
           }
           {
             domain = "tv.alq.ae";
-            answer = "nas.alq.ae";
+            answer = "192.168.1.250";
           }
         ];
         dhcp = {

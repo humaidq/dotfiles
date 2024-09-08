@@ -8,6 +8,8 @@
   ./development
   ./graphics
   ./home-server
+  ./networking
+  ./o11y
   ./options.nix
   ./profiles/base.nix
   ./profiles/laptop.nix
@@ -17,7 +19,5 @@
   ./scripts
   ./security
   ./shell
-  ./networking
   ./topology/home.nix
-  ./o11y
 ]

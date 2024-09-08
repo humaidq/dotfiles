@@ -38,6 +38,7 @@ in
         # This allows local discovery/connection.
         allowedUDPPorts = [ config.services.tailscale.port ];
       };
+
       topology.self.interfaces.tailscale0 = {
         addresses = [ config.networking.hostName ];
         network = "tailscale0";

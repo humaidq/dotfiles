@@ -12,7 +12,6 @@ let
     types
     mkMerge
     mkIf
-    mkDefault
     mkEnableOption
     ;
 in

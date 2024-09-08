@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   vars,
   ...
 }:
@@ -13,7 +12,7 @@ in
     work = lib.mkEnableOption "work profile";
   };
   config = lib.mkIf cfg.work {
-    environment.systemPackages = with pkgs; [ slack ];
+    #environment.systemPackages = with pkgs; [ slack ];
 
     # TODO
     # see cups-kyodialog, and:
@@ -34,7 +33,7 @@ in
         "ghafa-orin" = {
           hostname = "192.168.1.51";
           user = "root";
-          identityFile = "/home/humaid/.ssh/id_ed25519";
+          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           checkHostIP = false;
           extraOptions = {
             StrictHostKeyChecking = "no";
@@ -46,7 +45,7 @@ in
           hostname = "192.168.101.2";
           proxyJump = "ghafajump";
           checkHostIP = false;
-          identityFile = "/home/humaid/.ssh/id_ed25519";
+          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {
             StrictHostKeyChecking = "no";
             UserKnownHostsFile = "/dev/null";
@@ -54,7 +53,7 @@ in
         };
         "ghafajump" = {
           hostname = "192.168.1.59";
-          identityFile = "/home/humaid/.ssh/id_ed25519";
+          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {
             StrictHostKeyChecking = "no";
             UserKnownHostsFile = "/dev/null";
@@ -66,42 +65,42 @@ in
     };
 
     # Remote builders
-    nix = {
-      buildMachines = [
-        {
-          hostName = "hetzarm";
-          system = "aarch64-linux";
-          maxJobs = 8;
-          speedFactor = 1;
-          supportedFeatures = [
-            "nixos-test"
-            "benchmark"
-            "big-parallel"
-            "kvm"
-          ];
-          mandatoryFeatures = [ ];
-          sshUser = "humaid";
-          sshKey = "/home/humaid/.ssh/id_ed25519";
-        }
-        {
-          hostName = "vedenemo-builder";
-          system = "x86_64-linux";
-          maxJobs = 8;
-          speedFactor = 1;
-          supportedFeatures = [
-            "nixos-test"
-            "benchmark"
-            "big-parallel"
-            "kvm"
-          ];
-          mandatoryFeatures = [ ];
-          sshUser = "humaid";
-          sshKey = "/home/humaid/.ssh/id_ed25519";
-        }
-      ];
+    #nix = {
+    #  buildMachines = [
+    #    {
+    #      hostName = "hetzarm";
+    #      system = "aarch64-linux";
+    #      maxJobs = 8;
+    #      speedFactor = 1;
+    #      supportedFeatures = [
+    #        "nixos-test"
+    #        "benchmark"
+    #        "big-parallel"
+    #        "kvm"
+    #      ];
+    #      mandatoryFeatures = [ ];
+    #      sshUser = "humaid";
+    #      sshKey = "/home/humaid/.ssh/id_ed25519";
+    #    }
+    #    {
+    #      hostName = "vedenemo-builder";
+    #      system = "x86_64-linux";
+    #      maxJobs = 8;
+    #      speedFactor = 1;
+    #      supportedFeatures = [
+    #        "nixos-test"
+    #        "benchmark"
+    #        "big-parallel"
+    #        "kvm"
+    #      ];
+    #      mandatoryFeatures = [ ];
+    #      sshUser = "humaid";
+    #      sshKey = "/home/humaid/.ssh/id_ed25519";
+    #    }
+    #  ];
 
-      distributedBuilds = true;
-    };
+    #  distributedBuilds = true;
+    #};
     programs.ssh = {
       startAgent = true;
       extraConfig = ''
@@ -109,12 +108,15 @@ in
              HostName awsarm.vedenemo.dev
              Port 20220
              user humaid
+             IdentityFile /home/humaid/.ssh/id_ed25519_ghaf
         Host hetzarm
              user humaid
              HostName 65.21.20.242
+             IdentityFile /home/humaid/.ssh/id_ed25519_ghaf
         Host vedenemo-builder
              user humaid
              hostname builder.vedenemo.dev
+             IdentityFile /home/humaid/.ssh/id_ed25519_ghaf
       '';
 
       knownHosts = {

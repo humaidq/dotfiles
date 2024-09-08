@@ -44,7 +44,6 @@ in
     sops = {
       defaultSopsFile = ../secrets/all.yaml;
       defaultSopsFormat = "yaml";
-      #age.keyFile = "/home/${vars.user}/.config/sops/age/keys.txt";
       age.keyFile = "/var/lib/sops-nix/key.txt";
       age.generateKey = true;
       secrets = {
@@ -96,6 +95,7 @@ in
       openssh.authorizedKeys.keys = config.users.users.root.openssh.authorizedKeys.keys;
       hashedPasswordFile = config.sops.secrets.user-passwd.path;
     };
+    users.groups.plugdev = { };
 
     users.users.root.openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
@@ -127,9 +127,8 @@ in
         substituters = trusted-substituters;
 
         trusted-substituters = [
-          "https://cache.huma.id?priority=51"
+          #"https://cache.huma.id?priority=51"
           "https://nix-community.cachix.org?priority=60"
-          "https://cache.garnix.io?priority=70"
           "https://numtide.cachix.org?priority=80"
 
           # riscv cache
@@ -138,7 +137,6 @@ in
 
         trusted-public-keys = [
           "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-          "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
           "numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="
           "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="
 
@@ -179,6 +177,16 @@ in
         allowBroken = true;
         allowUnsupportedSystem = true;
       };
+      overlays = [
+
+        (final: _: {
+          unstable = import inputs.nixpkgs-unstable {
+            inherit (final) system;
+            config.allowUnfree = true;
+          };
+        })
+      ];
+
     };
   };
 }

@@ -1,11 +1,34 @@
-{ config, lib, ... }:
+{
+  vars,
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.sifr.home-server;
-  inherit (lib) mkIf;
 in
 {
-  config = {
-    services.lldap = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
+    users.groups.media = { };
+
+    users.users."${vars.user}".extraGroups = [ "media" ];
+    users.users.radarr.extraGroups = [ "media" ];
+    users.users.jellyfin.extraGroups = [ "media" ];
+    users.users.sonarr.extraGroups = [ "media" ];
+    users.users.deluge.extraGroups = [ "media" ];
+
+    services.netatalk = {
+      enable = true;
+      settings = {
+        humaid = {
+          path = "/mnt";
+        };
+      };
+    };
+    networking.firewall.allowedTCPPorts = [ config.services.netatalk.port ];
+
+    services.lldap = {
       enable = true;
       environmentFile = "${config.sops.secrets.lldap-env.path}";
       settings = {
@@ -15,24 +38,48 @@ in
       };
     };
 
-    sops.secrets.kavita-token = mkIf cfg.enable { sopsFile = ../../secrets/gadgets.yaml; };
-    services.kavita = mkIf cfg.enable {
+    sops.secrets.kavita-token = {
+      sopsFile = ../../secrets/gadgets.yaml;
+    };
+    services.kavita = {
       enable = true;
-      tokenKeyFile = config.sops.secrets.kavita-token.path;
+      settings.Port = 5555;
+      tokenKeyFile = "${config.sops.secrets.kavita-token.path}";
     };
 
-    services.mealie = mkIf cfg.enable { enable = true; };
+    services.mealie = {
+      enable = true;
+    };
 
-    services.audiobookshelf = mkIf cfg.enable { enable = true; };
-    services.jellyseerr = mkIf cfg.enable { enable = true; };
+    services.audiobookshelf = {
+      enable = true;
+    };
+    services.jellyseerr = {
+      enable = true;
+    };
 
-    services.deluge = mkIf cfg.enable {
+    services.deluge = {
       enable = true;
       #authFile = config.sops.secrets."deluge-auth".path;
       #declarative = true;
       web.enable = true;
     };
-    services.radarr = mkIf cfg.enable { enable = true; };
-    services.prowlarr = mkIf cfg.enable { enable = true; };
+    services.radarr = {
+      enable = true;
+    };
+    services.prowlarr = {
+      enable = true;
+    };
+    services.sonarr = {
+      enable = true;
+    };
+    services.jellyfin = {
+      enable = true;
+    };
+    environment.systemPackages = [
+      pkgs.jellyfin
+      pkgs.jellyfin-web
+      pkgs.jellyfin-ffmpeg
+    ];
   };
 }

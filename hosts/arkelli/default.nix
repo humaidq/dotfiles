@@ -16,17 +16,6 @@
       enable = true;
       ssh = true;
     };
-    homelab = {
-      lldap.enable = true;
-      kavita.enable = true;
-      mealie.enable = true;
-      audiobookshelf.enable = true;
-      jellyseerr.enable = true;
-      nas-media.enable = false;
-      deluge.enable = true;
-      radarr.enable = true;
-      prowlarr.enable = true;
-    };
     profiles.server = true;
     o11y.client.enable = true;
 

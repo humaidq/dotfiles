@@ -2,8 +2,8 @@
   description = "sifr is a declarative system configuration built by Humaid";
 
   nixConfig = {
-    extra-substituters = [ "https://cache.huma.id" ];
-    extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
+    #extra-substituters = [ "https://cache.huma.id" ];
+    #extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
   };
 
   inputs = {
@@ -12,6 +12,7 @@
 
     # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixos-hardware-star64.url = "github:humaidq/nixos-hardware/star64";
     #nur.url = "github:nix-community/NUR";
@@ -43,6 +44,11 @@
 
     disko = {
       url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    asus-fan-control = {
+      url = "github:SeineEloquenz/asus-fan-control-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -123,10 +129,12 @@
               };
             };
             formatter = config.treefmt.build.wrapper;
-            _module.args.pkgs = import inputs.nixpkgs {
-              inherit system inputs;
-              config.allowUnfree = true;
-              overlays = [ inputs.nix-topology.overlays.default ];
+            _module.args = {
+              pkgs = import inputs.nixpkgs {
+                inherit system inputs;
+                config.allowUnfree = true;
+                overlays = [ inputs.nix-topology.overlays.default ];
+              };
             };
           };
       };
