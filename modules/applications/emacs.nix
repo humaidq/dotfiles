@@ -14,9 +14,9 @@ in
     default = false;
   };
   config = lib.mkIf cfg.emacs.enable {
-    home-manager.users.${vars.user} = {
-      programs.emacs.enable = true;
-      home.file.".emacs.d".source = ./emacsconfig;
+    home-manager.users."${vars.user}" = {
+      services.emacs.enable = true;
     };
+    environment.systemPackages = with pkgs; [ emacs ];
   };
 }

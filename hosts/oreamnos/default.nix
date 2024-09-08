@@ -36,6 +36,7 @@
     };
     development.enable = true;
     ntp.useNTS = true;
+    applications.emacs.enable = true;
 
     o11y = {
       server.enable = true;
@@ -64,14 +65,7 @@
     #   "falcon2"
   };
 
-  home-manager.users."${vars.user}" = {
-    services.emacs.enable = true;
-  };
-
-  environment.systemPackages = with pkgs; [
-    cifs-utils
-    emacs
-  ];
+  environment.systemPackages = with pkgs; [ cifs-utils ];
 
   sops.secrets."nas/humaid" = {
     sopsFile = ../../secrets/home-server.yaml;
