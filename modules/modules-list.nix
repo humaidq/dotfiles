@@ -3,6 +3,7 @@
   ./applications/emacs.nix
   ./applications/firefox.nix
   ./applications/neovim.nix
+  ./applications/chromium.nix
   ./autoupgrade.nix
   ./backup.nix
   ./development

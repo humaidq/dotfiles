@@ -32,15 +32,12 @@
     };
     security = {
       yubikey = true;
-      encryptDNS = true;
+      # encryptDNS = true;
     };
     development.enable = true;
     ntp.useNTS = true;
-
-    o11y = {
-      server.enable = true;
-      client.enable = true;
-    };
+    o11y.client.enable = true;
+    applications.emacs.enable = true;
 
     tailscale = {
       enable = true;
@@ -65,45 +62,6 @@
   topology.self = {
     hardware.info = "Lenovo ThinkPad T590";
   };
-
-  services.harmonia = {
-    enable = true;
-    signKeyPath = "/var/cache-priv-key.pem";
-    settings = {
-      bind = "0.0.0.0:5000";
-      priority = 50;
-    };
-  };
-
-  networking.firewall.allowedTCPPorts = [ 5000 ];
-
-  networking.firewall.allowedUDPPorts = [ 123 ];
-
-  services.chrony.extraConfig = lib.mkAfter ''
-    allow all
-    peer 100.75.159.21
-  '';
-
-  services.hydra = {
-    enable = true;
-    hydraURL = "http://serow:3300";
-    port = 3300;
-    notificationSender = "hydra@localhost"; # e-mail of hydra service
-    buildMachinesFiles = [ ];
-    # you will probably also want, otherwise *everything* will be built from scratch
-    useSubstitutes = true;
-  };
-  nix.settings.allowed-uris = [
-    "github:"
-    "git+https://github.com/"
-    "git+ssh://github.com/"
-    "https://github.com/"
-  ];
-  nix.settings.trusted-users = [
-    "root"
-    "hydra"
-    "hydra-www"
-  ];
 
   swapDevices = [
     {
