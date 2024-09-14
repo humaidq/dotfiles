@@ -31,7 +31,7 @@ in
     home-manager.users."${vars.user}" = {
       programs.ssh.matchBlocks = {
         "ghafa-orin" = {
-          hostname = "192.168.1.51";
+          hostname = "192.168.1.32";
           user = "root";
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           checkHostIP = false;

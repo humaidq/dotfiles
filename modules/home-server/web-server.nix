@@ -1,99 +1,92 @@
 { config, lib, ... }:
 let
   cfg = config.sifr.home-server;
+  tls = {
+    sslCertificate = config.sops.secrets."web/fullchain".path;
+    sslCertificateKey = config.sops.secrets."web/privkey".path;
+    forceSSL = true;
+  };
+  domain = "alq.ae";
+  mkRP =
+    sub: port:
+    let
+      dom = if (sub == "") then domain else "${sub}.${domain}";
+    in
+    {
+      "${dom}" = {
+        inherit (tls) sslCertificate sslCertificateKey forceSSL;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:${port}";
+        };
+      };
+    };
 in
 {
   config = lib.mkIf cfg.enable {
     sops.secrets."web/fullchain" = {
       sopsFile = ../../secrets/home-server.yaml;
-      owner = "caddy";
+      owner = "nginx";
       mode = "600";
     };
     sops.secrets."web/privkey" = {
       sopsFile = ../../secrets/home-server.yaml;
-      owner = "caddy";
+      owner = "nginx";
       mode = "600";
     };
-    services.caddy =
-      let
-        tls = ''
-          tls ${config.sops.secrets."web/fullchain".path} ${config.sops.secrets."web/privkey".path}
-        '';
-      in
-      {
-        enable = true;
-        #extraConfig = tls;
-        virtualHosts."alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :8082
-        '';
-        virtualHosts."lldap.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :17170
-        '';
-        virtualHosts."cache.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :5000
-        '';
-        virtualHosts."adguard.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :3333
-        '';
-        virtualHosts."grafana.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :3000
-        '';
 
-        virtualHosts."deluge.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :8112
-        '';
-        virtualHosts."radarr.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :7878
-        '';
-        virtualHosts."sonarr.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :8989
-        '';
-        virtualHosts."prowlarr.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :9696
-        '';
-        virtualHosts."hydra.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :3300
-        '';
+    services.nginx = {
+      enable = true;
+      recommendedZstdSettings = true;
+      recommendedTlsSettings = true;
+      recommendedProxySettings = true;
+      recommendedOptimisation = true;
+      virtualHosts = lib.mkMerge [
+        (mkRP "" "8082")
 
-        virtualHosts."catalogue.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :${builtins.toString config.services.jellyseerr.port}
-        '';
-        virtualHosts."books.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :5555
-        '';
-        virtualHosts."audiobooks.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :8000
-        '';
-        virtualHosts."tv.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :8096
-        '';
-        virtualHosts."recipes.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :9000
-        '';
-        virtualHosts."search.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy :3342
-        '';
-        virtualHosts."gertruda.alq.ae".extraConfig = ''
-          ${tls}
-          reverse_proxy 192.168.1.40:80
-        '';
-      };
+        (mkRP "cache" "5000")
+
+        (mkRP "sso" "3322")
+
+        (mkRP "adguard" "3333")
+
+        (mkRP "vault" "8222")
+
+        (mkRP "grafana" "3000")
+
+        (mkRP "ai" "2343")
+
+        (mkRP "ollama" "11434")
+
+        (mkRP "deluge" "8112")
+
+        (mkRP "radarr" "7878")
+
+        (mkRP "sonarr" "8989")
+
+        (mkRP "prowlarr" "9696")
+
+        (mkRP "hydra" "3300")
+
+        (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
+
+        (mkRP "books" "5555")
+
+        (mkRP "audiobooks" "8000")
+
+        (mkRP "tv" "8096")
+
+        (mkRP "recipes" "9000")
+
+        (mkRP "search" "3342")
+
+        {
+          "cloud.alq.ae" = {
+            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+
+          };
+        }
+      ];
+    };
 
     services.homepage-dashboard = {
       enable = true;

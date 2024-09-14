@@ -1,6 +1,11 @@
 { config, lib, ... }:
 let
   cfg = config.sifr.home-server;
+  tsIP = "100.83.164.46";
+  domainTS = sub: {
+    domain = "${sub}.alq.ae";
+    answer = tsIP;
+  };
 in
 {
   config = lib.mkIf cfg.enable {
@@ -56,64 +61,31 @@ in
           blocked_response_ttl = 2400;
           blocking_mode = "null_ip";
         };
-        filtering.rewrites = [
-          {
-            domain = "adguard.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "deluge.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "hydra.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "radarr.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "sonarr.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "prowlarr.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "lldap.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "catalogue.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "books.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "recipes.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "audiobooks.alq.ae";
-            answer = "192.168.1.250";
-          }
-          {
-            domain = "nas.alq.ae";
-            answer = "192.168.1.44";
-          }
-          {
-            domain = "tv.alq.ae";
-            answer = "192.168.1.250";
-          }
-        ];
+        filtering.rewrites =
+          map domainTS [
+            "adguard"
+            "deluge"
+            "hydra"
+            "radarr"
+            "sonarr"
+            "prowlarr"
+            "vault"
+            "ai"
+            "ollama"
+            "lldap"
+            "catalogue"
+            "books"
+            "recipes"
+            "audiobooks"
+            "tv"
+            "sso"
+          ]
+          ++ [
+            {
+              domain = "alq.ae";
+              answer = "${tsIP}";
+            }
+          ];
         dhcp = {
           enabled = false;
           interface_name = "end0";

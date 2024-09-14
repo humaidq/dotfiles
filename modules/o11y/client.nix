@@ -7,18 +7,18 @@ in
     enable = lib.mkEnableOption "observability client using Grafana Alloy";
     serverHost = lib.mkOption {
       type = lib.types.str;
-      default = "serow.barred-banana.ts.net";
+      default = "oreamnos.barred-banana.ts.net";
       description = "The hostname of the observability server";
     };
   };
   config = lib.mkIf cfg.enable {
-    #services.alloy.enable = true;
-    ## When it fails to send log, it doesn't quit. It usually takes a few
-    ## seconds to successfully send logs. 8 seconds should be enough.
-    #systemd.services.alloy = {
-    #  reloadTriggers = [ "/etc/alloy/client.alloy" ];
-    #  serviceConfig.TimeoutStopSec = 8;
-    #};
+    services.alloy.enable = true;
+    # When it fails to send log, it doesn't quit. It usually takes a few
+    # seconds to successfully send logs. 8 seconds should be enough.
+    systemd.services.alloy = {
+      reloadTriggers = [ "/etc/alloy/client.alloy" ];
+      serviceConfig.TimeoutStopSec = 8;
+    };
     environment.etc = lib.mkIf cfg.enable {
       "alloy/client.alloy" = {
         text = ''

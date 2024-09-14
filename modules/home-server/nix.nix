@@ -59,7 +59,7 @@ in
 
     services.harmonia = {
       enable = true;
-      signKeyPath = config.sops.secrets."nix-cache/privkey".path;
+      signKeyPaths = [ config.sops.secrets."nix-cache/privkey".path ];
       settings = {
         bind = "0.0.0.0:5000";
         priority = 50;

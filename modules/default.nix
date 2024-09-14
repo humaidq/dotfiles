@@ -176,15 +176,16 @@ in
         allowUnfree = true;
         allowBroken = true;
         allowUnsupportedSystem = true;
+        permittedInsecurePackages = [ "nix-2.24.5" ];
       };
       overlays = [
 
-        (final: _: {
-          unstable = import inputs.nixpkgs-unstable {
-            inherit (final) system;
-            config.allowUnfree = true;
-          };
-        })
+        #(final: _: {
+        #  unstable = import inputs.nixpkgs-unstable {
+        #    inherit (final) system;
+        #    config.allowUnfree = true;
+        #  };
+        #})
       ];
 
     };

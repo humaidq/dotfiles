@@ -2,6 +2,7 @@
   config,
   lib,
   vars,
+  pkgs,
   ...
 }:
 let
@@ -17,6 +18,9 @@ in
     home-manager.users."${vars.user}" = {
       services.emacs.enable = true;
     };
-    environment.systemPackages = with pkgs; [ emacs ];
+    environment.systemPackages = with pkgs; [
+      emacs
+      emacsPackages.vterm
+    ];
   };
 }

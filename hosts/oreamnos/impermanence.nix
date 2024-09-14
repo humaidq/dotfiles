@@ -9,7 +9,7 @@
       "/var/lib/nixos"
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
-      "/var/lib/ollama"
+      #"/var/lib/ollama"
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"

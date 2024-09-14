@@ -132,7 +132,7 @@ in
               luasnip = {
                 enable = dev;
                 # 24.11 TODO rename to settings
-                extraConfig = {
+                settings = {
                   enable_autosnippets = dev;
                   store_selection_keys = "<Tab>";
                 };
@@ -186,67 +186,69 @@ in
               conform-nvim = {
                 enable = dev;
                 # 24.11 TODO, put under settings = {
-                formatOnSave = {
-                  lspFallback = true;
-                  timeoutMs = 500;
-                };
-                notifyOnError = true;
-                formattersByFt = {
-                  html = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  css = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  javascript = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  javascriptreact = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  typescript = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  typescriptreact = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  python = [ "black" ];
-                  nix = [ "nixfmt" ];
-                  markdown = [
-                    [
-                      "prettierd"
-                      "prettier"
-                    ]
-                  ];
-                  yaml = [
-                    "yamllint"
-                    "yamlfmt"
-                  ];
+                settings = {
+                  formatOnSave = {
+                    lspFallback = true;
+                    timeoutMs = 500;
+                  };
+                  notifyOnError = true;
+                  formattersByFt = {
+                    html = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    css = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    javascript = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    javascriptreact = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    typescript = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    typescriptreact = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    python = [ "black" ];
+                    nix = [ "nixfmt" ];
+                    markdown = [
+                      [
+                        "prettierd"
+                        "prettier"
+                      ]
+                    ];
+                    yaml = [
+                      "yamllint"
+                      "yamlfmt"
+                    ];
+                  };
                 };
               };
               lazygit = {
                 enable = dev;
                 settings = {
                   config_file_path = [ "${lazygit_config}" ];
-                  use_custom_config_file_path = true;
+                  use_custom_config_file_path = 1;
                 };
               };
 

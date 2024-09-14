@@ -53,31 +53,19 @@
     };
   };
 
-  services.ollama = {
-    enable = true;
-    # this is enabled by default, which sets dynamicuesr to true in systemd,
-    # seems to be broken by impermanence?
-    sandbox = false;
-    package = pkgs.unstable.ollama-cuda;
-    acceleration = "cuda";
-    # loadModels = [
-    #   "gemma2"
-    #   "falcon2"
-  };
-
   environment.systemPackages = with pkgs; [ cifs-utils ];
 
   sops.secrets."nas/humaid" = {
     sopsFile = ../../secrets/home-server.yaml;
   };
-  fileSystems."/mnt/synology-nas" = {
-    device = "//192.168.1.44/homes";
-    fsType = "cifs";
-    options = [
-      "credentials=${config.sops.secrets."nas/humaid".path}"
-      "dir_mode=0777,file_mode=0777,iocharset=utf8,auto"
-    ];
-  };
+  #fileSystems."/mnt/synology-nas" = {
+  #  device = "//192.168.1.44/homes";
+  #  fsType = "cifs";
+  #  options = [
+  #    "credentials=${config.sops.secrets."nas/humaid".path}"
+  #    "dir_mode=0777,file_mode=0777,iocharset=utf8,auto"
+  #  ];
+  #};
 
   # Doing riscv64 xcomp, manually gc
   nix.gc.automatic = lib.mkForce false;
@@ -94,15 +82,14 @@
   };
 
   hardware = {
-    # TODO 24.11
-    #graphics = {
-    #  enable = true;
-    #  enable32Bit = true;
-    #};
+    graphics = {
+      enable = true;
+      enable32Bit = true;
+    };
     nvidia = {
+      open = false;
       modesetting.enable = true;
     };
-    opengl.enable = true;
   };
   services.xserver.videoDrivers = [ "nvidia" ];
 
@@ -141,7 +128,7 @@
       "/var/lib/nixos"
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
-      "/var/lib/ollama"
+      #"/var/lib/ollama"
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"
@@ -163,6 +150,12 @@
         mode = "0700";
       }
       "/var/lib/radarr"
+      "/var/lib/sonarr"
+      {
+        directory = "/var/lib/nextcloud";
+        user = "nextcloud";
+        mode = "0700";
+      }
       "/var/lib/postgresql"
       {
         directory = "/var/lib/kavita";
@@ -178,6 +171,11 @@
       "/var/lib/caddy"
       "/var/lib/audiobookshelf"
       "/var/lib/uptimed"
+      {
+        directory = "/var/lib/bitwarden_rs";
+        mode = "0700";
+        user = "vaultwarden";
+      }
       "/etc/NetworkManager/system-connections"
     ];
     files = [
@@ -202,19 +200,42 @@
         ".config/sops"
         ".config/emacs"
         ".config/doom"
+        # zsh keeps moving new file to $HISTFILE, which would break if we
+        # persist only the file.
+        ".config/zsh_history"
       ];
-      files = [ ".config/zsh/.zsh_history" ];
     };
   };
   # sops loads before impermanence mounts are
   sops.age.keyFile = lib.mkForce "/persist/var/lib/sops-nix/key.txt";
 
   fileSystems."/persist".neededForBoot = true;
+  boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
 
   # Reset root on every boot
-  boot.initrd.postDeviceCommands = lib.mkAfter ''
-    zfs rollback -r rpool/root@blank
-  '';
+  boot.supportedFilesystems = [ "zfs" ];
+  #boot.initrd.postDeviceCommands = lib.mkAfter ''
+  #  zfs rollback -r rpool/root@blank
+  #'';
+  boot.initrd.systemd.enable = true;
+  boot.initrd.systemd.services."zfs-import-rpool".after = [ "cryptsetup.target" ];
+
+  boot.initrd.systemd.services.impermanence-root = {
+    wantedBy = [ "initrd.target" ];
+    after = [ "zfs-import-rpool.service" ];
+    before = [ "sysroot.mount" ];
+    unitConfig.DefaultDependencies = "no";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.zfs}/bin/zfs rollback -r rpool/root@blank";
+    };
+  };
+
+  services.zfs.autoScrub = {
+    enable = true;
+    interval = "weekly";
+    pools = [ "dpool" ];
+  };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "24.05";

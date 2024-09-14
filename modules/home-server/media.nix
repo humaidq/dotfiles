@@ -49,6 +49,14 @@ in
 
     services.mealie = {
       enable = true;
+      settings = {
+        OIDC_AUTH_ENABLED = true;
+        OIDC_CONFIGURATION_URL = "https://sso.alq.ae/realms/master/.well-known/openid-configuration";
+        OIDC_ADMIN_GROUP = "admin";
+        OIDC_CLIENT_ID = "mealie";
+        OIDC_PROVIDER_NAME = "Keycloak";
+        OIDC_AUTO_REDIRECT = "true";
+      };
     };
 
     services.audiobookshelf = {

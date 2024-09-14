@@ -73,7 +73,7 @@ in
             zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
             # History configurations
-            HISTFILE=~/.config/zsh/.zsh_history
+            HISTFILE=~/.config/zsh_history/histfile
             HISTSIZE=1000
             SAVEHIST=2000
             setopt hist_expire_dups_first # delete duplicates first when HISTFILE size exceeds HISTSIZE
