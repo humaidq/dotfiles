@@ -208,6 +208,42 @@ in
           ];
         }
         {
+          "Media Services" = [
+            {
+              "Sonarr" = {
+                description = "Monitor TV Shows";
+                href = "https://sonarr.alq.ae/";
+                siteMonitor = "https://sonarr.alq.ae/";
+                icon = "mdi-emoji_nature";
+              };
+            }
+            {
+              "Radarr" = {
+                description = "Monitor Movies";
+                href = "https://radarr.alq.ae/";
+                siteMonitor = "https://radarr.alq.ae/";
+                icon = "mdi-emoji_nature";
+              };
+            }
+            {
+              "Prowlarr" = {
+                description = "Torrent Indexing Service";
+                href = "https://prowlarr.alq.ae/";
+                siteMonitor = "https://prowlarr.alq.ae/";
+                icon = "mdi-list";
+              };
+            }
+            {
+              "Deluge" = {
+                description = "Torrent Download Client";
+                href = "https://deluge.alq.ae/";
+                siteMonitor = "https://deluge.alq.ae/";
+                icon = "mdi-downloading";
+              };
+            }
+          ];
+        }
+        {
           "Administration" = [
             {
               "AdGuard" = {

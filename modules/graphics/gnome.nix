@@ -19,17 +19,17 @@ in
 
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs; [
-      gnome.cheese
+      cheese
       epiphany
-      gnome.geary
-      gnome.gnome-contacts
-      gnome.gnome-music
+      geary
+      gnome-contacts
+      gnome-music
       gnome-tour
       orca
-      gnome.seahorse
-      gnome.simple-scan
+      seahorse
+      simple-scan
     ];
-    environment.systemPackages = with pkgs; [ gnome.dconf-editor ];
+    environment.systemPackages = with pkgs; [ dconf-editor ];
 
     home-manager.users."${vars.user}" =
       { lib, ... }:
