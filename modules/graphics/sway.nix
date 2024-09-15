@@ -26,6 +26,7 @@ in
       wrapperFeatures.gtk = true; # so that gtk works properly
       extraPackages = with pkgs; [
         brightnessctl
+        alsa-utils
         pamixer
 
         swaylock-effects # lockscreen
@@ -89,12 +90,24 @@ in
           };
         };
       };
+      programs.swaylock = {
+        enable = true;
+        settings = {
+          color = "130e24";
+          line-color = "ffffff";
+          show-failed-attempts = true;
+        };
+      };
       services.swayidle = {
         enable = true;
         events = [
           {
+            event = "before-sleep";
+            command = "${lib.getExe pkgs.swaylock} -f";
+          }
+          {
             event = "lock";
-            command = "${pkgs.swaylock}/bin/swaylock";
+            command = "${lib.getExe pkgs.swaylock} -f";
           }
           {
             event = "unlock";
@@ -103,8 +116,12 @@ in
         ];
         timeouts = [
           {
-            timeout = 60;
-            command = "${pkgs.swaylock}/bin/swaylock";
+            timeout = 250;
+            command = ''${lib.getExe pkgs.libnotify} -t 30000 -- "Screen will lock soon..."'';
+          }
+          {
+            timeout = 300;
+            command = "${pkgs.swaylock}/bin/swaylock -f";
           }
           {
             timeout = 600;
