@@ -118,14 +118,14 @@
       };
 
       hydraJobs = {
-        #x86_64-linux = {
-        #  oreamnos = self.nixosConfigurations.oreamnos.config.system.build.toplevel;
-        #  serow = self.nixosConfigurations.serow.config.system.build.toplevel;
-        #  tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
-        #  duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
+        x86_64-linux = {
+          oreamnos = self.nixosConfigurations.oreamnos.config.system.build.toplevel;
+          serow = self.nixosConfigurations.serow.config.system.build.toplevel;
+          tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
+          duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
 
-        #  inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
-        #};
+          #inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
+        };
         #aarch64-linux = {
         #  inherit (self.packages.aarch64-linux) rpi4-bootstrap;
         #  inherit (self.packages.aarch64-linux) rpi5-bootstrap;
