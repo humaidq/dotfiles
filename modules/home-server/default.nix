@@ -1,13 +1,13 @@
-{ lib, ... }:
+{ lib, inputs, ... }:
 {
   imports = [
+    inputs.authentik-nix.nixosModules.default
     ./nix.nix
     ./ai.nix
     ./misc.nix
     ./media.nix
-    ./adguard.nix
+    ./blocky.nix
     ./web-server.nix
-    ./keycloak.nix
     ./nextcloud.nix
   ];
 

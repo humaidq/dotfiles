@@ -51,11 +51,11 @@ in
       enable = true;
       settings = {
         OIDC_AUTH_ENABLED = true;
-        OIDC_CONFIGURATION_URL = "https://sso.alq.ae/realms/master/.well-known/openid-configuration";
+        BASE_DOMAIN = "https://recipes.alq.ae";
+        OIDC_CONFIGURATION_URL = "https://auth.alq.ae/application/o/mealie/.well-known/openid-configuration";
+        OIDC_CLIENT_ID = "FqLxxrnxse55b1tZ2WymAtzuDK24Lmi6P2p63y2k";
+        OIDC_AUTO_REDIRECT = true;
         OIDC_ADMIN_GROUP = "admin";
-        OIDC_CLIENT_ID = "mealie";
-        OIDC_PROVIDER_NAME = "Keycloak";
-        OIDC_AUTO_REDIRECT = "true";
       };
     };
 

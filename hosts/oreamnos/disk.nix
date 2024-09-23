@@ -127,16 +127,18 @@
                 };
               };
 
-              #swap = {
-              #  type = "zfs_fs";
-              #  size = "16G";
-              #  options = {
-              #    volblocksize = "4096";
-              #    logbias = "throughput";
-              #    sync = "always";
-              #    primarycache = "metadata";
-              #  };
-              #};
+              swap = {
+                type = "zfs_volume";
+                size = "128G";
+                options = {
+                  volblocksize = "4096";
+                  logbias = "throughput";
+                  sync = "always";
+                  primarycache = "metadata";
+                  secondarycache = "none";
+                  compression = "zle";
+                };
+              };
 
               # persistent data
               "persist" = {

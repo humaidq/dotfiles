@@ -53,7 +53,28 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ cifs-utils ];
+  environment.systemPackages = with pkgs; [
+    cifs-utils
+    liquidctl
+  ];
+
+  systemd.services.liquidctl = {
+    enable = true;
+    description = "CPU Cooler";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart =
+        let
+          liquidctl = lib.getExe pkgs.liquidctl;
+        in
+        [
+          "${liquidctl} initialize all"
+          "${liquidctl} --match Kraken set fan speed 20 45 35 50 40 75 80 90 50 100"
+          "${liquidctl} --match Kraken set pump speed 70"
+        ];
+    };
+    wantedBy = [ "multi-user.target" ];
+  };
 
   sops.secrets."nas/humaid" = {
     sopsFile = ../../secrets/home-server.yaml;
@@ -66,6 +87,7 @@
   #    "dir_mode=0777,file_mode=0777,iocharset=utf8,auto"
   #  ];
   #};
+  zramSwap.enable = true;
 
   # Doing riscv64 xcomp, manually gc
   nix.gc.automatic = lib.mkForce false;
@@ -107,11 +129,13 @@
     80
     443
     53
+    58846
   ];
   networking.firewall.allowedUDPPorts = [
     123
     22
     53
+    58846
   ];
 
   services.chrony.extraConfig = lib.mkAfter ''
@@ -139,11 +163,16 @@
       }
       "/var/lib/loki"
       "/var/lib/prometheus2"
-      #"/var/lib/private/AdGuardHome"
-      #"/var/lib/private/jellyseerr"
-      #"/var/lib/private/lldap"
-      #"/var/lib/private/mealie"
-      #"/var/lib/private/prowlarr"
+      {
+        directory = "/var/lib/redis-authentik";
+        user = "redis-authentik";
+        mode = "0740";
+      }
+      {
+        directory = "/var/lib/redis-paperless";
+        user = "redis-paperless";
+        mode = "0740";
+      }
 
       {
         directory = "/var/lib/private";
@@ -155,6 +184,12 @@
         directory = "/var/lib/nextcloud";
         user = "nextcloud";
         mode = "0700";
+      }
+      {
+        directory = "/var/lib/forgejo";
+        user = "forgejo";
+        group = "forgejo";
+        mode = "0770";
       }
       "/var/lib/postgresql"
       {
@@ -210,7 +245,7 @@
   sops.age.keyFile = lib.mkForce "/persist/var/lib/sops-nix/key.txt";
 
   fileSystems."/persist".neededForBoot = true;
-  boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
+  #boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
 
   # Reset root on every boot
   boot.supportedFilesystems = [ "zfs" ];
@@ -235,6 +270,17 @@
     enable = true;
     interval = "weekly";
     pools = [ "dpool" ];
+  };
+
+  swapDevices = [
+    {
+      device = "/dev/zvol/rpool/swap";
+    }
+  ];
+
+  services.iperf3 = {
+    enable = true;
+    openFirewall = true;
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";

@@ -132,7 +132,7 @@ in
           "https://numtide.cachix.org?priority=80"
 
           # riscv cache
-          "https://cache.nichi.co?priority=90"
+          #"https://cache.nichi.co?priority=90"
         ];
 
         trusted-public-keys = [
@@ -180,12 +180,13 @@ in
       };
       overlays = [
 
-        #(final: _: {
-        #  unstable = import inputs.nixpkgs-unstable {
-        #    inherit (final) system;
-        #    config.allowUnfree = true;
-        #  };
-        #})
+        (_final: prev: {
+          #unstable = import inputs.nixpkgs-unstable {
+          #  inherit (final) system;
+          #  config.allowUnfree = true;
+          #};
+          liquidctl = import ../overlays/liquidctl { inherit prev; };
+        })
       ];
 
     };

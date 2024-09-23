@@ -104,12 +104,12 @@ in
                   html.enable = dev;
                   eslint.enable = dev;
                   cssls.enable = dev;
-                  tsserver.enable = dev;
+                  ts-ls.enable = dev;
                 };
               };
 
               vim-css-color.enable = true;
-              surround.enable = true;
+              vim-surround.enable = true;
               fugitive.enable = true;
 
               # TODO configure

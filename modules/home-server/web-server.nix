@@ -77,12 +77,26 @@ in
 
         (mkRP "recipes" "9000")
 
-        (mkRP "search" "3342")
+        (mkRP "pdf" "8084")
+
+        (mkRP "yt" "4747")
+
+        (mkRP "search" "4848")
+        (mkRP "git" "3939")
+        (mkRP "paperless" "28981")
 
         {
           "cloud.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
 
+          };
+          "${config.services.invidious.domain}" = {
+            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+            enableACME = false;
+          };
+          "${config.services.authentik.nginx.host}" = {
+            inherit (tls) sslCertificate sslCertificateKey;
+            forceSSL = lib.mkForce true;
           };
         }
       ];
@@ -99,8 +113,10 @@ in
       widgets = [
         {
           search = {
-            provider = "duckduckgo";
+            provider = "custom";
+            url = "https://search.alq.ae/search?q=";
             target = "_blank";
+            suggestionUrl = "https://search.alq.ae/autocompleter?q=";
             showSearchSuggestions = true;
           };
         }
@@ -127,16 +143,85 @@ in
             }
             {
               "Catalogue" = {
-                description = "Movie Search Catalogue";
+                description = "Movie Search Catalogue (Jellyseerr)";
                 href = "https://catalogue.alq.ae/";
                 siteMonitor = "https://catalogue.alq.ae/";
                 icon = "mdi-movie-search";
+              };
+            }
+            {
+              "YouTube" = {
+                description = "Ad-free YouTube (Invidious)";
+                href = "https://yt.alq.ae/";
+                siteMonitor = "https://yt.alq.ae";
+                icon = "mdi-youtube";
+              };
+            }
+          ];
+        }
+        {
+          "Services" = [
+            {
+              "Search" = {
+                description = "Meta Search Engine (Searxng)";
+                href = "https://search.alq.ae/";
+                siteMonitor = "https://search.alq.ae/";
+                icon = "mdi-search-web";
+              };
+            }
+            {
+              "Vault" = {
+                description = "Password Manager (Vaultwarden)";
+                href = "https://vault.alq.ae/";
+                siteMonitor = "https://vault.alq.ae/";
+                icon = "mdi-shield-key";
+              };
+            }
+            {
+              "Git" = {
+                description = "Software Forge (Forgejo)";
+                href = "https://git.alq.ae/";
+                siteMonitor = "https://git.alq.ae/";
+                icon = "mdi-git";
+              };
+            }
+            {
+              "AI" = {
+
+                description = "Local AI";
+                href = "https://ai.alq.ae/";
+                siteMonitor = "https://ai.alq.ae/";
+                icon = "mdi-creation";
+              };
+            }
+            {
+              "Stirling PDF" = {
+                description = "All-in-one PDF Toolbox";
+                href = "https://pdf.alq.ae/";
+                siteMonitor = "https://pdf.alq.ae/";
+                icon = "mdi-file-pdf-box";
               };
             }
           ];
         }
         {
           "Resources" = [
+            {
+              "Cloud" = {
+                description = "Drive Storage & Office Suite";
+                href = "https://cloud.alq.ae/";
+                siteMonitor = "https://cloud.alq.ae/";
+                icon = "mdi-apple-icloud";
+              };
+            }
+            {
+              "Paperless" = {
+                description = "Document Management System";
+                href = "https://paperless.alq.ae/";
+                siteMonitor = "https://paperless.alq.ae/";
+                icon = "mdi-leaf-circle";
+              };
+            }
             {
               "Recipes" = {
                 description = "Recipe Book (Mealie)";
@@ -147,7 +232,7 @@ in
             }
             {
               "Books" = {
-                description = "eBooks Library";
+                description = "eBooks Library (Kavita)";
                 href = "https://books.alq.ae/";
                 siteMonitor = "https://books.alq.ae/";
                 icon = "mdi-bookshelf";
@@ -164,13 +249,13 @@ in
           ];
         }
         {
-          "Services" = [
+          "Backend & Servers" = [
             {
-              "Synology NAS" = {
-                description = "Network Attached Storage (Synology)";
-                href = "https://nas.alq.ae/";
-                siteMonitor = "https://nas.alq.ae/";
-                icon = "mdi-nas";
+              "Single Sign-On" = {
+                description = "Local Identity Provider (Authentik)";
+                href = "https://auth.alq.ae/";
+                siteMonitor = "https://auth.alq.ae/";
+                icon = "mdi-account-box-multiple";
               };
             }
             {
@@ -205,24 +290,48 @@ in
                 icon = "mdi-printer-3d-nozzle";
               };
             }
+            {
+              "Local DNS" = {
+                description = "DNS+DoH with ad-blocking (blocky)";
+                href = "https://dns.alq.ae/";
+                siteMonitor = "https://dns.alq.ae/";
+                icon = "mdi-security";
+              };
+            }
+            {
+              "Local NTP" = {
+                description = "Your local time-keeper";
+                href = "https://time.alq.ae/";
+                siteMonitor = "https://time.alq.ae/";
+                icon = "mdi-clock-time-two";
+              };
+            }
+            {
+              "Synology NAS" = {
+                description = "Network Attached Storage (Synology)";
+                href = "https://nas.alq.ae/";
+                siteMonitor = "https://nas.alq.ae/";
+                icon = "mdi-nas";
+              };
+            }
           ];
         }
         {
           "Media Services" = [
             {
               "Sonarr" = {
-                description = "Monitor TV Shows";
+                description = "TV Shows Automation";
                 href = "https://sonarr.alq.ae/";
                 siteMonitor = "https://sonarr.alq.ae/";
-                icon = "mdi-emoji_nature";
+                icon = "mdi-movie-search";
               };
             }
             {
               "Radarr" = {
-                description = "Monitor Movies";
+                description = "Movies Automation";
                 href = "https://radarr.alq.ae/";
                 siteMonitor = "https://radarr.alq.ae/";
-                icon = "mdi-emoji_nature";
+                icon = "mdi-movie-search";
               };
             }
             {
@@ -230,7 +339,7 @@ in
                 description = "Torrent Indexing Service";
                 href = "https://prowlarr.alq.ae/";
                 siteMonitor = "https://prowlarr.alq.ae/";
-                icon = "mdi-list";
+                icon = "mdi-format-list-group";
               };
             }
             {
@@ -238,19 +347,7 @@ in
                 description = "Torrent Download Client";
                 href = "https://deluge.alq.ae/";
                 siteMonitor = "https://deluge.alq.ae/";
-                icon = "mdi-downloading";
-              };
-            }
-          ];
-        }
-        {
-          "Administration" = [
-            {
-              "AdGuard" = {
-                description = "Network DNS & DHCP server (AdGuard Home)";
-                href = "https://adguard.alq.ae/";
-                siteMonitor = "https://adguard.alq.ae/";
-                icon = "mdi-security";
+                icon = "mdi-download-circle";
               };
             }
           ];

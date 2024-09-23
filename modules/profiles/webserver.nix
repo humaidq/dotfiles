@@ -112,14 +112,14 @@ in
           import general
         '';
 
-        "consultant-ai.app".extraConfig = ''
-          basicauth * {
-            consultant $2a$14$Ok89VTgJRUb39ljS15Qw..RwA4pzdKE0flplasODlwQHbLOTLo7Li
-          }
-        '';
-        "www.consultant-ai.app".extraConfig = ''
-          redir https://consultant-ai.app{uri} permanent
-        '';
+        #"consultant-ai.app".extraConfig = ''
+        #  basicauth * {
+        #    consultant $2a$14$Ok89VTgJRUb39ljS15Qw..RwA4pzdKE0flplasODlwQHbLOTLo7Li
+        #  }
+        #'';
+        #"www.consultant-ai.app".extraConfig = ''
+        #  redir https://consultant-ai.app{uri} permanent
+        #'';
 
         # Fun stuff
         "bot.huma.id".extraConfig = "respond \"beep boop\"";
@@ -137,7 +137,7 @@ in
         '';
 
         "cache.huma.id".extraConfig = ''
-          reverse_proxy 100.115.60.127:5000
+          reverse_proxy 100.83.164.46:5000
           handle / {
             respond "Humaid's Nix binary cache - https://github.com/humaidq/dotfiles"
           }
