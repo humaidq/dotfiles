@@ -126,21 +126,10 @@ in
 
         substituters = trusted-substituters;
 
-        trusted-substituters = [
-          #"https://cache.huma.id?priority=51"
-          "https://nix-community.cachix.org?priority=60"
-          "https://numtide.cachix.org?priority=80"
-
-          # riscv cache
-          #"https://cache.nichi.co?priority=90"
-        ];
+        trusted-substituters = lib.optional (config.networking.hostName != "oreamnos") "https://cache.huma.id?priority=51";
 
         trusted-public-keys = [
-          "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-          "numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="
           "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="
-
-          "hydra.nichi.co-0:P3nkYHhmcLR3eNJgOAnHDjmQLkfqheGyhZ6GLrUVHwk="
         ];
         # Enable flakes
         experimental-features = [

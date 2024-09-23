@@ -71,18 +71,21 @@ in
               version = "1.5.4.3";
             }
 
+            # uBlock Origin
             (createChromiumExtension {
               id = "cjpalhdlnbpafiamejdnhcphjbkeiagm";
               sha256 = "sha256:06k70762vh79ak1d2gsrx9faadzj0gjqa4yz9x7vk9m7k85jp69p";
               version = "1.59.0";
             })
 
+            # Bitwarden
             (createChromiumExtension {
               id = "nngceckbapebfimnlniiiahkandclblb";
-              sha256 = "sha256:1czz7iyi08msg9nj7yx1s9v2mdiiqd8mk2rp7w378y8wy8axr00g";
+              sha256 = "sha256:0wq2bhqp1qk22rcb3p9pw8igv9qn87lznx3pm084sqjr39z2zd7v";
               version = "2024.9.0";
             })
 
+            # Kagi Search
             (createChromiumExtension {
               id = "cdglnehniifkbagbbombnjghhcihifij";
               sha256 = "sha256:1dyrb1jzj770jnv20fp8d5y42gr9880jydlhzzymprqwa1in5zkw";

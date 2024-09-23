@@ -88,7 +88,13 @@ in
         {
           "cloud.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
+          };
+          "cache.huma.id" = {
+            inherit (tls) sslCertificate sslCertificateKey forceSSL;
 
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:5000";
+            };
           };
           "${config.services.invidious.domain}" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;

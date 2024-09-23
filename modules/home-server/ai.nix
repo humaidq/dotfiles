@@ -12,7 +12,7 @@ in
     services.ollama = {
       enable = true;
       user = "ollama";
-      acceleration = false;
+      acceleration = "cuda";
       host = "0.0.0.0";
       package = pkgs.ollama;
       # loadModels = [
