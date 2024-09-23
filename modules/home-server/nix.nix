@@ -23,6 +23,7 @@ in
       "git+https://github.com/"
       "git+ssh://github.com/"
       "https://github.com/"
+      "https://clients2.google.com/"
     ];
 
     nix.settings.trusted-users = [
