@@ -66,9 +66,6 @@ in
           owner = "root";
           mode = "600";
         };
-        lldap-env = {
-          sopsFile = ../secrets/gadgets.yaml;
-        };
         github-token = {
           sopsFile = ../secrets/gadgets.yaml;
           owner = vars.user;
@@ -126,7 +123,9 @@ in
 
         substituters = trusted-substituters;
 
-        trusted-substituters = lib.optional (config.networking.hostName != "oreamnos") "https://cache.huma.id?priority=51";
+        trusted-substituters = lib.optional (
+          config.networking.hostName != "oreamnos"
+        ) "https://cache.huma.id?priority=51";
 
         trusted-public-keys = [
           "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="

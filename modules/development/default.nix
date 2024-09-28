@@ -23,7 +23,6 @@ in
 
   config = lib.mkMerge [
     {
-
       # We need basic git on all computers, needed for flakes too.
       home-manager.users."${vars.user}" = {
         programs.git = {
@@ -48,6 +47,7 @@ in
           signing.signByDefault = true;
           extraConfig = {
             core.editor = "nvim";
+            init.defaultBranch = "main";
 
             format.signoff = true;
             commit.verbose = "yes";
@@ -139,7 +139,10 @@ in
         tig
 
         # Nix
+        nix-diff
+        nix-fast-build
         nix-info
+        nix-melt
         nix-output-monitor
         nix-tree
         nixfmt-rfc-style

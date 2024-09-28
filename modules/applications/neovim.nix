@@ -111,6 +111,7 @@ in
               vim-css-color.enable = true;
               vim-surround.enable = true;
               fugitive.enable = true;
+              web-devicons.enable = true;
 
               # TODO configure
               telescope = {

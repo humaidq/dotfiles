@@ -6,6 +6,7 @@
     ./ai.nix
     ./misc.nix
     ./media.nix
+    ./vaultwarden.nix
     ./blocky.nix
     ./web-server.nix
     ./nextcloud.nix

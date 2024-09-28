@@ -47,7 +47,7 @@ in
 
         (mkRP "sso" "3322")
 
-        (mkRP "adguard" "3333")
+        (mkRP "dns" "3333")
 
         (mkRP "vault" "8222")
 
@@ -193,7 +193,6 @@ in
             }
             {
               "AI" = {
-
                 description = "Local AI";
                 href = "https://ai.alq.ae/";
                 siteMonitor = "https://ai.alq.ae/";

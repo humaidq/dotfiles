@@ -26,7 +26,7 @@ in
       # We don't use NTS yet as it breaks on systems with no RTC
       extraConfig = ''
         # Cloudflare supports NTS
-        #pool time.cloudflare.com prefer iburst xleave ${if cfg.useNTS then "nts" else ""}
+        pool time.cloudflare.com prefer iburst xleave ${if cfg.useNTS then "nts" else ""}
 
         ${
           if !cfg.useNTS then

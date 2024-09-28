@@ -105,10 +105,10 @@ in
             export PATH=/opt/homebrew/bin:$PATH
 
             function ghafa-rebuild() {
-              nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa reboot
+              nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa reboot
             }
             function ghafa-orin-rebuild() {
-              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v |& nom --json  && ssh root@ghafa-orin reboot
+              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
             }
 
             function ntp() {
@@ -116,6 +116,10 @@ in
             }
             function nts() {
               chronyd -Q -t 3 "server $1 iburst nts maxsamples 1"
+            }
+
+            function e() {
+              emacsclient -t '$1'
             }
 
             function mkcd() {
@@ -138,10 +142,13 @@ in
             vi = "nvim";
             v = "nvim";
             vf = "nvim $(fzf)";
+            ef = "emacsclient -t $(fzf)";
             recent = "ls -ltch";
             q = "exit";
             c = "clear";
             t = "tmux";
+            tl = "tmux ls";
+            ta = "tmux a -t";
             #sudo = "doas";
             doas = "sudo";
             #ptop = "sudo powertop";
@@ -188,7 +195,9 @@ in
             np = "nix-shell -p";
             nr = "nix repl";
             nrp = "nix repl '<nixpkgs>'";
-            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v |& nom --json";
+            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
+            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
+            nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --option substitute false --show-trace |& nom --json";
 
             # Better ls
             ls = lib.mkForce "eza --group-directories-first";

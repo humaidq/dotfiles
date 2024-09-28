@@ -28,16 +28,6 @@ in
     };
     networking.firewall.allowedTCPPorts = [ config.services.netatalk.port ];
 
-    services.lldap = {
-      enable = true;
-      environmentFile = "${config.sops.secrets.lldap-env.path}";
-      settings = {
-        ldap_base_dn = "dc=home,dc=alq";
-        ldap_user_email = "admin@home.alq";
-        http_url = "http://lldap.alq";
-      };
-    };
-
     sops.secrets.kavita-token = {
       sopsFile = ../../secrets/gadgets.yaml;
     };
@@ -89,5 +79,34 @@ in
       pkgs.jellyfin-web
       pkgs.jellyfin-ffmpeg
     ];
+
+    services.invidious = {
+      enable = true;
+      domain = "yt.alq.ae";
+      port = 4747;
+      nginx.enable = true;
+      settings = {
+        domain = "yt.alq.ae";
+        https_only = true;
+        dark_mode = "dark";
+        default_home = "Subscriptions";
+        popular_enabled = false;
+        feed_menu = [
+          "Subscriptions"
+          "Playlists"
+        ];
+        statistics_enabled = true;
+        default_user_preferences = {
+          quality = "dash";
+          local = true;
+          region = "AE";
+          captions = [
+            "English"
+            "English (auto-generated)"
+            "Arabic"
+          ];
+        };
+      };
+    };
   };
 }

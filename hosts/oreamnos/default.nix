@@ -30,11 +30,11 @@
         "riscv64-linux"
       ];
     };
-    security = {
-      encryptDNS = true;
-    };
+    #security = {
+    #  encryptDNS = true;
+    #};
     development.enable = true;
-    ntp.useNTS = true;
+    ntp.useNTS = false;
     applications.emacs.enable = true;
 
     o11y = {
@@ -117,8 +117,15 @@
   users.users.${vars.user} = {
     isNormalUser = true;
     openssh.authorizedKeys.keys = [
+      # TODO remove
       "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBP6h78HwApxcrPEothfFY1m0kLwroeQWpskYGsEVrxnXtohd+FBiWmer9zN37FtMyUI8b3y3LVouuKciYTlPKGs= ipadpro"
       "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBD5+afJhtncZlx5HfXcrqqEDjNAmo7ZtatgM46ao+EcBg/vh8m0+aNb/ZdrBKqiCnkHOkN6R4gacWpoALgZ9BmA="
+
+      # ipad yubi
+      "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBKDr2x2BnB/vcomSKPBzLts3QY3Vu4TSruYzi+Vy2M3tJ+Q9ppL35ru/QuDezzeKv6gSDsoBE1LE7Uo0ok3OkywAAAALdGVybWl1cy5jb20="
+
+      # iphone yubi
+      "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBBXJc+Vs41Of/67NWuWRgk9LHX/cdWKVgviqbCVrH/nmllcaoBGDnMTZH5/+C+TZe7IOjyJ+VHSwAmDyY1rgzCgAAAALdGVybWl1cy5jb20="
     ];
   };
 
@@ -244,13 +251,9 @@
   sops.age.keyFile = lib.mkForce "/persist/var/lib/sops-nix/key.txt";
 
   fileSystems."/persist".neededForBoot = true;
-  #boot.kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
 
   # Reset root on every boot
   boot.supportedFilesystems = [ "zfs" ];
-  #boot.initrd.postDeviceCommands = lib.mkAfter ''
-  #  zfs rollback -r rpool/root@blank
-  #'';
   boot.initrd.systemd.enable = true;
   boot.initrd.systemd.services."zfs-import-rpool".after = [ "cryptsetup.target" ];
 
@@ -281,6 +284,8 @@
     enable = true;
     openFirewall = true;
   };
+
+  #boot.kernelPackages = pkgs.linuxPackages.packages.linux_6_11;
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "24.05";

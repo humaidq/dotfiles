@@ -34,7 +34,7 @@ in
     environment.systemPackages = with pkgs; [ config.boot.kernelPackages.cpupower ];
 
     services.printing = {
-      enable = true;
+      enable = false;
       drivers = with pkgs; [
         gutenprint
         # Epson L4150
@@ -52,11 +52,11 @@ in
       }
     ];
     services.avahi = {
-      enable = true;
+      enable = false;
       nssmdns4 = true;
       nssmdns6 = true;
       publish = {
-        enable = true;
+        enable = false;
         addresses = true;
       };
     };

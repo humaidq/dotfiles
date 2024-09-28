@@ -40,6 +40,16 @@ in
             UserKnownHostsFile = "/dev/null";
           };
         };
+        "groot" = {
+          user = "root";
+          hostname = "192.168.1.68";
+          checkHostIP = false;
+          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
+          extraOptions = {
+            StrictHostKeyChecking = "no";
+            UserKnownHostsFile = "/dev/null";
+          };
+        };
         "ghafa" = {
           user = "root";
           hostname = "192.168.101.2";

@@ -8,76 +8,19 @@ in
     services.postgresql = {
       ensureUsers = [
         {
-          name = "vaultwarden";
-          ensureDBOwnership = true;
-        }
-        {
           name = "paperless";
           ensureDBOwnership = true;
         }
       ];
       ensureDatabases = [
-        "vaultwarden"
         "paperless"
       ];
-    };
-    sops.secrets."vaultwarden/env" = {
-      sopsFile = ../../secrets/home-server.yaml;
-      owner = "vaultwarden";
-      mode = "600";
-    };
-    services.vaultwarden = {
-      enable = true;
-      dbBackend = "postgresql";
-      config = {
-        DOMAIN = "https://vault.alq.ae";
-        ROCKET_ADDRESS = "127.0.0.1";
-        ROCKET_PORT = 8222;
-        databaseUrl = "postgres:///vaultwarden?host=/var/run/postgresql";
-
-        # Mail
-        SMTP_HOST = "in-v3.mailjet.com";
-        SMTP_PORT = 25;
-        SMTP_SECURITY = "starttls";
-        SMTP_FROM = "server@alq.ae";
-        SMTP_FROM_NAME = "alq.ae Vaultwarden Server";
-      };
-      environmentFile = "${config.sops.secrets."vaultwarden/env".path}";
     };
 
     services.stirling-pdf = {
       enable = true;
       environment = {
         SERVER_PORT = 8084;
-      };
-    };
-
-    services.invidious = {
-      enable = true;
-      domain = "yt.alq.ae";
-      port = 4747;
-      nginx.enable = true;
-      settings = {
-        domain = "yt.alq.ae";
-        https_only = true;
-        dark_mode = "dark";
-        default_home = "Subscriptions";
-        popular_enabled = false;
-        feed_menu = [
-          "Subscriptions"
-          "Playlists"
-        ];
-        statistics_enabled = true;
-        default_user_preferences = {
-          quality = "dash";
-          local = true;
-          region = "AE";
-          captions = [
-            "English"
-            "English (auto-generated)"
-            "Arabic"
-          ];
-        };
       };
     };
 
@@ -93,6 +36,24 @@ in
           HTTP_PORT = 3939;
           SSH_PORT = 2222;
           START_SSH_SERVER = true;
+
+          LANDING_PAGE = "explore";
+        };
+        repository = {
+          DEFAULT_PRIVATE = "private";
+          ENABLE_PUSH_CREATE_USER = true;
+          ENABLE_PUSH_CREATE_ORG = true;
+        };
+        "repository.pull-request" = {
+          DEFAULT_MERGE_STYLE = "rebase";
+        };
+        other = {
+          SHOW_FOOTER_TEMPLATE_LOAD_TIME = false;
+          SHOW_FOOTER_VERSION = false;
+        };
+        "ui.meta" = {
+          AUTHOR = "git.alq.ae";
+          DESCRIPTION = "A private software forge";
         };
       };
     };
@@ -154,7 +115,7 @@ in
       mode = "600";
     };
     services.authentik = {
-      enable = false;
+      enable = true;
       # The environmentFile needs to be on the target host!
       # Best use something like sops-nix or agenix to manage it
       environmentFile = config.sops.secrets."authentik/env".path;
@@ -176,6 +137,5 @@ in
         host = "auth.alq.ae";
       };
     };
-
   };
 }

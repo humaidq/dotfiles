@@ -40,11 +40,13 @@ in
           minTime = "6h";
           prefetching = true;
         };
+        prometheus.enable = true;
         customDNS = {
           customTTL = "3h";
           rewrite.local = "alq.ae";
           mapping = {
             "alq.ae" = "100.83.164.46,192.168.1.250";
+            #"cache.huma.id" = "100.83.164.46,192.168.1.250";
           };
         };
         blocking = {

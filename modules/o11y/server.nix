@@ -20,6 +20,16 @@ in
       port = 9001;
       extraFlags = [ "--web.enable-remote-write-receiver" ];
       retentionTime = "30d";
+      scrapeConfigs = [
+        {
+          job_name = "blocky";
+          static_configs = [
+            {
+              targets = [ "localhost:3333" ];
+            }
+          ];
+        }
+      ];
     };
     services.loki = lib.mkIf cfg.enable {
       enable = true;
