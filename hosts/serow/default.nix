@@ -2,6 +2,7 @@
   self,
   lib,
   inputs,
+  pkgs,
   ...
 }:
 {
@@ -69,6 +70,8 @@
       size = 32 * 1024;
     }
   ];
+
+  boot.kernelPackages = pkgs.linuxPackages.packages.linux_6_11;
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";

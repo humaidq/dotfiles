@@ -167,6 +167,7 @@ in
             "${mod}+Shift+c" = "kill";
             "${mod}+Shift+r" = "reload";
             "${mod}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
+            "${mod}+l" = "exec ${lib.getExe pkgs.swaylock} -f";
 
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
