@@ -8,7 +8,7 @@ let
   cfg = config.sifr.applications;
   emacs =
     with pkgs;
-    ((emacsPackagesFor emacs29-pgtk).emacsWithPackages (
+    ((emacsPackagesFor emacs30-pgtk).emacsWithPackages (
       epkgs: with epkgs; [
         treesit-grammars.with-all-grammars
         vterm
@@ -35,6 +35,10 @@ in
         emacs
       ]
       ++ (with pkgs; [
+
+        clang
+        binutils
+        zstd
 
         (aspellWithDicts (
           ds: with ds; [
