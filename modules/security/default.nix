@@ -41,10 +41,20 @@ in
       };
     })
     (mkIf cfg.yubikey {
-      services.udev.packages = with pkgs; [
-        libu2f-host
-        yubikey-personalization
+      services.udev.packages = with pkgs; [ yubikey-manager ];
+
+      environment.systemPackages = with pkgs; [
+        yubioath-flutter
+        yubikey-touch-detector
+        age-plugin-yubikey
+        age
       ];
+
+      programs.gnupg.agent = {
+        enable = true;
+        enableSSHSupport = true;
+      };
+
       services.pcscd.enable = true;
     })
     (mkIf (cfg.harden && !config.sifr.hardware.vm) {

@@ -66,6 +66,7 @@ in
         rpi-imager
         prusa-slicer
         gnome-firmware
+        bitwarden-desktop
 
         # Re-add GNOME apps that are needed
         evince

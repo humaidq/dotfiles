@@ -71,7 +71,13 @@
     }
   ];
 
-  boot.kernelPackages = pkgs.linuxPackages.packages.linux_6_11;
+  #fonts.fontconfig = {
+  #  hinting.enable = true;
+  #  subpixel.rgba = "rgb";
+  #  hinting.autohint = true;
+  #  hinting.style = "full";
+  #};
+  #boot.kernelPackages = pkgs.linuxPackages.packages.linux_6_11;
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";
