@@ -155,6 +155,7 @@ in
         programs = {
           ssh = {
             enable = true;
+            addKeysToAgent = "yes";
           };
           tmux = {
             enable = true;

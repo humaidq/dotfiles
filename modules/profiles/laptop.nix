@@ -31,10 +31,10 @@ in
       "lp"
     ];
     # Allow setting cpupower
-    environment.systemPackages = with pkgs; [ config.boot.kernelPackages.cpupower ];
+    environment.systemPackages = [ config.boot.kernelPackages.cpupower ];
 
     services.printing = {
-      enable = false;
+      enable = true;
       drivers = with pkgs; [
         gutenprint
         # Epson L4150
@@ -45,7 +45,7 @@ in
       {
         name = "L4150";
         description = "Epson L4150";
-        deviceUri = "dnssd://EPSON%20L4150%20Series._pdl-datastream._tcp.local/";
+        deviceUri = "lpd://192.168.1.237:515/PASSTHRU";
         location = "Office";
         model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
         ppdOptions.PageSize = "A4";

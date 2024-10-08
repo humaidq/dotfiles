@@ -17,7 +17,7 @@
   sifr = {
     graphics = {
       gnome.enable = true;
-      sway.enable = true;
+      sway.enable = false;
       apps = true;
     };
     profiles = {
