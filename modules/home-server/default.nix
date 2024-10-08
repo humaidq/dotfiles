@@ -10,6 +10,7 @@
     ./blocky.nix
     ./web-server.nix
     ./nextcloud.nix
+    ./db.nix
   ];
 
   options.sifr.home-server = {

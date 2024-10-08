@@ -30,9 +30,6 @@
         "riscv64-linux"
       ];
     };
-    #security = {
-    #  encryptDNS = true;
-    #};
     development.enable = true;
     ntp.useNTS = false;
     applications.emacs.enable = true;
@@ -55,6 +52,7 @@
   environment.systemPackages = with pkgs; [
     cifs-utils
     liquidctl
+    restic
   ];
 
   systemd.services.liquidctl = {
@@ -88,6 +86,7 @@
   #};
   zramSwap.enable = true;
 
+  services.fwupd.enable = true;
   # Doing riscv64 xcomp, manually gc
   nix.gc.automatic = lib.mkForce false;
 
@@ -254,24 +253,22 @@
 
   # Reset root on every boot
   boot.supportedFilesystems = [ "zfs" ];
-  boot.initrd.systemd.enable = true;
-  boot.initrd.systemd.services."zfs-import-rpool".after = [ "cryptsetup.target" ];
 
-  boot.initrd.systemd.services.impermanence-root = {
-    wantedBy = [ "initrd.target" ];
-    after = [ "zfs-import-rpool.service" ];
-    before = [ "sysroot.mount" ];
-    unitConfig.DefaultDependencies = "no";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.zfs}/bin/zfs rollback -r rpool/root@blank";
-    };
-  };
-
-  services.zfs.autoScrub = {
+  boot.initrd.systemd = {
     enable = true;
-    interval = "weekly";
-    pools = [ "dpool" ];
+    services = {
+      "zfs-import-rpool".after = [ "cryptsetup.target" ];
+      impermanence-root = {
+        wantedBy = [ "initrd.target" ];
+        after = [ "zfs-import-rpool.service" ];
+        before = [ "sysroot.mount" ];
+        unitConfig.DefaultDependencies = "no";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${pkgs.zfs}/bin/zfs rollback -r rpool/root@blank";
+        };
+      };
+    };
   };
 
   swapDevices = [
@@ -283,6 +280,12 @@
   services.iperf3 = {
     enable = true;
     openFirewall = true;
+  };
+
+  services.zfs.autoScrub = {
+    enable = true;
+    interval = "weekly";
+    pools = [ "dpool" ];
   };
 
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_11;

@@ -113,6 +113,8 @@ in
                   rargb.to
                   tracker.coppersurfer.tk
                   linuxtracker.org
+                  bttracker.debian.org
+                  ipv4announce.sktorrent.eu
                 '';
               in
               [ "${customlist}" ];

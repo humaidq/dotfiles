@@ -4,12 +4,6 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
-    services.postgresql = {
-      settings = {
-        max_connections = 200;
-      };
-    };
-
     services.hydra = {
       enable = true;
       hydraURL = "https://cache.alq.ae";
