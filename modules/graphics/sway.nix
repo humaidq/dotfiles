@@ -25,6 +25,7 @@ in
       cherry
       spleen
     ];
+    environment.systemPackages = with pkgs; [ rofi ];
     programs.sway = {
       enable = true;
       wrapperFeatures.gtk = true; # so that gtk works properly
@@ -182,6 +183,7 @@ in
             "${mod}+Shift+c" = "kill";
             "${mod}+Shift+r" = "reload";
             "${mod}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
+            "${mod}+o" = "exec ${lib.getExe pkgs.rofi-rbw}";
             "${mod}+l" = "exec ${lib.getExe pkgs.swaylock} -f";
 
             # laptop bindings

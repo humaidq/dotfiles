@@ -205,6 +205,14 @@ in
                 icon = "mdi-youtube";
               };
             }
+            {
+              "Reddit" = {
+                description = "Fast Reddit (RedLib)";
+                href = "https://reddit.alq.ae/";
+                siteMonitor = "https://reddit.alq.ae";
+                icon = "mdi-reddit";
+              };
+            }
           ];
         }
         {
