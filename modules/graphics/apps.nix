@@ -44,6 +44,8 @@ in
             jetbrains-mono
             # Bitmap fonts
             terminus_font
+            cherry
+            spleen
           ]
           ++ [
             (nerdfonts.override {
@@ -60,18 +62,18 @@ in
       # On VMs, these applications would reside on the host.
       environment.systemPackages = with pkgs; [
         gimp
-        pinta
+        #pinta
         inkscape
         libreoffice
         rpi-imager
         prusa-slicer
-        gnome-firmware
+        #gnome-firmware
         bitwarden-desktop
 
         # Re-add GNOME apps that are needed
-        evince
-        gnome.gnome-system-monitor
-        gnome-text-editor
+        #evince
+        #gnome-system-monitor
+        #gnome-text-editor
         loupe
 
         # GNOME circle apps
@@ -80,20 +82,20 @@ in
         #gaphor
         fragments
 
-        khronos
-        hieroglyphic
+        #khronos
+        #hieroglyphic
         impression
         junction
         #letterpress
-        lorem
-        gnome-obfuscate
-        paper-clip
-        solanum
+        #lorem
+        #gnome-obfuscate
+        #paper-clip
+        #solanum
         textpieces
         forge-sparks
       ];
       services.fwupd.enable = true;
-      services.power-profiles-daemon.enable = true;
+      #services.power-profiles-daemon.enable = true;
     })
   ];
 }

@@ -2,6 +2,7 @@
   self,
   lib,
   inputs,
+  pkgs,
   ...
 }:
 {
@@ -15,20 +16,14 @@
   # My configuration specific settings
   sifr = {
     graphics = {
-      gnome.enable = true;
-      sway.enable = false;
+      #gnome.enable = true;
+      sway.enable = true;
       apps = true;
     };
     profiles = {
       basePlus = true;
       laptop = true;
-    };
-    v12n.emulation = {
-      enable = true;
-      systems = [
-        "aarch64-linux"
-        "riscv64-linux"
-      ];
+      work = true;
     };
     security = {
       yubikey = true;
@@ -38,10 +33,16 @@
     ntp.useNTS = true;
     o11y.client.enable = true;
     applications.emacs.enable = true;
+    v12n.emulation = {
+      enable = true;
+      systems = [
+        "aarch64-linux"
+        "riscv64-linux"
+      ];
+    };
 
     tailscale = {
       enable = true;
-      exitNode = true;
       ssh = true;
       auth = true;
     };
@@ -70,14 +71,49 @@
     }
   ];
 
-  #fonts.fontconfig = {
-  #  hinting.enable = true;
-  #  subpixel.rgba = "rgb";
-  #  hinting.autohint = true;
-  #  hinting.style = "full";
-  #};
-  #boot.kernelPackages = pkgs.linuxPackages.packages.linux_6_11;
+  nix = {
+    buildMachines = [
+      {
+        hostName = "oreamnos";
+        system = "x86_64-linux";
+        maxJobs = 8;
+        speedFactor = 1;
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+          "kvm"
+        ];
+        mandatoryFeatures = [ ];
+        sshUser = "humaid";
+        sshKey = "/home/humaid/.ssh/id_ed25519_build";
+      }
+    ];
 
+    distributedBuilds = true;
+  };
+
+  programs.ssh = {
+    startAgent = true;
+    extraConfig = ''
+      Host oreamnos
+           user humaid
+           IdentityFile /home/humaid/.ssh/id_ed25519_build
+    '';
+
+    knownHosts = {
+      oreamnos = {
+        hostNames = [
+          "oreamnos"
+          "100.83.164.46"
+          "oreamnos.barred-banana.ts.net"
+        ];
+        publicKey = "oreamnos ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHnC2ZPG75+HmEpS6OYpYU4OG6G8rwiEKDNXudtTAr0u";
+      };
+    };
+  };
+  hardware.keyboard.zsa.enable = true;
+  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_11;
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";
 }

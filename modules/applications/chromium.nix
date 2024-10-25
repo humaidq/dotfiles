@@ -26,7 +26,7 @@ in
           "--extension-mime-request-handling=always-prompt-for-install"
           "--no-default-browser-check"
           "--bookmark-bar-ntp"
-          "--custom-ntp=https://kagi.com"
+          "--custom-ntp=https://alq.ae"
           "--close-confirmation"
           "--disable-search-engine-collection"
           "--fingerprinting-canvas-image-data-noise"
@@ -83,13 +83,6 @@ in
               id = "nngceckbapebfimnlniiiahkandclblb";
               sha256 = "sha256:0wq2bhqp1qk22rcb3p9pw8igv9qn87lznx3pm084sqjr39z2zd7v";
               version = "2024.9.0";
-            })
-
-            # Kagi Search
-            (createChromiumExtension {
-              id = "cdglnehniifkbagbbombnjghhcihifij";
-              sha256 = "sha256:1dyrb1jzj770jnv20fp8d5y42gr9880jydlhzzymprqwa1in5zkw";
-              version = "1.2.1";
             })
           ];
       };

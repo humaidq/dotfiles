@@ -21,6 +21,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    fonts.packages = with pkgs; [
+      cherry
+      spleen
+    ];
     programs.sway = {
       enable = true;
       wrapperFeatures.gtk = true; # so that gtk works properly
@@ -64,6 +68,10 @@ in
 
     home-manager.users."${vars.user}" = {
       programs = {
+        zathura = {
+          enable = true;
+
+        };
         i3status = {
           enable = true;
           modules = {
@@ -85,7 +93,7 @@ in
             main = {
               term = "xterm-256color";
               dpi-aware = "yes";
-              font = "JetBrainsMono Nerd Font:size=8";
+              font = "spleen:size=12";
             };
           };
         };
@@ -124,7 +132,7 @@ in
         timeouts = [
           {
             timeout = 250;
-            command = ''${lib.getExe pkgs.libnotify} -t 30000 -- "Screen will lock soon..."'';
+            command = ''${pkgs.libnotify}/bin/notify-send -t 30000 -- "Screen will lock soon..."'';
           }
           {
             timeout = 300;
@@ -142,7 +150,7 @@ in
           global = {
             origin = "top-right";
             frame_color = "#130e24";
-            font = "JetBrainsMono Nerd Font 11";
+            font = "cherry 11";
           };
           urgency_normal = {
             background = "#1d2e86";
@@ -185,17 +193,22 @@ in
             "XF86AudioMicMute" = "exec amixer set Capture toggle";
             "Print" = "exec ${screen}/bin/screen";
             "XF86Sleep" = "exec systemctl suspend";
+            "F7" = "exec ${lib.getExe pkgs.wdisplays}";
           };
           modifier = mod;
           floating.modifier = mod;
           output."*".bg = "${./wallhaven-13mk9v.jpg} fill #000000";
           fonts = {
-            names = [ "JetBrainsMono Nerd Font" ];
-            size = 11.0;
+            names = [ "cherry" ];
+            size = 10.0;
           };
           defaultWorkspace = "1";
           bars = [
             {
+              fonts = {
+                names = [ "cherry" ];
+                size = 10.0;
+              };
               statusCommand = "${pkgs.i3status}/bin/i3status";
               colors = {
                 background = "#130e24";

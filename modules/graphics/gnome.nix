@@ -47,6 +47,9 @@ in
             ];
             welcome-dialog-last-shown-version = "9999";
           };
+          "org/gnome/mutter" = {
+            edge-tiling = true;
+          };
           "org/gnome/desktop/privacy" = {
             remember-app-usage = false;
             remember-recent-files = true;
@@ -63,6 +66,7 @@ in
             document-font-name = "Merriweather 11";
             font-name = "IBM Plex Sans 11";
             monospace-font-name = "JetBrainsMono Nerd Font 13";
+            enable-hot-corners = true;
           };
           "org/gnome/desktop/background" = {
             picture-uri = "file://${./wallhaven-13mk9v.jpg}";
