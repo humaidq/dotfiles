@@ -125,6 +125,9 @@
 
       # iphone yubi
       "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBBXJc+Vs41Of/67NWuWRgk9LHX/cdWKVgviqbCVrH/nmllcaoBGDnMTZH5/+C+TZe7IOjyJ+VHSwAmDyY1rgzCgAAAALdGVybWl1cy5jb20="
+
+      # root serow (buildmachine)
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFhlcX+CiEb8q/NSuy9vOtu5RwFfUGui773wcWWgkf1 root@serow"
     ];
   };
 
@@ -149,6 +152,17 @@
 
   systemd.enableEmergencyMode = false;
 
+  #environment.persistence."/persist-svc" = {
+  #  hideMounts = true;
+  #  directories = [
+  #    {
+  #      directory = "/var/lib/immich";
+  #      user = "immich";
+  #      mode = "0700";
+  #    }
+  #  ];
+  #};
+
   # impermanence setup
   environment.persistence."/persist" = {
     hideMounts = true;
@@ -158,9 +172,19 @@
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
       #"/var/lib/ollama"
+      {
+        directory = "/var/lib/immich";
+        user = "immich";
+        mode = "0700";
+      }
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"
+      {
+        directory = "/var/lib/seafile";
+        user = "seafile";
+        mode = "0700";
+      }
       {
         directory = "/var/lib/hydra";
         user = "hydra";
@@ -250,6 +274,7 @@
   sops.age.keyFile = lib.mkForce "/persist/var/lib/sops-nix/key.txt";
 
   fileSystems."/persist".neededForBoot = true;
+  fileSystems."/persist-svc".neededForBoot = true;
 
   # Reset root on every boot
   boot.supportedFilesystems = [ "zfs" ];

@@ -85,6 +85,7 @@ in
       domain = "yt.alq.ae";
       port = 4747;
       nginx.enable = true;
+      sig-helper.enable = true;
       settings = {
         domain = "yt.alq.ae";
         https_only = true;
@@ -107,6 +108,12 @@ in
           ];
         };
       };
+    };
+
+    services.redlib = {
+      enable = true;
+      port = 3014;
+      address = "127.0.0.1";
     };
   };
 }

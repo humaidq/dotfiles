@@ -42,11 +42,8 @@ in
       recommendedOptimisation = true;
       virtualHosts = lib.mkMerge [
         (mkRP "" "8082")
-
         (mkRP "cache" "5000")
-
         (mkRP "sso" "3322")
-
         (mkRP "dns" "3333")
 
         (mkRP "vault" "8222")
@@ -83,17 +80,62 @@ in
 
         (mkRP "search" "4848")
         (mkRP "git" "3939")
-        (mkRP "paperless" "28981")
+        # (mkRP "seafile" "3014")
+        (mkRP "reddit" "3014")
 
         {
           "cloud.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
           };
-          "cache.huma.id" = {
+          "paperless.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
 
+            extraConfig = ''
+              # allow large file uploads
+              client_max_body_size 50000M;
+                # These configuration options are required for WebSockets to work.
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+
+                proxy_redirect off;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Host $server_name;
+                add_header Referrer-Policy "strict-origin-when-cross-origin";
+            '';
             locations."/" = {
-              proxyPass = "http://127.0.0.1:5000";
+              proxyPass = "http://127.0.0.1:28981";
+              extraConfig = '''';
+            };
+          };
+          "img.alq.ae" = {
+            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+
+            extraConfig = ''
+              # allow large file uploads
+              client_max_body_size 50000M;
+
+              # Set headers
+              proxy_set_header Host              $host;
+              proxy_set_header X-Real-IP         $remote_addr;
+              proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+
+              # enable websockets: http://nginx.org/en/docs/http/websocket.html
+              proxy_http_version 1.1;
+              proxy_set_header   Upgrade    $http_upgrade;
+              proxy_set_header   Connection "upgrade";
+              proxy_redirect     off;
+
+              # set timeout
+              proxy_read_timeout 600s;
+              proxy_send_timeout 600s;
+              send_timeout       600s;
+            '';
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:3011";
             };
           };
           "${config.services.invidious.domain}" = {
@@ -211,6 +253,14 @@ in
         }
         {
           "Resources" = [
+            {
+              "Images" = {
+                description = "Photo Backups & Albums (Immich)";
+                href = "https://img.alq.ae/";
+                siteMonitor = "https://img.alq.ae/";
+                icon = "mdi-image-album";
+              };
+            }
             {
               "Cloud" = {
                 description = "Drive Storage & Office Suite";

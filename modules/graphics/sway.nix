@@ -89,13 +89,20 @@ in
             };
           };
         };
-      };
-      programs.swaylock = {
-        enable = true;
-        settings = {
-          color = "130e24";
-          line-color = "ffffff";
-          show-failed-attempts = true;
+        swaylock = {
+          enable = true;
+          settings = {
+            color = "130e24";
+            line-color = "ffffff";
+            show-failed-attempts = true;
+          };
+        };
+        rbw = {
+          enable = true;
+          settings = {
+            email = "me@huma.id";
+            base_url = "https://vault.alq.ae";
+          };
         };
       };
       services.swayidle = {

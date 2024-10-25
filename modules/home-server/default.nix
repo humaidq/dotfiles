@@ -11,6 +11,7 @@
     ./web-server.nix
     ./nextcloud.nix
     ./db.nix
+    ./immich.nix
   ];
 
   options.sifr.home-server = {

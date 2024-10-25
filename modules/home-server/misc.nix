@@ -72,6 +72,7 @@ in
           safe_search = 1;
           autocomplete = "google";
           default_lang = "en";
+          #formats = [ "html" "json"];
         };
         enabled_plugins = [
           "Hostnames plugin"
@@ -99,17 +100,36 @@ in
       };
     };
 
+    services.seafile = {
+      enable = false;
+      adminEmail = "me@huma.id";
+      initialAdminPassword = "admin";
+      ccnetSettings.General.SERVICE_URL = "https://seafile.alq.ae";
+      seafileSettings = {
+        fileserver.port = 3012;
+      };
+    };
+
     services.paperless = {
       enable = true;
+      dataDir = "/persist-svc/paperless";
+      passwordFile = config.sops.secrets."paperless/su-pass".path;
       settings = {
         PAPERLESS_CONSUMER_IGNORE_PATTERN = [
           ".DS_STORE/*"
           "desktop.ini"
         ];
         PAPERLESS_DBHOST = "/run/postgresql";
+        PAPERLESS_URL = "https://paperless.alq.ae";
+        PAPERLESS_USE_X_FORWARD_HOST = true;
+        PAPERLESS_USE_X_FORWARD_PORT = true;
       };
     };
 
+    sops.secrets."paperless/su-pass" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      mode = "600";
+    };
     sops.secrets."authentik/env" = {
       sopsFile = ../../secrets/home-server.yaml;
       mode = "600";

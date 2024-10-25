@@ -5,7 +5,7 @@ in
 {
   config = lib.mkIf cfg.enable {
     services.hydra = {
-      enable = true;
+      enable = false;
       hydraURL = "https://cache.alq.ae";
       port = 3300;
       notificationSender = "hydra@localhost"; # e-mail of hydra service
@@ -32,24 +32,24 @@ in
       mode = "600";
     };
     nix = {
-      buildMachines = [
-        {
-          hostName = "localhost";
-          systems = [
-            "x86_64-linux"
-            "aarch64-linux"
-            "riscv64-linux"
-          ];
-          supportedFeatures = [
-            "kvm"
-            "nixos-test"
-            "big-parallel"
-            "benchmark"
-            "local"
-          ];
-          maxJobs = 1;
-        }
-      ];
+      #buildMachines = [
+      #  {
+      #    hostName = "localhost";
+      #    systems = [
+      #      "x86_64-linux"
+      #      "aarch64-linux"
+      #      "riscv64-linux"
+      #    ];
+      #    supportedFeatures = [
+      #      "kvm"
+      #      "nixos-test"
+      #      "big-parallel"
+      #      "benchmark"
+      #      "local"
+      #    ];
+      #    maxJobs = 1;
+      #  }
+      #];
     };
 
     services.harmonia = {

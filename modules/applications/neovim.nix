@@ -80,7 +80,7 @@ in
                 enable = dev;
                 servers = {
                   # Programming & Scripts
-                  golangci-lint-ls.enable = dev;
+                  golangci_lint_ls.enable = dev;
                   gopls.enable = dev;
                   #bashls.enable = dev;
                   nixd = {
@@ -88,7 +88,7 @@ in
                     rootDir = "require('lspconfig.util').root_pattern('flake.nix','.git')";
                   };
                   clangd.enable = dev;
-                  rust-analyzer = {
+                  rust_analyzer = {
                     enable = dev;
                     installCargo = dev;
                     installRustc = dev;
@@ -104,7 +104,7 @@ in
                   html.enable = dev;
                   eslint.enable = dev;
                   cssls.enable = dev;
-                  ts-ls.enable = dev;
+                  ts_ls.enable = dev;
                 };
               };
 

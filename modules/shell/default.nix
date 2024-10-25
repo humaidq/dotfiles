@@ -119,7 +119,12 @@ in
             }
 
             function e() {
-              emacsclient -t '$1'
+              args="-c"
+              if [[ -n $DISPLAY ]]; then
+                 args="-t"
+              fi
+
+              emacsclient $args '$1'
             }
 
             function mkcd() {
