@@ -45,46 +45,35 @@ in
         (mkRP "cache" "5000")
         (mkRP "sso" "3322")
         (mkRP "dns" "3333")
-
         (mkRP "vault" "8222")
-
         (mkRP "grafana" "3000")
-
         (mkRP "ai" "2343")
-
         (mkRP "ollama" "11434")
-
         (mkRP "deluge" "8112")
-
         (mkRP "radarr" "7878")
-
         (mkRP "sonarr" "8989")
-
         (mkRP "prowlarr" "9696")
-
+        (mkRP "bazarr" "6767")
         (mkRP "hydra" "3300")
-
         (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
-
         (mkRP "books" "5555")
-
         (mkRP "audiobooks" "8000")
-
         (mkRP "tv" "8096")
-
         (mkRP "recipes" "9000")
-
         (mkRP "pdf" "8084")
-
         (mkRP "yt" "4747")
-
         (mkRP "search" "4848")
         (mkRP "git" "3939")
         # (mkRP "seafile" "3014")
         (mkRP "reddit" "3014")
+        (mkRP "dav" "5232")
+        (mkRP "onlyoffice" "3015")
 
         {
           "cloud.alq.ae" = {
+            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+          };
+          "wiki.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
           };
           "paperless.alq.ae" = {
@@ -403,6 +392,14 @@ in
                 href = "https://prowlarr.alq.ae/";
                 siteMonitor = "https://prowlarr.alq.ae/";
                 icon = "mdi-format-list-group";
+              };
+            }
+            {
+              "Bazarr" = {
+                description = "Captions Fetching Service";
+                href = "https://bazarr.alq.ae/";
+                siteMonitor = "https://bazarr.alq.ae/";
+                icon = "mdi-closed-caption";
               };
             }
             {

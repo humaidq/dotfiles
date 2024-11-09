@@ -71,6 +71,7 @@ in
     services.sonarr = {
       enable = true;
     };
+    services.bazarr.enable = true;
     services.jellyfin = {
       enable = true;
     };

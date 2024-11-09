@@ -31,11 +31,11 @@ in
         databaseUrl = "postgres:///vaultwarden?host=/var/run/postgresql";
 
         # Mail
-        SMTP_HOST = "in-v3.mailjet.com";
-        SMTP_PORT = 25;
-        SMTP_SECURITY = "starttls";
-        SMTP_FROM = "server@alq.ae";
-        SMTP_FROM_NAME = "alq.ae Vaultwarden Server";
+        SMTP_HOST = "smtp.migadu.com";
+        SMTP_PORT = 465;
+        SMTP_SECURITY = "force_tls";
+        SMTP_FROM = "vault@alq.ae";
+        SMTP_FROM_NAME = "VaultWarden (Do Not Reply)";
       };
       environmentFile = "${config.sops.secrets."vaultwarden/env".path}";
     };

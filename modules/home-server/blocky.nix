@@ -47,6 +47,9 @@ in
           mapping = {
             "alq.ae" = "100.83.164.46,192.168.1.250";
             #"cache.huma.id" = "100.83.164.46,192.168.1.250";
+            # Fix TII sites
+            "jira.tii.ae" = "10.151.12.77";
+            "confluence.tii.ae" = "10.151.12.79";
           };
         };
         blocking = {
@@ -58,7 +61,7 @@ in
           blockType = "zeroIp";
           clientGroupsBlock = {
             default = [
-              "hagezi"
+              "general"
               "steven"
               "extras"
               "ips"
@@ -66,7 +69,7 @@ in
           };
           denylists = {
             # Hagezi block lists: https://github.com/hagezi/dns-blocklists?tab=readme-ov-file
-            hagezi = [
+            general = [
               # Pro List
               "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.txt"
               # Threat Intelligence Feeds
@@ -77,7 +80,6 @@ in
               "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads.txt"
               # Fake Sites & Scams
               "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
-
             ];
 
             steven = [
@@ -102,12 +104,7 @@ in
             ];
           };
           allowlists = {
-            general = [
-              "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
-              "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
-              "https://blocklistproject.github.io/Lists/torrent.txt"
-            ];
-            custom =
+            general =
               let
                 customlist = pkgs.writeText "customlist" ''
                   rargb.to
@@ -117,7 +114,12 @@ in
                   ipv4announce.sktorrent.eu
                 '';
               in
-              [ "${customlist}" ];
+              [
+                "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
+                "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
+                "https://blocklistproject.github.io/Lists/torrent.txt"
+                "${customlist}"
+              ];
           };
         };
       };

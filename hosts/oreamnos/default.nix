@@ -186,6 +186,11 @@
         mode = "0700";
       }
       {
+        directory = "/var/lib/radicale";
+        user = "radicale";
+        mode = "0700";
+      }
+      {
         directory = "/var/lib/hydra";
         user = "hydra";
         mode = "0700";
@@ -202,7 +207,13 @@
         user = "redis-paperless";
         mode = "0740";
       }
+      {
+        directory = "/var/lib/redis-immich";
+        user = "immich";
+        mode = "0740";
+      }
 
+      "/var/lib/dokuwiki"
       {
         directory = "/var/lib/private";
         mode = "0700";
