@@ -25,7 +25,18 @@ in
       cherry
       spleen
     ];
-    environment.systemPackages = with pkgs; [ rofi ];
+    environment.systemPackages = with pkgs; [
+      rofi
+      xwayland
+      thunderbird
+      gnome-online-accounts-gtk
+      gnome-calendar
+      gnome-contacts
+      geary
+    ];
+    services.xserver.displayManager.lightdm.enable = false;
+    services.gnome.gnome-online-accounts.enable = true;
+    services.gnome.gnome-keyring.enable = true;
     programs.sway = {
       enable = true;
       wrapperFeatures.gtk = true; # so that gtk works properly
@@ -44,7 +55,7 @@ in
         kanshi # auto-configure display outputs
         wdisplays
         wl-clipboard
-        blueberry
+        #blueberry
         sway-contrib.grimshot # screenshots
         wtype
 
@@ -68,10 +79,11 @@ in
     };
 
     home-manager.users."${vars.user}" = {
+
+      # home manager programs
       programs = {
         zathura = {
           enable = true;
-
         };
         i3status = {
           enable = true;
@@ -111,52 +123,57 @@ in
           settings = {
             email = "me@huma.id";
             base_url = "https://vault.alq.ae";
+            pinentry = pkgs.pinentry-tty;
           };
         };
       };
-      services.swayidle = {
-        enable = true;
-        events = [
-          {
-            event = "before-sleep";
-            command = "${lib.getExe pkgs.swaylock} -f";
-          }
-          {
-            event = "lock";
-            command = "${lib.getExe pkgs.swaylock} -f";
-          }
-          {
-            event = "unlock";
-            command = "${pkgs.procps}/bin/pkill -USR1 swaylock";
-          }
-        ];
-        timeouts = [
-          {
-            timeout = 250;
-            command = ''${pkgs.libnotify}/bin/notify-send -t 30000 -- "Screen will lock soon..."'';
-          }
-          {
-            timeout = 300;
-            command = "${pkgs.swaylock}/bin/swaylock -f";
-          }
-          {
-            timeout = 600;
-            command = "${pkgs.systemd}/bin/systemctl suspend";
-          }
-        ];
-      };
-      services.dunst = {
-        enable = true;
-        settings = {
-          global = {
-            origin = "top-right";
-            frame_color = "#130e24";
-            font = "cherry 11";
-          };
-          urgency_normal = {
-            background = "#1d2e86";
-            foreground = "#fff";
-            timeout = 10;
+
+      # home manager services
+      services = {
+        swayidle = {
+          enable = true;
+          events = [
+            {
+              event = "before-sleep";
+              command = "${lib.getExe pkgs.swaylock} -f";
+            }
+            {
+              event = "lock";
+              command = "${lib.getExe pkgs.swaylock} -f";
+            }
+            {
+              event = "unlock";
+              command = "${pkgs.procps}/bin/pkill -USR1 swaylock";
+            }
+          ];
+          timeouts = [
+            {
+              timeout = 250;
+              command = ''${pkgs.libnotify}/bin/notify-send -t 30000 -- "Screen will lock soon..."'';
+            }
+            {
+              timeout = 300;
+              command = "${pkgs.swaylock}/bin/swaylock -f";
+            }
+            {
+              timeout = 600;
+              command = "${pkgs.systemd}/bin/systemctl suspend";
+            }
+          ];
+        };
+        dunst = {
+          enable = true;
+          settings = {
+            global = {
+              origin = "top-right";
+              frame_color = "#130e24";
+              font = "cherry 11";
+            };
+            urgency_normal = {
+              background = "#1d2e86";
+              foreground = "#fff";
+              timeout = 10;
+            };
           };
         };
       };
@@ -175,6 +192,9 @@ in
               middle_emulation = "enabled";
             };
           };
+          seat."*" = {
+            xcursor_theme = "Adwaita 24";
+          };
 
           terminal = "foot";
           # https://github.com/nix-community/home-manager/blob/master/modules/services/window-managers/i3-sway/sway.nix
@@ -184,7 +204,7 @@ in
             "${mod}+Shift+r" = "reload";
             "${mod}+p" = "exec ${pkgs.dmenu}/bin/dmenu_run";
             "${mod}+o" = "exec ${lib.getExe pkgs.rofi-rbw}";
-            "${mod}+l" = "exec ${lib.getExe pkgs.swaylock} -f";
+            "${mod}+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f";
 
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
@@ -193,9 +213,10 @@ in
             "XF86AudioLowerVolume" = "exec amixer set Master 5%-";
             "XF86AudioMute" = "exec amixer set Master toggle";
             "XF86AudioMicMute" = "exec amixer set Capture toggle";
-            "Print" = "exec ${screen}/bin/screen";
             "XF86Sleep" = "exec systemctl suspend";
-            "F7" = "exec ${lib.getExe pkgs.wdisplays}";
+            "XF86Display" = "exec ${lib.getExe pkgs.wdisplays}";
+
+            "Print" = "exec ${screen}/bin/screen";
           };
           modifier = mod;
           floating.modifier = mod;
@@ -204,13 +225,14 @@ in
             names = [ "cherry" ];
             size = 10.0;
           };
-          defaultWorkspace = "1";
+          defaultWorkspace = "workspace number 1";
           bars = [
             {
               fonts = {
                 names = [ "cherry" ];
                 size = 10.0;
               };
+              position = "top";
               statusCommand = "${pkgs.i3status}/bin/i3status";
               colors = {
                 background = "#130e24";

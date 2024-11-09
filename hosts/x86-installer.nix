@@ -11,7 +11,7 @@
   nixpkgs.hostPlatform = "x86_64-linux";
 
   sifr = {
-    graphics.gnome.enable = true;
+    graphics.sway.enable = true;
     security.harden = false;
     profiles.base = true;
     profiles.basePlus = false;

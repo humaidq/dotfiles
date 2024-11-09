@@ -62,7 +62,7 @@ in
 
       # Make system look better overall when we have a graphical system
       boot.plymouth = {
-        enable = true;
+        enable = false;
         logo = ../../assets/sifr-icon-blue.png;
       };
 
@@ -77,11 +77,11 @@ in
 
         gtk = {
           enable = true;
-          #theme.name = "Adwaita-dark";
-          #gtk3.extraConfig = {
-          #  gtk-application-prefer-dark-theme = true;
-          #  gtk-cursor-theme-name = "Adwaita";
-          #};
+          theme.name = "Adwaita-dark";
+          gtk3.extraConfig = {
+            gtk-application-prefer-dark-theme = true;
+            gtk-cursor-theme-name = "Adwaita";
+          };
           gtk3.bookmarks = [
             "file:///home/${vars.user}/docs"
             "file:///home/${vars.user}/repos"

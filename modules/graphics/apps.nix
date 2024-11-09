@@ -24,26 +24,26 @@ in
             noto-fonts-cjk-sans
             noto-fonts-emoji
             noto-fonts-extra
-            source-code-pro
-            source-sans-pro
-            source-serif-pro
+            #source-code-pro
+            #source-sans-pro
+            #source-serif-pro
             amiri
             #corefonts
             roboto
-            ubuntu_font_family
+            #ubuntu_font_family
             fira-code
             cantarell-fonts
             freefont_ttf
             inconsolata
             liberation_ttf
-            lmodern
+            #lmodern
             ttf_bitstream_vera
             inter
-            ibm-plex
+            #ibm-plex
             merriweather
-            jetbrains-mono
+            #jetbrains-mono
             # Bitmap fonts
-            terminus_font
+            #terminus_font
             cherry
             spleen
           ]
@@ -64,7 +64,7 @@ in
         gimp
         #pinta
         inkscape
-        libreoffice
+        #libreoffice
         rpi-imager
         prusa-slicer
         #gnome-firmware
@@ -74,18 +74,18 @@ in
         #evince
         #gnome-system-monitor
         #gnome-text-editor
-        loupe
+        #loupe
 
         # GNOME circle apps
-        curtail
-        eyedropper
+        #curtail
+        #eyedropper
         #gaphor
         fragments
 
         #khronos
         #hieroglyphic
         impression
-        junction
+        #junction
         #letterpress
         #lorem
         #gnome-obfuscate

@@ -136,7 +136,7 @@ in
         git-extras
         git-lfs
         git-privacy
-        tig
+        #tig
 
         # Nix
         nix-diff
