@@ -3,6 +3,7 @@
   lib,
   inputs,
   pkgs,
+  vars,
   ...
 }:
 {
@@ -114,6 +115,33 @@
   };
   hardware.keyboard.zsa.enable = true;
   boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_11;
+  environment.memoryAllocator.provider = "graphene-hardened";
+
+  home-manager.users."${vars.user}" = {
+    services.kanshi = {
+      enable = true;
+      profiles = {
+        internal.outputs = [
+          {
+            criteria = "Lenovo Group Limited 0x40BA Unknown";
+            status = "enable";
+          }
+        ];
+        desk.outputs = [
+          {
+            criteria = "Lenovo Group Limited 0x40BA Unknown";
+            status = "disable";
+          }
+          {
+            criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
+            status = "enable";
+            mode = "3840x2160";
+          }
+        ];
+      };
+    };
+  };
+
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";
 }
