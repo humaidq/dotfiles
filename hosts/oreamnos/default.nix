@@ -127,14 +127,17 @@
   networking.firewall.allowedTCPPorts = [
     5000
     22
+    2222
     80
     443
     53
     58846
+    3300
   ];
   networking.firewall.allowedUDPPorts = [
     123
     22
+    2222
     53
     58846
   ];
