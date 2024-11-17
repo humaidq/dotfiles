@@ -116,15 +116,8 @@
   users.users.${vars.user} = {
     isNormalUser = true;
     openssh.authorizedKeys.keys = [
-      # TODO remove
-      "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBP6h78HwApxcrPEothfFY1m0kLwroeQWpskYGsEVrxnXtohd+FBiWmer9zN37FtMyUI8b3y3LVouuKciYTlPKGs= ipadpro"
-      "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBD5+afJhtncZlx5HfXcrqqEDjNAmo7ZtatgM46ao+EcBg/vh8m0+aNb/ZdrBKqiCnkHOkN6R4gacWpoALgZ9BmA="
-
-      # ipad yubi
-      "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBKDr2x2BnB/vcomSKPBzLts3QY3Vu4TSruYzi+Vy2M3tJ+Q9ppL35ru/QuDezzeKv6gSDsoBE1LE7Uo0ok3OkywAAAALdGVybWl1cy5jb20="
-
-      # iphone yubi
-      "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBBXJc+Vs41Of/67NWuWRgk9LHX/cdWKVgviqbCVrH/nmllcaoBGDnMTZH5/+C+TZe7IOjyJ+VHSwAmDyY1rgzCgAAAALdGVybWl1cy5jb20="
+      # pixel
+      "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBFp9iH7iZI8NyYsRr8pV0n7BxYCPMvB1iGSfrVlLieIkRtMZi6T7VfzhNNz9HyppgFEyl2Y1d3RwIbxgFnY7XxwAAAALdGVybWl1cy5jb20="
 
       # root serow (buildmachine)
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFhlcX+CiEb8q/NSuy9vOtu5RwFfUGui773wcWWgkf1 root@serow"
