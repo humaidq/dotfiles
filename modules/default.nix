@@ -149,6 +149,8 @@ in
         options = "--delete-older-than 30d";
       };
 
+      channel.enable = false;
+
       # API Rate limit for GitHub
       extraOptions = ''
         !include ${config.sops.secrets.github-token.path}
@@ -169,9 +171,17 @@ in
       # Allow proprietary packages and packages marked as broken
       config = {
         allowUnfree = true;
-        allowBroken = true;
-        allowUnsupportedSystem = true;
-        permittedInsecurePackages = [ "nix-2.24.5" ];
+        #allowBroken = true;
+        #allowUnsupportedSystem = true;
+        permittedInsecurePackages = [
+          #  "nix-2.24.5"
+
+          # For Sonarr
+          "aspnetcore-runtime-wrapped-6.0.36"
+          "aspnetcore-runtime-6.0.36"
+          "dotnet-sdk-wrapped-6.0.428"
+          "dotnet-sdk-6.0.428"
+        ];
       };
       overlays = [
 

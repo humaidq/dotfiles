@@ -320,8 +320,6 @@
     pools = [ "dpool" ];
   };
 
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_11;
-
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "24.05";
 }

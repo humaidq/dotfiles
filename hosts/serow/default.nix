@@ -120,25 +120,36 @@
   home-manager.users."${vars.user}" = {
     services.kanshi = {
       enable = true;
-      profiles = {
-        internal.outputs = [
-          {
-            criteria = "Lenovo Group Limited 0x40BA Unknown";
-            status = "enable";
-          }
-        ];
-        desk.outputs = [
-          {
-            criteria = "Lenovo Group Limited 0x40BA Unknown";
-            status = "disable";
-          }
-          {
-            criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
-            status = "enable";
-            mode = "3840x2160";
-          }
-        ];
-      };
+
+      settings = [
+        {
+          profile = {
+            name = "internal";
+            outputs = [
+              {
+                criteria = "Lenovo Group Limited 0x40BA Unknown";
+                status = "enable";
+              }
+            ];
+          };
+        }
+        {
+          profile = {
+            name = "desk";
+            outputs = [
+              {
+                criteria = "Lenovo Group Limited 0x40BA Unknown";
+                status = "disable";
+              }
+              {
+                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
+                status = "enable";
+                mode = "3840x2160";
+              }
+            ];
+          };
+        }
+      ];
     };
   };
 
