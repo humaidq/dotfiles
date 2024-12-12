@@ -309,6 +309,15 @@
     }
   ];
 
+  security.pam.loginLimits = [
+    {
+      domain = "*";
+      type = "-";
+      item = "nofile";
+      value = "9192";
+    }
+  ];
+
   services.iperf3 = {
     enable = true;
     openFirewall = true;

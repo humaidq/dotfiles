@@ -74,14 +74,14 @@ in
             # uBlock Origin
             (createChromiumExtension {
               id = "cjpalhdlnbpafiamejdnhcphjbkeiagm";
-              sha256 = "sha256:06k70762vh79ak1d2gsrx9faadzj0gjqa4yz9x7vk9m7k85jp69p";
+              sha256 = "sha256:0lj0b5a2vga9x8nr12f9ijv1n0f8zcyzml19bzvw722jb98mic88";
               version = "1.59.0";
             })
 
             # Bitwarden
             (createChromiumExtension {
               id = "nngceckbapebfimnlniiiahkandclblb";
-              sha256 = "sha256:0wq2bhqp1qk22rcb3p9pw8igv9qn87lznx3pm084sqjr39z2zd7v";
+              sha256 = "sha256:0kxkjnac3h1vcjjn8x5c1dpplp3hk1wi1j53qa7h2yyf21yns92h";
               version = "2024.9.0";
             })
           ];
