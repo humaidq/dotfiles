@@ -18,6 +18,7 @@
         host-goral = import ./goral;
         host-serow = import ./serow;
         host-duisk = import ./duisk;
+        host-lighthouse = import ./lighthouse;
         host-tahr = import ./tahr;
         host-boerbok = import ./boerbok;
         host-argali = import ./argali;
@@ -44,6 +45,10 @@
         duisk = lib.nixosSystem {
           inherit specialArgs;
           modules = [ self.nixosModules.host-duisk ];
+        };
+        lighthouse = lib.nixosSystem {
+          inherit specialArgs;
+          modules = [ self.nixosModules.host-lighthouse ];
         };
         tahr = lib.nixosSystem {
           inherit specialArgs;
