@@ -17,7 +17,7 @@
   # My configuration specific settings
   sifr = {
     graphics = {
-      #gnome.enable = true;
+      gnome.enable = true;
       sway.enable = true;
       apps = true;
     };

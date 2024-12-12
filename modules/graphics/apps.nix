@@ -70,6 +70,12 @@ in
         #gnome-firmware
         bitwarden-desktop
 
+        gnome-calendar
+        gnome-contacts
+        geary
+        evolution
+        errands
+        libreoffice
         # Re-add GNOME apps that are needed
         #evince
         #gnome-system-monitor

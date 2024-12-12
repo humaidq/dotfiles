@@ -57,7 +57,7 @@ in
 
       services.xserver.enable = true;
       services.xserver.excludePackages = [ pkgs.xterm ];
-      #services.xserver.displayManager.gdm.enable = true;
+      services.xserver.displayManager.gdm.enable = true;
       networking.networkmanager.enable = true;
 
       # Make system look better overall when we have a graphical system

@@ -52,7 +52,7 @@ in
       }
     ];
     services.avahi = {
-      enable = false;
+      enable = true;
       nssmdns4 = true;
       nssmdns6 = true;
       publish = {
@@ -60,6 +60,22 @@ in
         addresses = true;
       };
     };
+
+    location.provider = "geoclue2";
+
+    services.geoclue2 = {
+      enable = true;
+      geoProviderUrl = "https://beacondb.net/v1/geolocate";
+      submissionUrl = "https://beacondb.net/v2/geosubmit";
+      submitData = true;
+
+      #appConfig.gammastep = {
+      #  isAllowed = true;
+      #  isSystem = false;
+      #};
+    };
+
+    #services.automatic-timezoned.enable = true;
 
     specialisation.server-mode.configuration = {
       services.getty.helpLine = lib.mkOverride 10 ''
