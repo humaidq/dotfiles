@@ -86,7 +86,7 @@ in
       domain = "yt.alq.ae";
       port = 4747;
       nginx.enable = true;
-      sig-helper.enable = true;
+      sig-helper.enable = false;
       settings = {
         domain = "yt.alq.ae";
         https_only = true;
