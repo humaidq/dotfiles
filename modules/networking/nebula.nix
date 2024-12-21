@@ -6,11 +6,25 @@ in
   options.sifr.net = {
     sifr0 = lib.mkEnableOption "sifr0 overlay network";
     isLighthouse = lib.mkEnableOption "Lighthouse mode";
+    node-crt = lib.mkOption {
+      description = "Nebula network node certificate";
+      type = lib.types.str;
+      default = "/etc/nebula/node.crt";
+    };
+    node-key = lib.mkOption {
+      description = "Nebula network node key";
+      type = lib.types.str;
+      default = "/etc/nebula/node.key";
+    };
   };
+
   config = {
-    networking.firewall.allowedUDPPorts = lib.mkIf (cfg.enable && cfg.isLighthouse) [
-      4242
-    ];
+    networking.firewall = {
+      trustedInterfaces = lib.mkIf cfg.enable [ "sifr0" ];
+      allowedUDPPorts = lib.mkIf (cfg.enable && cfg.isLighthouse) [
+        4242
+      ];
+    };
     services.nebula.networks = {
       sifr0 = lib.mkIf cfg.sifr0 {
         enable = true;
@@ -19,9 +33,9 @@ in
         tun.device = "sifr0";
         listen.host = "[::]";
 
-        cert = "/etc/nebula/node.crt";
-        key = "/etc/nebula/node.key";
-        ca = "/etc/nebula/ca.crt";
+        cert = cfg.node-crt;
+        key = cfg.node-key;
+        ca = ./ca-sifr0.crt;
 
         lighthouses = lib.mkIf (!cfg.isLighthouse) [ "10.10.0.10" ];
         relays = lib.mkIf (!cfg.isLighthouse) [ "10.10.0.10" ];

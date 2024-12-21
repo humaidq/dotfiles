@@ -2,6 +2,7 @@
   self,
   vars,
   lib,
+  config,
   ...
 }:
 {
@@ -22,10 +23,24 @@
   };
   services.tailscale.useRoutingFeatures = "both";
 
+  # Nebula keys
+  sops.secrets."lighthouse_crt" = {
+    sopsFile = ../../secrets/lighthouse.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."lighthouse_key" = {
+    sopsFile = ../../secrets/lighthouse.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+
   sifr = {
     net = {
       sifr0 = true;
       isLighthouse = true;
+      node-crt = config.sops.secrets."lighthouse_crt".path;
+      node-key = config.sops.secrets."lighthouse_key".path;
     };
     profiles.basePlus = true;
     profiles.server = true;
