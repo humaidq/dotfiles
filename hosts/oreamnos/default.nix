@@ -150,15 +150,12 @@
     80
     443
     53
-    58846
-    3300
   ];
   networking.firewall.allowedUDPPorts = [
     123
     22
     2222
     53
-    58846
   ];
 
   services.chrony.extraConfig = lib.mkAfter ''
@@ -346,6 +343,45 @@
     enable = true;
     interval = "weekly";
     pools = [ "dpool" ];
+  };
+
+  services.nebula.networks.sifr0.firewall = {
+    inbound = [
+      # Time Server
+      {
+        group = "any";
+        port = "123";
+        proto = "udp";
+      }
+      # DNS
+      {
+        group = "any";
+        port = "53";
+        proto = "udp";
+      }
+      # Forgejo SSH
+      {
+        group = "any";
+        port = "2222";
+        proto = "any";
+      }
+      # Grafana
+      {
+        group = "any";
+        port = "9001";
+        proto = "any";
+      }
+      {
+        group = "any";
+        port = "3100";
+        proto = "any";
+      }
+      {
+        group = "any";
+        port = "3000";
+        proto = "any";
+      }
+    ];
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
