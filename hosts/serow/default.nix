@@ -4,6 +4,7 @@
   inputs,
   pkgs,
   vars,
+  config,
   ...
 }:
 {
@@ -13,6 +14,18 @@
     (import ./hardware.nix)
   ];
   networking.hostName = "serow";
+
+  # Nebula keys
+  sops.secrets."serow_crt" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."serow_key" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
 
   # My configuration specific settings
   sifr = {
@@ -48,7 +61,11 @@
       ssh = true;
       auth = true;
     };
-    net.sifr0 = true;
+    net = {
+      sifr0 = true;
+      node-crt = config.sops.secrets."serow_crt".path;
+      node-key = config.sops.secrets."serow_key".path;
+    };
   };
 
   # Doing riscv64 xcomp, manually gc

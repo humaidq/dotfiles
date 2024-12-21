@@ -57,6 +57,13 @@ in
               proto = "any";
             }
           ];
+          inbound = [
+            {
+              host = "any";
+              port = "any";
+              proto = "any";
+            }
+          ];
         };
       };
     };
