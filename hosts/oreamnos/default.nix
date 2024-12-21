@@ -349,35 +349,35 @@
     inbound = [
       # Time Server
       {
-        group = "any";
+        host = "any";
         port = "123";
         proto = "udp";
       }
       # DNS
       {
-        group = "any";
+        host = "any";
         port = "53";
         proto = "udp";
       }
       # Forgejo SSH
       {
-        group = "any";
+        host = "any";
         port = "2222";
         proto = "any";
       }
       # Grafana
       {
-        group = "any";
+        host = "any";
         port = "9001";
         proto = "any";
       }
       {
-        group = "any";
+        host = "any";
         port = "3100";
         proto = "any";
       }
       {
-        group = "any";
+        host = "any";
         port = "3000";
         proto = "any";
       }

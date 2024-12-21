@@ -79,7 +79,12 @@ in
           ];
           inbound = [
             {
-              group = "trusted";
+              host = "any";
+              port = "any";
+              proto = "icmp";
+            }
+            {
+              groups = ["trusted"];
               port = "any";
               proto = "any";
             }
