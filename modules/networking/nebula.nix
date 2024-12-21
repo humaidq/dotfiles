@@ -20,8 +20,8 @@ in
 
   config = {
     networking.firewall = {
-      trustedInterfaces = lib.mkIf cfg.enable [ "sifr0" ];
-      allowedUDPPorts = lib.mkIf (cfg.enable && cfg.isLighthouse) [
+      trustedInterfaces = lib.mkIf cfg.sifr0 [ "sifr0" ];
+      allowedUDPPorts = lib.mkIf (cfg.sifr0 && cfg.isLighthouse) [
         4242
       ];
     };
