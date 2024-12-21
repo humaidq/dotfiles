@@ -23,6 +23,10 @@
   services.tailscale.useRoutingFeatures = "both";
 
   sifr = {
+    net = {
+      sifr0 = true;
+      isLighthouse = true;
+    };
     profiles.basePlus = true;
     profiles.server = true;
     #autoupgrade.enable = true;
@@ -36,5 +40,5 @@
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";
-  system.stateVersion = "23.11";
+  system.stateVersion = "24.11";
 }
