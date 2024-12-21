@@ -25,7 +25,6 @@ creation_rules:
           - *oreamnos
           - *serow
           - *duisk
-          - *goral
   - path_regex: secrets/lighthouse.yaml$
     key_groups:
       - age:
@@ -42,7 +41,3 @@ creation_rules:
       - age:
           - *oreamnos
           - *serow
-          - *tahr
-          - *goral
-          - *argali
-          - *arkelli

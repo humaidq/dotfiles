@@ -16,12 +16,12 @@
   networking.hostName = "serow";
 
   # Nebula keys
-  sops.secrets."serow_crt" = {
+  sops.secrets."nebula/crt" = {
     sopsFile = ../../secrets/serow.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };
-  sops.secrets."serow_key" = {
+  sops.secrets."nebula/key" = {
     sopsFile = ../../secrets/serow.yaml;
     owner = "nebula-sifr0";
     mode = "600";
@@ -63,8 +63,8 @@
     };
     net = {
       sifr0 = true;
-      node-crt = config.sops.secrets."serow_crt".path;
-      node-key = config.sops.secrets."serow_key".path;
+      node-crt = config.sops.secrets."nebula/crt".path;
+      node-key = config.sops.secrets."nebula/key".path;
     };
   };
 

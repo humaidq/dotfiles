@@ -25,6 +25,26 @@ in
         4242
       ];
     };
+
+    networking.hosts = lib.mkIf cfg.sifr0 {
+      "10.10.0.10" = [
+        "lighthouse"
+        "lighthouse.alq"
+      ];
+      "10.10.0.11" = [
+        "serow"
+        "serow.alq"
+      ];
+      "10.10.0.12" = [
+        "oreamnos"
+        "oreamnos.alq"
+      ];
+      "10.10.0.13" = [
+        "duisk"
+        "duisk.alq"
+      ];
+    };
+
     services.nebula.networks = {
       sifr0 = lib.mkIf cfg.sifr0 {
         enable = true;
@@ -59,7 +79,7 @@ in
           ];
           inbound = [
             {
-              host = "any";
+              group = "trusted";
               port = "any";
               proto = "any";
             }

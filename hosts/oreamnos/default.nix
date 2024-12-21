@@ -19,12 +19,12 @@
   networking.hostId = "0a65726f"; # echo ore | od -A none -t x4
 
   # Nebula keys
-  sops.secrets."oreamnos_crt" = {
+  sops.secrets."nebula/crt" = {
     sopsFile = ../../secrets/oreamnos.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };
-  sops.secrets."oreamnos_key" = {
+  sops.secrets."nebula/key" = {
     sopsFile = ../../secrets/oreamnos.yaml;
     owner = "nebula-sifr0";
     mode = "600";
@@ -57,8 +57,8 @@
 
     net = {
       sifr0 = true;
-      node-crt = config.sops.secrets."oreamnos_crt".path;
-      node-key = config.sops.secrets."oreamnos_key".path;
+      node-crt = config.sops.secrets."nebula/crt".path;
+      node-key = config.sops.secrets."nebula/key".path;
     };
     tailscale = {
       enable = true;

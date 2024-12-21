@@ -2,6 +2,7 @@
   self,
   vars,
   lib,
+  config,
   ...
 }:
 {
@@ -23,6 +24,16 @@
   };
   services.tailscale.useRoutingFeatures = "both";
 
+  sops.secrets."nebula/crt" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."nebula/key" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
   sifr = {
     profiles.basePlus = true;
     profiles.server = true;
@@ -30,6 +41,11 @@
     autoupgrade.enable = true;
     o11y.client.enable = true;
 
+    net = {
+      sifr0 = true;
+      node-crt = config.sops.secrets."nebula/crt".path;
+      node-key = config.sops.secrets."nebula/key".path;
+    };
     tailscale = {
       enable = true;
       exitNode = true;
