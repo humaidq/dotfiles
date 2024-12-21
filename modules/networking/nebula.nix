@@ -8,6 +8,9 @@ in
     isLighthouse = lib.mkEnableOption "Lighthouse mode";
   };
   config = {
+    networking.firewall.allowedUDPPorts = lib.mkIf (cfg.enable && cfg.isLighthouse) [
+      4242
+    ];
     services.nebula.networks = {
       sifr0 = lib.mkIf cfg.sifr0 {
         enable = true;
@@ -20,10 +23,10 @@ in
         key = "/etc/nebula/node.key";
         ca = "/etc/nebula/ca.crt";
 
-        lighthouses = lib.mkIf cfg.isLighthouse [ "10.10.0.1" ];
-        relays = lib.mkIf cfg.isLighthouse [ "10.10.0.1" ];
+        lighthouses = lib.mkIf (!cfg.isLighthouse) [ "10.10.0.10" ];
+        relays = lib.mkIf (!cfg.isLighthouse) [ "10.10.0.10" ];
         staticHostMap = {
-          "10.10.0.1" = [ "139.84.164.156:4242" ];
+          "10.10.0.10" = [ "139.84.173.48:4242" ];
         };
         settings = {
           punchy = {
