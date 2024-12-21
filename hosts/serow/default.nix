@@ -30,6 +30,7 @@
       yubikey = true;
       # encryptDNS = true;
     };
+    hasGadgetSecrets = true;
     development.enable = true;
     ntp.useNTS = true;
     o11y.client.enable = true;

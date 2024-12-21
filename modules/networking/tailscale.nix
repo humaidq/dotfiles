@@ -26,7 +26,7 @@ in
     auth = mkOption {
       description = "Performs a oneshot authentication with an auth-key";
       type = types.bool;
-      default = true;
+      default = config.sifr.hasGadgetSecrets;
     };
   };
 
@@ -71,9 +71,18 @@ in
       environment.systemPackages = with pkgs; [ mosh ];
     })
     (mkIf (cfg.enable && cfg.auth) {
-      sops.secrets.tskey = lib.mkIf cfg.hasGadgetSecrets {
-        sopsFile = ../secrets/gadgets.yaml;
+      sops.secrets.tskey = {
+        sopsFile = ../../secrets/gadgets.yaml;
       };
+
+      warnings =
+        if (cfg.enable && cfg.auth && !config.sifr.hasGadgetSecrets) then
+          [
+            "You have enabled tailscale authentication without enabling gadget secrets (${config.networking.hostName})"
+          ]
+        else
+          [ ];
+
       # Source: https://tailscale.com/blog/nixos-minecraft/
       systemd.services.tailscale-autoconnect = {
         description = "Automatic connection to Tailscale";
