@@ -4,6 +4,7 @@
   self,
   pkgs,
   vars,
+  config,
   ...
 }:
 {
@@ -16,6 +17,18 @@
   ];
   networking.hostName = "oreamnos";
   networking.hostId = "0a65726f"; # echo ore | od -A none -t x4
+
+  # Nebula keys
+  sops.secrets."oreamnos_crt" = {
+    sopsFile = ../../secrets/oreamnos.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."serow_key" = {
+    sopsFile = ../../secrets/oreamnos.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
 
   # My configuration specific settings
   sifr = {
@@ -42,6 +55,11 @@
     hasGadgetSecrets = true;
     home-server.enable = true;
 
+    net = {
+      sifr0 = true;
+      node-crt = config.sops.secrets."oreamnos_crt".path;
+      node-key = config.sops.secrets."oreamnos_key".path;
+    };
     tailscale = {
       enable = true;
       exitNode = true;
