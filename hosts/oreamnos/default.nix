@@ -39,6 +39,7 @@
       client.enable = true;
     };
 
+    hasGadgetSecrets = true;
     home-server.enable = true;
 
     tailscale = {

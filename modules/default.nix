@@ -51,22 +51,19 @@ in
           sopsFile = ../secrets/all.yaml;
           neededForUsers = true;
         };
-        tskey = {
+        wifi-2g = lib.mkIf cfg.hasGadgetSecrets {
           sopsFile = ../secrets/gadgets.yaml;
         };
-        wifi-2g = {
+        wifi-5g = lib.mkIf cfg.hasGadgetSecrets {
           sopsFile = ../secrets/gadgets.yaml;
         };
-        wifi-5g = {
-          sopsFile = ../secrets/gadgets.yaml;
-        };
-        nm-5g = {
+        nm-5g = lib.mkIf cfg.hasGadgetSecrets {
           sopsFile = ../secrets/gadgets.yaml;
           path = "/etc/NetworkManager/system-connections/5g.nmconnection";
           owner = "root";
           mode = "600";
         };
-        github-token = {
+        github-token = lib.mkIf cfg.hasGadgetSecrets {
           sopsFile = ../secrets/gadgets.yaml;
           owner = vars.user;
         };
@@ -152,7 +149,7 @@ in
       channel.enable = false;
 
       # API Rate limit for GitHub
-      extraOptions = ''
+      extraOptions = lib.mkIf cfg.hasGadgetSecrets ''
         !include ${config.sops.secrets.github-token.path}
       '';
     };

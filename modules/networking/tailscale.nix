@@ -71,6 +71,9 @@ in
       environment.systemPackages = with pkgs; [ mosh ];
     })
     (mkIf (cfg.enable && cfg.auth) {
+      sops.secrets.tskey = lib.mkIf cfg.hasGadgetSecrets {
+        sopsFile = ../secrets/gadgets.yaml;
+      };
       # Source: https://tailscale.com/blog/nixos-minecraft/
       systemd.services.tailscale-autoconnect = {
         description = "Automatic connection to Tailscale";
