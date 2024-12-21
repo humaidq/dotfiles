@@ -25,12 +25,12 @@
   services.tailscale.useRoutingFeatures = "both";
 
   sops.secrets."nebula/crt" = {
-    sopsFile = ../../secrets/serow.yaml;
+    sopsFile = ../../secrets/duisk.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };
   sops.secrets."nebula/key" = {
-    sopsFile = ../../secrets/serow.yaml;
+    sopsFile = ../../secrets/duisk.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };

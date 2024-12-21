@@ -15,14 +15,14 @@
     {
       nixosModules = {
         host-oreamnos = import ./oreamnos;
-        host-goral = import ./goral;
         host-serow = import ./serow;
         host-duisk = import ./duisk;
         host-lighthouse = import ./lighthouse;
-        host-tahr = import ./tahr;
-        host-boerbok = import ./boerbok;
-        host-argali = import ./argali;
-        host-arkelli = import ./arkelli;
+        #host-goral = import ./goral;
+        #host-tahr = import ./tahr;
+        #host-boerbok = import ./boerbok;
+        #host-argali = import ./argali;
+        #host-arkelli = import ./arkelli;
 
         # Generators hosts
         host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
@@ -33,10 +33,6 @@
         oreamnos = lib.nixosSystem {
           inherit specialArgs;
           modules = [ self.nixosModules.host-oreamnos ];
-        };
-        goral = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [ self.nixosModules.host-goral ];
         };
         serow = lib.nixosSystem {
           inherit specialArgs;
@@ -50,22 +46,26 @@
           inherit specialArgs;
           modules = [ self.nixosModules.host-lighthouse ];
         };
-        tahr = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [ self.nixosModules.host-tahr ];
-        };
-        boerbok = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [ self.nixosModules.host-boerbok ];
-        };
-        argali = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [ self.nixosModules.host-argali ];
-        };
-        arkelli = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [ self.nixosModules.host-arkelli ];
-        };
+        #goral = lib.nixosSystem {
+        #  inherit specialArgs;
+        #  modules = [ self.nixosModules.host-goral ];
+        #};
+        #tahr = lib.nixosSystem {
+        #  inherit specialArgs;
+        #  modules = [ self.nixosModules.host-tahr ];
+        #};
+        #boerbok = lib.nixosSystem {
+        #  inherit specialArgs;
+        #  modules = [ self.nixosModules.host-boerbok ];
+        #};
+        #argali = lib.nixosSystem {
+        #  inherit specialArgs;
+        #  modules = [ self.nixosModules.host-argali ];
+        #};
+        #arkelli = lib.nixosSystem {
+        #  inherit specialArgs;
+        #  modules = [ self.nixosModules.host-arkelli ];
+        #};
       };
 
       packages.x86_64-linux = {
@@ -83,17 +83,17 @@
           ];
         };
 
-        boerbok-sd-from-x86_64 =
-          (lib.nixosSystem {
-            inherit specialArgs;
-            modules = [
-              self.nixosModules.host-boerbok
-              {
+        #boerbok-sd-from-x86_64 =
+        #  (lib.nixosSystem {
+        #    inherit specialArgs;
+        #    modules = [
+        #      self.nixosModules.host-boerbok
+        #      {
 
-                nixpkgs.buildPlatform = "x86_64-linux";
-              }
-            ];
-          }).config.system.build.sdImage;
+        #        nixpkgs.buildPlatform = "x86_64-linux";
+        #      }
+        #    ];
+        #  }).config.system.build.sdImage;
       };
 
       packages.aarch64-linux = {
@@ -126,9 +126,10 @@
         x86_64-linux = {
           oreamnos = self.nixosConfigurations.oreamnos.config.system.build.toplevel;
           serow = self.nixosConfigurations.serow.config.system.build.toplevel;
-          tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
           duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
+          lighthouse = self.nixosConfigurations.lighthouse.config.system.build.toplevel;
 
+          #tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
           #inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
         };
         #aarch64-linux = {
