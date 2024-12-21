@@ -24,7 +24,7 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
-  sops.secrets."serow_key" = {
+  sops.secrets."oreamnos_key" = {
     sopsFile = ../../secrets/oreamnos.yaml;
     owner = "nebula-sifr0";
     mode = "600";
