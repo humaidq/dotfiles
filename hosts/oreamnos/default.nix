@@ -43,6 +43,7 @@
         "riscv64-linux"
       ];
     };
+    security.yubikey = true;
     development.enable = true;
     ntp.useNTS = false;
     applications.emacs.enable = true;
@@ -347,6 +348,12 @@
 
   services.nebula.networks.sifr0.firewall = {
     inbound = [
+      # Allow SSH from all on this host
+      {
+        host = "any";
+        port = "22";
+        proto = "tcp";
+      }
       # Time Server
       {
         host = "any";

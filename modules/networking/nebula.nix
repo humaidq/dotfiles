@@ -88,6 +88,11 @@ in
               port = "any";
               proto = "any";
             }
+            {
+              groups = ["gadgets"];
+              port = "22";
+              proto = "any";
+            }
           ];
         };
       };
