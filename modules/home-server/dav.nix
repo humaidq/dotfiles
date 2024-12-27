@@ -29,6 +29,31 @@ in
       };
     };
 
+    services.webdav = {
+      enable = true;
+      user = "humaid";
+      environmentFile = config.sops.secrets."webdav/env".path;
+      settings = {
+        address = "0.0.0.0";
+        port = "8477";
+        scope = "/mnt/humaid";
+        modify = true;
+        auth = true;
+        permissions = "CRUD";
+        users = [
+          {
+            username = "{env}ENV_USERNAME";
+            password = "{env}ENV_PASSWORD";
+          }
+        ];
+      };
+    };
+
+    sops.secrets."webdav/env" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "humaid";
+      mode = "600";
+    };
     sops.secrets."radicale/htpasswd" = {
       sopsFile = ../../secrets/home-server.yaml;
       owner = "radicale";

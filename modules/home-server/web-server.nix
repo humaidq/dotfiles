@@ -67,6 +67,7 @@ in
         # (mkRP "seafile" "3014")
         (mkRP "reddit" "3014")
         (mkRP "dav" "5232")
+        (mkRP "webdav" "8477")
         (mkRP "onlyoffice" "3015")
 
         {
