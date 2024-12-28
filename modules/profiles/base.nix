@@ -151,12 +151,11 @@ in
       # Track highest uptime! :)
       services.uptimed.enable = true;
 
+      # Don't bring up ugly prompt
+      programs.ssh.enableAskPassword = false;
+
       home-manager.users."${vars.user}" = {
         programs = {
-          ssh = {
-            enable = true;
-            addKeysToAgent = "yes";
-          };
           tmux = {
             enable = true;
 
@@ -204,8 +203,6 @@ in
             fileWidgetCommand = "fd --hidden --follow --exclude .git"; # CTRL_T command
           };
         };
-
-        services.ssh-agent.enable = true;
 
         xdg = {
           enable = true;

@@ -259,7 +259,7 @@ in
               comment.enable = dev;
               fidget.enable = true;
               bufferline.enable = true;
-              copilot-vim.enable = dev;
+              #copilot-vim.enable = dev;
             };
             keymaps = [
               {

@@ -35,15 +35,15 @@ in
               condition = "gitdir:~/tii/";
               contents = {
                 user.email = "humaid.alqassimi@tii.ae";
-                user.signingkey = "~/.ssh/id_ed25519_tii.pub";
-                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_tii";
+                user.signingkey = "~/.ssh/id_ed25519_sk_tii.pub";
+                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_sk_tii";
               };
             }
           ];
 
           userName = "Humaid Alqasimi";
           userEmail = "git@huma.id";
-          signing.key = "~/.ssh/id_ed25519.pub";
+          signing.key = "~/.ssh/id_ed25519_sk.pub";
           signing.signByDefault = true;
           extraConfig = {
             core.editor = "nvim";
@@ -63,7 +63,7 @@ in
             commit.gpgSign = true;
 
             # Mailer
-            sendemail.smtpserver = "smtp.mail.me.com";
+            sendemail.smtpserver = "smtp.migadu.com";
             sendemail.smtpuser = "me@huma.id";
             sendemail.smtpencryption = "tls";
             sendemail.smtpserverport = "587";

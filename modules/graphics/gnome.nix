@@ -16,6 +16,7 @@ in
   config = lib.mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
     #services.gnome.gnome-online-accounts.enable = false;
+    services.gnome.gnome-keyring.enable = lib.mkForce false;
 
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs; [

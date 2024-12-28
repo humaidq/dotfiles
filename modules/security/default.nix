@@ -50,11 +50,6 @@ in
         age
       ];
 
-      programs.gnupg.agent = {
-        enable = false;
-        enableSSHSupport = true;
-      };
-
       services.pcscd.enable = true;
     })
     (mkIf (cfg.harden && !config.sifr.hardware.vm) {

@@ -112,7 +112,6 @@ in
     #  distributedBuilds = true;
     #};
     programs.ssh = {
-      startAgent = true;
       extraConfig = ''
         Host awsarm
              HostName awsarm.vedenemo.dev

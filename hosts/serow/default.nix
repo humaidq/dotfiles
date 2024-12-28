@@ -113,7 +113,6 @@
   };
 
   programs.ssh = {
-    startAgent = true;
     extraConfig = ''
       Host oreamnos
            user humaid
