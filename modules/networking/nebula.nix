@@ -84,12 +84,12 @@ in
               proto = "icmp";
             }
             {
-              groups = ["trusted"];
+              groups = [ "trusted" ];
               port = "any";
               proto = "any";
             }
             {
-              groups = ["gadgets"];
+              groups = [ "gadgets" ];
               port = "22";
               proto = "any";
             }

@@ -1,17 +1,13 @@
 {
-  config,
-  lib,
   pkgs,
   inputs,
   ...
 }:
 let
-  cfg = config.sifr.profiles;
   humaid-site = inputs.humaid-site.defaultPackage.${pkgs.system};
 in
 {
-  options.sifr.profiles.webserver = lib.mkEnableOption "web server profile (huma.id)";
-  config = lib.mkIf cfg.webserver {
+  config = {
     # Open ports for Caddy
     networking.firewall.allowedTCPPorts = [
       443
@@ -104,23 +100,6 @@ in
           import general
         '';
 
-        "saleh.boo".extraConfig = ''
-          root * /srv/saleh
-          file_server
-          import header
-          import cors saleh.boo
-          import general
-        '';
-
-        #"consultant-ai.app".extraConfig = ''
-        #  basicauth * {
-        #    consultant $2a$14$Ok89VTgJRUb39ljS15Qw..RwA4pzdKE0flplasODlwQHbLOTLo7Li
-        #  }
-        #'';
-        #"www.consultant-ai.app".extraConfig = ''
-        #  redir https://consultant-ai.app{uri} permanent
-        #'';
-
         # Fun stuff
         "bot.huma.id".extraConfig = "respond \"beep boop\"";
         "car.huma.id".extraConfig = "respond \"vroom vroom\"";
@@ -140,6 +119,12 @@ in
           reverse_proxy 100.83.164.46:5000
           handle / {
             respond "Humaid's Nix binary cache - https://github.com/humaidq/dotfiles"
+          }
+        '';
+
+        "dns.huma.id".extraConfig = ''
+          handle /dns-query {
+            reverse_proxy 100.83.164.46:3333
           }
         '';
 

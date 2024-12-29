@@ -136,6 +136,7 @@ in
         git-extras
         git-lfs
         git-privacy
+        jujutsu
         #tig
 
         # Nix

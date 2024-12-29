@@ -9,6 +9,7 @@
   imports = [
     self.nixosModules.sifrOS
     (import ./hardware.nix)
+    (import ./webserver.nix)
   ];
   networking.hostName = "duisk";
 
@@ -34,10 +35,10 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
+
   sifr = {
     profiles.basePlus = true;
     profiles.server = true;
-    profiles.webserver = true;
     autoupgrade.enable = true;
     o11y.client.enable = true;
 

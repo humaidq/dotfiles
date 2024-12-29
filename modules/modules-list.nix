@@ -15,7 +15,6 @@
   ./profiles/base.nix
   ./profiles/laptop.nix
   ./profiles/server.nix
-  ./profiles/webserver.nix
   ./profiles/work.nix
   ./scripts
   ./security

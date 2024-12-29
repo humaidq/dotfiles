@@ -155,6 +155,8 @@ in
       programs.ssh.enableAskPassword = false;
 
       home-manager.users."${vars.user}" = {
+        programs.ssh.enable = true;
+        services.ssh-agent.enable = true;
         programs = {
           tmux = {
             enable = true;

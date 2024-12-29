@@ -9,6 +9,7 @@
   imports = [
     self.nixosModules.sifrOS
     (import ./hardware.nix)
+    (import ./webserver.nix)
   ];
   networking.hostName = "lighthouse";
 
