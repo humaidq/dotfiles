@@ -125,7 +125,7 @@ in
 
         "dns.huma.id".extraConfig = ''
           handle / {
-            redir https://lighthouse.huma.id permament
+            redir https://lighthouse.huma.id permanent
           }
           handle /dns-query {
             reverse_proxy 100.83.164.46:3333
