@@ -151,6 +151,8 @@
     80
     443
     53
+    # dns over https
+    3333
   ];
   networking.firewall.allowedUDPPorts = [
     123

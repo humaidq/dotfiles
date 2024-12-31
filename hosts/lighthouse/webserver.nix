@@ -22,7 +22,8 @@
       email = "me.caddy@huma.id";
       virtualHosts = {
         "lighthouse.huma.id".extraConfig = ''
-          respond "this is lighthouse"
+          root * ${./lighthouse-page}
+          file_server
         '';
       };
     };

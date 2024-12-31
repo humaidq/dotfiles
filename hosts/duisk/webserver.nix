@@ -118,11 +118,15 @@ in
         "cache.huma.id".extraConfig = ''
           reverse_proxy 100.83.164.46:5000
           handle / {
-            respond "Humaid's Nix binary cache - https://github.com/humaidq/dotfiles"
+            root * ${./cache-page}
+            file_server
           }
         '';
 
         "dns.huma.id".extraConfig = ''
+          handle / {
+            redir https://lighthouse.huma.id permament
+          }
           handle /dns-query {
             reverse_proxy 100.83.164.46:3333
           }

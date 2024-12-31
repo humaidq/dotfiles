@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighthouse</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: inter, -apple-system, blinkmacsystemfont, source sans pro, roboto, sans-serif;
+            text-align: center;
+        }
+        .center-div {
+            width: 60%;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        img {
+          max-width: 100%;
+          max-height: 300px;
+          height: auto;
+        }
+        ul {
+          list-style-type: none;
+        }
+        @media screen and (max-width: 768px) {
+            .center-div {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="center-div">
+      <img src="./lighthouse.jpeg" />
+      <h1>Lighthouse</h1>
+      <p>This is the home of Humaid's Nebula lighthouse.</p>
+      <details>
+        <summary>Configuration</summary>
+        <ul>
+          <li>
+            Lighthouse static host: <code>10.10.0.10</code> @ <code>139.84.173.48:4242</code>
+          </li>
+          <li>
+            Optional DoH server: <code>dns.huma.id</code>
+          </li>
+          <li>
+            <a target="_blank" href="https://github.com/humaidq/dotfiles/blob/master/modules/networking/ca-sifr0.crt">
+              Certificate Authority
+            </a>
+          </li>
+          <li>
+            <a target="_blank" href="https://github.com/humaidq/dotfiles/blob/master/modules/networking/nebula.nix">
+              NixOS Configuration
+            </a>
+          </li>
+      </details>
+    </div>
+</body>
+</html>
+
