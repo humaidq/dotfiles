@@ -116,11 +116,14 @@ in
         '';
 
         "cache.huma.id".extraConfig = ''
-          reverse_proxy 100.83.164.46:5000
-          handle / {
+          @cachepage {
+            path / *.jpeg
+          }
+          handle @cachepage {
             root * ${./cache-page}
             file_server
           }
+          reverse_proxy 100.83.164.46:5000
         '';
 
         "dns.huma.id".extraConfig = ''
