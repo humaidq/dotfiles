@@ -136,8 +136,8 @@
   users.users.${vars.user} = {
     isNormalUser = true;
     openssh.authorizedKeys.keys = [
-      # pixel
-      "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBFp9iH7iZI8NyYsRr8pV0n7BxYCPMvB1iGSfrVlLieIkRtMZi6T7VfzhNNz9HyppgFEyl2Y1d3RwIbxgFnY7XxwAAAALdGVybWl1cy5jb20="
+      # Pixel HK05
+      "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMFWC5xI1ZgLZ65ubNYhhtL+NFMHA9pJs5yStdJUyM6cul+bqcVOzvVdLQpAfthjTEBXR1Et/nkuyexttDRUS6Q="
 
       # root serow (buildmachine)
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFhlcX+CiEb8q/NSuy9vOtu5RwFfUGui773wcWWgkf1 root@serow"
@@ -148,6 +148,7 @@
     5000
     22
     2222
+    3300
     80
     443
     53
