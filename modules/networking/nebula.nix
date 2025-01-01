@@ -51,7 +51,6 @@ in
         inherit (cfg) isLighthouse;
         isRelay = cfg.isLighthouse;
         tun.device = "sifr0";
-        listen.host = "[::]";
 
         cert = cfg.node-crt;
         key = cfg.node-key;
