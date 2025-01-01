@@ -12,16 +12,22 @@ use case.
 ### Features
 
 - Properly configured desktop environment with Gnome and useful desktop apps.
+- Emacs configured with Doom Emacs ([configuration](https://github.com/humaidq/doomd)).
 - Neovim (NixVim) configured with LSP, telescope, and other QoL plugins.
 - Secrets management with `sops-nix`.
 - Browser configured with uBlock Origin, DuckDuckGo, and other extensions.
 - Shell configured with modern tools & improvements, such as nix-direnv,
   zoxide, eza, zsh-autocomplete, ls-colors, useful aliases, and more.
-- Tailscale with auto-authentication (using sops-nix).
-- Home Lab setup
-  - Logging and monitoring using Grafana
-  - AdGuard Home configured
-  - Media server
+- Nebula mesh VPN setup for machines.
+  - Alternatively, Tailscale with auto-authentication (using sops-nix).
+- Home server setup.
+  - WebDAV, CalDAV, CardDav for syncing between devices.
+  - Immich for photo sync.
+  - Paperless-NGX for documents storage.
+  - Logging and monitoring using Grafana.
+  - Ad-blocking DNS server using blocky.
+  - Nix binary cache and NTP server.
+  - Media server.
 - Web server for my personal website and other services.
 - "Server Mode" specialisation for laptops.
 - System hardening for kernel, web server, etc.
@@ -30,16 +36,18 @@ use case.
 
 Systems managed by this flake.
 
-| Name      | System           | CPU       | RAM  | GPU                 | Role | OS  | State |
-| --------- | ---------------- | --------- | ---- | ------------------- | ---- | --- | ----- |
-| `serow`   | ThinkPad T590    | i7-8565U  | 16GB | Intel UHD 8th Gen   | 💻️  | ❄️  | ✅    |
-| `tahr`    | ThinkPad P1 Gen3 | i9-10885H | 32GB | NVIDIA Quadro T2000 | 💻️  | ❄️  | ✅    |
-| `takin`   | MacBook Pro      | M2 Max    | 64GB | M2 Max              | 💻️  |    | 🚧    |
-| `goral`   | VMWare Fusion    | M2 Max    | 64GB | M2 Max              | 💻️  | ❄️  | ✅    |
-| `duisk`   | Vultr VPS        | vCPU      | 4GB  | None                | ☁️   | ❄️  | ✅    |
-| `argali`  | RPi 4B           | BCM2711   | 8GB  | None                | ☁️   | ❄️  | ✅    |
-| `arkelli` | RPi 4B           | BCM2711   | 8GB  | None                | ☁️   | ❄️  | ✅    |
-| `boerbok` | Star64           | SiFive    | 8GB  | None                | ☁️   | ❄️  | 🚧    |
+| Name         | System           | CPU        | RAM   | GPU                 | Role | OS  | State |
+|--------------|------------------|------------|-------|---------------------|------|-----|-------|
+| `oreamnos`   | Home Workstation | AMD 5995WX | 128GB | NVIDIA RTX 4070     | 🖥️    | ❄️   | ✅    |
+| `serow`      | ThinkPad T590    | i7-8565U   | 16GB  | Intel UHD 8th Gen   | 💻️   | ❄️   | ✅    |
+| `tahr`       | ThinkPad P1 Gen3 | i9-10885H  | 32GB  | NVIDIA Quadro T2000 | 💻️   | ❄️   | ✅    |
+| `duisk`      | Vultr VPS        | vCPU       | 2GB   | None                | ☁️    | ❄️   | ✅    |
+| `lighthouse` | Vultr VPS        | vCPU       | 1GB   | None                | ☁️    | ❄️   | ✅    |
+| `boerbok`    | Star64           | SiFive     | 8GB   | None                | ☁️    | ❄️   | 🚧    |
+| `takin`      | MacBook Pro      | M2 Max     | 64GB  | M2 Max              | 💻️   |    | ✖️     |
+| `goral`      | VMWare Fusion    | M2 Max     | 64GB  | M2 Max              | 💻️   | ❄️   | ✖️     |
+| `argali`     | RPi 4B           | BCM2711    | 8GB   | None                | ☁️    | ❄️   | ✖️     |
+| `arkelli`    | RPi 4B           | BCM2711    | 8GB   | None                | ☁️    | ❄️   | ✖️     |
 
 Rebuilding a system:
 

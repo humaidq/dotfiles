@@ -391,6 +391,12 @@
         port = "3000";
         proto = "any";
       }
+      # Allow duisk access
+      {
+        host = "duisk";
+        port = "5000"; # nix cache
+        proto = "tcp";
+      }
     ];
   };
 

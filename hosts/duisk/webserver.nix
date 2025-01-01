@@ -123,7 +123,7 @@ in
             root * ${./cache-page}
             file_server
           }
-          reverse_proxy 100.83.164.46:5000
+          reverse_proxy 10.10.0.12:5000
         '';
 
         "dns.huma.id".extraConfig = ''
@@ -131,7 +131,7 @@ in
             redir https://lighthouse.huma.id permanent
           }
           handle /dns-query* {
-            reverse_proxy 100.83.164.46:3333
+            reverse_proxy 10.10.0.12:3333
           }
         '';
 

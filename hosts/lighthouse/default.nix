@@ -49,7 +49,7 @@
     o11y.client.enable = true;
 
     tailscale = {
-      enable = true;
+      enable = false;
       exitNode = true;
       ssh = true;
     };

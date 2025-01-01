@@ -57,7 +57,7 @@
     };
 
     tailscale = {
-      enable = true;
+      enable = false;
       ssh = true;
       auth = true;
     };
@@ -124,6 +124,7 @@
         hostNames = [
           "oreamnos"
           "100.83.164.46"
+          "10.10.0.12"
           "oreamnos.barred-banana.ts.net"
         ];
         publicKey = "oreamnos ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHnC2ZPG75+HmEpS6OYpYU4OG6G8rwiEKDNXudtTAr0u";
