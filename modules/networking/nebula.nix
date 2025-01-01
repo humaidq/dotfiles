@@ -65,6 +65,7 @@ in
         settings = {
           punchy = {
             punch = true;
+            punch_back = true;
             respond = true;
           };
           preferred_ranges = [ "10.10.0.0/24" ];
