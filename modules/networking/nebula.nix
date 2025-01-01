@@ -68,7 +68,7 @@ in
             punch_back = true;
             respond = true;
           };
-          preferred_ranges = [ "10.10.0.0/24" ];
+          preferred_ranges = [ "192.168.1.0/24" ];
         };
         firewall = {
           outbound = [
