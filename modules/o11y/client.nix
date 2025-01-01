@@ -7,7 +7,7 @@ in
     enable = lib.mkEnableOption "observability client using Grafana Alloy";
     serverHost = lib.mkOption {
       type = lib.types.str;
-      default = "oreamnos.barred-banana.ts.net";
+      default = "oreamnos";
       description = "The hostname of the observability server";
     };
   };
