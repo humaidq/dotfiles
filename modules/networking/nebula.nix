@@ -21,7 +21,7 @@ in
   config = {
     networking.firewall = {
       trustedInterfaces = lib.mkIf cfg.sifr0 [ "sifr0" ];
-      allowedUDPPorts = lib.mkIf cfg.sifr0  [
+      allowedUDPPorts = lib.mkIf cfg.sifr0 [
         4242
       ];
     };

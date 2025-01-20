@@ -71,7 +71,10 @@ in
         ];
 
       # Ensure zsh is recognised as a system shell.
-      environment.shells = [ pkgs.fish pkgs.zsh ];
+      environment.shells = [
+        pkgs.fish
+        pkgs.zsh
+      ];
 
       security.sudo.extraConfig = ''
         Defaults lecture = never
