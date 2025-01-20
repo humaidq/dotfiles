@@ -24,7 +24,10 @@ in
       "video=efifb:nobgrt"
       "bgrt_disable"
     ];
+
     services.logind.lidSwitch = "suspend";
+    services.logind.lidSwitchExternalPower = lib.mkForce "ignore";
+
     hardware.bluetooth.enable = true;
     users.users.${vars.user}.extraGroups = [
       "bluetooth"

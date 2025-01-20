@@ -25,8 +25,9 @@ in
         (with pkgs; [
           # shell related
           zsh
-          zsh-autosuggestions
-          zsh-nix-shell
+          #zsh-autosuggestions
+          #zsh-nix-shell
+          helix
 
           # utilities
           wget
@@ -70,7 +71,7 @@ in
         ];
 
       # Ensure zsh is recognised as a system shell.
-      environment.shells = [ pkgs.zsh ];
+      environment.shells = [ pkgs.fish pkgs.zsh ];
 
       security.sudo.extraConfig = ''
         Defaults lecture = never
@@ -151,9 +152,6 @@ in
       # Track highest uptime! :)
       services.uptimed.enable = true;
 
-      # Don't bring up ugly prompt
-      programs.ssh.enableAskPassword = false;
-
       home-manager.users."${vars.user}" = {
         programs.ssh.enable = true;
         services.ssh-agent.enable = true;
@@ -163,10 +161,10 @@ in
 
             plugins = with pkgs.tmuxPlugins; [
               sensible
-              resurrect
-              copycat
-              continuum
-              tmux-thumbs
+              #resurrect
+              #copycat
+              #continuum
+              #tmux-thumbs
             ];
             # This fixes esc delay issue with vim
             #escapeTime = 0;

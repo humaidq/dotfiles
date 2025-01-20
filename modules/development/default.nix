@@ -8,8 +8,8 @@
 let
   cfg = config.sifr.development;
   allowedSigners = pkgs.writeText "allowed-signers" ''
-    git@huma.id ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii git@huma.id
-    humaid.alqassimi@tii.ae ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDUlaLlxVlm1KZtoG3R/nHl/KJzmKaIyckDVE2rDJYH+ humaid.alqassimi@tii.ae
+    sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIC+JivWVZLN5Q+gQp+Y+YOHr0tglTPujT5uqz0Vk//YnAAAABHNzaDo= git@huma.id
+    sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIM//VbFc8diwQ7MTRLGzKNd/Jghtd5w1o+eOJD0skwCmAAAAB3NzaDpUSUk= humaid.alqassimi@tii.ae
   '';
 in
 {
@@ -25,6 +25,34 @@ in
     {
       # We need basic git on all computers, needed for flakes too.
       home-manager.users."${vars.user}" = {
+
+        programs.jujutsu = {
+          enable = true;
+          settings = {
+            user = {
+              name = "Humaid Alqasimi";
+              email = "git@huma.id";
+            };
+
+            signing = {
+              sign-all = true;
+              backend = "ssh";
+              key = "~/.ssh/id_ed25519_sk.pub";
+            };
+
+            "--scope" = [
+              {
+                "--when" = {
+                  repositories = [ "~/tii" ];
+                };
+                user.email = "humaid.alqassimi@tii.ae";
+                signing.key = "~/.ssh/id_ed25519_sk_tii.pub";
+                signing.backends.ssh.program = "ssh -i ~/.ssh/id_ed25519_sk_tii";
+              }
+            ];
+          };
+        };
+
         programs.git = {
           enable = true;
           aliases = {

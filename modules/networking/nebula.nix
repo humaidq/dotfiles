@@ -21,11 +21,23 @@ in
   config = {
     networking.firewall = {
       trustedInterfaces = lib.mkIf cfg.sifr0 [ "sifr0" ];
-      allowedUDPPorts = lib.mkIf (cfg.sifr0 && cfg.isLighthouse) [
+      allowedUDPPorts = lib.mkIf cfg.sifr0  [
         4242
       ];
     };
 
+    services.openssh = lib.mkIf cfg.sifr0 {
+      enable = true;
+
+      # Security: do not allow password auth or root login.
+      settings = {
+        PasswordAuthentication = false;
+        PermitRootLogin = "no";
+      };
+
+      # Do not open firewall rules, nebula can access only.
+      openFirewall = false;
+    };
     networking.hosts = lib.mkIf cfg.sifr0 {
       "10.10.0.10" = [
         "lighthouse"
@@ -51,6 +63,11 @@ in
         inherit (cfg) isLighthouse;
         isRelay = cfg.isLighthouse;
         tun.device = "sifr0";
+
+        listen = {
+          host = "[::]";
+          port = 4242;
+        };
 
         cert = cfg.node-crt;
         key = cfg.node-key;

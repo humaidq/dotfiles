@@ -18,17 +18,16 @@ in
     #services.gnome.gnome-online-accounts.enable = false;
     services.gnome.gnome-keyring.enable = lib.mkForce false;
 
+    programs.ssh.enableAskPassword = true;
+
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs; [
       cheese
       epiphany
       geary
-      gnome-contacts
       gnome-music
       gnome-tour
       orca
-      seahorse
-      simple-scan
     ];
     environment.systemPackages = with pkgs; [ dconf-editor ];
 

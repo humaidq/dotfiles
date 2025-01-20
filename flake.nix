@@ -74,6 +74,9 @@
       inputs.flake-parts.follows = "flake-parts";
     };
 
+    ghostty = {
+      url = "github:ghostty-org/ghostty";
+    };
   };
 
   outputs =

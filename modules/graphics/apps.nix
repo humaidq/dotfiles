@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 let
@@ -69,6 +70,7 @@ in
         prusa-slicer
         #gnome-firmware
         bitwarden-desktop
+        inputs.ghostty.packages.${pkgs.system}.default
 
         gnome-calendar
         gnome-contacts
@@ -76,6 +78,7 @@ in
         evolution
         errands
         libreoffice
+        zed-editor
         # Re-add GNOME apps that are needed
         #evince
         #gnome-system-monitor

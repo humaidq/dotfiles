@@ -16,6 +16,77 @@ let
     # Project is stagnant (Dec 2019), though works perfectly fine.
     rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
   };
+  shellAliases = {
+    ka = "killall";
+    vim = "nvim";
+    vi = "nvim";
+    v = "nvim";
+    vf = "nvim $(fzf)";
+    ef = "emacsclient -t $(fzf)";
+    recent = "ls -ltch";
+    q = "exit";
+    c = "clear";
+    t = "tmux";
+    tl = "tmux ls";
+    ta = "tmux a -t";
+    #sudo = "doas";
+    doas = "sudo";
+    #ptop = "sudo powertop";
+    #bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
+    #agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
+    yt = "yt-dlp --add-metadata -ic";
+    yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
+    pf = "pfetch";
+    pgr = "ps aux | grep";
+    ex = "extract";
+
+    # Git
+    g = "git";
+    ga = "git add";
+    gad = "git add .";
+    gc = "git commit -s";
+    gs = "git status";
+    gd = "git diff";
+    gds = "git diff --staged";
+    gpl = "git pull";
+    gps = "git push";
+    gr = "git restore";
+    grs = "git restore --staged";
+    gco = "git checkout";
+    gcb = "git checkout -b";
+    gpa = "git remote | xargs -L1 git push --all";
+
+    # Always recursive
+    cp = "cp -r";
+    scp = "scp -r";
+
+    # Less verbosity
+    bc = "bc -ql";
+
+    turbo = "sudo cpupower -c all frequency-set -g performance";
+    unturbo = "sudo cpupower -c all frequency-set -g powersave";
+
+    units = "units --history /dev/null";
+
+    # Nix
+    #rebuild = "doas nixos-rebuild switch";
+    #rebuild-offline = "doas nixos-rebuild switch --option substitute false";
+    xs = "nix search nixpkgs";
+    np = "nix-shell -p";
+    nr = "nix repl";
+    nrp = "nix repl '<nixpkgs>'";
+
+    # Better ls
+    ls = lib.mkForce "eza --group-directories-first";
+    l = "eza -a -l -h --git --group-directories-first";
+
+    # set color=always for some commands
+    grep = "grep --color=always";
+    diff = "diff --color=always";
+    ip = "ip --color=always";
+    tree = "tree -C";
+    history = "history 0"; # force show all history
+  };
 in
 {
   options.sifr.shell.zsh = lib.mkOption {
@@ -31,14 +102,63 @@ in
       };
     })
     (lib.mkIf cfg.zsh {
-      programs.zsh.enable = true;
-      users.users."${vars.user}".shell = pkgs.zsh;
+      programs.zsh.enable = false;
+      programs.fish.enable = true;
+      users.users."${vars.user}".shell = pkgs.fish;
       home-manager.users."${vars.user}" = {
-        programs.zsh = {
+        programs.fish = {
           enable = true;
+          shellAliases = shellAliases // {
+            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace &| nom --json";
+            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace &| nom --json";
+            nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --option substitute false --show-trace &| nom --json";
+          };
+          functions = {
+            ghafa-rebuild = ''
+              nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa reboot
+            '';
+            ghafa-orin-rebuild = ''
+              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
+            '';
+
+            ntp = ''
+              chronyd -Q -t 3 "server $1 iburst maxsamples 1"
+            '';
+            nts = ''
+              chronyd -Q -t 3 "server $1 iburst nts maxsamples 1"
+            '';
+
+            e = ''
+              args="-c"
+              if [[ -n $DISPLAY ]]; then
+                 args="-t"
+              fi
+
+              emacsclient $args '$1'
+            '';
+
+            mkcd = ''
+              if [[ -z $1 ]]; then
+                echo "Usage: mkcd <directory>"
+                return 1
+              fi
+              mkdir -p $1 && cd $1
+            '';
+          };
+          interactiveShellInit = ''
+            set fish_greeting
+          '';
+        };
+        programs.zsh = {
+          enable = false;
           dotDir = ".config/zsh";
           autocd = true;
           enableVteIntegration = true;
+          shellAliases = shellAliases // {
+            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
+            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
+            nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --option substitute false --show-trace |& nom --json";
+          };
           initExtra = ''
             # Load colours and set prompt
             autoload -U colors && colors
@@ -141,80 +261,6 @@ in
 
             echo "$fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."
           '';
-          shellAliases = {
-            ka = "killall";
-            vim = "nvim";
-            vi = "nvim";
-            v = "nvim";
-            vf = "nvim $(fzf)";
-            ef = "emacsclient -t $(fzf)";
-            recent = "ls -ltch";
-            q = "exit";
-            c = "clear";
-            t = "tmux";
-            tl = "tmux ls";
-            ta = "tmux a -t";
-            #sudo = "doas";
-            doas = "sudo";
-            #ptop = "sudo powertop";
-            #bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
-            #agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
-            yt = "yt-dlp --add-metadata -ic";
-            yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
-            pf = "pfetch";
-            pgr = "ps aux | grep";
-            ex = "extract";
-
-            # Git
-            g = "git";
-            ga = "git add";
-            gad = "git add .";
-            gc = "git commit -s";
-            gs = "git status";
-            gd = "git diff";
-            gds = "git diff --staged";
-            gpl = "git pull";
-            gps = "git push";
-            gr = "git restore";
-            grs = "git restore --staged";
-            gco = "git checkout";
-            gcb = "git checkout -b";
-            gpa = "git remote | xargs -L1 git push --all";
-
-            # Always recursive
-            cp = "cp -r";
-            scp = "scp -r";
-
-            # Less verbosity
-            bc = "bc -ql";
-
-            turbo = "sudo cpupower -c all frequency-set -g performance";
-            unturbo = "sudo cpupower -c all frequency-set -g powersave";
-
-            units = "units --history /dev/null";
-
-            # Nix
-            #rebuild = "doas nixos-rebuild switch";
-            #rebuild-offline = "doas nixos-rebuild switch --option substitute false";
-            xs = "nix search nixpkgs";
-            np = "nix-shell -p";
-            nr = "nix repl";
-            nrp = "nix repl '<nixpkgs>'";
-            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
-            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
-            nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --option substitute false --show-trace |& nom --json";
-
-            # Better ls
-            ls = lib.mkForce "eza --group-directories-first";
-            l = "eza -a -l -h --git --group-directories-first";
-
-            # set color=always for some commands
-            grep = "grep --color=always";
-            diff = "diff --color=always";
-            ip = "ip --color=always";
-            tree = "tree -C";
-            history = "history 0"; # force show all history
-          };
           history = {
             size = 10000000;
             #path = "${config.xdg.dataHome}/zsh/history";
@@ -228,10 +274,12 @@ in
         programs.eza = {
           enable = true;
           enableZshIntegration = true;
+          enableFishIntegration = true;
         };
         programs.zoxide = {
           enable = true;
           enableZshIntegration = true;
+          enableFishIntegration = true;
         };
       };
     })
