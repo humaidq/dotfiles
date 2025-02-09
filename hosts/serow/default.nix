@@ -1,6 +1,5 @@
 {
   self,
-  lib,
   inputs,
   pkgs,
   vars,
@@ -48,6 +47,7 @@
     ntp.useNTS = true;
     o11y.client.enable = true;
     applications.emacs.enable = true;
+    applications.amateur.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [
@@ -68,8 +68,12 @@
     };
   };
 
-  # Doing riscv64 xcomp, manually gc
-  nix.gc.automatic = lib.mkForce false;
+  # Extra programs
+  environment.systemPackages = with pkgs; [
+    texliveFull
+    fractal
+    tuba
+  ];
 
   boot.loader = {
     systemd-boot = {
@@ -132,12 +136,12 @@
     };
   };
   hardware.keyboard.zsa.enable = true;
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_11;
-  environment.memoryAllocator.provider = "graphene-hardened";
+  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_13;
+  #environment.memoryAllocator.provider = "graphene-hardened";
 
   home-manager.users."${vars.user}" = {
     services.kanshi = {
-      enable = true;
+      enable = false;
 
       settings = [
         {

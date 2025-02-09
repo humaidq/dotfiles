@@ -50,6 +50,10 @@ in
       "10.10.0.12" = [
         "oreamnos"
         "oreamnos.alq"
+        "alq.ae"
+        "vault.alq.ae"
+        "git.alq.ae"
+        "yt.alq.ae"
       ];
       "10.10.0.13" = [
         "duisk"

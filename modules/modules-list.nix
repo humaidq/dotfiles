@@ -1,5 +1,6 @@
 [
   #  ./theme.nix
+  ./applications/amateur.nix
   ./applications/emacs.nix
   ./applications/firefox.nix
   ./applications/neovim.nix

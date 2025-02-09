@@ -2,7 +2,6 @@
   config,
   pkgs,
   lib,
-  inputs,
   ...
 }:
 let
@@ -65,31 +64,27 @@ in
         gimp
         #pinta
         inkscape
-        #libreoffice
+        libreoffice
         rpi-imager
         prusa-slicer
-        #gnome-firmware
+        gnome-firmware
         bitwarden-desktop
-        inputs.ghostty.packages.${pkgs.system}.default
+        ghostty
 
         gnome-calendar
         gnome-contacts
-        geary
         evolution
         errands
-        libreoffice
         zed-editor
-        # Re-add GNOME apps that are needed
-        #evince
-        #gnome-system-monitor
-        #gnome-text-editor
-        #loupe
 
         # GNOME circle apps
         #curtail
-        #eyedropper
-        #gaphor
+        eyedropper
+        gaphor
         fragments
+        localsend
+        fractal
+        tuba
 
         #khronos
         #hieroglyphic

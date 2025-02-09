@@ -22,9 +22,6 @@ in
 
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs; [
-      cheese
-      epiphany
-      geary
       gnome-music
       gnome-tour
       orca
