@@ -38,8 +38,8 @@ in
         dconf.settings = {
           "org/gnome/shell" = {
             favorite-apps = [
-              "firefox-esr.desktop"
-              "org.gnome.Console.desktop"
+              "chromium-browser.desktop"
+              "com.mitchellh.ghostty.desktop"
               "org.gnome.Nautilus.desktop"
             ];
             welcome-dialog-last-shown-version = "9999";

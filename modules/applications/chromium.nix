@@ -17,6 +17,7 @@ in
     default = config.sifr.graphics.apps;
   };
   config = lib.mkIf cfg.chromium.enable {
+    environment.systemPackages = [ pkgs.ungoogled-chromium ];
     home-manager.users."${vars.user}" = {
       programs.chromium = {
         enable = true;

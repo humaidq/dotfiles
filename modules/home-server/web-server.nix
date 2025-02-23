@@ -71,6 +71,13 @@ in
         (mkRP "onlyoffice" "3015")
 
         {
+          "sdr.alq.ae" = {
+            locations."/" = {
+              proxyPass = "http://192.168.1.164:8073";
+              extraConfig = '''';
+            };
+
+          };
           "cloud.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
           };
