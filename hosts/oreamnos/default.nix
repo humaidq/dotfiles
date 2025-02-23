@@ -391,6 +391,11 @@
         port = "3000";
         proto = "any";
       }
+      {
+        host = "any";
+        port = "80";
+        proto = "tcp";
+      }
       # Allow duisk access
       {
         host = "duisk";
