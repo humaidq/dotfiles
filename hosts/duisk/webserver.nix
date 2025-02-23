@@ -135,6 +135,12 @@ in
           }
         '';
 
+        "sdr.huma.id".extraConfig = ''
+          handle / {
+            reverse_proxy http://sdr.alq.ae
+          }
+        '';
+
         # Redirect all domains back to huma.id, preserving the path.
         "www.huma.id" = {
           serverAliases = [

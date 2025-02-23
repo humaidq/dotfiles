@@ -72,11 +72,10 @@ in
 
         {
           "sdr.alq.ae" = {
+            inherit (tls) sslCertificate sslCertificateKey;
             locations."/" = {
               proxyPass = "http://192.168.1.164:8073";
-              extraConfig = '''';
             };
-
           };
           "cloud.alq.ae" = {
             inherit (tls) sslCertificate sslCertificateKey forceSSL;
