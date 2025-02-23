@@ -54,6 +54,7 @@ in
         "vault.alq.ae"
         "git.alq.ae"
         "yt.alq.ae"
+        "sdr.alq.ae"
       ];
       "10.10.0.13" = [
         "duisk"
