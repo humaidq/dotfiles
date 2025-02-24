@@ -57,9 +57,9 @@
     };
 
     tailscale = {
-      enable = false;
+      enable = true;
       ssh = true;
-      auth = true;
+      auth = false;
     };
     net = {
       sifr0 = true;

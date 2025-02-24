@@ -136,8 +136,8 @@ in
         '';
 
         "sdr.huma.id".extraConfig = ''
-          handle / {
-            reverse_proxy http://sdr.alq.ae
+          reverse_proxy http://sdr.alq.ae {
+            header_up Host sdr.alq.ae
           }
         '';
 
