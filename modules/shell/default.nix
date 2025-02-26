@@ -115,10 +115,10 @@ in
           };
           functions = {
             ghafa-rebuild = ''
-              nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa reboot
+              nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v --show-trace &| nom --json  && ssh root@ghafa reboot
             '';
             ghafa-orin-rebuild = ''
-              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
+              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace &| nom --json  && ssh root@ghafa-orin reboot
             '';
 
             ntp = ''

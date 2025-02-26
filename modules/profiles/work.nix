@@ -52,7 +52,7 @@ in
         };
         "ghafa" = {
           user = "root";
-          hostname = "192.168.101.2";
+          hostname = "192.168.100.2";
           proxyJump = "ghafajump";
           checkHostIP = false;
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
@@ -62,7 +62,7 @@ in
           };
         };
         "ghafajump" = {
-          hostname = "192.168.1.59";
+          hostname = "10.110.2.119";
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {
             StrictHostKeyChecking = "no";
