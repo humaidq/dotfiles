@@ -1,4 +1,9 @@
-{ lib, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 let
   cfg = config.sifr.net;
 in
@@ -19,6 +24,7 @@ in
   };
 
   config = {
+    environment.systemPackages = [ pkgs.nebula ];
     networking.firewall = {
       trustedInterfaces = lib.mkIf cfg.sifr0 [ "sifr0" ];
       allowedUDPPorts = lib.mkIf cfg.sifr0 [
@@ -70,7 +76,7 @@ in
         tun.device = "sifr0";
 
         listen = {
-          host = "[::]";
+          host = "0.0.0.0";
           port = 4242;
         };
 

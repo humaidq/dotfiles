@@ -85,12 +85,14 @@ in
           }
         '';
 
-        /*"*.alq.ae" = {
-          extraConfig = ''
-            respond "Not connected to Tailscale"
-          '';
-          serverAliases = [ "alq.ae" ];
-        };*/
+        /*
+          "*.alq.ae" = {
+            extraConfig = ''
+              respond "Not connected to Tailscale"
+            '';
+            serverAliases = [ "alq.ae" ];
+          };
+        */
         # For serving files
         "f.huma.id".extraConfig = ''
           root * /srv/files

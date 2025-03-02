@@ -34,6 +34,9 @@ in
         inherit (lib.hm.gvariant) mkTuple;
       in
       {
+        services.gnome-keyring.enable = true;
+        home.packages = [ pkgs.gcr ];
+
         # dconf (gsettings) for Gnome applications
         dconf.settings = {
           "org/gnome/shell" = {
