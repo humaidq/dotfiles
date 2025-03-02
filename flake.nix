@@ -12,7 +12,7 @@
 
     # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    #nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixos-hardware-star64.url = "github:humaidq/nixos-hardware/star64";
     #nur.url = "github:nix-community/NUR";
