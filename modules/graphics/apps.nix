@@ -100,6 +100,9 @@ in
       ];
       services.fwupd.enable = true;
       #services.power-profiles-daemon.enable = true;
+
+      networking.firewall.allowedTCPPorts =[53317];
+      networking.firewall.allowedUDPPorts =[53317];
     })
   ];
 }

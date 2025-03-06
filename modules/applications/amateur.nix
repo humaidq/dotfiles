@@ -22,7 +22,7 @@ in
       flrig
       unstable.hamlib_4
       # mapping
-      gridtracker
+      unstable.gridtracker
       gpredict
       # logging
       qlog

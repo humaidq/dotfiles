@@ -26,6 +26,7 @@
     mode = "600";
   };
 
+  services.upower.ignoreLid = true;
   # My configuration specific settings
   sifr = {
     graphics = {
