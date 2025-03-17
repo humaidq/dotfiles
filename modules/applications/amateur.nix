@@ -29,20 +29,25 @@ in
       cqrlog
       # sdr
       gnuradio
+      libusb1
+      rtl-sdr
+      gqrx
+      sdrpp
       # ax.25
       ax25-tools
       ax25-apps
       direwolf
     ];
 
-  boot.kernelPatches = lib.singleton {
-    name = "ax25-ham";
-    patch = null;
-    extraStructuredConfig = with lib.kernel; {
-      HAMRADIO = yes;
-      AX25 = yes;
-      AX25_DAMA_SLAVE = yes;
+    hardware.rtl-sdr.enable = true;
+    boot.kernelPatches = lib.singleton {
+      name = "ax25-ham";
+      patch = null;
+      extraStructuredConfig = with lib.kernel; {
+        HAMRADIO = yes;
+        AX25 = yes;
+        AX25_DAMA_SLAVE = yes;
+      };
     };
-  };
   };
 }

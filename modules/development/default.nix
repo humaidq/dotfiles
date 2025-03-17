@@ -55,6 +55,7 @@ in
 
         programs.git = {
           enable = true;
+          lfs.enable = true;
           aliases = {
             co = "checkout";
           };
@@ -176,6 +177,10 @@ in
         nix-tree
         nixfmt-rfc-style
         nixpkgs-review
+
+        # other tools
+        pnpm
+        nodejs_23
       ];
     })
   ];

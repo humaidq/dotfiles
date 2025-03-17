@@ -85,12 +85,12 @@ in
           }
         '';
 
-          "*.alq.ae" = {
-            extraConfig = ''
-              respond "Not connected to sifr0, make sure you are connected to lighthouse.huma.id and DNS is setup properly"
-            '';
-            serverAliases = [ "alq.ae" ];
-          };
+        "*.alq.ae" = {
+          extraConfig = ''
+            respond "Not connected to sifr0, make sure you are connected to lighthouse.huma.id and DNS is setup properly"
+          '';
+          serverAliases = [ "alq.ae" ];
+        };
         # For serving files
         "f.huma.id".extraConfig = ''
           root * /srv/files
