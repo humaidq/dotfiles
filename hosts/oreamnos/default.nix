@@ -295,6 +295,7 @@
         # zsh keeps moving new file to $HISTFILE, which would break if we
         # persist only the file.
         ".config/zsh_history"
+        ".local/share/fish"
       ];
     };
   };
