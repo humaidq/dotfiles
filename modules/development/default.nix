@@ -66,6 +66,7 @@ in
                 user.email = "humaid.alqassimi@tii.ae";
                 user.signingkey = "~/.ssh/id_ed25519_sk_tii.pub";
                 core.sshCommand = "ssh -i ~/.ssh/id_ed25519_sk_tii";
+                commit.gpgSign = true;
               };
             }
           ];

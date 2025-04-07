@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  vars,
   ...
 }:
 
@@ -22,11 +23,11 @@ in
       flrig
       unstable.hamlib_4
       # mapping
-      unstable.gridtracker
+      gridtracker
       gpredict
       # logging
-      qlog
-      cqrlog
+      unstable.qlog
+      tqsl
       # sdr
       gnuradio
       libusb1
@@ -49,5 +50,61 @@ in
         AX25_DAMA_SLAVE = yes;
       };
     };
+
+    services.pipewire.wireplumber.configPackages = [
+      (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/50-digirig.conf" ''
+        monitor.alsa.rules = [
+          {
+            matches = [
+              {
+                node.name = "alsa_output.usb-C-Media_Electronics_Inc._USB_Audio_Device-00.iec958-stereo"
+              }
+            ]
+            actions = {
+              update-props = {
+                node.nick  = "Digirig Output"
+                node.description  = "Digirig Output"
+                node.volume = 0.5
+              }
+            }
+          }
+          {
+            matches = [
+              {
+                node.name = "alsa_input.usb-C-Media_Electronics_Inc._USB_Audio_Device-00.mono-fallback"
+              }
+            ]
+            actions = {
+              update-props = {
+                node.nick  = "Digirig Input"
+                node.description  = "Digirig Input"
+                node.volume = 1
+              }
+            }
+          }
+        ]
+      '')
+    ];
+
+    # home-manager.users."${vars.user}" = {
+    #   xdg.configFile."wireplumber/wireplumber.conf.d/50-digirig.conf".text = ''
+    #     monitor.alsa.rules = [
+    #       {
+    #         matches = [
+    #           {
+    #             node.name = "alsa_output.usb-C-Media_Electronics_Inc._USB_Audio_Device-00.iec958-stereo"
+    #           }
+    #         ]
+    #         actions = {
+    #           update-props = {
+    #             ["node.nick"]  = "Digirig Output"
+    #             ["node.description"] = "Digirig Output"
+    #             ["node.volume"] = 0.5
+    #           }
+    #         }
+    #       }
+    #     ]
+    #   '';
+    # };
   };
 }

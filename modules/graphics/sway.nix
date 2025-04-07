@@ -28,7 +28,6 @@ in
     environment.systemPackages = with pkgs; [
       rofi
       xwayland
-      thunderbird
       gnome-online-accounts-gtk
       gnome-calendar
       gnome-contacts

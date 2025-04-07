@@ -70,10 +70,11 @@ in
         gnome-firmware
         bitwarden-desktop
         ghostty
+        calibre
 
+        decibels # audio, soon in gnome 48
         gnome-calendar
         gnome-contacts
-        evolution
         errands
         zed-editor
 
@@ -86,9 +87,11 @@ in
         fractal
         tuba
 
+        alsa-utils
+
         #khronos
         #hieroglyphic
-        impression
+        #impression
         #junction
         #letterpress
         #lorem

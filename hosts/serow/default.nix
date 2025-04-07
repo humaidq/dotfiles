@@ -31,7 +31,7 @@
   sifr = {
     graphics = {
       gnome.enable = true;
-      sway.enable = true;
+      sway.enable = false;
       apps = true;
     };
     profiles = {
@@ -137,7 +137,7 @@
     };
   };
   hardware.keyboard.zsa.enable = true;
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_13;
+  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_14;
   #environment.memoryAllocator.provider = "graphene-hardened";
 
   home-manager.users."${vars.user}" = {

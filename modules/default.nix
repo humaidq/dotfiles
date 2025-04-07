@@ -192,7 +192,18 @@ in
             inherit (final) system;
             config.allowUnfree = true;
           };
+
+          # liquidctl hasn't made a release for a while, and the latest release
+          # doesn't support my all-in-one cooler on oreamnos
           liquidctl = import ../overlays/liquidctl { inherit prev; };
+
+          nwjs = prev.nwjs.overrideAttrs {
+            version = "0.84.0";
+            src = prev.fetchurl {
+              url = "https://dl.nwjs.io/v0.84.0/nwjs-v0.84.0-linux-x64.tar.gz";
+              hash = "sha256-VIygMzCPTKzLr47bG1DYy/zj0OxsjGcms0G1BkI/TEI=";
+            };
+          };
         })
       ];
 
