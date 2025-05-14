@@ -2,6 +2,7 @@
   pkgs,
   lib,
   config,
+  vars,
   ...
 }:
 let
@@ -20,6 +21,11 @@ in
       description = "Nebula network node key";
       type = lib.types.str;
       default = "/etc/nebula/node.key";
+    };
+    ssh-host-key = lib.mkOption {
+      description = "Nebula network debug ssh daemon host key";
+      type = lib.types.nullOr lib.types.str;
+      default = null;
     };
   };
 
@@ -96,6 +102,16 @@ in
             respond = true;
           };
           preferred_ranges = [ "192.168.1.0/24" ];
+
+          sshd = lib.mkIf (cfg.ssh-host-key != null){
+            enabled = true;
+            listen = "localhost:2202";
+            host_key = cfg.ssh-host-key;
+            authorized_users = lib.lists.singleton {
+              user = vars.user;
+              keys = config.users.users.${vars.user}.openssh.authorizedKeys.keys;
+            };
+          };
         };
         firewall = {
           outbound = [

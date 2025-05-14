@@ -27,7 +27,7 @@ in
       home-manager.users."${vars.user}" = {
 
         programs.jujutsu = {
-          enable = true;
+          enable = false;
           settings = {
             user = {
               name = "Humaid Alqasimi";
@@ -104,7 +104,7 @@ in
     (lib.mkIf cfg.enable {
       documentation = {
         dev.enable = true;
-        man.generateCaches = true;
+        #man.generateCaches = true;
       };
       home-manager.users."${vars.user}" = {
         programs = {
@@ -166,7 +166,7 @@ in
         git-extras
         git-lfs
         git-privacy
-        jujutsu
+        #jujutsu
         #tig
 
         # Nix

@@ -35,6 +35,11 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
+  sops.secrets."nebula/ssh_host_key" = {
+    sopsFile = ../../secrets/lighthouse.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
 
   sifr = {
     net = {
@@ -42,6 +47,7 @@
       isLighthouse = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
+      ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
     };
     profiles.basePlus = true;
     profiles.server = true;

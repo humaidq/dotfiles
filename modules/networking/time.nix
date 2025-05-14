@@ -27,6 +27,7 @@ in
       extraConfig = ''
         # Cloudflare supports NTS
         pool time.cloudflare.com iburst xleave ${if cfg.useNTS then "nts" else ""}
+        server oreamnos iburst xleave
 
         ${
           if !cfg.useNTS then

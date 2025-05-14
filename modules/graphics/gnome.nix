@@ -27,7 +27,10 @@ in
       epiphany
       orca
     ];
-    environment.systemPackages = with pkgs; [ dconf-editor ];
+    environment.systemPackages = with pkgs; [
+      dconf-editor
+      gnome-pomodoro
+    ];
 
     home-manager.users."${vars.user}" =
       { lib, ... }:

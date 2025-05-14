@@ -25,6 +25,11 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
+  sops.secrets."nebula/ssh_host_key" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
 
   services.upower.ignoreLid = true;
   # My configuration specific settings
@@ -66,15 +71,25 @@
       sifr0 = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
+      ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
     };
   };
+
+  services.gnome.gnome-remote-desktop.enable = true;
+  networking.firewall.allowedTCPPorts = [ 3389 ];
+  networking.firewall.allowedUDPPorts = [ 3389 ];
 
   # Extra programs
   environment.systemPackages = with pkgs; [
     texliveFull
     fractal
     tuba
+    burpsuite
+    unstable.gurk-rs
+    android-studio
   ];
+
+  nixpkgs.config.android_sdk.accept_license = true;
 
   boot.loader = {
     systemd-boot = {
@@ -100,7 +115,7 @@
       {
         hostName = "oreamnos";
         system = "x86_64-linux";
-        maxJobs = 8;
+        maxJobs = 32;
         speedFactor = 1;
         supportedFeatures = [
           "nixos-test"

@@ -103,6 +103,7 @@ in
     })
     (lib.mkIf cfg.zsh {
       programs.zsh.enable = false;
+      documentation.man.generateCaches = false; # speed up rebuild
       programs.fish.enable = true;
       users.users."${vars.user}".shell = pkgs.fish;
       home-manager.users."${vars.user}" = {
