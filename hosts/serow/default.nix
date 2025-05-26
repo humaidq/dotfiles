@@ -75,12 +75,22 @@
     };
   };
 
+  nix.settings = {
+    trusted-substituters = [
+      "ssh://oreamnos"
+    ];
+    substituters = [
+      "ssh://oreamnos"
+    ];
+  };
+
   services.gnome.gnome-remote-desktop.enable = true;
   networking.firewall.allowedTCPPorts = [ 3389 ];
   networking.firewall.allowedUDPPorts = [ 3389 ];
 
   # Extra programs
   environment.systemPackages = with pkgs; [
+    gnome-remote-desktop
     texliveFull
     fractal
     tuba
@@ -152,7 +162,7 @@
     };
   };
   hardware.keyboard.zsa.enable = true;
-  boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_14;
+  #boot.kernelPackages = pkgs.linuxKernel.packages.linux_6_14;
   #environment.memoryAllocator.provider = "graphene-hardened";
 
   home-manager.users."${vars.user}" = {

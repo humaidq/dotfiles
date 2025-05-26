@@ -103,8 +103,6 @@ in
     home-manager.users.${vars.user} = {
       home.stateVersion = "23.05";
       home.sessionPath = [ "$HOME/.bin" ];
-
-      nixpkgs.config.allowUnfree = true;
     };
 
     time.timeZone = cfg.timezone;
@@ -123,7 +121,8 @@ in
         ];
         auto-optimise-store = true;
 
-        trusted-substituters = [#substituters ++
+        trusted-substituters = [
+          # substituters ++
           "https://dev-cache.vedenemo.dev"
           "https://cache.ssrcdevops.tii.ae"
           "https://ghaf-dev.cachix.org"

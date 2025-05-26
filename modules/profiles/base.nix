@@ -143,14 +143,14 @@ in
       ];
 
       # Locate
-      services.locate = {
-        enable = true;
-        package = pkgs.plocate;
-        interval = "daily";
-        localuser = null; # for 22.05
-        # Sometimes indexing hgfs on VMWare causing CPU to go 100%
-        prunePaths = [ "/mnt" ];
-      };
+      #services.locate = {
+      #  enable = true;
+      #  package = pkgs.plocate;
+      #  interval = "daily";
+      #  localuser = null; # for 22.05
+      #  # Sometimes indexing hgfs on VMWare causing CPU to go 100%
+      #  prunePaths = [ "/mnt" ];
+      #};
 
       # Track highest uptime! :)
       services.uptimed.enable = true;

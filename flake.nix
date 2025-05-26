@@ -11,7 +11,7 @@
     humaid-site.url = "github:humaidq/huma.id";
 
     # External imports
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixos-hardware-star64.url = "github:humaidq/nixos-hardware/star64";
@@ -48,7 +48,7 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-25.05";
       #url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -59,7 +59,7 @@
     };
 
     nixvim = {
-      url = "github:nix-community/nixvim/nixos-24.11";
+      url = "github:nix-community/nixvim/nixos-25.05";
       #url = "github:nix-community/nixvim";
       inputs.nixpkgs.follows = "nixpkgs";
     };

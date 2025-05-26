@@ -155,7 +155,7 @@ in
         gdb
         gnupg
         imagemagick
-        licensor
+        #licensor #not maintained
         minify
         scc
         sqlite
@@ -181,7 +181,7 @@ in
 
         # other tools
         pnpm
-        nodejs_23
+        nodejs
       ];
     })
   ];

@@ -49,7 +49,7 @@ in
         pulse.enable = true;
         wireplumber.enable = true;
       };
-      hardware.pulseaudio.enable = false; # replaced with pipewire above
+      services.pulseaudio.enable = false; # replaced with pipewire above
     })
     (mkIf cfg.enable {
       # home-manager can get angry if dconf is not enabled.

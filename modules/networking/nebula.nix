@@ -67,6 +67,7 @@ in
         "git.alq.ae"
         "yt.alq.ae"
         "sdr.alq.ae"
+        "tv.alq.ae"
       ];
       "10.10.0.13" = [
         "duisk"
@@ -103,13 +104,13 @@ in
           };
           preferred_ranges = [ "192.168.1.0/24" ];
 
-          sshd = lib.mkIf (cfg.ssh-host-key != null){
+          sshd = lib.mkIf (cfg.ssh-host-key != null) {
             enabled = true;
             listen = "localhost:2202";
             host_key = cfg.ssh-host-key;
             authorized_users = lib.lists.singleton {
-              user = vars.user;
-              keys = config.users.users.${vars.user}.openssh.authorizedKeys.keys;
+              inherit (vars) user;
+              inherit (config.users.users.${vars.user}.openssh.authorizedKeys) keys;
             };
           };
         };

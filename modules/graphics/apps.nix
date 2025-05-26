@@ -17,45 +17,36 @@ in
       fonts = {
         enableDefaultPackages = true;
         enableGhostscriptFonts = true;
-        packages =
-          with pkgs;
-          [
-            noto-fonts
-            noto-fonts-cjk-sans
-            noto-fonts-emoji
-            noto-fonts-extra
-            #source-code-pro
-            #source-sans-pro
-            #source-serif-pro
-            amiri
-            #corefonts
-            roboto
-            #ubuntu_font_family
-            fira-code
-            cantarell-fonts
-            freefont_ttf
-            inconsolata
-            liberation_ttf
-            #lmodern
-            ttf_bitstream_vera
-            inter
-            #ibm-plex
-            merriweather
-            #jetbrains-mono
-            # Bitmap fonts
-            #terminus_font
-            cherry
-            spleen
-          ]
-          ++ [
-            (nerdfonts.override {
-              # Anything included here must be included above too
-              fonts = [
-                "FiraCode"
-                "JetBrainsMono"
-              ];
-            })
-          ];
+        packages = with pkgs; [
+          noto-fonts
+          noto-fonts-cjk-sans
+          noto-fonts-emoji
+          noto-fonts-extra
+          #source-code-pro
+          #source-sans-pro
+          #source-serif-pro
+          amiri
+          #corefonts
+          roboto
+          #ubuntu_font_family
+          fira-code
+          cantarell-fonts
+          freefont_ttf
+          inconsolata
+          liberation_ttf
+          #lmodern
+          ttf_bitstream_vera
+          inter
+          #ibm-plex
+          merriweather
+          #jetbrains-mono
+          # Bitmap fonts
+          #terminus_font
+          cherry
+          spleen
+          nerd-fonts.fira-code
+          nerd-fonts.jetbrains-mono
+        ];
       };
     })
     (lib.mkIf (cfg.apps && !config.sifr.hardware.vm) {
