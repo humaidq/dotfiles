@@ -10,7 +10,6 @@ in
 {
   config = lib.mkIf cfg.enable {
     services.dokuwiki.sites."wiki.alq.ae" = {
-      enable = true;
       settings = {
         title = "Home Wiki";
         useacl = true;

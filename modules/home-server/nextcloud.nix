@@ -18,6 +18,7 @@ in
       enable = true;
       package = pkgs.nextcloud30;
       hostName = "cloud.alq.ae";
+      config.dbtype = "sqlite";
       config.adminpassFile = config.sops.secrets."nextcloud/adminpass".path;
 
       extraApps = {
