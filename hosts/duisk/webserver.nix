@@ -58,10 +58,10 @@ in
           encode {
             zstd
           }
-          log {
-            #format single_field common_log
-            output file /var/log/access.log
-          }
+          #log {
+          #  #format single_field common_log
+          #  output file /var/log/access.log
+          #}
         }
 
         (cors) {

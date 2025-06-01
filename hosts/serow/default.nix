@@ -97,6 +97,7 @@
     burpsuite
     unstable.gurk-rs
     android-studio
+    zotero
   ];
 
   nixpkgs.config.android_sdk.accept_license = true;
