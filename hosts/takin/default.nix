@@ -47,7 +47,7 @@
   };
 
   programs = {
-    zsh.enable = true;
+    fish.enable = true;
   };
   services = {
     nix-daemon.enable = true;

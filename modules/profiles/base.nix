@@ -24,9 +24,7 @@ in
       environment.systemPackages =
         (with pkgs; [
           # shell related
-          zsh
-          #zsh-autosuggestions
-          #zsh-nix-shell
+          fish
           helix
 
           # utilities
@@ -70,10 +68,9 @@ in
           pkgs.tiptop
         ];
 
-      # Ensure zsh is recognised as a system shell.
+      # Ensure fish is recognised as a system shell.
       environment.shells = [
         pkgs.fish
-        pkgs.zsh
       ];
 
       security.sudo.extraConfig = ''
