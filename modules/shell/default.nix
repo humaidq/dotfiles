@@ -139,11 +139,11 @@ in
             '';
 
             mkcd = ''
-              if [[ -z $1 ]]; then
+              if test -z "$argv"; then
                 echo "Usage: mkcd <directory>"
                 return 1
-              fi
-              mkdir -p $1 && cd $1
+              end
+              mkdir -p "$argv"; and cd "$argv"
             '';
           };
           interactiveShellInit = ''
