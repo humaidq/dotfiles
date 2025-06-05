@@ -149,7 +149,7 @@ in
                 enable = dev;
                 settings = {
                   performance = {
-                    max_view_entires = 80; # default: 200
+                    max_view_entries = 80; # default: 200
                   };
                   sources = [
                     { name = "nvim_lsp"; }
