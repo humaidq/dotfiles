@@ -7,10 +7,6 @@
 }:
 let
   cfg = config.sifr.shell;
-  lscolors = fetchGit {
-    url = "https://github.com/trapd00r/LS_COLORS";
-    rev = "a283d79dcbb23a8679f4b1a07d04a80cab01c0ba"; # Dec 14, 2023
-  };
   # fish specific plugins can be added here in the future
   shellAliases = {
     ka = "killall";
