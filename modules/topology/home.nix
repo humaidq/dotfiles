@@ -7,7 +7,7 @@
       interfaces.wlan = {
         network = "home";
         addresses = [
-          "espon.alq.ae"
+          "epson.alq.ae"
           "192.168.1.52"
         ];
       };
