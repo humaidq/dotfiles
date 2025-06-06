@@ -182,6 +182,7 @@ in
         # other tools
         pnpm
         nodejs
+        tree-sitter
       ];
     })
   ];

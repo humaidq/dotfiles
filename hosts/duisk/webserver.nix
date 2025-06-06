@@ -4,7 +4,7 @@
   ...
 }:
 let
-  humaid-site = inputs.humaid-site.defaultPackage.${pkgs.system};
+  humaid-site = inputs.humaid-site.packages.${pkgs.system}.default;
 in
 {
   config = {
