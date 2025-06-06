@@ -1,7 +1,6 @@
-{ lib, inputs, ... }:
+{ lib, ... }:
 {
   imports = [
-    inputs.authentik-nix.nixosModules.default
     ./acme.nix
     ./ai.nix
     ./blocky.nix

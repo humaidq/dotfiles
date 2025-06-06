@@ -65,7 +65,6 @@ in
         "alq.ae"
         "vault.alq.ae"
         "git.alq.ae"
-        "yt.alq.ae"
         "sdr.alq.ae"
         "tv.alq.ae"
       ];

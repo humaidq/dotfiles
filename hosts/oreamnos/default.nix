@@ -215,8 +215,6 @@
       "/var/lib/loki"
       "/var/lib/prometheus2"
       {
-        directory = "/var/lib/redis-authentik";
-        user = "redis-authentik";
         mode = "0740";
       }
       {
@@ -248,12 +246,6 @@
         group = "forgejo";
         mode = "0770";
       }
-      "/var/lib/postgresql"
-      {
-        directory = "/var/lib/kavita";
-        user = "kavita";
-        mode = "0700";
-      }
       {
         directory = "/var/lib/jellyfin";
         user = "jellyfin";
@@ -261,7 +253,6 @@
       }
       "/var/lib/deluge"
       "/var/lib/caddy"
-      "/var/lib/audiobookshelf"
       "/var/lib/uptimed"
       {
         directory = "/var/lib/bitwarden_rs";

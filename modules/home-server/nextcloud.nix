@@ -23,17 +23,11 @@ in
 
       extraApps = {
         inherit (config.services.nextcloud.package.packages.apps)
-          onlyoffice
           integration_paperless
           bookmarks
           ;
       };
     };
 
-    services.onlyoffice = {
-      enable = false;
-      port = 3015;
-      hostname = "onlyoffice.alq.ae";
-    };
   };
 }

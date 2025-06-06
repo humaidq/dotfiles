@@ -63,19 +63,11 @@ in
         (mkRP "bazarr" "6767")
         (mkRP "hydra" "3300")
         (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
-        (mkRP "books" "5555")
-        (mkRP "audiobooks" "8000")
         (mkRP "tv" "8096")
-        (mkRP "recipes" "9000")
         (mkRP "pdf" "8084")
-        (mkRP "yt" "4747")
-        (mkRP "search" "4848")
         (mkRP "git" "3939")
-        # (mkRP "seafile" "3014")
-        (mkRP "reddit" "3014")
         (mkRP "dav" "5232")
         (mkRP "webdav" "8477")
-        (mkRP "onlyoffice" "3015")
 
         {
           "sdr.alq.ae" = {
@@ -145,13 +137,7 @@ in
               proxyPass = "http://127.0.0.1:3011";
             };
           };
-          "${config.services.invidious.domain}" = {
-            inherit (tls) forceSSL;
-            enableACME = true;
-          };
-          "${config.services.authentik.nginx.host}" = {
-            forceSSL = lib.mkForce true;
-          };
+
         }
       ];
     };
@@ -165,15 +151,6 @@ in
         background = "https://images.unsplash.com/photo-1502790671504-542ad42d5189?auto=format&fit=crop&w=2560&q=80";
       };
       widgets = [
-        {
-          search = {
-            provider = "custom";
-            url = "https://search.alq.ae/search?q=";
-            target = "_blank";
-            suggestionUrl = "https://search.alq.ae/autocompleter?q=";
-            showSearchSuggestions = true;
-          };
-        }
         {
           openmeteo = {
             latitude = "25.4018";
@@ -203,34 +180,10 @@ in
                 icon = "mdi-movie-search";
               };
             }
-            {
-              "YouTube" = {
-                description = "Ad-free YouTube (Invidious)";
-                href = "https://yt.alq.ae/";
-                siteMonitor = "https://yt.alq.ae";
-                icon = "mdi-youtube";
-              };
-            }
-            {
-              "Reddit" = {
-                description = "Fast Reddit (RedLib)";
-                href = "https://reddit.alq.ae/";
-                siteMonitor = "https://reddit.alq.ae";
-                icon = "mdi-reddit";
-              };
-            }
           ];
         }
         {
           "Services" = [
-            {
-              "Search" = {
-                description = "Meta Search Engine (Searxng)";
-                href = "https://search.alq.ae/";
-                siteMonitor = "https://search.alq.ae/";
-                icon = "mdi-search-web";
-              };
-            }
             {
               "Vault" = {
                 description = "Password Manager (Vaultwarden)";
@@ -291,42 +244,10 @@ in
                 icon = "mdi-leaf-circle";
               };
             }
-            {
-              "Recipes" = {
-                description = "Recipe Book (Mealie)";
-                href = "https://recipes.alq.ae/";
-                siteMonitor = "https://recipes.alq.ae/";
-                icon = "mdi-silverware-fork-knife";
-              };
-            }
-            {
-              "Books" = {
-                description = "eBooks Library (Kavita)";
-                href = "https://books.alq.ae/";
-                siteMonitor = "https://books.alq.ae/";
-                icon = "mdi-bookshelf";
-              };
-            }
-            {
-              "Audio Books" = {
-                description = "Audio Books Library";
-                href = "https://audiobooks.alq.ae/";
-                siteMonitor = "https://audiobooks.alq.ae/";
-                icon = "mdi-book-music";
-              };
-            }
           ];
         }
         {
           "Backend & Servers" = [
-            {
-              "Single Sign-On" = {
-                description = "Local Identity Provider (Authentik)";
-                href = "https://auth.alq.ae/";
-                siteMonitor = "https://auth.alq.ae/";
-                icon = "mdi-account-box-multiple";
-              };
-            }
             {
               "Grafana" = {
                 description = "Observability Platform";
@@ -341,14 +262,6 @@ in
                 href = "https://hydra.alq.ae/";
                 siteMonitor = "https://hydra.alq.ae/";
                 icon = "mdi-autorenew";
-              };
-            }
-            {
-              "Cache" = {
-                description = "Nix Binary Cache";
-                href = "https://cache.alq.ae/";
-                siteMonitor = "https://cache.alq.ae/";
-                icon = "mdi-database-clock";
               };
             }
             {
