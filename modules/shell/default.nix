@@ -101,8 +101,8 @@ in
         programs.fish = {
           enable = true;
           shellAliases = shellAliases // {
-            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace &| nom --json";
-            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace &| nom --json";
+            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace &| ${pkgs.nix-output-monitor}/bin/nom --json";
+            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace &| ${pkgs.nix-output-monitor}/bin/nom --json";
             nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --option substitute false --show-trace &| nom --json";
           };
           functions = {
