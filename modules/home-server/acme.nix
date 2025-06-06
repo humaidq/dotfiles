@@ -60,6 +60,9 @@ in
               allow = {
                 dns = [
                   "*.alq.ae"
+                  "alq.ae"
+                  "home.arpa"
+                  "*.home.arpa"
                 ];
               };
               allowWildcardNames = true;
