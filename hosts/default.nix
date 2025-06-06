@@ -8,8 +8,18 @@
 {
   flake =
     let
-      specialArgs = {
-        inherit self inputs vars;
+      baseArgs = { inherit self inputs vars; };
+      homeServerSystem = lib.nixosSystem {
+        specialArgs = baseArgs;
+        modules = [
+          self.nixosModules.host-oreamnos
+          inputs.srvos.nixosModules.server
+          inputs.srvos.nixosModules.mixins-nix-experimental
+        ];
+      };
+      homeServerDomains = builtins.attrNames homeServerSystem.config.services.nginx.virtualHosts;
+      specialArgs = baseArgs // {
+        vars = baseArgs.vars // { inherit homeServerDomains; };
       };
     in
     {
