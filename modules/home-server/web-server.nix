@@ -38,7 +38,7 @@ in
     security.acme.acceptTerms = true;
     security.acme.defaults = {
       email = "local@alq.ae";
-      server = "https://oreamnos:8443/acme/acme/directory";
+      server = "https://alq.ae:8443/acme/acme/directory";
     };
 
     services.nginx = {
