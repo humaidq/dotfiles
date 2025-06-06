@@ -19,7 +19,9 @@
       };
       homeServerDomains = builtins.attrNames homeServerSystem.config.services.nginx.virtualHosts;
       specialArgs = baseArgs // {
-        vars = baseArgs.vars // { inherit homeServerDomains; };
+        vars = baseArgs.vars // {
+          inherit homeServerDomains;
+        };
       };
     in
     {
