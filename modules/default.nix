@@ -111,6 +111,8 @@ in
     # We enable DHCP for all network interfaces by default.
     #networking.useDHCP = true;
 
+    security.pki.certificateFiles = [ ./alqasimi-ca.pem ];
+
     nix = {
       settings = rec {
         allowed-users = [ cfg.username ];

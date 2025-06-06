@@ -2,8 +2,8 @@
 let
   cfg = config.sifr.home-server;
   tls = {
-    sslCertificate = config.sops.secrets."web/fullchain".path;
-    sslCertificateKey = config.sops.secrets."web/privkey".path;
+    #sslCertificate = config.sops.secrets."web/fullchain".path;
+    #sslCertificateKey = config.sops.secrets."web/privkey".path;
     forceSSL = true;
   };
   domain = "alq.ae";
@@ -14,7 +14,8 @@ let
     in
     {
       "${dom}" = {
-        inherit (tls) sslCertificate sslCertificateKey forceSSL;
+        inherit (tls) forceSSL;
+        enableACME = true;
         locations."/" = {
           proxyPass = "http://127.0.0.1:${port}";
         };
@@ -32,6 +33,12 @@ in
       sopsFile = ../../secrets/home-server.yaml;
       owner = "nginx";
       mode = "600";
+    };
+
+    security.acme.acceptTerms = true;
+    security.acme.defaults = {
+      email = "local@alq.ae";
+      server = "https://oreamnos:8443/acme/acme/directory";
     };
 
     services.nginx = {
@@ -72,19 +79,22 @@ in
 
         {
           "sdr.alq.ae" = {
-            inherit (tls) sslCertificate sslCertificateKey;
+            enableACME = true;
             locations."/" = {
               proxyPass = "http://192.168.1.164:8073";
             };
           };
           "cloud.alq.ae" = {
-            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+            enableACME = true;
+            inherit (tls) forceSSL;
           };
           "wiki.alq.ae" = {
-            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+            enableACME = true;
+            inherit (tls) forceSSL;
           };
           "paperless.alq.ae" = {
-            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+            enableACME = true;
+            inherit (tls) forceSSL;
 
             extraConfig = ''
               # allow large file uploads
@@ -107,7 +117,8 @@ in
             };
           };
           "img.alq.ae" = {
-            inherit (tls) sslCertificate sslCertificateKey forceSSL;
+            enableACME = true;
+            inherit (tls) forceSSL;
 
             extraConfig = ''
               # allow large file uploads
@@ -135,11 +146,10 @@ in
             };
           };
           "${config.services.invidious.domain}" = {
-            inherit (tls) sslCertificate sslCertificateKey forceSSL;
-            enableACME = false;
+            inherit (tls) forceSSL;
+            enableACME = true;
           };
           "${config.services.authentik.nginx.host}" = {
-            inherit (tls) sslCertificate sslCertificateKey;
             forceSSL = lib.mkForce true;
           };
         }

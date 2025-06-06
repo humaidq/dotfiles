@@ -153,7 +153,7 @@ in
       };
       nginx = {
         enable = true;
-        enableACME = false;
+        enableACME = true;
         host = "auth.alq.ae";
       };
     };
