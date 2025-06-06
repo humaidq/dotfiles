@@ -1,4 +1,9 @@
-{ lib, inputs, config, ... }:
+{
+  lib,
+  inputs,
+  config,
+  ...
+}:
 let
   cfg = config.sifr.home-server;
 in
@@ -25,7 +30,7 @@ in
     domains = lib.mkOption {
       type = with lib.types; listOf str;
       readOnly = true;
-      default = [];
+      default = [ ];
       description = "Domains served by the home server web instance.";
     };
   };
