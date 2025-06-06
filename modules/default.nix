@@ -108,9 +108,6 @@ in
     time.timeZone = cfg.timezone;
     i18n.defaultLocale = "en_GB.UTF-8";
 
-    # We enable DHCP for all network interfaces by default.
-    #networking.useDHCP = true;
-
     security.pki.certificateFiles = [ ./alqasimi-ca.pem ];
 
     nix = {
@@ -122,16 +119,15 @@ in
         ];
         auto-optimise-store = true;
 
-        trusted-substituters = [
-          # substituters ++
+        trusted-substituters = substituters ++ [
           "https://dev-cache.vedenemo.dev"
           "https://cache.ssrcdevops.tii.ae"
           "https://ghaf-dev.cachix.org"
         ];
 
-        #substituters = lib.optional (
-        #  config.networking.hostName != "oreamnos"
-        #) "https://cache.huma.id?priority=51";
+        substituters = lib.optional (
+          config.networking.hostName != "oreamnos"
+        ) "https://cache.huma.id?priority=51";
 
         trusted-public-keys = [
           "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="
