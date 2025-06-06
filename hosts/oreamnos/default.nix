@@ -264,12 +264,6 @@
       "/var/lib/audiobookshelf"
       "/var/lib/uptimed"
       {
-
-        directory = "/var/lib/step-ca/db";
-        mode = "0700";
-        user = "step-ca";
-      }
-      {
         directory = "/var/lib/bitwarden_rs";
         mode = "0700";
         user = "vaultwarden";
