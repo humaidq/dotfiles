@@ -25,7 +25,7 @@ in
         (with pkgs; [
           # shell related
           fish
-          helix
+          ghostty.terminfo
 
           # utilities
           wget

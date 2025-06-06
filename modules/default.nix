@@ -109,12 +109,11 @@ in
     i18n.defaultLocale = "en_GB.UTF-8";
 
     # We enable DHCP for all network interfaces by default.
-    networking.useDHCP = lib.mkDefault true;
+    #networking.useDHCP = true;
 
     nix = {
       settings = rec {
         allowed-users = [ cfg.username ];
-        builders-use-substitutes = true;
         trusted-users = [
           "root"
           cfg.username
@@ -138,19 +137,12 @@ in
           "cache.ssrcdevops.tii.ae:oOrzj9iCppf+me5/3sN/BxEkp5SaFkHfKTPPZ97xXQk="
           "ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY="
         ];
-        # Enable flakes
-        experimental-features = [
-          "nix-command"
-          "flakes"
-        ];
       };
       gc = {
         automatic = true;
         dates = "weekly";
         options = "--delete-older-than 30d";
       };
-
-      channel.enable = false;
 
       # API Rate limit for GitHub
       extraOptions = lib.mkIf cfg.hasGadgetSecrets ''

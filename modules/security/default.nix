@@ -83,12 +83,12 @@ in
           "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
 
           # Ignore all ICMP redirects (breaks routers)
-          "net.ipv4.conf.all.accept_redirects" = false;
-          "net.ipv4.conf.all.secure_redirects" = false;
-          "net.ipv4.conf.default.accept_redirects" = false;
-          "net.ipv4.conf.default.secure_redirects" = false;
-          "net.ipv6.conf.all.accept_redirects" = false;
-          "net.ipv6.conf.default.accept_redirects" = false;
+          #"net.ipv4.conf.all.accept_redirects" = false;
+          #"net.ipv4.conf.all.secure_redirects" = false;
+          #"net.ipv4.conf.default.accept_redirects" = false;
+          #"net.ipv4.conf.default.secure_redirects" = false;
+          #"net.ipv6.conf.all.accept_redirects" = false;
+          #"net.ipv6.conf.default.accept_redirects" = false;
 
           # Prevent syn flood attack
           "net.ipv4.tcp_syncookies" = 1;
@@ -98,8 +98,8 @@ in
           "net.ipv4.tcp_rfc1337" = 1;
 
           # Ignore outgoing ICMP redirects (IPv4 only)
-          "net.ipv4.conf.all.send_redirects" = false;
-          "net.ipv4.conf.default.send_redirects" = false;
+          #"net.ipv4.conf.all.send_redirects" = false;
+          #"net.ipv4.conf.default.send_redirects" = false;
 
           # Use TCP fast open to speed up some requests
           "net.ipv4.tcp_fastopen" = 3;
@@ -197,21 +197,6 @@ in
           "gambling"
           "porn"
         ];
-      };
-
-      # Set known public keys to prevent MITM
-      programs.ssh.knownHosts = {
-        "github.com".hostNames = [ "github.com" ];
-        "github.com".publicKey =
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
-
-        "gitlab.com".hostNames = [ "gitlab.com" ];
-        "gitlab.com".publicKey =
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf";
-
-        "git.sr.ht".hostNames = [ "git.sr.ht" ];
-        "git.sr.ht".publicKey =
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZvRd4EtM7R+IHVMWmDkVU3VLQTSwQDSAvW0t2Tkj60";
       };
     })
   ];

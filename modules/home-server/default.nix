@@ -2,17 +2,18 @@
 {
   imports = [
     inputs.authentik-nix.nixosModules.default
-    ./nix.nix
+    ./acme.nix
     ./ai.nix
-    ./misc.nix
-    ./media.nix
-    ./vaultwarden.nix
     ./blocky.nix
-    ./web-server.nix
-    ./nextcloud.nix
+    ./dav.nix
     ./db.nix
     ./immich.nix
-    ./dav.nix
+    ./media.nix
+    ./misc.nix
+    ./nextcloud.nix
+    ./nix.nix
+    ./vaultwarden.nix
+    ./web-server.nix
     ./wiki.nix
   ];
 

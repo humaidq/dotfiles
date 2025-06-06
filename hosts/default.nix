@@ -32,19 +32,37 @@
       nixosConfigurations = {
         oreamnos = lib.nixosSystem {
           inherit specialArgs;
-          modules = [ self.nixosModules.host-oreamnos ];
+          modules = [
+            self.nixosModules.host-oreamnos
+            inputs.srvos.nixosModules.server
+            inputs.srvos.nixosModules.mixins-nix-experimental
+          ];
         };
         serow = lib.nixosSystem {
           inherit specialArgs;
-          modules = [ self.nixosModules.host-serow ];
+          modules = [
+            self.nixosModules.host-serow
+            inputs.srvos.nixosModules.desktop
+            inputs.srvos.nixosModules.mixins-nix-experimental
+          ];
         };
         duisk = lib.nixosSystem {
           inherit specialArgs;
-          modules = [ self.nixosModules.host-duisk ];
+          modules = [
+            self.nixosModules.host-duisk
+            inputs.srvos.nixosModules.server
+            inputs.srvos.nixosModules.hardware-vultr-vm
+            inputs.srvos.nixosModules.mixins-nix-experimental
+          ];
         };
         lighthouse = lib.nixosSystem {
           inherit specialArgs;
-          modules = [ self.nixosModules.host-lighthouse ];
+          modules = [
+            self.nixosModules.host-lighthouse
+            inputs.srvos.nixosModules.server
+            inputs.srvos.nixosModules.hardware-vultr-vm
+            inputs.srvos.nixosModules.mixins-nix-experimental
+          ];
         };
         #goral = lib.nixosSystem {
         #  inherit specialArgs;

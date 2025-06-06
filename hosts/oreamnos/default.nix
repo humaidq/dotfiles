@@ -263,6 +263,7 @@
       "/var/lib/caddy"
       "/var/lib/audiobookshelf"
       "/var/lib/uptimed"
+      "/var/lib/step-ca"
       {
         directory = "/var/lib/bitwarden_rs";
         mode = "0700";
