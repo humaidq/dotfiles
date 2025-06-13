@@ -13,7 +13,8 @@
         specialArgs = baseArgs;
         modules = [
           self.nixosModules.host-oreamnos
-          inputs.srvos.nixosModules.server
+          #inputs.srvos.nixosModules.server
+            inputs.srvos.nixosModules.desktop
           inputs.srvos.nixosModules.mixins-nix-experimental
         ];
       };
