@@ -63,7 +63,7 @@ in
               update-props = {
                 node.nick  = "Digirig Output"
                 node.description  = "Digirig Output"
-                node.volume = 0.5
+                node.volume = 1
               }
             }
           }

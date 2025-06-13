@@ -11,14 +11,23 @@ in
 {
   options.sifr.graphics = {
     gnome.enable = lib.mkEnableOption "GNOME desktop environment";
+    gnome.enableRemoteDesktop = lib.mkEnableOption "GNOME remote desktop service";
   };
 
   config = lib.mkIf cfg.gnome.enable {
     services.xserver.desktopManager.gnome.enable = true;
     #services.gnome.gnome-online-accounts.enable = false;
-    services.gnome.gnome-keyring.enable = lib.mkForce false;
+    #services.gnome.gnome-keyring.enable = lib.mkForce false;
 
     programs.ssh.enableAskPassword = true;
+
+    # enable the remote desktop service
+    services.gnome.gnome-remote-desktop.enable = cfg.gnome.enableRemoteDesktop;
+    systemd.services.gnome-remote-desktop.wantedBy = lib.mkIf cfg.gnome.enableRemoteDesktop [
+      "graphical.target"
+    ];
+    networking.firewall.allowedTCPPorts = lib.mkIf cfg.gnome.enableRemoteDesktop [ 3389 ];
+    networking.firewall.allowedUDPPorts = lib.mkIf cfg.gnome.enableRemoteDesktop [ 3389 ];
 
     # Exclude some packages we don't want
     environment.gnome.excludePackages = with pkgs; [
@@ -26,11 +35,25 @@ in
       gnome-tour
       epiphany
       orca
+      evince # replace with papers
+      totem # replace with showtime
     ];
-    environment.systemPackages = with pkgs; [
-      dconf-editor
-      gnome-pomodoro
-    ];
+    environment.systemPackages =
+      with pkgs;
+      [
+        dconf-editor
+        #gnome-pomodoro
+        gnome-solanum
+        papers # replacing evince
+        showtime # replacing totem
+        halftone
+        flare-signal
+        resources
+        gnome-epub-thumbnailer
+        #gradia # not yet available in nixpkgs
+        #bouncer # not yet available in nixpkgs, this needs networkmanager and firewalld
+      ]
+      ++ lib.optional cfg.gnome.enableRemoteDesktop gnome-remote-desktop;
 
     home-manager.users."${vars.user}" =
       { lib, ... }:
@@ -67,9 +90,9 @@ in
             show-battery-percentage = true;
             clock-show-weekday = true;
             color-scheme = "prefer-dark";
-            document-font-name = "Merriweather 11";
-            font-name = "IBM Plex Sans 11";
-            monospace-font-name = "JetBrainsMono Nerd Font 13";
+            document-font-name = "Adwaita Sans 11";
+            font-name = "Adwaita Sans 11";
+            monospace-font-name = "Adwaita Mono 11";
             enable-hot-corners = true;
           };
           "org/gnome/desktop/background" = {
@@ -86,8 +109,8 @@ in
           };
           "org/gnome/desktop/wm/preferences" = {
             # Add minimise button, use Inter font
-            button-layout = "appmenu:minimize,close";
-            titlebar-font = "Inter Semi-Bold 11";
+            button-layout = ":minimize,maximize,close";
+            titlebar-font = "Adwaita Sans Bold 11";
           };
           "org/gnome/desktop/input-sources" = {
             # Add three keyboad layouts (en, ar, fi)
@@ -240,25 +263,43 @@ in
             "image/webp" = [ "org.gnome.Loupe.desktop" ];
 
             ## Text
+            "text/plain" = [ "org.gnome.TextEditor.desktop" ];
+            "application/x-zerosize" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-shellscript" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-c" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-lisp" = [ "org.gnome.TextEditor.desktop" ];
             "text/html" = [ "chromium-browser.desktop" ];
-            "text/plain" = [ "org.gnome.TextEditor.desktop" ];
+            "text/x-python" = [ "org.gnome.TextEditor.desktop" ];
+            "text/x-markdown" = [ "org.gnome.TextEditor.desktop" ];
+            "text/x-c++src" = [ "org.gnome.TextEditor.desktop" ];
+            "text/x-java" = [ "org.gnome.TextEditor.desktop" ];
+            # org mode opens emacs standalone
+            "text/x-org" = [ "emacs.desktop" ];
 
             ## PDF
-            "application/pdf" = [ "org.gnome.Evince.desktop" ];
-            "application/postscript" = [ "org.gnome.Evince.desktop" ];
-            "application/epub+zip" = "calibre-ebook-viewer.desktop";
-            "application/x-mobipocket-ebook" = "calibre-ebook-viewer.desktop";
+            "application/pdf" = [ "org.gnome.Papers.desktop" ];
+            "application/x-bzpdf" = [ "org.gnome.Papers.desktop" ];
+            "application/x-gzpdf" = [ "org.gnome.Papers.desktop" ];
+            "application/x-xzpdf" = [ "org.gnome.Papers.desktop" ];
+            "application/postscript" = [ "org.gnome.Papers.desktop" ];
+            "application/epub+zip" = [ "org.gnome.Papers.desktop" ];
+            "application/x-mobipocket-ebook" = [ "org.gnome.Papers.desktop" ];
+            "application/x-cbr" = [ "org.gnome.Papers.desktop" ];
+            "application/x-cbz" = [ "org.gnome.Papers.desktop" ];
+            #"image/tiff" = [ "org.gnome.Papers.desktop" ];
+            "image/vnd.djvu" = [ "org.gnome.Papers.desktop" ];
+            "image/vnd.djvu+multipage" = [ "org.gnome.Papers.desktop" ];
+            "application/x-ext-djvu" = [ "org.gnome.Papers.desktop" ];
+            "application/x-ext-djv" = [ "org.gnome.Papers.desktop" ];
 
             ## Videos
-            "video/mp4" = [ "org.gnome.Totem.desktop" ];
-            "video/x-msvideo" = [ "org.gnome.Totem.desktop" ];
-            "video/quicktime" = [ "org.gnome.Totem.desktop" ];
-            "video/mpeg" = [ "org.gnome.Totem.desktop" ];
-            "video/ogg" = [ "org.gnome.Totem.desktop" ];
-            "video/mpv" = [ "org.gnome.Totem.desktop" ];
+            "video/mp4" = [ "org.gnome.Showtime.desktop" ];
+            "video/x-msvideo" = [ "org.gnome.Showtime.desktop" ];
+            "video/quicktime" = [ "org.gnome.Showtime.desktop" ];
+            "video/mpeg" = [ "org.gnome.Showtime.desktop" ];
+            "video/ogg" = [ "org.gnome.Showtime.desktop" ];
+            "video/mpv" = [ "org.gnome.Showtime.desktop" ];
+            "video/webm" = [ "org.gnome.Showtime.desktop" ];
 
             # Audio
             "audio/mpeg" = [ "org.gnome.Decibels.desktop" ];
@@ -267,6 +308,9 @@ in
             "audio/vorbis" = [ "org.gnome.Decibels.desktop" ];
             "audio/vnd.wav" = [ "org.gnome.Decibels.desktop" ];
             "audio/mid" = [ "org.gnome.Decibels.desktop" ];
+            "audio/x-wav" = [ "org.gnome.Decibels.desktop" ];
+            "audio/x-flac" = [ "org.gnome.Decibels.desktop" ];
+
           };
         };
 

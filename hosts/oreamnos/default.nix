@@ -43,10 +43,16 @@
         "riscv64-linux"
       ];
     };
+    graphics = {
+      gnome.enableRemoteDesktop = true;
+      gnome.enable = true;
+      apps = true;
+    };
     security.yubikey = true;
     development.enable = true;
     ntp.useNTS = false;
     applications.emacs.enable = true;
+    applications.amateur.enable = true;
 
     o11y = {
       server.enable = true;
@@ -188,7 +194,6 @@
       "/var/lib/nixos"
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
-      #"/var/lib/ollama"
       {
         directory = "/var/lib/immich";
         user = "immich";
@@ -197,11 +202,6 @@
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"
-      {
-        directory = "/var/lib/seafile";
-        user = "seafile";
-        mode = "0700";
-      }
       {
         directory = "/var/lib/radicale";
         user = "radicale";
@@ -215,33 +215,16 @@
       "/var/lib/loki"
       "/var/lib/prometheus2"
       {
-        directory = "/var/lib/redis-authentik";
-        user = "redis-authentik";
-        mode = "0740";
-      }
-      {
-        directory = "/var/lib/redis-paperless";
-        user = "redis-paperless";
-        mode = "0740";
-      }
-      {
         directory = "/var/lib/redis-immich";
         user = "immich";
         mode = "0740";
       }
-
-      "/var/lib/dokuwiki"
       {
         directory = "/var/lib/private";
         mode = "0700";
       }
       "/var/lib/radarr"
       "/var/lib/sonarr"
-      {
-        directory = "/var/lib/nextcloud";
-        user = "nextcloud";
-        mode = "0700";
-      }
       {
         directory = "/var/lib/forgejo";
         user = "forgejo";
@@ -250,18 +233,12 @@
       }
       "/var/lib/postgresql"
       {
-        directory = "/var/lib/kavita";
-        user = "kavita";
-        mode = "0700";
-      }
-      {
         directory = "/var/lib/jellyfin";
         user = "jellyfin";
         mode = "0700";
       }
       "/var/lib/deluge"
       "/var/lib/caddy"
-      "/var/lib/audiobookshelf"
       "/var/lib/uptimed"
       {
         directory = "/var/lib/bitwarden_rs";

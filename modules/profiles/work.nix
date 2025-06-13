@@ -42,7 +42,7 @@ in
         };
         "groot" = {
           user = "root";
-          hostname = "192.168.1.68";
+          hostname = "192.168.1.167";
           checkHostIP = false;
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {

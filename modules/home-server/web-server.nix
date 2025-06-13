@@ -2,8 +2,6 @@
 let
   cfg = config.sifr.home-server;
   tls = {
-    #sslCertificate = config.sops.secrets."web/fullchain".path;
-    #sslCertificateKey = config.sops.secrets."web/privkey".path;
     forceSSL = true;
   };
   domain = "alq.ae";
@@ -50,12 +48,9 @@ in
       virtualHosts = lib.mkMerge [
         (mkRP "" "8082")
         (mkRP "cache" "5000")
-        (mkRP "sso" "3322")
         (mkRP "dns" "3333")
         (mkRP "vault" "8222")
         (mkRP "grafana" "3000")
-        (mkRP "ai" "2343")
-        (mkRP "ollama" "11434")
         (mkRP "deluge" "8112")
         (mkRP "radarr" "7878")
         (mkRP "sonarr" "8989")
@@ -63,57 +58,17 @@ in
         (mkRP "bazarr" "6767")
         (mkRP "hydra" "3300")
         (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
-        (mkRP "books" "5555")
-        (mkRP "audiobooks" "8000")
         (mkRP "tv" "8096")
-        (mkRP "recipes" "9000")
         (mkRP "pdf" "8084")
-        (mkRP "yt" "4747")
-        (mkRP "search" "4848")
         (mkRP "git" "3939")
-        # (mkRP "seafile" "3014")
-        (mkRP "reddit" "3014")
         (mkRP "dav" "5232")
         (mkRP "webdav" "8477")
-        (mkRP "onlyoffice" "3015")
 
         {
           "sdr.alq.ae" = {
             enableACME = true;
             locations."/" = {
               proxyPass = "http://192.168.1.164:8073";
-            };
-          };
-          "cloud.alq.ae" = {
-            enableACME = true;
-            inherit (tls) forceSSL;
-          };
-          "wiki.alq.ae" = {
-            enableACME = true;
-            inherit (tls) forceSSL;
-          };
-          "paperless.alq.ae" = {
-            enableACME = true;
-            inherit (tls) forceSSL;
-
-            extraConfig = ''
-              # allow large file uploads
-              client_max_body_size 50000M;
-                # These configuration options are required for WebSockets to work.
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection "upgrade";
-
-                proxy_redirect off;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Host $server_name;
-                add_header Referrer-Policy "strict-origin-when-cross-origin";
-            '';
-            locations."/" = {
-              proxyPass = "http://127.0.0.1:28981";
-              extraConfig = '''';
             };
           };
           "img.alq.ae" = {
@@ -144,13 +99,6 @@ in
             locations."/" = {
               proxyPass = "http://127.0.0.1:3011";
             };
-          };
-          "${config.services.invidious.domain}" = {
-            inherit (tls) forceSSL;
-            enableACME = true;
-          };
-          "${config.services.authentik.nginx.host}" = {
-            forceSSL = lib.mkForce true;
           };
         }
       ];
@@ -203,34 +151,10 @@ in
                 icon = "mdi-movie-search";
               };
             }
-            {
-              "YouTube" = {
-                description = "Ad-free YouTube (Invidious)";
-                href = "https://yt.alq.ae/";
-                siteMonitor = "https://yt.alq.ae";
-                icon = "mdi-youtube";
-              };
-            }
-            {
-              "Reddit" = {
-                description = "Fast Reddit (RedLib)";
-                href = "https://reddit.alq.ae/";
-                siteMonitor = "https://reddit.alq.ae";
-                icon = "mdi-reddit";
-              };
-            }
           ];
         }
         {
           "Services" = [
-            {
-              "Search" = {
-                description = "Meta Search Engine (Searxng)";
-                href = "https://search.alq.ae/";
-                siteMonitor = "https://search.alq.ae/";
-                icon = "mdi-search-web";
-              };
-            }
             {
               "Vault" = {
                 description = "Password Manager (Vaultwarden)";
@@ -245,14 +169,6 @@ in
                 href = "https://git.alq.ae/";
                 siteMonitor = "https://git.alq.ae/";
                 icon = "mdi-git";
-              };
-            }
-            {
-              "AI" = {
-                description = "Local AI";
-                href = "https://ai.alq.ae/";
-                siteMonitor = "https://ai.alq.ae/";
-                icon = "mdi-creation";
               };
             }
             {
@@ -275,58 +191,10 @@ in
                 icon = "mdi-image-album";
               };
             }
-            {
-              "Cloud" = {
-                description = "Drive Storage & Office Suite";
-                href = "https://cloud.alq.ae/";
-                siteMonitor = "https://cloud.alq.ae/";
-                icon = "mdi-apple-icloud";
-              };
-            }
-            {
-              "Paperless" = {
-                description = "Document Management System";
-                href = "https://paperless.alq.ae/";
-                siteMonitor = "https://paperless.alq.ae/";
-                icon = "mdi-leaf-circle";
-              };
-            }
-            {
-              "Recipes" = {
-                description = "Recipe Book (Mealie)";
-                href = "https://recipes.alq.ae/";
-                siteMonitor = "https://recipes.alq.ae/";
-                icon = "mdi-silverware-fork-knife";
-              };
-            }
-            {
-              "Books" = {
-                description = "eBooks Library (Kavita)";
-                href = "https://books.alq.ae/";
-                siteMonitor = "https://books.alq.ae/";
-                icon = "mdi-bookshelf";
-              };
-            }
-            {
-              "Audio Books" = {
-                description = "Audio Books Library";
-                href = "https://audiobooks.alq.ae/";
-                siteMonitor = "https://audiobooks.alq.ae/";
-                icon = "mdi-book-music";
-              };
-            }
           ];
         }
         {
           "Backend & Servers" = [
-            {
-              "Single Sign-On" = {
-                description = "Local Identity Provider (Authentik)";
-                href = "https://auth.alq.ae/";
-                siteMonitor = "https://auth.alq.ae/";
-                icon = "mdi-account-box-multiple";
-              };
-            }
             {
               "Grafana" = {
                 description = "Observability Platform";

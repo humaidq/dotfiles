@@ -178,6 +178,7 @@ in
         nix-tree
         nixfmt-rfc-style
         nixpkgs-review
+        optinix
 
         # other tools
         pnpm
