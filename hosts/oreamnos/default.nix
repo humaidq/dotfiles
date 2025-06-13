@@ -372,6 +372,16 @@
         port = "80";
         proto = "tcp";
       }
+      {
+        host = "serow";
+        port = "3389";
+        proto = "tcp";
+      }
+      {
+        host = "serow";
+        port = "3389";
+        proto = "udp";
+      }
       # Allow duisk access
       {
         host = "duisk";
