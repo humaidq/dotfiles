@@ -102,6 +102,8 @@ in
     })
     (lib.mkIf cfg.basePlus {
       environment.systemPackages = with pkgs; [
+        btop
+
         # File processing
         jpegoptim
         optipng
