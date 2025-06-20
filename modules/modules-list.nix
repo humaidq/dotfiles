@@ -13,10 +13,7 @@
   ./networking
   ./o11y
   ./options.nix
-  ./profiles/base.nix
-  ./profiles/laptop.nix
-  ./profiles/server.nix
-  ./profiles/work.nix
+  ./profiles
   ./scripts
   ./security
   ./shell

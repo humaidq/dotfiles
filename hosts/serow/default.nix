@@ -43,6 +43,8 @@
       basePlus = true;
       laptop = true;
       work = true;
+      security-research = true;
+      research = true;
     };
     security = {
       yubikey = true;
@@ -86,13 +88,9 @@
 
   hardware.keyboard.zsa.enable = true;
   environment.systemPackages = with pkgs; [
-    texliveFull
     fractal
     tuba
-    burpsuite
     unstable.gurk-rs
-    android-studio
-    zotero
   ];
 
   nixpkgs.config.android_sdk.accept_license = true;

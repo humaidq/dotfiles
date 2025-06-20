@@ -118,7 +118,6 @@ in
 
         # Other productivity
         yt-dlp
-        #biber
         strace
         netcat
         nmap

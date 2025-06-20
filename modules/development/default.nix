@@ -159,6 +159,7 @@ in
         minify
         scc
         sqlite
+        valgrind
 
         # git
         gh
