@@ -24,6 +24,7 @@ in
 
       binwalk
       aflplusplus
+      minicom
     ];
   };
 
