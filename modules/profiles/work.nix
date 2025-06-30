@@ -62,7 +62,7 @@ in
           };
         };
         "ghafajump" = {
-          hostname = "192.168.1.161";
+          hostname = "192.168.1.101";
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {
             StrictHostKeyChecking = "no";

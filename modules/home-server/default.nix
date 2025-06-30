@@ -9,7 +9,6 @@ let
 in
 {
   imports = [
-    inputs.authentik-nix.nixosModules.default
     ./acme.nix
     ./blocky.nix
     ./dav.nix
