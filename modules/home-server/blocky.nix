@@ -47,18 +47,18 @@ in
             local = "alq.ae";
 
             # Safe search
-            "google.*" = "forcesafesearchgoogle.com";
-            "www.google.*" = "forcesafesearchgoogle.com";
+            #"google.*" = "forcesafesearchgoogle.com";
+            #"www.google.*" = "forcesafesearchgoogle.com";
 
-            "www.youtube.com" = "restrict.youtube.com";
-            "m.youtube.com" = "restrict.youtube.com";
-            "youtubei.googleapis.com" = "restrict.youtube.com";
-            "youtube.googleapis.com" = "restrict.youtube.com";
-            "www.youtube-nocookie.com" = "restrict.youtube.com";
+            #"www.youtube.com" = "restrict.youtube.com";
+            #"m.youtube.com" = "restrict.youtube.com";
+            #"youtubei.googleapis.com" = "restrict.youtube.com";
+            #"youtube.googleapis.com" = "restrict.youtube.com";
+            #"www.youtube-nocookie.com" = "restrict.youtube.com";
 
-            "www.bing.com" = "strict.bing.com";
-            "duckduckgo.com" = "strict.duckduckgo.com";
-            "www.ecosia.org" = "strict-safe-search.ecosia.org";
+            #"www.bing.com" = "strict.bing.com";
+            #"duckduckgo.com" = "strict.duckduckgo.com";
+            #"www.ecosia.org" = "strict-safe-search.ecosia.org";
           };
           mapping = {
             "alq.ae" = "100.83.164.46,192.168.1.250";
