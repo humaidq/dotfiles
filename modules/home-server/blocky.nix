@@ -28,14 +28,22 @@ in
           strategy = "strict";
           groups = {
             default = [
-              "tcp-tls:1.1.1.3:853"
-              "tcp-tls:1.0.0.3:853"
+              "tcp-tls:family.cloudflare-dns.com"
               # Etisalat
               #"213.42.20.20"
               #"195.229.241.222"
             ];
           };
         };
+        bootstrapDns = [
+          {
+            upstream = "tcp-tls:family.cloudflare-dns.com";
+            ips = [
+              "1.1.1.3"
+              "1.0.0.3"
+            ];
+          }
+        ];
         caching = {
           minTime = "6h";
           prefetching = true;
@@ -47,18 +55,18 @@ in
             local = "alq.ae";
 
             # Safe search
-            #"google.*" = "forcesafesearchgoogle.com";
-            #"www.google.*" = "forcesafesearchgoogle.com";
+            "google.*" = "forcesafesearchgoogle.com";
+            "www.google.*" = "forcesafesearchgoogle.com";
 
-            #"www.youtube.com" = "restrict.youtube.com";
-            #"m.youtube.com" = "restrict.youtube.com";
-            #"youtubei.googleapis.com" = "restrict.youtube.com";
-            #"youtube.googleapis.com" = "restrict.youtube.com";
-            #"www.youtube-nocookie.com" = "restrict.youtube.com";
+            "www.youtube.com" = "restrict.youtube.com";
+            "m.youtube.com" = "restrict.youtube.com";
+            "youtubei.googleapis.com" = "restrict.youtube.com";
+            "youtube.googleapis.com" = "restrict.youtube.com";
+            "www.youtube-nocookie.com" = "restrict.youtube.com";
 
-            #"www.bing.com" = "strict.bing.com";
-            #"duckduckgo.com" = "strict.duckduckgo.com";
-            #"www.ecosia.org" = "strict-safe-search.ecosia.org";
+            "www.bing.com" = "strict.bing.com";
+            "duckduckgo.com" = "strict.duckduckgo.com";
+            "www.ecosia.org" = "strict-safe-search.ecosia.org";
           };
           mapping = {
             "alq.ae" = "100.83.164.46,192.168.1.250";
