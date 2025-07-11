@@ -48,7 +48,7 @@
     };
     security = {
       yubikey = true;
-      # encryptDNS = true;
+      encryptDNS = true;
     };
     hasGadgetSecrets = true;
     development.enable = true;

@@ -37,7 +37,7 @@ in
           #lmodern
           ttf_bitstream_vera
           inter
-          #ibm-plex
+          ibm-plex
           merriweather
           #jetbrains-mono
           # Bitmap fonts

@@ -56,7 +56,6 @@ in
         (mkRP "sonarr" "8989")
         (mkRP "prowlarr" "9696")
         (mkRP "bazarr" "6767")
-        (mkRP "hydra" "3300")
         (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
         (mkRP "tv" "8096")
         (mkRP "pdf" "8084")
@@ -201,14 +200,6 @@ in
                 href = "https://grafana.alq.ae/";
                 siteMonitor = "https://grafana.alq.ae/";
                 icon = "mdi-chart-box-multiple";
-              };
-            }
-            {
-              "Hydra" = {
-                description = "Hydra CI Server";
-                href = "https://hydra.alq.ae/";
-                siteMonitor = "https://hydra.alq.ae/";
-                icon = "mdi-autorenew";
               };
             }
             {
