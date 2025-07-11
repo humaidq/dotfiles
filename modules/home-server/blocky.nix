@@ -55,8 +55,8 @@ in
             local = "alq.ae";
 
             # Safe search
-            "google.*" = "forcesafesearchgoogle.com";
-            "www.google.*" = "forcesafesearchgoogle.com";
+            "google.*" = "forcesafesearch.google.com";
+            "www.google.*" = "forcesafesearch.google.com";
 
             "www.youtube.com" = "restrict.youtube.com";
             "m.youtube.com" = "restrict.youtube.com";
@@ -69,6 +69,8 @@ in
             "www.ecosia.org" = "strict-safe-search.ecosia.org";
           };
           mapping = {
+            "test.huma.id" = "1.1.1.1";
+
             "alq.ae" = "100.83.164.46,192.168.1.250";
             #"cache.huma.id" = "100.83.164.46,192.168.1.250";
             # Fix TII sites
