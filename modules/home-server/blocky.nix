@@ -148,13 +148,9 @@ in
               "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/ips/tif.txt"
             ];
 
-            custom =
-              let
-                customlist = pkgs.writeText "blocky-custom-denylist" pkgs.readFile ./custom-blocklist.txt;
-              in
-              [
-                "${customlist}"
-              ];
+            custom = [
+              "${./custom-blocklist.txt}"
+            ];
           };
           allowlists = {
             general =
