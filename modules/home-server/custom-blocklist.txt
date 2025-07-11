@@ -48,9 +48,10 @@ dailymotion.com
 *.nationalvanguard.org
 *.stormfront.org
 *.topix.com
-*.tumbr.com
+*.tumblr.com
 *.tumlook.com
 *.voat.co
+*.deviantart.com
 
 # Dating
 *.adultfriendfinder.com

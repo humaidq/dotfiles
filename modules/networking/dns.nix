@@ -9,12 +9,12 @@ in
     networking = {
       networkmanager.dns = "systemd-resolved";
       nameservers = [
-        "oreamnos"
+        "10.10.0.12"
       ];
     };
     services.resolved = {
       enable = true;
-      dnssec = "allow-downgrade";
+      #dnssec = "allow-downgrade";
       domains = [ "~." ];
     };
   };

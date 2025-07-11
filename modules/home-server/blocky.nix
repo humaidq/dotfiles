@@ -50,13 +50,14 @@ in
         };
         prometheus.enable = true;
         customDNS = {
-          customTTL = "3h";
           rewrite = {
             local = "alq.ae";
 
             # Safe search
             "google.*" = "forcesafesearch.google.com";
             "www.google.*" = "forcesafesearch.google.com";
+            "google.com" = "forcesafesearch.google.com";
+            "www.google.com" = "forcesafesearch.google.com";
 
             "www.youtube.com" = "restrict.youtube.com";
             "m.youtube.com" = "restrict.youtube.com";
@@ -82,7 +83,7 @@ in
           loading = {
             strategy = "fast";
             concurrency = 10;
-            refreshPeriod = "3h";
+            refreshPeriod = "6h";
           };
           blockType = "zeroIp";
           clientGroupsBlock = {
