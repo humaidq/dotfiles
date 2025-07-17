@@ -16,7 +16,7 @@
 *.brave.com
 *.daum.net
 *.lycos.com
-*.naver.*
+*.navier.*
 *.sogou.com
 *.soso.com
 *.swisscows.com
@@ -366,8 +366,8 @@
 *.tumlook.com
 *.truthsocial.com
 *.deviantart.com
-*.twitch.tv
-*.dailymotion.com
+#*.twitch.tv
+#*.dailymotion.com
 
 # Harmful, Hate & Fake News
 *.4chan.org

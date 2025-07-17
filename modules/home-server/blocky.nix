@@ -110,8 +110,8 @@ in
               # Fake Sites & Scams
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake.txt"
               # Bypass
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass.txt"
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/doh.txt"
+              #"https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass.txt"
+              #"https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/doh.txt"
               # No safe search
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nosafesearch.txt"
               # DynDNS sites
@@ -172,6 +172,13 @@ in
                   linuxtracker.org
                   bttracker.debian.org
                   ipv4announce.sktorrent.eu
+                  bittorrent-tracker.e-n-c-r-y-p-t.net
+                  tracker.ipv6tracker.org
+                  seeders-paradise.org
+                  www.torrentsnipe.info
+                  highteahop.top
+                  therarbg.to
+                  kickass.ws
                   alak.bar
                 '';
               in
