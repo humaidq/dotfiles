@@ -151,7 +151,7 @@ in
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/astrology/domains"
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/agressif/domains"
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/dating/domains"
-              "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/doh/domains"
+              #"https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/doh/domains"
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/sect/domains"
             ];
 
