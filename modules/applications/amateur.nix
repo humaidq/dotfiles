@@ -40,15 +40,15 @@ in
     ];
 
     hardware.rtl-sdr.enable = true;
-    boot.kernelPatches = lib.singleton {
-      name = "ax25-ham";
-      patch = null;
-      extraStructuredConfig = with lib.kernel; {
-        HAMRADIO = yes;
-        AX25 = yes;
-        AX25_DAMA_SLAVE = yes;
-      };
-    };
+    #boot.kernelPatches = lib.singleton {
+    #  name = "ax25-ham";
+    #  patch = null;
+    #  extraStructuredConfig = with lib.kernel; {
+    #    HAMRADIO = yes;
+    #    AX25 = yes;
+    #    AX25_DAMA_SLAVE = yes;
+    #  };
+    #};
 
     services.pipewire.wireplumber.configPackages = [
       (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/50-digirig.conf" ''

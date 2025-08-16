@@ -68,7 +68,7 @@ in
         dconf.settings = {
           "org/gnome/shell" = {
             favorite-apps = [
-              "chromium-browser.desktop"
+              "google-chrome.desktop"
               "com.mitchellh.ghostty.desktop"
               "org.gnome.Nautilus.desktop"
             ];
@@ -268,7 +268,7 @@ in
             "text/x-shellscript" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-c" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-lisp" = [ "org.gnome.TextEditor.desktop" ];
-            "text/html" = [ "chromium-browser.desktop" ];
+            "text/html" = [ "google-chrome.desktop" ];
             "text/x-python" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-markdown" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-c++src" = [ "org.gnome.TextEditor.desktop" ];
@@ -277,7 +277,7 @@ in
             "text/x-org" = [ "emacs.desktop" ];
 
             ## PDF
-            "application/pdf" = [ "org.gnome.Papers.desktop" ];
+            "application/pdf" = [ "org.gnome.Papers.desktop" "google-chrome.desktop" ];
             "application/x-bzpdf" = [ "org.gnome.Papers.desktop" ];
             "application/x-gzpdf" = [ "org.gnome.Papers.desktop" ];
             "application/x-xzpdf" = [ "org.gnome.Papers.desktop" ];

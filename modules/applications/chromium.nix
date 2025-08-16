@@ -17,11 +17,11 @@ in
     default = config.sifr.graphics.apps;
   };
   config = lib.mkIf cfg.chromium.enable {
-    environment.systemPackages = [ pkgs.ungoogled-chromium ];
+    environment.systemPackages = [ pkgs.google-chrome ];
     home-manager.users."${vars.user}" = {
       programs.chromium = {
         enable = true;
-        package = pkgs.ungoogled-chromium;
+        package = pkgs.google-chrome;
         commandLineArgs = [
           # ungoogled-chromium flags
           "--extension-mime-request-handling=always-prompt-for-install"

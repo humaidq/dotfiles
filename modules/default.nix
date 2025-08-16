@@ -14,20 +14,20 @@ in
     inputs.sops-nix.nixosModules.sops
     inputs.home-manager.nixosModules.home-manager
     inputs.nix-topology.nixosModules.default
-  ] ++ (import ./modules-list.nix);
+  ]
+  ++ (import ./modules-list.nix);
 
   config = {
     # Setup home-manager
     home-manager.useGlobalPkgs = true;
     home-manager.useUserPackages = true;
-    home-manager.sharedModules =
-      [
-        inputs.sops-nix.homeManagerModules.sops
-        inputs.nixvim.homeManagerModules.nixvim
-      ]
-      ++ lib.optionals (pkgs.hostPlatform.system != "riscv64-linux") [
-        inputs.nix-index-database.hmModules.nix-index
-      ];
+    home-manager.sharedModules = [
+      inputs.sops-nix.homeManagerModules.sops
+      inputs.nixvim.homeManagerModules.nixvim
+    ]
+    ++ lib.optionals (pkgs.hostPlatform.system != "riscv64-linux") [
+      inputs.nix-index-database.homeModules.nix-index
+    ];
     topology.self.name = config.networking.hostName;
 
     topology.networks.tailscale0 = {
@@ -183,8 +183,10 @@ in
           };
 
           # liquidctl hasn't made a release for a while, and the latest release
-          # doesn't support my all-in-one cooler on oreamnos
+          # doesn't support my all-in-one cooler on oreamnos. so use git master
           liquidctl = import ../overlays/liquidctl { inherit prev; };
+
+          js8call = pkgs.callPackage ../overlays/js8call { };
 
           nwjs = prev.nwjs.overrideAttrs {
             version = "0.84.0";
