@@ -42,6 +42,15 @@
         host-rpi5-bootstrap = import ./rpi5-bootstrap.nix;
         host-x86-installer = import ./x86-installer.nix;
       };
+
+      darwinConfigurations = {
+        takin = inputs.nix-darwin.lib.darwinSystem {
+          modules = [
+            ./takin
+          ];
+        };
+      };
+
       nixosConfigurations = {
         oreamnos = lib.nixosSystem {
           inherit specialArgs;

@@ -39,13 +39,13 @@ Systems managed by this flake.
 
 | Name         | System           | CPU        | RAM   | GPU                 | Role | OS  | State |
 |--------------|------------------|------------|-------|---------------------|------|-----|-------|
-| `oreamnos`   | Home Workstation | AMD 5995WX | 128GB | NVIDIA RTX 4070     | 🖥️    | ❄️   | ✅    |
+| `oreamnos`   | Home Workstation | AMD 5995WX | 128GB | NVIDIA RTX 4070     | 🖥️   | ❄️   | ✅    |
 | `serow`      | ThinkPad T590    | i7-8565U   | 16GB  | Intel UHD 8th Gen   | 💻️   | ❄️   | ✅    |
 | `tahr`       | ThinkPad P1 Gen3 | i9-10885H  | 32GB  | NVIDIA Quadro T2000 | 💻️   | ❄️   | ✅    |
 | `duisk`      | Vultr VPS        | vCPU       | 2GB   | None                | ☁️    | ❄️   | ✅    |
 | `lighthouse` | Vultr VPS        | vCPU       | 1GB   | None                | ☁️    | ❄️   | ✅    |
 | `boerbok`    | Star64           | SiFive     | 8GB   | None                | ☁️    | ❄️   | 🚧    |
-| `takin`      | MacBook Pro      | M2 Max     | 64GB  | M2 Max              | 💻️   |    | ✖️     |
+| `takin`      | MacBook Pro      | M4         | 36GB  | M4                  | 💻️   |    | ✅    |
 | `goral`      | VMWare Fusion    | M2 Max     | 64GB  | M2 Max              | 💻️   | ❄️   | ✖️     |
 | `argali`     | RPi 4B           | BCM2711    | 8GB   | None                | ☁️    | ❄️   | ✖️     |
 | `arkelli`    | RPi 4B           | BCM2711    | 8GB   | None                | ☁️    | ❄️   | ✖️     |

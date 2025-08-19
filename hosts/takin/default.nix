@@ -1,26 +1,140 @@
-{ vars, ... }:
+{ pkgs, ... }:
 {
-  # TODO fix this target
-  networking = {
-    computerName = "takin";
-    hostName = "takin";
-  };
-  home-manager.users.${vars.user} = {
-    home.stateVersion = "23.05";
-  };
+  environment.systemPackages = with pkgs; [
+    neovim
+    emacs
+    tmux
+    bitwarden-desktop
+    nixfmt-rfc-style
+    texliveFull
+    ripgrep
 
-  users.users.${vars.user} = {
-    home = "/Users/humaid";
-  };
+    # Development
+    bat
+    ffmpeg
+    gdb
 
-  nix = {
-    settings.experimental-features = [
-      "nix-command"
-      "flakes"
+    nix-output-monitor
+    nix-tree
+    nixfmt-rfc-style
+    nixd
+
+    # other tools
+    pnpm
+    nodejs
+    tree-sitter
+
+    # emacs
+    # :term vterm
+    gnumake
+    cmake
+
+    # :tools editorconfig
+    editorconfig-core-c
+
+    # :tools docker
+    nodePackages.dockerfile-language-server-nodejs
+
+    # :lang cc
+    clang
+    clang-tools
+    # :lang data
+    libxml2 # xmllint
+    # :lang go
+    go
+    gomodifytags
+    gotests
+    gore
+    # :lang javascript
+    nodejs
+    # :lang latex requires texlive (defined somewhere else)
+    # :lang markdown
+    pandoc
+    discount
+    # :lang python
+    black
+    pipenv
+    python312Packages.pyflakes
+    python312Packages.isort
+    python312Packages.pytest
+    # :lang org (texlive +...)
+    gnuplot
+    sqlite # +roam2
+    # :lang plantuml
+    plantuml
+    graphviz
+    jdk
+    # :lang rust
+    rustc
+    cargo
+    rust-analyzer
+    # :lang sh
+    shfmt
+    shellcheck
+    nodePackages.bash-language-server
+    # :lang yaml
+    nodePackages.yaml-language-server
+    # :lang web
+    nodePackages.js-beautify
+    stylelint
+    html-tidy
+    # :lang zig
+    zig
+    zls
+
+    binutils
+    zstd
+
+    # :checkers grammar
+    languagetool
+    # :cherkers spell
+    (aspellWithDicts (
+      ds: with ds; [
+        ar
+        en
+        en-computers
+        en-science
+      ]
+    ))
+
+    # lookup
+    python3
+
+    # lsp
+    nodePackages.typescript-language-server
+    nodePackages.vscode-langservers-extracted
+  ];
+
+  homebrew = {
+    enable = true;
+    onActivation = {
+      autoUpdate = true;
+      upgrade = true;
+      cleanup = "zap";
+    };
+    brews = [
+      "openssh"
     ];
-    extraOptions = ''
-      auto-optimise-store = true
-    '';
+    casks = [
+      "tailscale-app"
+      "zotero"
+      "ghostty"
+      "font-dejavu"
+      "font-jetbrains-mono"
+      "font-fira-code"
+      "font-fira-code-nerd-font"
+    ];
+  };
+
+  nixpkgs.config.allowUnfree = true;
+  nix = {
+    settings = {
+      allowed-users = [ "humaid.alqasimi" ];
+      trusted-users = [
+        "root"
+        "humaid.alqasimi"
+      ];
+    };
   };
 
   system = {
@@ -42,53 +156,33 @@
         };
       };
     };
-
-    stateVersion = 4;
   };
 
-  programs = {
-    fish.enable = true;
+  system.primaryUser = "humaid.alqasimi";
+
+  # Necessary for using flakes on this system.
+  nix.settings.experimental-features = "nix-command flakes";
+
+  # Enable alternative shell support in nix-darwin.
+  programs.fish.enable = true;
+  environment.shells = [ pkgs.fish ];
+  users.users."humaid.alqasimi" = {
+    shell = pkgs.fish;
   };
-  services = {
-    nix-daemon.enable = true;
-  };
-  homebrew = {
-    enable = true;
-    onActivation = {
-      autoUpdate = true;
-      upgrade = true;
-      cleanup = "zap";
-    };
-    taps = [ "homebrew/cask-fonts" ];
-    brews = [
-      "direnv"
-      "ffmpeg"
-      "gnupg"
-      "go"
-      "jython"
-      "neovim"
-      "openjdk"
-      "pinentry-mac"
-      "python@3.11"
-      "tmux"
-      "tmux"
-    ];
-    casks = [
-      "coconutbattery"
-      "eloston-chromium" # ungoogled-chromium
-      "figma"
-      "firefox"
-      "font-monaspace"
-      "font-fira-code-nerd-font"
-      "inkscape"
-      "iterm2"
-      "logi-options-plus"
-      "slack"
-      "stats"
-      "tailscale"
-      "textmate"
-      "transmission"
-      "vlc"
-    ];
-  };
+
+  environment.systemPath = [
+    "/opt/homebrew/bin"
+  ];
+
+  # Use deteminate nix
+  nix.enable = false;
+
+  # Set Git commit hash for darwin-version.
+  system.configurationRevision = null;
+
+  # Used for backwards compatibility, please read the changelog before changing.
+  # $ darwin-rebuild changelog
+  system.stateVersion = 6;
+
+  nixpkgs.hostPlatform = "aarch64-darwin";
 }
