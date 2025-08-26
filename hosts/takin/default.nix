@@ -98,7 +98,8 @@
     ))
 
     # lookup
-    python3
+    python312Full
+    python312Packages.pip
 
     # lsp
     nodePackages.typescript-language-server
@@ -116,6 +117,7 @@
       "openssh"
     ];
     casks = [
+      "ollama"
       "tailscale-app"
       "zotero"
       "ghostty"

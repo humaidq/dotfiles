@@ -94,8 +94,8 @@ in
     users.users.root.openssh.authorizedKeys.keys = [
       # HK05 Resident
       "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIC+JivWVZLN5Q+gQp+Y+YOHr0tglTPujT5uqz0Vk//YnAAAABHNzaDo= HK05"
-      # Pixel HK05
-      "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMFWC5xI1ZgLZ65ubNYhhtL+NFMHA9pJs5yStdJUyM6cul+bqcVOzvVdLQpAfthjTEBXR1Et/nkuyexttDRUS6Q="
+      # MBP
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPfxi0RMhH9Jtlbe+PIGwO9IJjp6T5wC+33v+oYZrbMg humaid.alqasimi@LM007578"
       # Old
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
     ];
