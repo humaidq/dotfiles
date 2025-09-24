@@ -48,7 +48,7 @@
       node-key = config.sops.secrets."nebula/key".path;
     };
     tailscale = {
-      enable = false;
+      enable = true;
       exitNode = true;
       ssh = true;
     };

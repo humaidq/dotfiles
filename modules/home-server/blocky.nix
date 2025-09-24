@@ -51,7 +51,7 @@ in
         prometheus.enable = true;
         customDNS = {
           rewrite = {
-            local = "alq.ae";
+            #local = "alq.ae"; # resolves everything to alq.ae
 
             # Safe search
             "google.*" = "forcesafesearch.google.com";
@@ -180,6 +180,7 @@ in
                   therarbg.to
                   kickass.ws
                   alak.bar
+                  linuxtracker.org
                 '';
               in
               [

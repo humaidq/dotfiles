@@ -277,7 +277,10 @@ in
             "text/x-org" = [ "emacs.desktop" ];
 
             ## PDF
-            "application/pdf" = [ "org.gnome.Papers.desktop" "google-chrome.desktop" ];
+            "application/pdf" = [
+              "org.gnome.Papers.desktop"
+              "google-chrome.desktop"
+            ];
             "application/x-bzpdf" = [ "org.gnome.Papers.desktop" ];
             "application/x-gzpdf" = [ "org.gnome.Papers.desktop" ];
             "application/x-xzpdf" = [ "org.gnome.Papers.desktop" ];

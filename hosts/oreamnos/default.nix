@@ -4,7 +4,6 @@
   self,
   pkgs,
   vars,
-  config,
   ...
 }:
 {

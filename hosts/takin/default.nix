@@ -97,6 +97,8 @@
       ]
     ))
 
+    claude-code
+
     # lookup
     python312Full
     python312Packages.pip

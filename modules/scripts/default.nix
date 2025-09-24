@@ -60,14 +60,13 @@ in
     default = config.sifr.profiles.basePlus;
   };
   config = lib.mkIf cfg.enable {
-    environment.systemPackages =
-      [
-        whoseport
-        fan
-      ]
-      ++ lib.optionals config.sifr.development.enable [
-        lacheck
-        watchsync
-      ];
+    environment.systemPackages = [
+      whoseport
+      fan
+    ]
+    ++ lib.optionals config.sifr.development.enable [
+      lacheck
+      watchsync
+    ];
   };
 }

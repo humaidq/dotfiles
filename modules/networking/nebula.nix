@@ -62,7 +62,8 @@ in
       "10.10.0.12" = [
         "oreamnos"
         "oreamnos.alq"
-      ] ++ vars.homeServerDomains;
+      ]
+      ++ vars.homeServerDomains;
       "10.10.0.13" = [
         "duisk"
         "duisk.alq"
