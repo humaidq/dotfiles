@@ -63,7 +63,7 @@
           };
           "enc/persist" = {
             type = "zfs_fs";
-            mountpoint = "/";
+            mountpoint = "/persist";
           };
           "enc/nix" = {
             type = "zfs_fs";

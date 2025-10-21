@@ -181,7 +181,7 @@
         unitConfig.DefaultDependencies = "no";
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${pkgs.zfs}/bin/zfs rollback -r root/root@blank";
+          ExecStart = "${pkgs.zfs}/bin/zfs rollback -r rpool/enc/root@blank";
         };
       };
     };
@@ -198,6 +198,12 @@
   #  enable = true;
   #  pkiBundle = "/persist/var/lib/sbctl";
   #};
+
+  users.users.${vars.user} = {
+    isNormalUser = true;
+    hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
+    hashedPasswordFile = lib.mkForce null;
+  };
 
   nix = {
     buildMachines = [
