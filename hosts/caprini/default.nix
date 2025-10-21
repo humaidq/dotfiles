@@ -3,16 +3,21 @@
   inputs,
   pkgs,
   vars,
-  config,
+  lib,
   ...
 }:
 {
   imports = [
     self.nixosModules.sifrOS
-    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t590
+    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-13th-gen
+    inputs.impermanence.nixosModules.impermanence
+    inputs.disko.nixosModules.disko
+    # https://github.com/nix-community/lanzaboote/blob/master/docs/QUICK_START.md
+    inputs.lanzaboote.nixosModules.lanzaboote
     (import ./hardware.nix)
+    (import ./disk.nix)
   ];
-  networking.hostName = "serow";
+  networking.hostName = "caprini";
 
   # Nebula keys
   #sops.secrets."nebula/crt" = {
@@ -30,17 +35,10 @@
   #  owner = "nebula-sifr0";
   #  mode = "600";
   #};
-  sops.secrets."usbguard/rules" = {
-    sopsFile = ../../secrets/serow.yaml;
-    owner = "root";
-    mode = "600";
-  };
-
   services.upower.ignoreLid = true;
   # My configuration specific settings
   sifr = {
     graphics = {
-      gnome.enableRemoteDesktop = true;
       gnome.enable = true;
       sway.enable = true;
       apps = true;
@@ -95,6 +93,7 @@
   hardware.keyboard.zsa.enable = true;
   environment.systemPackages = with pkgs; [
     vscode
+    sbctl # for lanzaboote
   ];
 
   nixpkgs.config.android_sdk.accept_license = true;
@@ -108,15 +107,97 @@
     efi.canTouchEfiVariables = true;
   };
   topology.self = {
-    hardware.info = "Lenovo ThinkPad T590";
+    hardware.info = "Lenovo ThinkPad X1 Carbon Gen 13";
+  };
+
+  # impermanence setup
+  environment.persistence."/persist" = {
+    hideMounts = true;
+    directories = [
+      "/var/log"
+      "/var/lib/nixos"
+      "/var/lib/bluetooth"
+      "/var/lib/systemd/coredump"
+      "/var/lib/sops-nix"
+      "/var/lib/chrony"
+      "/var/lib/tailscale"
+      "/var/lib/grafana"
+      "/var/lib/loki"
+      {
+        directory = "/var/lib/private";
+        mode = "0700";
+      }
+      "/var/lib/uptimed"
+      "/var/lib/sbctl" # lanzaboote pki bundle
+      "/etc/secureboot"
+      "/etc/NetworkManager/system-connections"
+    ];
+    files = [
+      "/etc/machine-id"
+      "/etc/ssh/ssh_host_rsa_key"
+      "/etc/ssh/ssh_host_rsa_key.pub"
+      "/etc/ssh/ssh_host_ed25519_key"
+      "/etc/ssh/ssh_host_ed25519_key.pub"
+    ];
+    users."${vars.user}" = {
+      directories = [
+        "inbox"
+        "repos"
+        "tii"
+        "docs"
+        {
+          directory = ".ssh";
+          mode = "0700";
+        }
+        ".mozilla"
+        ".config/google-chrome"
+        ".local/share/direnv"
+        ".config/sops"
+        ".config/emacs"
+        ".config/doom"
+        ".config/zsh_history"
+        ".config/Code"
+        ".local/share/fish"
+        ".local/share/zsh"
+      ];
+    };
+  };
+  # sops loads before impermanence mounts are
+  sops.age.keyFile = lib.mkForce "/persist/var/lib/sops-nix/key.txt";
+
+  fileSystems."/persist".neededForBoot = true;
+
+  # Reset root on every boot
+  boot.supportedFilesystems = [ "zfs" ];
+
+  boot.initrd.systemd = {
+    enable = true;
+    services = {
+      "zfs-import-rpool".after = [ "cryptsetup.target" ];
+      impermanence-root = {
+        wantedBy = [ "initrd.target" ];
+        after = [ "zfs-import-rpool.service" ];
+        before = [ "sysroot.mount" ];
+        unitConfig.DefaultDependencies = "no";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${pkgs.zfs}/bin/zfs rollback -r root/root@blank";
+        };
+      };
+    };
   };
 
   swapDevices = [
     {
-      device = "/swap";
-      size = 32 * 1024;
+      device = "/dev/zvol/root/swap";
     }
   ];
+  #boot.loader.systemd-boot.enable = lib.mkForce false;
+
+  #boot.lanzaboote = {
+  #  enable = true;
+  #  pkiBundle = "/persist/var/lib/sbctl";
+  #};
 
   nix = {
     buildMachines = [
@@ -160,42 +241,6 @@
     };
   };
 
-  home-manager.users."${vars.user}" = {
-    services.kanshi = {
-      inherit (config.sifr.graphics.sway) enable;
-
-      settings = [
-        {
-          profile = {
-            name = "internal";
-            outputs = [
-              {
-                criteria = "Lenovo Group Limited 0x40BA Unknown";
-                status = "enable";
-              }
-            ];
-          };
-        }
-        {
-          profile = {
-            name = "desk";
-            outputs = [
-              {
-                criteria = "Lenovo Group Limited 0x40BA Unknown";
-                status = "disable";
-              }
-              {
-                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
-                status = "enable";
-                mode = "3840x2160";
-              }
-            ];
-          };
-        }
-      ];
-    };
-  };
-
   # receipt printer
   users.groups.escpos = { };
   users.users.humaid.extraGroups = [ "escpos" ];
@@ -205,16 +250,6 @@
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0fe6", ATTRS{idProduct}=="811e", \
         MODE="0664", GROUP="escpos"
   '';
-
-  systemd.services.tailscaled.environment = {
-    TS_NO_UDP = "1";
-  };
-
-  # Laptop security
-  security.usbguard = {
-    enable = false;
-    ruleFile = config.sops.secrets."usbguard/rules".path;
-  };
 
   boot.kernelPackages = pkgs.linuxPackages_6_17;
   nixpkgs.hostPlatform = "x86_64-linux";

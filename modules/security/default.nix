@@ -106,8 +106,7 @@ in
 
           # Enable "TCP Bottleneck Bandwidth and Round-Trip Time Algorithm"
           "net.inet.tcp.functions_default" = "bbr";
-          # Use CAKE instead of CoDel
-          "net.core.default_qdisc" = "cake";
+          "net.core.default_qdisc" = "fq"; # cake
         };
 
         kernelModules = [ "tcp_bbr" ];
@@ -173,8 +172,8 @@ in
           # Might use
           #"bluetooth"
           #"ccid"
-          #"wwan"
-          #"nfc"
+          "wwan"
+          "nfc"
         ];
       };
 
@@ -188,6 +187,30 @@ in
             apparmor-profiles
           ];
         };
+      };
+
+      # too many security issues
+      services.avahi.enable = false;
+
+      # don't share hostname
+      networking.networkmanager.settings = {
+        device = {
+          "wifi.scan-rand-mac-address" = true;
+        };
+
+        connection = {
+          "wifi.cloned-mac-address" = "random";
+          "ethernet.cloned-mac-address" = "random";
+
+          "ipv4.dhcp-send-hostname" = false;
+          "ipv6.dhcp-send-hostname" = false;
+        };
+      };
+      services.resolved = {
+        llmnr = "false";
+        extraConfig = lib.mkAfter ''
+          MulticastDNS=no
+        '';
       };
 
       networking.stevenblack = {

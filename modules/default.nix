@@ -106,7 +106,31 @@ in
     };
 
     time.timeZone = cfg.timezone;
-    i18n.defaultLocale = "en_GB.UTF-8";
+
+    i18n = {
+      defaultLocale = "en_GB.UTF-8";
+      supportedLocales = [
+        "en_GB.UTF-8/UTF-8"
+        "en_GB.UTF-8/UTF-8"
+      ];
+
+      extraLocaleSettings = {
+        LC_CTYPE = "en_GB.UTF-8";
+        LC_COLLATE = "en_GB.UTF-8";
+        LC_MESSAGES = "en_GB.UTF-8"; # Ensure British English
+        LC_NUMERIC = "en_GB.UTF-8";
+        LC_TIME = "en_GB.UTF-8"; # Monday first day
+        LC_MEASUREMENT = "en_GB.UTF-8";
+        LC_PAPER = "en_GB.UTF-8";
+        LC_MONETARY = "en_GB.UTF-8";
+        LC_ADDRESS = "en_GB.UTF-8";
+        LC_TELEPHONE = "en_GB.UTF-8";
+        LC_NAME = "en_GB.UTF-8";
+      };
+
+      # Optional gettext preference
+      # environment.variables.LANGUAGE = "en_GB:en";
+    };
 
     security.pki.certificateFiles = [ ./alqasimi-ca.pem ];
 

@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  vars,
   pkgs,
   ...
 }:
@@ -25,6 +26,9 @@ in
       binwalk
       aflplusplus
       minicom
+    ];
+    users.users.${vars.user}.extraGroups = [
+      "wireshark"
     ];
   };
 

@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  vars,
   pkgs,
   ...
 }:
@@ -28,6 +29,13 @@ in
       enable = true;
       package = emacs;
     };
+
+    home-manager.users."${vars.user}" = {
+      services.emacs = {
+        client.enable = true;
+      };
+    };
+
     services.languagetool.enable = true;
 
     environment.systemPackages = [
@@ -37,6 +45,7 @@ in
       # :term vterm
       gnumake
       cmake
+      copilot-language-server-fhs
 
       # :tools editorconfig
       editorconfig-core-c
@@ -58,6 +67,7 @@ in
       nodejs
       # :lang latex requires texlive (defined somewhere else)
       # :lang markdown
+      go-grip
       pandoc
       discount
       # :lang python
@@ -66,6 +76,7 @@ in
       python312Packages.pyflakes
       python312Packages.isort
       python312Packages.pytest
+      python312Packages.nose2
       # :lang org (texlive +...)
       gnuplot
       sqlite # +roam2

@@ -29,6 +29,7 @@
       nixosModules = {
         host-oreamnos = import ./oreamnos;
         host-serow = import ./serow;
+        host-caprini = import ./caprini;
         host-duisk = import ./duisk;
         host-lighthouse = import ./lighthouse;
         #host-goral = import ./goral;
@@ -64,6 +65,14 @@
           inherit specialArgs;
           modules = [
             self.nixosModules.host-serow
+            inputs.srvos.nixosModules.desktop
+            inputs.srvos.nixosModules.mixins-nix-experimental
+          ];
+        };
+        caprini = lib.nixosSystem {
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-caprini
             inputs.srvos.nixosModules.desktop
             inputs.srvos.nixosModules.mixins-nix-experimental
           ];

@@ -34,6 +34,8 @@ in
           bc
           units
           sops
+          git
+          tmux
 
           # packages that must come with every Linux system
           curl
@@ -50,6 +52,7 @@ in
           pciutils
           killall
           file
+          fd
           dig
           pv
           smartmontools
@@ -68,9 +71,9 @@ in
           pkgs.tiptop
         ];
 
-      # Ensure fish is recognised as a system shell.
+      # Ensure zsh is recognised as a system shell.
       environment.shells = [
-        pkgs.fish
+        pkgs.zsh
       ];
 
       security.sudo.extraConfig = ''
@@ -129,12 +132,12 @@ in
         qrencode
         gnupatch
         ripgrep
-        tmux
         lf
         sshfs
         jq # json query
         ouch # compression
         hexyl # hex viewer
+        poppler-utils
 
         # TODO move to laptop config
         lm_sensors

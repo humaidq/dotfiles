@@ -32,6 +32,8 @@ in
       gnome-calendar
       gnome-contacts
       geary
+      clearlooks-phenix
+      libsForQt5.qtstyleplugins
     ];
     services.xserver.displayManager.lightdm.enable = false;
     services.gnome.gnome-online-accounts.enable = true;
@@ -39,6 +41,7 @@ in
       enable = true;
       wrapperFeatures.gtk = true; # so that gtk works properly
       extraPackages = with pkgs; [
+
         brightnessctl
         alsa-utils
         pamixer
@@ -56,6 +59,7 @@ in
         #blueberry
         sway-contrib.grimshot # screenshots
         wtype
+        libsForQt5.qt5.qtwayland
 
         libnotify
         networkmanagerapplet
@@ -66,6 +70,9 @@ in
         # QT (needs qt5.qtwayland in systemPackages):
         export QT_QPA_PLATFORM=wayland-egl
         export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
+        # Qt theme
+        export QT_QPA_PLATFORMTHEME=qt5ct
+        export QT_STYLE_OVERRIDE=cleanlooks
         # Fix for some Java AWT applications (e.g. Android Studio),
         # use this if they aren't displayed properly:
         export _JAVA_AWT_WM_NONREPARENTING=1
@@ -77,11 +84,42 @@ in
     };
 
     home-manager.users."${vars.user}" = {
-
+      gtk = {
+        enable = true;
+        gtk3.extraConfig = {
+          gtk-application-prefer-dark-theme = lib.mkForce false;
+        };
+        iconTheme = {
+          package = pkgs.tango-icon-theme;
+          name = "Tango";
+        };
+        theme = {
+          package = pkgs.clearlooks-phenix;
+          name = lib.mkForce "Clearlooks-Phenix";
+        };
+      };
+      dconf.settings = {
+        "org/gnome/desktop/interface" = {
+          gtk-theme = lib.mkForce "Clearlooks-Phenix";
+        };
+      };
       # home manager programs
       programs = {
         zathura = {
           enable = true;
+          options = {
+            "selection-clipboard" = "clipboard";
+          };
+          mappings = {
+            "i" = "recolor";
+            "r" = "reload";
+            "R" = "rotate";
+            "p" = "print";
+            "u" = "scroll half-up";
+            "d" = "scroll half-down";
+            "D" = "toggle_page_mode";
+            "g" = "goto top";
+          };
         };
         i3status = {
           enable = true;
@@ -232,6 +270,7 @@ in
               };
               position = "top";
               statusCommand = "${pkgs.i3status}/bin/i3status";
+              #statusCommand = "${pkgs.python3}/bin/python3 ${bar}/bin/i3status-with-orgclock";
               colors = {
                 background = "#130e24";
                 activeWorkspace = {

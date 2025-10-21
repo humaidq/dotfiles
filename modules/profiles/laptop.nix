@@ -54,14 +54,16 @@ in
         ppdOptions.PageSize = "A4";
       }
     ];
+
+    # disable due to security
     services.avahi = {
-      enable = true;
-      nssmdns4 = true;
-      nssmdns6 = true;
-      publish = {
-        enable = false;
-        addresses = true;
-      };
+      enable = false;
+      #nssmdns4 = true;
+      #nssmdns6 = true;
+      #publish = {
+      #  enable = false;
+      #  addresses = true;
+      #};
     };
 
     location.provider = "geoclue2";

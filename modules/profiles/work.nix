@@ -26,6 +26,17 @@ in
     #    ppdOptions = {PageSize = "A4";};
     #  }
     #];
+    #hardware.printers.ensurePrinters = [
+    #  {
+    #    name = "MBZUAI";
+    #    #model = "${./assets/taskalfa4053ci-driverless-cupsfilters.ppd}";
+    #    location = "MBZUAI Any Printer";
+    #    deviceUri = "lpd://10.127.128.6/CM";
+    #    ppdOptions = {
+    #      PageSize = "A4";
+    #    };
+    #  }
+    #];
 
     # SSH config for Ghaf development
     home-manager.users."${vars.user}" = {

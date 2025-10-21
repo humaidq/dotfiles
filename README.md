@@ -17,7 +17,7 @@ use case.
 - Secrets management with `sops-nix`.
 - Browser configured with uBlock Origin, DuckDuckGo, and other extensions.
 - Shell configured with modern tools & improvements, such as nix-direnv,
-  zoxide, eza, fish with built-in autosuggestions, useful aliases,
+  zoxide, eza, zsh with built-in autosuggestions, useful aliases,
   and more.
 - Nebula mesh VPN setup for machines.
   - Alternatively, Tailscale with auto-authentication (using sops-nix).

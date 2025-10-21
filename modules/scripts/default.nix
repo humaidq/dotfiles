@@ -52,6 +52,14 @@ let
     ];
     text = "watch -d grep -e Dirty: -e Writeback: /proc/meminfo";
   };
+  zbench = pkgs.writeShellApplication {
+    name = "zbench";
+    runtimeInputs = with pkgs; [
+      gawk
+      zsh
+    ];
+    text = builtins.readFile ./zbench.bash;
+  };
 in
 {
   options.sifr.scripts.enable = lib.mkOption {
@@ -63,6 +71,7 @@ in
     environment.systemPackages = [
       whoseport
       fan
+      zbench
     ]
     ++ lib.optionals config.sifr.development.enable [
       lacheck

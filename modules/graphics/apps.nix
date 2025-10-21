@@ -46,6 +46,7 @@ in
           spleen
           nerd-fonts.fira-code
           nerd-fonts.jetbrains-mono
+          nerd-fonts.symbols-only
         ];
       };
     })
@@ -53,7 +54,7 @@ in
       # On VMs, these applications would reside on the host.
       environment.systemPackages = with pkgs; [
         gimp
-        #pinta
+        pinta
         inkscape
         libreoffice
         rpi-imager
@@ -62,6 +63,7 @@ in
         bitwarden-desktop
         ghostty
         calibre
+        xournalpp
 
         decibels # audio, soon in gnome 48
         gnome-calendar
@@ -75,8 +77,6 @@ in
         gaphor
         fragments
         localsend
-        fractal
-        tuba
 
         alsa-utils
 
