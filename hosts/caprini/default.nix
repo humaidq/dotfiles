@@ -46,27 +46,27 @@
     profiles = {
       basePlus = true;
       laptop = true;
-      work = true;
-      security-research = true;
-      research = true;
+      #work = true;
+      #security-research = true;
+      #research = true;
     };
     security = {
       yubikey = true;
       encryptDNS = false;
     };
-    hasGadgetSecrets = true;
+    #hasGadgetSecrets = true;
     development.enable = true;
     ntp.useNTS = true;
     o11y.client.enable = true;
     applications.emacs.enable = true;
-    applications.amateur.enable = true;
-    v12n.emulation = {
-      enable = true;
-      systems = [
-        "aarch64-linux"
-        "riscv64-linux"
-      ];
-    };
+    #applications.amateur.enable = true;
+    #v12n.emulation = {
+    #  enable = true;
+    #  systems = [
+    #    "aarch64-linux"
+    #    "riscv64-linux"
+    #  ];
+    #};
 
     tailscale = {
       enable = true;
@@ -251,7 +251,7 @@
         MODE="0664", GROUP="escpos"
   '';
 
-  boot.kernelPackages = pkgs.linuxPackages_6_17;
+  #boot.kernelPackages = pkgs.linuxPackages_6_17;
   nixpkgs.hostPlatform = "x86_64-linux";
-  system.stateVersion = "23.11";
+  system.stateVersion = "25.05";
 }

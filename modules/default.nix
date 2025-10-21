@@ -212,6 +212,7 @@ in
           liquidctl = import ../overlays/liquidctl { inherit prev; };
 
           js8call = pkgs.callPackage ../overlays/js8call { };
+          ufetch = pkgs.callPackage ../overlays/ufetch { };
 
           nwjs = prev.nwjs.overrideAttrs {
             version = "0.84.0";

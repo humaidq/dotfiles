@@ -30,11 +30,11 @@
   #  owner = "nebula-sifr0";
   #  mode = "600";
   #};
-  sops.secrets."usbguard/rules" = {
-    sopsFile = ../../secrets/serow.yaml;
-    owner = "root";
-    mode = "600";
-  };
+  #sops.secrets."usbguard/rules" = {
+  #  sopsFile = ../../secrets/serow.yaml;
+  #  owner = "root";
+  #  mode = "600";
+  #};
 
   services.upower.ignoreLid = true;
   # My configuration specific settings
@@ -211,10 +211,10 @@
   };
 
   # Laptop security
-  security.usbguard = {
-    enable = false;
-    ruleFile = config.sops.secrets."usbguard/rules".path;
-  };
+  #security.usbguard = {
+  #  enable = false;
+  #  ruleFile = config.sops.secrets."usbguard/rules".path;
+  #};
 
   boot.kernelPackages = pkgs.linuxPackages_6_17;
   nixpkgs.hostPlatform = "x86_64-linux";

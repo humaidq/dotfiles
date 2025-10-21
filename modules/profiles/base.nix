@@ -138,6 +138,7 @@ in
         ouch # compression
         hexyl # hex viewer
         poppler-utils
+        ufetch
 
         # TODO move to laptop config
         lm_sensors

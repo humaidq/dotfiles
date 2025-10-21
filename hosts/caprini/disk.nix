@@ -24,7 +24,7 @@
               size = "100%";
               content = {
                 type = "zfs";
-                pool = "zroot";
+                pool = "rpool";
               };
             };
           };
@@ -33,7 +33,7 @@
     }; # end disk
 
     zpool = {
-      zroot = {
+      rpool = {
         type = "zpool";
         rootFsOptions = {
           mountpoint = "none";
@@ -59,7 +59,11 @@
           "enc/root" = {
             type = "zfs_fs";
             mountpoint = "/";
-            postCreateHook = "zfs snapshot enc/root@blank";
+            postCreateHook = "zfs snapshot rpool/enc/root@blank";
+          };
+          "enc/persist" = {
+            type = "zfs_fs";
+            mountpoint = "/";
           };
           "enc/nix" = {
             type = "zfs_fs";
