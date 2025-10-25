@@ -4,6 +4,7 @@
   lib,
   pkgs,
   vars,
+  config,
   ...
 }:
 {
@@ -20,21 +21,16 @@
   networking.hostName = "caprini";
 
   # Nebula keys
-  #sops.secrets."nebula/crt" = {
-  #  sopsFile = ../../secrets/serow.yaml;
-  #  owner = "nebula-sifr0";
-  #  mode = "600";
-  #};
-  #sops.secrets."nebula/key" = {
-  #  sopsFile = ../../secrets/serow.yaml;
-  #  owner = "nebula-sifr0";
-  #  mode = "600";
-  #};
-  #sops.secrets."nebula/ssh_host_key" = {
-  #  sopsFile = ../../secrets/serow.yaml;
-  #  owner = "nebula-sifr0";
-  #  mode = "600";
-  #};
+  sops.secrets."nebula/crt" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."nebula/key" = {
+    sopsFile = ../../secrets/serow.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
   services.upower.ignoreLid = true;
   sifr = {
     graphics = {
@@ -74,12 +70,12 @@
       ssh = true;
       auth = false;
     };
-    #net = {
-    #  sifr0 = false;
-    #  node-crt = config.sops.secrets."nebula/crt".path;
-    #  node-key = config.sops.secrets."nebula/key".path;
-    #  ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
-    #};
+    net = {
+      sifr0 = true;
+      node-crt = config.sops.secrets."nebula/crt".path;
+      node-key = config.sops.secrets."nebula/key".path;
+      #ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
+    };
   };
 
   topology.self = {
