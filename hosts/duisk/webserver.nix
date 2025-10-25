@@ -131,7 +131,7 @@ in
             redir https://lighthouse.huma.id permanent
           }
           handle /dns-query* {
-            reverse_proxy 10.10.0.12:3333
+            reverse_proxy 127.0.0.1:3333
           }
         '';
 

@@ -10,6 +10,7 @@
     self.nixosModules.sifrOS
     (import ./hardware.nix)
     (import ./webserver.nix)
+    (import ./blocky.nix)
   ];
   networking.hostName = "duisk";
 
