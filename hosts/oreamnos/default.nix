@@ -116,6 +116,7 @@
   # Doing riscv64 xcomp, manually gc
   nix.gc.automatic = lib.mkForce false;
 
+  security.sudo-rs.wheelNeedsPassword = false;
   security.sudo.wheelNeedsPassword = false;
 
   boot.loader = {

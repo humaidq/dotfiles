@@ -124,6 +124,7 @@
           inherit specialArgs;
           modules = [
             self.nixosModules.host-x86-installer
+            inputs.srvos.nixosModules.mixins-nix-experimental
             {
               isoImage = {
                 squashfsCompression = "zstd -Xcompression-level 6";

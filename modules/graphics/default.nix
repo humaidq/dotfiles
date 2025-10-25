@@ -92,6 +92,15 @@ in
 
         xsession.enable = true;
         xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
+
+        programs.ghostty = {
+          enable = true;
+          settings = {
+            theme = "Dracula";
+            font-family = "Berkeley Mono";
+            font-size = "12";
+          };
+        };
       };
     })
   ];

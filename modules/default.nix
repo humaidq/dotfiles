@@ -100,6 +100,20 @@ in
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPx68Wz04/MkfKaptXlvghLjwnW3sTUXgZgiDD3Nytii humaid@goral"
     ];
 
+    programs.ssh = {
+      knownHosts = {
+        oreamnos = {
+          hostNames = [
+            "oreamnos"
+            "100.83.164.46"
+            "10.10.0.12"
+            "oreamnos.barred-banana.ts.net"
+          ];
+          publicKey = "oreamnos ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHnC2ZPG75+HmEpS6OYpYU4OG6G8rwiEKDNXudtTAr0u";
+        };
+      };
+    };
+
     home-manager.users.${vars.user} = {
       home.stateVersion = "23.05";
       home.sessionPath = [ "$HOME/.bin" ];
@@ -127,8 +141,6 @@ in
           "https://ghaf-dev.cachix.org"
         ];
 
-        # for images (such as x86 installer)
-        experimental-features = "nix-command flakes";
         #substituters = lib.optional (
         #  config.networking.hostName != "oreamnos"
         #) "https://cache.huma.id?priority=51";
@@ -193,6 +205,13 @@ in
           js8call = pkgs.callPackage ../overlays/js8call { };
           ufetch = pkgs.callPackage ../overlays/ufetch { };
 
+          # Solve Chrome crashing wlroots (sway)
+          # Solved probably with wlroots 0.19.1 by this MR https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5080
+          # So need to remove this in NixOS 25.11
+          wlroots = pkgs.callPackage ../overlays/wlroots { inherit prev; };
+          sway-unwrapped = prev.sway-unwrapped.override { inherit (final) wlroots; };
+
+          # fix gridtracker crash
           nwjs = prev.nwjs.overrideAttrs {
             version = "0.84.0";
             src = prev.fetchurl {

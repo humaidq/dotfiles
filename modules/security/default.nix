@@ -50,6 +50,10 @@ in
         age
       ];
 
+      # TODO 25.11
+      # programs.yubikey-manager.enable
+      # programs.yubikey-touch-detector.enable
+
       services.pcscd.enable = true;
     })
     (mkIf (cfg.harden && !config.sifr.hardware.vm) {

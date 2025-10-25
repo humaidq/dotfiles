@@ -76,6 +76,9 @@ in
         pkgs.zsh
       ];
 
+      security.sudo-rs = {
+        enable = true;
+      };
       security.sudo.extraConfig = ''
         Defaults lecture = never
       '';
@@ -153,6 +156,7 @@ in
       #  # Sometimes indexing hgfs on VMWare causing CPU to go 100%
       #  prunePaths = [ "/mnt" ];
       #};
+      hardware.keyboard.zsa.enable = true;
 
       # Track highest uptime! :)
       services.uptimed.enable = true;

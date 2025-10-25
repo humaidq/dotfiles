@@ -141,7 +141,7 @@ in
 
       knownHosts = {
         vedenemo-builder = {
-          hostNames = [ "builder.vedenemodev" ];
+          hostNames = [ "builder.vedenemo.dev" ];
           publicKey = "builder.vedenemo.dev ssh-ed25519 AAAAC3NzaC1    lZDI1NTE5AAAAIHSI8s/wefXiD2h3I3mIRdK+d9yDGMn0qS5fpKDnSGqj";
         };
         hetzarm-ed25519 = {

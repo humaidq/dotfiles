@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.sifr.scripts;
+
   # Simple tool that tells you which process uses a specific port.
   whoseport = pkgs.writeShellApplication {
     name = "whoseport";
@@ -17,6 +18,8 @@ let
       lsof -i ":$1" | grep LISTEN
     '';
   };
+
+  # languagetool check for latex files
   lacheck = pkgs.writeShellApplication {
     name = "lacheck";
     runtimeInputs = with pkgs; [
@@ -28,6 +31,8 @@ let
       languagetool /tmp/lacheck.txt
     '';
   };
+
+  # Set thinkpad fan speed
   fan = pkgs.writeShellApplication {
     name = "fan";
     runtimeInputs = with pkgs; [ coreutils ];
@@ -44,6 +49,8 @@ let
       echo "level $1" | tee /proc/acpi/ibm/fan
     '';
   };
+
+  # Watch sync buffer size
   watchsync = pkgs.writeShellApplication {
     name = "watchsync";
     runtimeInputs = with pkgs; [
@@ -52,6 +59,8 @@ let
     ];
     text = "watch -d grep -e Dirty: -e Writeback: /proc/meminfo";
   };
+
+  # Benchmark zsh start times
   zbench = pkgs.writeShellApplication {
     name = "zbench";
     runtimeInputs = with pkgs; [
@@ -59,6 +68,26 @@ let
       zsh
     ];
     text = builtins.readFile ./zbench.bash;
+  };
+
+  # Find impermanence orphans
+  persist-orphans = pkgs.writeShellApplication {
+    name = "persist-orphans";
+    runtimeInputs = with pkgs; [
+      gnugrep
+    ];
+    bashOptions = [ ];
+    text = builtins.readFile ./persist-orphans.bash;
+  };
+
+  # License generators
+  bsd3 = pkgs.writeShellApplication {
+    name = "bsd3";
+    text = builtins.readFile ./bsd3-license.bash;
+  };
+  apache2 = pkgs.writeShellApplication {
+    name = "apache2";
+    text = builtins.readFile ./apache2-license.bash;
   };
 in
 {
@@ -72,10 +101,13 @@ in
       whoseport
       fan
       zbench
+      persist-orphans
     ]
     ++ lib.optionals config.sifr.development.enable [
       lacheck
       watchsync
+      bsd3
+      apache2
     ];
   };
 }

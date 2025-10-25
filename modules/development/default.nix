@@ -8,8 +8,11 @@
 let
   cfg = config.sifr.development;
   allowedSigners = pkgs.writeText "allowed-signers" ''
-    sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIC+JivWVZLN5Q+gQp+Y+YOHr0tglTPujT5uqz0Vk//YnAAAABHNzaDo= git@huma.id
-    sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIM//VbFc8diwQ7MTRLGzKNd/Jghtd5w1o+eOJD0skwCmAAAAB3NzaDpUSUk= humaid.alqassimi@tii.ae
+    git@huma.id sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIC+JivWVZLN5Q+gQp+Y+YOHr0tglTPujT5uqz0Vk//YnAAAABHNzaDo=
+    humaid.alqassimi@tii.ae sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIM//VbFc8diwQ7MTRLGzKNd/Jghtd5w1o+eOJD0skwCmAAAAB3NzaDpUSUk=
+
+    bmg.avoin@gmail.com sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIEJ9ewKwo5FLj6zE30KnTn8+nw7aKdei9SeTwaAeRdJDAAAABHNzaDo=
+    bmg.avoin@gmail.com sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIA/pwHnzGNM+ZU4lANGROTRe2ZHbes7cnZn72Oeun/MCAAAABHNzaDo=
   '';
 in
 {
@@ -146,6 +149,18 @@ in
         };
       };
 
+      # Fix apps like jupyter
+      programs.nix-ld = {
+        enable = true;
+        libraries = with pkgs; [
+          stdenv.cc.cc.lib # provides libstdc++.so.6
+          zlib
+          openssl
+          libffi
+          glib
+        ];
+      };
+
       # Only include general helpful development tools
       environment.systemPackages = with pkgs; [
         bat
@@ -185,6 +200,9 @@ in
         pnpm
         nodejs
         tree-sitter
+
+        # AI
+        claude-code
       ];
     })
   ];

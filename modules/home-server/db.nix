@@ -9,6 +9,7 @@ in
 {
   config = lib.mkIf cfg.enable {
 
+    # TODO 25.1 upgrade to v17
     services.postgresql = {
       enable = true;
       settings = {

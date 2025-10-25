@@ -34,7 +34,10 @@ in
       "lp"
     ];
     # Allow setting cpupower
-    environment.systemPackages = [ config.boot.kernelPackages.cpupower ];
+    environment.systemPackages = [
+      config.boot.kernelPackages.cpupower
+      pkgs.powertop
+    ];
 
     services.printing = {
       enable = true;
@@ -57,7 +60,7 @@ in
 
     # disable due to security
     services.avahi = {
-      enable = false;
+      #enable = true;
       #nssmdns4 = true;
       #nssmdns6 = true;
       #publish = {
@@ -70,8 +73,8 @@ in
 
     services.geoclue2 = {
       enable = true;
-      geoProviderUrl = "https://beacondb.net/v1/geolocate";
-      submissionUrl = "https://beacondb.net/v2/geosubmit";
+      geoProviderUrl = "https://api.beacondb.net/v1/geolocate";
+      submissionUrl = "https://api.beacondb.net/v2/geosubmit";
       submitData = true;
 
       #appConfig.gammastep = {

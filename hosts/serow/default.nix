@@ -51,6 +51,8 @@
       work = true;
       security-research = true;
       research = true;
+      receipt = true;
+      university = true;
     };
     security = {
       yubikey = true;
@@ -91,13 +93,6 @@
   #    "ssh://humaid@oreamnos"
   #  ];
   #};
-
-  hardware.keyboard.zsa.enable = true;
-  environment.systemPackages = with pkgs; [
-    vscode
-  ];
-
-  nixpkgs.config.android_sdk.accept_license = true;
 
   boot.loader = {
     systemd-boot = {
@@ -140,25 +135,13 @@
     distributedBuilds = true;
   };
 
-  programs.ssh = {
-    extraConfig = ''
-      Host oreamnos
-           user humaid
-           IdentityFile /home/humaid/.ssh/id_ed25519_build
-    '';
-
-    knownHosts = {
-      oreamnos = {
-        hostNames = [
-          "oreamnos"
-          "100.83.164.46"
-          "10.10.0.12"
-          "oreamnos.barred-banana.ts.net"
-        ];
-        publicKey = "oreamnos ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHnC2ZPG75+HmEpS6OYpYU4OG6G8rwiEKDNXudtTAr0u";
-      };
-    };
-  };
+  #programs.ssh = {
+  #  extraConfig = ''
+  #    Host oreamnos
+  #         user humaid
+  #         IdentityFile /home/humaid/.ssh/id_ed25519_build
+  #  '';
+  #};
 
   home-manager.users."${vars.user}" = {
     services.kanshi = {
@@ -194,20 +177,6 @@
         }
       ];
     };
-  };
-
-  # receipt printer
-  users.groups.escpos = { };
-  users.users.humaid.extraGroups = [ "escpos" ];
-  services.udev.extraRules = ''
-    # Rongta receipt printer via ICS Advent Parallel Adapter
-    # Vendor 0xfe6  Product 0x811e
-    SUBSYSTEM=="usb", ATTRS{idVendor}=="0fe6", ATTRS{idProduct}=="811e", \
-        MODE="0664", GROUP="escpos"
-  '';
-
-  systemd.services.tailscaled.environment = {
-    TS_NO_UDP = "1";
   };
 
   # Laptop security
