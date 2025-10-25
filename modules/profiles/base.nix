@@ -56,6 +56,8 @@ in
           dig
           pv
           smartmontools
+
+          nix-output-monitor
           # Crisis tools https://www.brendangregg.com/blog/2024-03-24/linux-crisis-tools.html
           sysstat
           tcpdump

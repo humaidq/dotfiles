@@ -190,7 +190,6 @@ in
         nix-fast-build
         nix-info
         nix-melt
-        nix-output-monitor
         nix-tree
         nixfmt-rfc-style
         nixpkgs-review

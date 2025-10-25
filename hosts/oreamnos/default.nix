@@ -43,17 +43,11 @@
         "riscv64-linux"
       ];
     };
-    # Disable temporarily
-    #graphics = {
-    #  gnome.enableRemoteDesktop = true;
-    #  gnome.enable = true;
-    #  apps = true;
-    #};
     security.yubikey = true;
     development.enable = true;
     ntp.useNTS = false;
     applications.emacs.enable = true;
-    applications.amateur.enable = true;
+    autoupgrade.enable = true;
 
     o11y = {
       server.enable = true;
