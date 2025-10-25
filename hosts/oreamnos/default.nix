@@ -323,71 +323,71 @@
     pools = [ "dpool" ];
   };
 
-  #services.nebula.networks.sifr0.firewall = {
-  #  inbound = [
-  #    # Allow SSH from all on this host
-  #    {
-  #      host = "any";
-  #      port = "22";
-  #      proto = "tcp";
-  #    }
-  #    # Time Server
-  #    {
-  #      host = "any";
-  #      port = "123";
-  #      proto = "udp";
-  #    }
-  #    # DNS
-  #    {
-  #      host = "any";
-  #      port = "53";
-  #      proto = "udp";
-  #    }
-  #    # Forgejo SSH
-  #    {
-  #      host = "any";
-  #      port = "2222";
-  #      proto = "any";
-  #    }
-  #    # Grafana
-  #    {
-  #      host = "any";
-  #      port = "9001";
-  #      proto = "any";
-  #    }
-  #    {
-  #      host = "any";
-  #      port = "3100";
-  #      proto = "any";
-  #    }
-  #    {
-  #      host = "any";
-  #      port = "3000";
-  #      proto = "any";
-  #    }
-  #    {
-  #      host = "any";
-  #      port = "80";
-  #      proto = "tcp";
-  #    }
-  #    {
-  #      host = "serow";
-  #      port = "3389";
-  #      proto = "tcp";
-  #    }
-  #    {
-  #      host = "serow";
-  #      port = "3389";
-  #      proto = "udp";
-  #    }
-  #    # Allow duisk access
-  #    {
-  #      host = "duisk";
-  #      port = "5000"; # nix cache
-  #      proto = "tcp";
-  #    }
-  #  ];
-  #};
+  services.nebula.networks.sifr0.firewall = {
+    inbound = [
+      # Allow SSH from all on this host
+      {
+        host = "any";
+        port = "22";
+        proto = "tcp";
+      }
+      # Time Server
+      {
+        host = "any";
+        port = "123";
+        proto = "udp";
+      }
+      # DNS
+      {
+        host = "any";
+        port = "53";
+        proto = "udp";
+      }
+      # Forgejo SSH
+      {
+        host = "any";
+        port = "2222";
+        proto = "any";
+      }
+      # Grafana
+      {
+        host = "any";
+        port = "9001";
+        proto = "any";
+      }
+      {
+        host = "any";
+        port = "3100";
+        proto = "any";
+      }
+      {
+        host = "any";
+        port = "3000";
+        proto = "any";
+      }
+      {
+        host = "any";
+        port = "80";
+        proto = "tcp";
+      }
+      {
+        host = "serow";
+        port = "3389";
+        proto = "tcp";
+      }
+      {
+        host = "serow";
+        port = "3389";
+        proto = "udp";
+      }
+      # Allow duisk access
+      {
+        host = "duisk";
+        port = "5000"; # nix cache
+        proto = "tcp";
+      }
+    ];
+  };
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "24.05";
