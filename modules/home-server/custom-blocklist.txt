@@ -6,7 +6,6 @@
 *.lgbt
 *.gay
 *.vip
-*.store
 *.click
 *.top
 *.kp
