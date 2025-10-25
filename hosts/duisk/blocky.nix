@@ -16,10 +16,8 @@ _: {
           https = 4333;
           tls = 853;
         };
-        tls = {
-          certFile = "/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/dns.huma.id/dns.huma.id.crt";
-          keyFile = "/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/dns.huma.id/dns.huma.id.key";
-        };
+        certFile = "/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/dns.huma.id/dns.huma.id.crt";
+        keyFile = "/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/dns.huma.id/dns.huma.id.key";
         upstreams = {
           strategy = "strict";
           groups = {
