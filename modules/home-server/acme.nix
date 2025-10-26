@@ -62,6 +62,8 @@ in
                 dns = [
                   "*.alq.ae"
                   "alq.ae"
+                  "huma.id"
+                  "*.huma.id"
                   "home.arpa"
                   "*.home.arpa"
                 ];
