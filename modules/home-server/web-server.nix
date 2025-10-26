@@ -78,7 +78,7 @@ in
             inherit (tls) forceSSL;
             enableACME = true;
             locations."/" = {
-              proxyPass = "http://127.0.0.1:${port}";
+              proxyPass = "http://127.0.0.1:5000";
             };
           };
           "sdr.alq.ae" = {
