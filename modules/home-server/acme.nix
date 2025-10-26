@@ -41,6 +41,7 @@ in
         key = config.sops.secrets."step-ca/key".path;
         dnsNames = [
           "alq.ae"
+          "huma.id"
           ".home.arpa"
         ];
         logger.format = "text";
