@@ -70,6 +70,16 @@ in
             "www.ecosia.org" = "strict-safe-search.ecosia.org";
           };
           mapping = {
+            "www.google.com" = "216.239.38.120";
+            "www.google.ae" = "216.239.38.120";
+            "www.google.co.uk" = "216.239.38.120";
+
+            "www.youtube.com" = "216.239.38.119";
+            "m.youtube.com" = "216.239.38.119";
+            "youtubei.googleapis.com" = "216.239.38.119";
+            "youtube.googleapis.com" = "216.239.38.119";
+            "www.youtube-nocookie.com" = "216.239.38.119";
+
             # way to test
             "test.huma.id" = "1.1.1.1";
             "alq.ae" = "10.10.0.12,192.168.1.250";
@@ -79,7 +89,7 @@ in
             "duisk" = "10.10.0.13";
             "lighthouse" = "10.10.0.10";
 
-            #"cache.huma.id" = "100.83.164.46,192.168.1.250";
+            "cache.huma.id" = "10.10.0.12,192.168.1.250";
             # Fix TII sites
             "jira.tii.ae" = "10.151.12.77";
             "confluence.tii.ae" = "10.151.12.79";

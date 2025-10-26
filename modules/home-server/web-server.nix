@@ -74,6 +74,13 @@ in
             enableACME = true;
             inherit (tls) forceSSL;
           };
+          "cache.huma.id" = {
+            inherit (tls) forceSSL;
+            enableACME = true;
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:${port}";
+            };
+          };
           "sdr.alq.ae" = {
             enableACME = true;
             locations."/" = {
