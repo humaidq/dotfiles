@@ -49,7 +49,7 @@
     };
     security = {
       yubikey = true;
-      encryptDNS = false;
+      encryptDNS = true;
     };
     hasGadgetSecrets = true;
     development.enable = true;

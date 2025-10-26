@@ -70,6 +70,10 @@ in
               root = ./homepage;
             };
           };
+          "wiki.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+          };
           "sdr.alq.ae" = {
             enableACME = true;
             locations."/" = {

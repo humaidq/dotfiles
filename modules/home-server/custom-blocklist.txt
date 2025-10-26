@@ -11,22 +11,22 @@
 *.kp
 
 # Other search engines (no safe search)
-*.ask.com
-*.brave.com
-*.daum.net
-*.lycos.com
-*.navier.*
-*.sogou.com
-*.soso.com
-*.swisscows.com
-*.yahoo.com
-*.yandex.com
-*.yandex.ru
-*.search.disconnect.me
-*.startpage.com
-*.searx.*
-*.searxng.*
-*.excite.com
+# *.ask.com
+# *.brave.com
+# *.daum.net
+# *.lycos.com
+# *.navier.*
+# *.sogou.com
+# *.soso.com
+# *.swisscows.com
+# *.yahoo.com
+# *.yandex.com
+# *.yandex.ru
+# *.search.disconnect.me
+# *.startpage.com
+# *.searx.*
+# *.searxng.*
+# *.excite.com
 
 # Chat
 *.chat-avenue.com

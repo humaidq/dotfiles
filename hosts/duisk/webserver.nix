@@ -89,7 +89,21 @@ in
           extraConfig = ''
             respond "Not connected to sifr0, make sure you are connected to lighthouse.huma.id and DNS is setup properly"
           '';
-          serverAliases = [ "alq.ae" ];
+          serverAliases = [
+            "alq.ae"
+            "tv.alq.ae"
+            "catalogue.alq.ae"
+            "wiki.alq.ae"
+            "vault.alq.ae"
+            "git.alq.ae"
+            "grafana.alq.ae"
+            "cache.alq.ae"
+            "deluge.alq.ae"
+            "pdf.alq.ae"
+            "dav.alq.ae"
+            "webdav.alq.ae"
+            "img.alq.ae"
+          ];
         };
         # For serving files
         "f.huma.id".extraConfig = ''

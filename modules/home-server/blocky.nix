@@ -70,9 +70,15 @@ in
             "www.ecosia.org" = "strict-safe-search.ecosia.org";
           };
           mapping = {
+            # way to test
             "test.huma.id" = "1.1.1.1";
-
             "alq.ae" = "10.10.0.12,192.168.1.250";
+
+            # Not comprehensive but works
+            "oreamnos" = "10.10.0.12";
+            "duisk" = "10.10.0.13";
+            "lighthouse" = "10.10.0.10";
+
             #"cache.huma.id" = "100.83.164.46,192.168.1.250";
             # Fix TII sites
             "jira.tii.ae" = "10.151.12.77";

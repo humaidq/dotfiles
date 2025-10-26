@@ -18,6 +18,7 @@ in
     ./nix.nix
     ./vaultwarden.nix
     ./web-server.nix
+    ./wiki.nix
   ];
 
   options.sifr.home-server = {

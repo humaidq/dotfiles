@@ -3,7 +3,7 @@ let
   cfg = config.sifr.security;
 in
 {
-  options.sifr.security.encryptDNS = lib.mkEnableOption "encrypted DNS over TLS";
+  options.sifr.security.encryptDNS = lib.mkEnableOption "encrypted DNS over Nebula";
 
   config = lib.mkIf cfg.encryptDNS {
     networking = {
@@ -17,5 +17,11 @@ in
       #dnssec = "allow-downgrade";
       domains = [ "~." ];
     };
+    assertions = [
+      {
+        assertion = config.sifr.net.sifr0;
+        message = "Encrypted DNS `sifr.security.encryptedDNS` requires Nebula (sifr0)";
+      }
+    ];
   };
 }
