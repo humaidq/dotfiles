@@ -38,8 +38,9 @@
   };
   sops.secrets."usbguard/policy" = {
     sopsFile = ../../secrets/caprini.yaml;
-    #owner = "nebula-sifr0";
-    #mode = "600";
+  };
+  sops.secrets."borg/ssh_key" = {
+    sopsFile = ../../secrets/caprini.yaml;
   };
 
   services.upower.ignoreLid = true;
@@ -86,6 +87,10 @@
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
       ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
+    };
+    backups = {
+      enable = true;
+      sshKeyPath = config.sops.secrets."borg/ssh_key".path;
     };
   };
 

@@ -17,15 +17,14 @@ let
 in
 {
   options.sifr.backups = {
-    enable = mkEnableOption "backups to rsync.net";
+    enable = mkEnableOption "backups to remote borg repository";
     paths = mkOption {
       description = "Paths to backup";
       type = with types; listOf str;
       default = [
         "/home/${vars.user}/docs"
         "/home/${vars.user}/repos"
-        "/home/${vars.user}/tii"
-        "/home/${vars.user}/projects"
+        "/home/${vars.user}/inbox"
       ];
     };
     exclude = mkOption {
@@ -40,7 +39,7 @@ in
     };
     repo = mkOption {
       type = types.str;
-      default = "zh2137@zh2137.rsync.net:borg";
+      default = "humaid@oreamnos:/mnt/humaid/files/backups/${config.networking.hostName}";
       description = "Repository to backup to";
     };
     startsAt = mkOption {
@@ -48,23 +47,30 @@ in
       default = "18:00";
       description = "When the backup starts";
     };
-    isRsyncNet = mkEnableOption "the backup is to rsync.net";
+    sshKeyPath = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description = "Path to the SSH key for borg";
+    };
+    borgPassPath = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description = "Path to the borg password";
+    };
+    isRsyncNet = mkEnableOption "rsync.net configurations";
   };
 
   config = mkIf cfg.backups.enable {
     services.borgbackup.jobs."mainbackup" = {
       archiveBaseName = "${config.networking.hostName}";
       dateFormat = "+%Y-%b-%d";
-      inherit (cfg.backups) paths;
-      inherit (cfg.backups) exclude;
-      inherit (cfg.backups) repo;
+      inherit (cfg.backups) paths exclude repo;
       encryption = {
-        mode = "repokey-blake2";
-        # TODO use sops-nix
-        passCommand = "cat /root/borg_passphrase";
+        mode = if (cfg.backups.borgPassPath != null) then "repokey-blake2" else "none";
+        passCommand = mkIf (cfg.backups.borgPassPath != null) "cat ${cfg.backups.borgPassPath}";
       };
       environment.BORG_RELOCATED_REPO_ACCESS_IS_OK = "yes";
-      environment.BORG_RSH = "ssh -i /root/borgbackup_ssh_key";
+      environment.BORG_RSH = "ssh -i ${cfg.backups.sshKeyPath}";
       compression = "auto,lzma";
       startAt = cfg.backups.startsAt;
       extraArgs = mkIf cfg.backups.isRsyncNet "--remote-path=borg1"; # rsync.net's executable

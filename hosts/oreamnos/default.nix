@@ -138,11 +138,8 @@
   users.users.${vars.user} = {
     isNormalUser = true;
     openssh.authorizedKeys.keys = [
-      # Pixel HK05
-      "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMFWC5xI1ZgLZ65ubNYhhtL+NFMHA9pJs5yStdJUyM6cul+bqcVOzvVdLQpAfthjTEBXR1Et/nkuyexttDRUS6Q="
-
-      # root serow (buildmachine)
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJFhlcX+CiEb8q/NSuy9vOtu5RwFfUGui773wcWWgkf1 root@serow"
+      # caprini borg ssh
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIATG8oK3/+6po+IHhKj/Dx++qUNEPSnLNY5mj+hvmtrE humaid@caprini"
     ];
   };
 
