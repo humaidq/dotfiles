@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.sifr.home-server;
@@ -14,6 +19,7 @@ in
 
     services.forgejo = {
       enable = true;
+      package = pkgs.forgejo; # default is lts
       database.type = "postgres";
       lfs.enable = true;
       settings = {

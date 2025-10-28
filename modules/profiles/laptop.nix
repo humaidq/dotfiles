@@ -76,6 +76,24 @@ in
       geoProviderUrl = "https://api.beacondb.net/v1/geolocate";
       submissionUrl = "https://api.beacondb.net/v2/geosubmit";
       submitData = true;
+      appConfig = {
+        "org.gnome.Maps" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+        "geoclue-demo-agent" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+        "geoclue-where-am-i" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+        "where-am-i" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+      };
 
       #appConfig.gammastep = {
       #  isAllowed = true;

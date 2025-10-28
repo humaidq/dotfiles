@@ -28,6 +28,21 @@
 # *.searxng.*
 # *.excite.com
 
+# Local annoyances
+customerpulse.gov.ae
+# Gov web chat
+nicecxone.com
+novelvox.net
+tafseelmoe.novelvox.net
+arabot.io
+# Gov tts accessibility services
+readspeaker.com
+mindrocketsapis.com
+# Gov AI Chatbots
+chatbot.tax.gov.ae
+chat.dubai.ae
+ask.u.ae
+
 # Chat
 *.chat-avenue.com
 *.chatango.com

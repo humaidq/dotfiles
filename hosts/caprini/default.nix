@@ -31,6 +31,17 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
+  sops.secrets."nebula/ssh_host_key" = {
+    sopsFile = ../../secrets/caprini.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."usbguard/policy" = {
+    sopsFile = ../../secrets/caprini.yaml;
+    #owner = "nebula-sifr0";
+    #mode = "600";
+  };
+
   services.upower.ignoreLid = true;
   sifr = {
     graphics = {
@@ -74,7 +85,7 @@
       sifr0 = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
-      #ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
+      ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
     };
   };
 
@@ -180,9 +191,24 @@
   };
   environment.systemPackages = with pkgs; [
     sbctl # for lanzaboote
+    usbguard-notifier
   ];
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = false;
+
+  services.usbguard = {
+    enable = true;
+    dbus.enable = true; # for gnome
+    IPCAllowedGroups = [ "wheel" ];
+    ruleFile = config.sops.secrets."usbguard/policy".path;
+  };
+  #systemd.user.services.usbguard-notifier = {
+  #  enable = true;
+  #  wantedBy = [ "graphical-session.target" ];
+  #  partOf = [ "graphical-session.target" ];
+  #  wants = [ "graphical-session.target" ];
+  #  after = [ "graphical-session.target" ];
+  #};
 
   system.stateVersion = "25.04";
 }

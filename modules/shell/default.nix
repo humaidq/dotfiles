@@ -31,7 +31,7 @@ let
     ta = "tmux a -t";
     #sudo = "doas";
     doas = "sudo";
-    #ptop = "sudo powertop";
+    ptop = "sudo powertop";
     #bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
     #agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
     yt = "yt-dlp --add-metadata -ic";
@@ -183,6 +183,9 @@ in
             }
             function nts() {
               chronyd -Q -t 3 "server $1 iburst nts maxsamples 1"
+            }
+            function nix-populate() {
+              nom build .\#nixosConfigurations.$1.config.system.build.toplevel --keep-going
             }
 
             function e() {
