@@ -210,8 +210,8 @@ in
           # Solve Chrome crashing wlroots (sway)
           # Solved probably with wlroots 0.19.1 by this MR https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5080
           # So need to remove this in NixOS 25.11
-          wlroots = pkgs.callPackage ../overlays/wlroots { inherit prev; };
-          sway-unwrapped = prev.sway-unwrapped.override { inherit (final) wlroots; };
+          #wlroots = pkgs.callPackage ../overlays/wlroots { inherit prev; };
+          #sway-unwrapped = prev.sway-unwrapped.override { inherit (final) wlroots; };
 
           # fix gridtracker crash
           nwjs = prev.nwjs.overrideAttrs {
