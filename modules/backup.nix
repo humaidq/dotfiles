@@ -63,7 +63,7 @@ in
   config = mkIf cfg.backups.enable {
     services.borgbackup.jobs."mainbackup" = {
       archiveBaseName = "${config.networking.hostName}";
-      dateFormat = "+%Y-%b-%d";
+      dateFormat = "+%Y-%m-%dT%H:%M:%S";
       inherit (cfg.backups) paths exclude repo;
       encryption = {
         mode = if (cfg.backups.borgPassPath != null) then "repokey-blake2" else "none";
@@ -71,7 +71,8 @@ in
       };
       environment.BORG_RELOCATED_REPO_ACCESS_IS_OK = "yes";
       environment.BORG_RSH = "ssh -i ${cfg.backups.sshKeyPath}";
-      compression = "auto,lzma";
+      environment.BORG_UNKNOWN_UNENCRYPTED_REPO_ACCESS_IS_OK = "yes";
+      compression = "auto,zstd";
       startAt = cfg.backups.startsAt;
       extraArgs = mkIf cfg.backups.isRsyncNet "--remote-path=borg1"; # rsync.net's executable
     };

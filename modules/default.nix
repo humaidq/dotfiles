@@ -104,21 +104,19 @@ in
 
     programs.ssh = {
       knownHosts = {
-        oreamnos = {
+        oreamnos-ed = {
           hostNames = [
-            "oreamnos"
-            "100.83.164.46"
             "10.10.0.12"
-            "oreamnos.barred-banana.ts.net"
+            "oreamnos"
           ];
-          publicKey = "oreamnos ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHnC2ZPG75+HmEpS6OYpYU4OG6G8rwiEKDNXudtTAr0u";
+          publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHnC2ZPG75+HmEpS6OYpYU4OG6G8rwiEKDNXudtTAr0u";
         };
         oreamnos-rsa = {
           hostNames = [
             "oreamnos"
             "10.10.0.12"
           ];
-          publicKey = "oreamnos ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCR0gcBv3hUx0xxqlfsv4wUUuAL1/3KDOywcl7o/b00ABdF0IOKhgXGicxVegfrtgV8dhY+fb8CYBzlPfsy8/34+XM5PXQHus99WQ0obLEsoKH2EEMz3mRCt5RU2Dttv0mGNeadJXldNJS3IyqIxlj8nYyBZJFR4tMmKA8sE9l8EvRSV/OUxv9G9WiS/j/PYfhjJig1lbdqZtjPL5hbgQcIdSXZKJUxbhD3vR8hh+3JY5LKSEK5pWTAYGsOPXaU3NPLxDPWSwZJvF8jW/546y3jaeEEd3CBGZfziVQ4xWwtZlYzuCdKxhmABicRqfj0XsXitvF+P//G74/+LRhkqcz73UqfRRb9hH1aIhZf6SVGrXaemAwO01991uBqZBcbDfo7VwwiwhQt0JPJ+bAqqJPic5JB6fMdCyNoXA1x5/b1L8DRiZE9rOn1woReO6T1w0aXHFPRvLiNypENW45oYw8c/1a8wirruQbIR4ufVKbl+eTHy0e/U/dlpiTOVH2R5wbVZT53StRW4BGNozt4dUS7DJgE6fJAa0nTtC8QVsjGf5RpgCsnqxCynZECk6B48WPmmkqxnfU84LoONoxRTcwNlA6lWigDeA3rD1dJDLGEvPF5P7FkWXGCPDLS9ZymLDFAvygvhi3y9wcLimqlt8K4w5O/zgDNI0bLJ0hQCfUpMQ==";
+          publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCR0gcBv3hUx0xxqlfsv4wUUuAL1/3KDOywcl7o/b00ABdF0IOKhgXGicxVegfrtgV8dhY+fb8CYBzlPfsy8/34+XM5PXQHus99WQ0obLEsoKH2EEMz3mRCt5RU2Dttv0mGNeadJXldNJS3IyqIxlj8nYyBZJFR4tMmKA8sE9l8EvRSV/OUxv9G9WiS/j/PYfhjJig1lbdqZtjPL5hbgQcIdSXZKJUxbhD3vR8hh+3JY5LKSEK5pWTAYGsOPXaU3NPLxDPWSwZJvF8jW/546y3jaeEEd3CBGZfziVQ4xWwtZlYzuCdKxhmABicRqfj0XsXitvF+P//G74/+LRhkqcz73UqfRRb9hH1aIhZf6SVGrXaemAwO01991uBqZBcbDfo7VwwiwhQt0JPJ+bAqqJPic5JB6fMdCyNoXA1x5/b1L8DRiZE9rOn1woReO6T1w0aXHFPRvLiNypENW45oYw8c/1a8wirruQbIR4ufVKbl+eTHy0e/U/dlpiTOVH2R5wbVZT53StRW4BGNozt4dUS7DJgE6fJAa0nTtC8QVsjGf5RpgCsnqxCynZECk6B48WPmmkqxnfU84LoONoxRTcwNlA6lWigDeA3rD1dJDLGEvPF5P7FkWXGCPDLS9ZymLDFAvygvhi3y9wcLimqlt8K4w5O/zgDNI0bLJ0hQCfUpMQ==";
         };
       };
     };
