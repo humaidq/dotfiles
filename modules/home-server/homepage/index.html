@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Homepage</title>
   <style>
     body {
@@ -9,9 +10,15 @@
       line-height: 1.4;
       background-color: #f5f5f5;
       color: #222;
-      padding: 2rem;
+      padding: 1rem;
       max-width: 800px;
       margin: 0 auto;
+    }
+
+    @media (min-width: 600px) {
+      body {
+        padding: 2rem;
+      }
     }
 
     h1 {
@@ -22,9 +29,15 @@
     section {
       background: #fff;
       border-radius: 8px;
-      padding: 1rem 1.25rem;
+      padding: 1rem;
       margin-bottom: 1.5rem;
       border: 1px solid #ddd;
+    }
+
+    @media (min-width: 600px) {
+      section {
+        padding: 1rem 1.25rem;
+      }
     }
 
     h2 {
@@ -39,8 +52,29 @@
       padding: 0;
     }
 
-    li + li {
-      margin-top: 0.75rem;
+    li {
+      border-bottom: 1px solid #e8e8e8;
+      padding: 0.75rem 0;
+    }
+
+    li:last-child {
+      border-bottom: none;
+    }
+
+    li:first-child {
+      padding-top: 0;
+    }
+
+    li a {
+      color: #0066cc;
+      text-decoration: none;
+      display: block;
+      padding: 0.25rem 0;
+      min-height: 44px;
+    }
+
+    li a:hover .service-name {
+      text-decoration: underline;
     }
 
     .service-name {
@@ -48,18 +82,10 @@
       font-size: 1rem;
     }
 
-    .service-name a {
-      color: #0066cc;
-      text-decoration: none;
-    }
-
-    .service-name a:hover {
-      text-decoration: underline;
-    }
-
     .desc {
       font-size: 0.9rem;
       color: #555;
+      margin-top: 0.25rem;
     }
   </style>
 </head>
@@ -67,21 +93,40 @@
 
   <h1>alq.ae Homepage</h1>
 
+  <!-- Resources -->
+  <section>
+    <h2>Resources</h2>
+    <ul>
+      <li>
+        <a href="https://wiki.alq.ae/">
+          <div class="service-name">Wiki</div>
+          <div class="desc">Home Wiki (Docuwiki)</div>
+        </a>
+      </li>
+      <li>
+        <a href="https://img.alq.ae/">
+          <div class="service-name">Images</div>
+          <div class="desc">Photo Backups &amp; Albums (Immich)</div>
+        </a>
+      </li>
+    </ul>
+  </section>
+
   <!-- Entertainment -->
   <section>
     <h2>Entertainment</h2>
     <ul>
       <li>
-        <div class="service-name">
-          <a href="https://tv.alq.ae/">TV</a>
-        </div>
-        <div class="desc">Movie Streaming (Jellyfish)</div>
+        <a href="https://tv.alq.ae/">
+          <div class="service-name">TV</div>
+          <div class="desc">Movie Streaming (Jellyfish)</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://catalogue.alq.ae/">Catalogue</a>
-        </div>
-        <div class="desc">Movie Search Catalogue (Jellyseerr)</div>
+        <a href="https://catalogue.alq.ae/">
+          <div class="service-name">Catalogue</div>
+          <div class="desc">Movie Search Catalogue (Jellyseerr)</div>
+        </a>
       </li>
     </ul>
   </section>
@@ -91,35 +136,22 @@
     <h2>Services</h2>
     <ul>
       <li>
-        <div class="service-name">
-          <a href="https://vault.alq.ae/">Vault</a>
-        </div>
-        <div class="desc">Password Manager (Vaultwarden)</div>
+        <a href="https://git.alq.ae/">
+          <div class="service-name">Git</div>
+          <div class="desc">Software Forge (Forgejo)</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://git.alq.ae/">Git</a>
-        </div>
-        <div class="desc">Software Forge (Forgejo)</div>
+        <a href="https://vault.alq.ae/">
+          <div class="service-name">Vault</div>
+          <div class="desc">Password Manager (Vaultwarden)</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://pdf.alq.ae/">Stirling PDF</a>
-        </div>
-        <div class="desc">All-in-one PDF Toolbox</div>
-      </li>
-    </ul>
-  </section>
-
-  <!-- Resources -->
-  <section>
-    <h2>Resources</h2>
-    <ul>
-      <li>
-        <div class="service-name">
-          <a href="https://img.alq.ae/">Images</a>
-        </div>
-        <div class="desc">Photo Backups &amp; Albums (Immich)</div>
+        <a href="https://pdf.alq.ae/">
+          <div class="service-name">Stirling PDF</div>
+          <div class="desc">All-in-one PDF Toolbox</div>
+        </a>
       </li>
     </ul>
   </section>
@@ -129,28 +161,22 @@
     <h2>Backend &amp; Servers</h2>
     <ul>
       <li>
-        <div class="service-name">
-          <a href="https://grafana.alq.ae/">Grafana</a>
-        </div>
-        <div class="desc">Observability Platform</div>
+        <a href="https://grafana.alq.ae/">
+          <div class="service-name">Grafana</div>
+          <div class="desc">Observability Platform</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://cache.alq.ae/">Cache</a>
-        </div>
-        <div class="desc">Nix Binary Cache</div>
+        <a href="https://cache.alq.ae/">
+          <div class="service-name">Cache</div>
+          <div class="desc">Nix Binary Cache</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://dns.alq.ae/">Local DNS</a>
-        </div>
-        <div class="desc">DNS+DoH with ad-blocking (blocky)</div>
-      </li>
-      <li>
-        <div class="service-name">
-          <a href="https://nas.alq.ae/">Synology NAS</a>
-        </div>
-        <div class="desc">Network Attached Storage (Synology)</div>
+        <a href="https://dns.alq.ae/">
+          <div class="service-name">Local DNS</div>
+          <div class="desc">DNS+DoH with ad-blocking (blocky)</div>
+        </a>
       </li>
     </ul>
   </section>
@@ -160,28 +186,47 @@
     <h2>Media Services</h2>
     <ul>
       <li>
-        <div class="service-name">
-          <a href="https://sonarr.alq.ae/">Sonarr</a>
-        </div>
-        <div class="desc">TV Shows Automation</div>
+        <a href="https://sonarr.alq.ae/">
+          <div class="service-name">Sonarr</div>
+          <div class="desc">TV Shows Automation</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://radarr.alq.ae/">Radarr</a>
-        </div>
-        <div class="desc">Movies Automation</div>
+        <a href="https://radarr.alq.ae/">
+          <div class="service-name">Radarr</div>
+          <div class="desc">Movies Automation</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://prowlarr.alq.ae/">Prowlarr</a>
-        </div>
-        <div class="desc">Torrent Indexing Service</div>
+        <a href="https://prowlarr.alq.ae/">
+          <div class="service-name">Prowlarr</div>
+          <div class="desc">Torrent Indexing Service</div>
+        </a>
       </li>
       <li>
-        <div class="service-name">
-          <a href="https://deluge.alq.ae/">Deluge</a>
-        </div>
-        <div class="desc">Torrent Download Client</div>
+        <a href="https://deluge.alq.ae/">
+          <div class="service-name">Deluge</div>
+          <div class="desc">Torrent Download Client</div>
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  <!-- External Services -->
+  <section>
+    <h2>External Services</h2>
+    <ul>
+      <li>
+        <a href="https://cache.huma.id/">
+          <div class="service-name">Humaid NixOS Cache</div>
+          <div class="desc">Publicly Available NixOS Cache</div>
+        </a>
+      </li>
+      <li>
+        <a href="https://lighthouse.huma.id/">
+          <div class="service-name">Humaid Nebula Lighthouse</div>
+          <div class="desc">Nebula Mesh Network Lighthouse Node & DNS</div>
+        </a>
       </li>
     </ul>
   </section>

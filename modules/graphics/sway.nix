@@ -38,6 +38,13 @@ in
     ];
     services.xserver.displayManager.lightdm.enable = false;
     services.gnome.gnome-online-accounts.enable = true;
+
+    xdg.portal = {
+      enable = true;
+      wlr.enable = true; # xdg-desktop-portal-wlr backend
+      config.common.default = "wlr";
+    };
+
     programs.sway = {
       enable = true;
       wrapperFeatures.gtk = true; # so that gtk works properly
@@ -204,6 +211,7 @@ in
 
         # home manager services
         services = {
+          lxqt-policykit-agent.enable = true;
           swayidle = {
             enable = true;
             events = [

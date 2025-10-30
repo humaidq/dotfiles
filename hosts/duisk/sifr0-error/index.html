@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Not Connected to sifr0</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      line-height: 1.6;
+      background-color: #f5f5f5;
+      color: #222;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+
+    @media (min-width: 600px) {
+      .container {
+        padding: 2.5rem;
+      }
+    }
+
+    .icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.8;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 1.25rem 0;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .message {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 1.5rem;
+    }
+
+    .instructions {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 1.25rem;
+      text-align: left;
+      border: 1px solid #e8e8e8;
+    }
+
+    .instructions h2 {
+      font-size: 0.9rem;
+      margin: 0 0 0.75rem 0;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .instructions ol {
+      margin: 0;
+      padding-left: 1.25rem;
+      color: #555;
+    }
+
+    .instructions li {
+      margin-bottom: 0.5rem;
+    }
+
+    .instructions li:last-child {
+      margin-bottom: 0;
+    }
+
+    code {
+      background: #fff;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #0066cc;
+      border: 1px solid #e0e0e0;
+    }
+
+    a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    a code {
+      cursor: pointer;
+    }
+
+    .button {
+      display: inline-block;
+      background: #0066cc;
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 500;
+      margin-top: 1.5rem;
+      transition: background 0.2s ease;
+    }
+
+    .button:hover {
+      background: #0052a3;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🔌</div>
+    <h1>Not Connected to Mesh Network</h1>
+    <p class="message">
+      Not connected to <code>sifr0</code>
+    </p>
+    <div class="instructions">
+      <h2>To Access This Service:</h2>
+      <ol>
+        <li>Connect to <a href="https://lighthouse.huma.id"><code>lighthouse.huma.id</code></a></li>
+        <li>Ensure DNS is set to <code>dns.huma.id</code></li>
+      </ol>
+    </div>
+    <a href="https://lighthouse.huma.id" class="button">More Info</a>
+  </div>
+</body>
+</html>

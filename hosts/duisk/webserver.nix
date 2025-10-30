@@ -87,7 +87,14 @@ in
 
         "*.alq.ae" = {
           extraConfig = ''
-            respond "Not connected to sifr0, make sure you are connected to lighthouse.huma.id and DNS is setup properly"
+            root * ${./sifr0-error}
+            file_server
+            import header
+            import general
+            handle_errors {
+              file_server
+              rewrite * /
+            }
           '';
           serverAliases = [
             "alq.ae"

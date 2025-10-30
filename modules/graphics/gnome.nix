@@ -89,7 +89,7 @@ in
             clock-format = "12h";
             show-battery-percentage = true;
             clock-show-weekday = true;
-            color-scheme = "prefer-dark";
+            color-scheme = "prefer-light";
             document-font-name = "Adwaita Sans 11";
             font-name = "Adwaita Sans 11";
             monospace-font-name = "Adwaita Mono 11";

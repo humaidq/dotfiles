@@ -80,6 +80,11 @@ let
     text = builtins.readFile ./persist-orphans.bash;
   };
 
+  # Geolocate using beacondb.net and provide maidenhead
+  blocate = pkgs.writers.writePython3Bin "blocate" {
+    libraries = [ pkgs.python312Packages.requests ];
+  } (builtins.readFile ./blocate.py);
+
   # License generators
   bsd3 = pkgs.writeShellApplication {
     name = "bsd3";
@@ -106,6 +111,7 @@ in
     ++ lib.optionals config.sifr.development.enable [
       lacheck
       watchsync
+      blocate
       bsd3
       apache2
     ];
