@@ -32,24 +32,24 @@ in
       mode = "600";
     };
     nix = {
-      #buildMachines = [
-      #  {
-      #    hostName = "localhost";
-      #    systems = [
-      #      "x86_64-linux"
-      #      "aarch64-linux"
-      #      "riscv64-linux"
-      #    ];
-      #    supportedFeatures = [
-      #      "kvm"
-      #      "nixos-test"
-      #      "big-parallel"
-      #      "benchmark"
-      #      "local"
-      #    ];
-      #    maxJobs = 1;
-      #  }
-      #];
+      buildMachines = [
+        {
+          hostName = "localhost";
+          systems = [
+            "x86_64-linux"
+            "aarch64-linux"
+            "riscv64-linux"
+          ];
+          supportedFeatures = [
+            "kvm"
+            "nixos-test"
+            "big-parallel"
+            "benchmark"
+            "local"
+          ];
+          maxJobs = 24;
+        }
+      ];
     };
 
     services.harmonia = {
