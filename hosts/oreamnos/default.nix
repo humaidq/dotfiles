@@ -76,6 +76,8 @@
     restic
   ];
 
+  nix.settings.max-jobs = 100;
+
   systemd.services.liquidctl = {
     enable = true;
     description = "CPU Cooler";
