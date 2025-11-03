@@ -76,7 +76,10 @@
     restic
   ];
 
-  nix.settings.max-jobs = 100;
+  nix.settings = {
+    cores = 96;
+    max-jobs = 6;
+  };
 
   systemd.services.liquidctl = {
     enable = true;
