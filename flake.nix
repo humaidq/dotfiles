@@ -4,6 +4,7 @@
   nixConfig = {
     extra-substituters = [ "https://cache.huma.id" ];
     extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
+    allow-import-from-derivation = false;
   };
 
   inputs = {
