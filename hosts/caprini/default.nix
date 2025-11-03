@@ -98,6 +98,29 @@
     hardware.info = "Lenovo ThinkPad X1 Carbon Gen 13";
   };
 
+  nix = {
+    buildMachines = [
+      {
+        hostName = "oreamnos";
+        system = "x86_64-linux";
+        maxJobs = 64;
+        speedFactor = 1;
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+          "kvm"
+        ];
+        mandatoryFeatures = [ ];
+        sshUser = "humaid";
+        # Just use borg ssh key
+        sshKey = config.sops.secrets."borg/ssh_key".path;
+      }
+    ];
+
+    distributedBuilds = true;
+  };
+
   # impermanence setup
   environment.persistence."/persist" = {
     hideMounts = true;

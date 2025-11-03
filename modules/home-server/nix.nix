@@ -5,7 +5,7 @@ in
 {
   config = lib.mkIf cfg.enable {
     services.hydra = {
-      enable = false;
+      enable = true;
       hydraURL = "https://cache.alq.ae";
       port = 3300;
       notificationSender = "hydra@localhost"; # e-mail of hydra service
