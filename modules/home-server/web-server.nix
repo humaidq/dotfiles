@@ -59,7 +59,6 @@ in
         (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
         (mkRP "tv" "8096")
         (mkRP "pdf" "8084")
-        (mkRP "git" "3939")
         (mkRP "dav" "5232")
         (mkRP "webdav" "8477")
 
@@ -87,6 +86,18 @@ in
             locations."/" = {
               proxyPass = "http://192.168.1.164:8073";
             };
+          };
+          "git.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:3939";
+            };
+            extraConfig = ''
+              # allow large file uploads for lfs
+              client_max_body_size 50000M;
+            '';
           };
           "img.alq.ae" = {
             enableACME = true;
