@@ -47,7 +47,7 @@ in
         caching = {
           minTime = "6h";
           maxTime = "24h";
-          prefetchThreshold = "24h";
+          prefetchExpires = "24h";
           prefetching = true;
         };
         prometheus.enable = true;
