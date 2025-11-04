@@ -77,7 +77,7 @@
   ];
 
   nix.settings = {
-    cores = 16;
+    cores = 32;
     #max-jobs = 6;
   };
 

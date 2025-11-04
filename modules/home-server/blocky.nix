@@ -46,6 +46,8 @@ in
         ];
         caching = {
           minTime = "6h";
+          maxTime = "24h";
+          prefetchThreshold = "24h";
           prefetching = true;
         };
         prometheus.enable = true;
@@ -54,31 +56,31 @@ in
             #local = "alq.ae"; # resolves everything to alq.ae
 
             # Safe search
-            "google.*" = "forcesafesearch.google.com";
-            "www.google.*" = "forcesafesearch.google.com";
-            "google.com" = "forcesafesearch.google.com";
-            "www.google.com" = "forcesafesearch.google.com";
+            #"google.*" = "forcesafesearch.google.com";
+            #"www.google.*" = "forcesafesearch.google.com";
+            #"google.com" = "forcesafesearch.google.com";
+            #"www.google.com" = "forcesafesearch.google.com";
 
-            "www.youtube.com" = "restrict.youtube.com";
-            "m.youtube.com" = "restrict.youtube.com";
-            "youtubei.googleapis.com" = "restrict.youtube.com";
-            "youtube.googleapis.com" = "restrict.youtube.com";
-            "www.youtube-nocookie.com" = "restrict.youtube.com";
+            #"www.youtube.com" = "restrict.youtube.com";
+            #"m.youtube.com" = "restrict.youtube.com";
+            #"youtubei.googleapis.com" = "restrict.youtube.com";
+            #"youtube.googleapis.com" = "restrict.youtube.com";
+            #"www.youtube-nocookie.com" = "restrict.youtube.com";
 
-            "www.bing.com" = "strict.bing.com";
-            "duckduckgo.com" = "strict.duckduckgo.com";
-            "www.ecosia.org" = "strict-safe-search.ecosia.org";
+            #"www.bing.com" = "strict.bing.com";
+            #"duckduckgo.com" = "strict.duckduckgo.com";
+            #"www.ecosia.org" = "strict-safe-search.ecosia.org";
           };
           mapping = {
-            "www.google.com" = "216.239.38.120";
-            "www.google.ae" = "216.239.38.120";
-            "www.google.co.uk" = "216.239.38.120";
+            #"www.google.com" = "216.239.38.120";
+            #"www.google.ae" = "216.239.38.120";
+            #"www.google.co.uk" = "216.239.38.120";
 
-            "www.youtube.com" = "216.239.38.119";
-            "m.youtube.com" = "216.239.38.119";
-            "youtubei.googleapis.com" = "216.239.38.119";
-            "youtube.googleapis.com" = "216.239.38.119";
-            "www.youtube-nocookie.com" = "216.239.38.119";
+            #"www.youtube.com" = "216.239.38.119";
+            #"m.youtube.com" = "216.239.38.119";
+            #"youtubei.googleapis.com" = "216.239.38.119";
+            #"youtube.googleapis.com" = "216.239.38.119";
+            #"www.youtube-nocookie.com" = "216.239.38.119";
 
             # way to test
             "test.huma.id" = "1.1.1.1";
@@ -90,6 +92,7 @@ in
             "lighthouse" = "10.10.0.10";
 
             "cache.huma.id" = "10.10.0.12,192.168.1.250";
+
             # Fix TII sites
             "jira.tii.ae" = "10.151.12.77";
             "confluence.tii.ae" = "10.151.12.79";
@@ -125,11 +128,6 @@ in
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/popupads.txt"
               # Fake Sites & Scams
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake.txt"
-              # Bypass
-              #"https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass.txt"
-              #"https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/doh.txt"
-              # No safe search
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nosafesearch.txt"
               # DynDNS sites
               "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/dyndns-onlydomains.txt"
             ];
@@ -167,7 +165,6 @@ in
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/astrology/domains"
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/agressif/domains"
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/dating/domains"
-              #"https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/doh/domains"
               "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/sect/domains"
             ];
 
