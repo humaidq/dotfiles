@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.sifr.home-server;
   tls = {
@@ -50,6 +55,7 @@ in
       recommendedTlsSettings = true;
       recommendedProxySettings = true;
       recommendedOptimisation = true;
+      additionalModules = [ pkgs.nginxModules.fancyindex ];
       virtualHosts = lib.mkMerge [
         #(mkRP "" "8082")
         (mkRP "cache" "5000")
@@ -116,6 +122,10 @@ in
                 autoindex on;
                 autoindex_exact_size off;
                 autoindex_localtime on;
+                # theme
+                fancyindex on;
+                fancyindex_exact_size off;
+                fancyindex_localtime on;
               '';
             };
           };
