@@ -119,17 +119,17 @@ in
             # Hagezi block lists: https://github.com/hagezi/dns-blocklists?tab=readme-ov-file
             general = [
               # Pro List
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro.plus.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro.plus.txt"
               # Threat Intelligence Feeds
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/tif.txt"
               # Gambling
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/gambling.txt"
               # Pop-up Ads
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/popupads.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/popupads.txt"
               # Fake Sites & Scams
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/fake.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
               # DynDNS sites
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/dyndns-onlydomains.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/dyndns.txt"
             ];
 
             steven = [
@@ -146,7 +146,19 @@ in
 
               # Smart TV telemetry
               "https://blocklistproject.github.io/Lists/smart-tv.txt"
-              "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/native.xiaomi.txt"
+
+              # Native devices
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.xiaomi.txt"
+              #"https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.apple.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.amazon.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.oppo-realme.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.vivo.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.roku.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.lgwebos.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.tiktok.extended.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.samsung.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/domains/native.winoffice.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/native.huawei.txt"
 
               # Recommended by hagezi
               "https://nsfw.oisd.nl/domainswild"
@@ -158,6 +170,11 @@ in
               "https://blocklist.sefinek.net/generated/v1/0.0.0.0/sites/lgbtqplus.txt"
               "https://blocklist.sefinek.net/generated/v1/0.0.0.0/sites/lgbtqplus2.txt"
               "https://blocklist.sefinek.net/generated/v1/0.0.0.0/anime/main.txt"
+
+              # Firebog lists
+              "https://v.firebog.net/hosts/static/w3kbl.txt"
+              "https://v.firebog.net/hosts/neohostsbasic.txt"
+              "https://raw.githubusercontent.com/RooneyMcNibNug/pihole-stuff/master/SNAFU.txt"
             ];
 
             # Old list but may fill some gaps
@@ -194,12 +211,18 @@ in
                   kickass.ws
                   alak.bar
                   linuxtracker.org
+                  bt1.xxxxbt.cc
+                  tracker.cloudit.top
+                  tracker-zhuqiy.dgj055.icu
+                  sparkle.ghostchu-services.top
+                  ashrise.com
                 '';
               in
               [
                 "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
                 "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
                 "https://blocklistproject.github.io/Lists/torrent.txt"
+                "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/anti.piracy.txt"
                 "${customlist}"
               ];
           };

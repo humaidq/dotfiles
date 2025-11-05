@@ -7,7 +7,6 @@
 *.gay
 *.vip
 *.click
-*.top
 *.kp
 
 # Other search engines (no safe search)

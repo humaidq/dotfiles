@@ -32,6 +32,11 @@ in
       owner = "nginx";
       mode = "600";
     };
+    sops.secrets."web/files-htpasswd" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "nginx";
+      mode = "640";
+    };
 
     security.acme.acceptTerms = true;
     security.acme.defaults = {
@@ -98,6 +103,21 @@ in
               # allow large file uploads for lfs
               client_max_body_size 50000M;
             '';
+          };
+          "files.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+
+            basicAuthFile = config.sops.secrets."web/files-htpasswd".path;
+            locations."/" = {
+              root = "/mnt/humaid/files";
+              extraConfig = ''
+                # plain directory listing
+                autoindex on;
+                autoindex_exact_size off;
+                autoindex_localtime on;
+              '';
+            };
           };
           "img.alq.ae" = {
             enableACME = true;
