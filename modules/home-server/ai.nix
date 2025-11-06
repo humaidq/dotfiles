@@ -14,7 +14,7 @@ in
       user = "ollama";
       acceleration = "cuda";
       host = "0.0.0.0";
-      package = pkgs.ollama;
+      package = pkgs.unstable.ollama-cuda;
       # loadModels = [
       #   "gemma2"
       #   "falcon2"

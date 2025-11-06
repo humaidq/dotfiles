@@ -84,30 +84,9 @@ in
           "ai.alq.ae" = {
             enableACME = true;
             inherit (tls) forceSSL;
-
-            extraConfig = ''
-              # allow large file uploads
-              client_max_body_size 50000M;
-
-              # Set headers
-              proxy_set_header Host              $host;
-              proxy_set_header X-Real-IP         $remote_addr;
-              proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-
-              # enable websockets: http://nginx.org/en/docs/http/websocket.html
-              proxy_http_version 1.1;
-              proxy_set_header   Upgrade    $http_upgrade;
-              proxy_set_header   Connection "upgrade";
-              proxy_redirect     off;
-
-              # set timeout
-              proxy_read_timeout 600s;
-              proxy_send_timeout 600s;
-              send_timeout       600s;
-            '';
             locations."/" = {
               proxyPass = "http://127.0.0.1:2343";
+              proxyWebsockets = true;
             };
           };
           "wiki.alq.ae" = {
@@ -172,12 +151,6 @@ in
               proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
               proxy_set_header X-Forwarded-Proto $scheme;
 
-              # enable websockets: http://nginx.org/en/docs/http/websocket.html
-              proxy_http_version 1.1;
-              proxy_set_header   Upgrade    $http_upgrade;
-              proxy_set_header   Connection "upgrade";
-              proxy_redirect     off;
-
               # set timeout
               proxy_read_timeout 600s;
               proxy_send_timeout 600s;
@@ -185,6 +158,7 @@ in
             '';
             locations."/" = {
               proxyPass = "http://127.0.0.1:3011";
+              proxyWebsockets = true;
             };
           };
         }
