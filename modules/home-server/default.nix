@@ -9,6 +9,7 @@ in
 {
   imports = [
     ./acme.nix
+    ./ai.nix
     ./blocky.nix
     ./dav.nix
     ./db.nix

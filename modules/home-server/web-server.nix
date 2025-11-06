@@ -72,6 +72,7 @@ in
         (mkRP "pdf" "8084")
         (mkRP "dav" "5232")
         (mkRP "webdav" "8477")
+        (mkRP "ai" "2343")
 
         {
           "alq.ae" = {
