@@ -192,7 +192,6 @@
       "/var/lib/nixos"
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
-      "/var/lib/ollama"
       {
         directory = "/var/lib/immich";
         user = "immich";
