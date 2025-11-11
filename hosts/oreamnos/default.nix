@@ -29,6 +29,9 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
+  sops.secrets."smtp/oreamnos_pass" = {
+    sopsFile = ../../secrets/oreamnos.yaml;
+  };
 
   # My configuration specific settings
   sifr = {
@@ -326,6 +329,48 @@
     pools = [ "dpool" ];
   };
 
+  programs.msmtp = {
+    enable = true;
+    setSendmail = true;
+    defaults = {
+      auth = true;
+      tls = true;
+      tls_starttls = true;
+    };
+    accounts.default = {
+      host = "smtp.migadu.com";
+      port = 587;
+      from = "oreamnos@alq.ae";
+      user = "oreamnos@alq.ae";
+      passwordeval = "cat ${config.sops.secrets."smtp/oreamnos_pass".path}";
+    };
+  };
+  services.zfs.zed = {
+    enableMail = true;
+    settings = {
+      ZED_EMAIL_ADDR = "me.alerts@huma.id";
+      ZED_EMAIL_PROG = "mail";
+      ZED_EMAIL_OPTS = "-s '@SUBJECT@' @ADDRESS@";
+
+      ZED_NOTIFY_INTERVAL_SECS = 3600;
+      ZED_NOTIFY_VERBOSE = true;
+    };
+  };
+  services.smartd = {
+    enable = true;
+    autodetect = true;
+
+    defaults = {
+      monitored = "-a -o on -n standby,15,q";
+      autodetected = "-a -o on -n standby,15,q";
+    };
+
+    notifications.mail = {
+      enable = true;
+      recipient = "me.alerts@huma.id";
+      sender = "oreamnos.alq.ae";
+    };
+  };
   services.nebula.networks.sifr0.firewall = {
     inbound = [
       # Allow SSH from all on this host
