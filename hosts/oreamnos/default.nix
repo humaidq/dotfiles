@@ -368,7 +368,7 @@
     notifications.mail = {
       enable = true;
       recipient = "me.alerts@huma.id";
-      sender = "oreamnos.alq.ae";
+      sender = "oreamnos@alq.ae";
     };
   };
   services.nebula.networks.sifr0.firewall = {
