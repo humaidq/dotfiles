@@ -46,7 +46,7 @@
   services.upower.ignoreLid = true;
   sifr = {
     graphics = {
-      gnome.enable = true;
+      #gnome.enable = true;
       sway.enable = true;
       apps = true;
     };

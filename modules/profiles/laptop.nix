@@ -47,6 +47,7 @@ in
         epson-escpr
       ];
     };
+    hardware.printers.ensureDefaultPrinter = "L4150";
     hardware.printers.ensurePrinters = [
       {
         name = "L4150";
@@ -54,7 +55,10 @@ in
         deviceUri = "lpd://192.168.1.188:515/PASSTHRU";
         location = "Office";
         model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
-        ppdOptions.PageSize = "A4";
+        ppdOptions = {
+          PageSize = "A4";
+          DefaultOutputOrder = "Reverse";
+        };
       }
     ];
 

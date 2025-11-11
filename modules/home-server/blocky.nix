@@ -194,37 +194,13 @@ in
             ];
           };
           allowlists = {
-            general =
-              let
-                customlist = pkgs.writeText "blocky-custom-allowlist" ''
-                  rargb.to
-                  tracker.coppersurfer.tk
-                  linuxtracker.org
-                  bttracker.debian.org
-                  ipv4announce.sktorrent.eu
-                  bittorrent-tracker.e-n-c-r-y-p-t.net
-                  tracker.ipv6tracker.org
-                  seeders-paradise.org
-                  www.torrentsnipe.info
-                  highteahop.top
-                  therarbg.to
-                  kickass.ws
-                  alak.bar
-                  linuxtracker.org
-                  bt1.xxxxbt.cc
-                  tracker.cloudit.top
-                  tracker-zhuqiy.dgj055.icu
-                  sparkle.ghostchu-services.top
-                  ashrise.com
-                '';
-              in
-              [
-                "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
-                "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
-                "https://blocklistproject.github.io/Lists/torrent.txt"
-                "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/anti.piracy.txt"
-                "${customlist}"
-              ];
+            general = [
+              "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
+              "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
+              "https://blocklistproject.github.io/Lists/torrent.txt"
+              "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/anti.piracy.txt"
+              "${./custom-whitelist.txt}"
+            ];
           };
         };
       };

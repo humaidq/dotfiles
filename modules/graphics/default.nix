@@ -62,7 +62,7 @@ in
 
       # Make system look better overall when we have a graphical system
       boot.plymouth = {
-        enable = false;
+        enable = true;
         logo = ../../assets/sifr-icon-blue.png;
       };
 
@@ -70,16 +70,16 @@ in
         # Default themeing for GTK and Qt
         qt = {
           enable = true;
-          #platformTheme.name = "gtk";
-          #style.package = pkgs.adwaita-qt;
-          #style.name = "adwaita-dark";
+          platformTheme.name = "gtk";
+          style.package = pkgs.adwaita-qt;
+          style.name = "adwaita";
         };
 
         gtk = {
           enable = true;
-          theme.name = "Adwaita-dark";
+          theme.name = "Adwaita";
           gtk3.extraConfig = {
-            gtk-application-prefer-dark-theme = true;
+            gtk-application-prefer-dark-theme = false;
             gtk-cursor-theme-name = "Adwaita";
           };
           gtk3.bookmarks = [

@@ -21,20 +21,28 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    # if gdm not enabled
+    services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
+      enable = true;
+      settings.default_session = {
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd sway";
+        user = "greeter";
+      };
+    };
+
+    programs.xwayland.enable = true;
+
+    # TODO add switch option for berkeley mono
     fonts.packages = with pkgs; [
       cherry
       spleen
     ];
+
     environment.systemPackages = with pkgs; [
       rofi
-      xwayland
       wev
-      gnome-online-accounts-gtk
-      gnome-calendar
-      gnome-contacts
-      geary
-      clearlooks-phenix
-      libsForQt5.qtstyleplugins
+      bluetui
+      hyprpicker
     ];
     services.xserver.displayManager.lightdm.enable = false;
     services.gnome.gnome-online-accounts.enable = true;
@@ -43,13 +51,17 @@ in
       enable = true;
       wlr.enable = true; # xdg-desktop-portal-wlr backend
       config.common.default = "wlr";
+      extraPortals = with pkgs; [
+        xdg-desktop-portal-wlr
+        xdg-desktop-portal-gtk
+      ];
     };
 
     programs.sway = {
       enable = true;
       wrapperFeatures.gtk = true; # so that gtk works properly
+      xwayland.enable = true;
       extraPackages = with pkgs; [
-
         brightnessctl
         alsa-utils
         pamixer
@@ -57,14 +69,12 @@ in
         swaylock-effects # lockscreen
         pavucontrol
         swayidle
-        xwayland
 
         libnotify
         dunst # notification daemon
         kanshi # auto-configure display outputs
         wdisplays
         wl-clipboard
-        #blueberry
         sway-contrib.grimshot # screenshots
         wtype
         libsForQt5.qt5.qtwayland
@@ -72,24 +82,7 @@ in
         libnotify
         networkmanagerapplet
       ];
-      extraSessionCommands = ''
-        # SDL:
-        export SDL_VIDEODRIVER=wayland
-        # QT (needs qt5.qtwayland in systemPackages):
-        export QT_QPA_PLATFORM=wayland-egl
-        export QT_WAYLAND_DISABLE_WINDOWDECORATION="1"
-        # Qt theme
-        export QT_QPA_PLATFORMTHEME=qt5ct
-        export QT_STYLE_OVERRIDE=cleanlooks
-        # Fix for some Java AWT applications (e.g. Android Studio),
-        # use this if they aren't displayed properly:
-        export _JAVA_AWT_WM_NONREPARENTING=1
-        # Others
-        export ELECTRON_OZONE_PLATFORM_HINT=wayland
-        export MOZ_ENABLE_WAYLAND=1
-        export XDG_SESSION_TYPE=wayland
-        export XDG_CURRENT_DESKTOP=sway
-      '';
+      extraSessionCommands = '''';
     };
 
     home-manager.users."${vars.user}" =
@@ -97,24 +90,20 @@ in
         hm-config = config.home-manager.users."${vars.user}";
       in
       {
-        gtk = {
-          enable = true;
-          gtk3.extraConfig = {
-            gtk-application-prefer-dark-theme = lib.mkForce false;
-          };
-          #iconTheme = {
-          #package = pkgs.tango-icon-theme;
-          #name = "Tango";
-          #};
-          theme = {
-            package = pkgs.clearlooks-phenix;
-            name = lib.mkForce "Clearlooks-Phenix";
-          };
-        };
-        dconf.settings = {
-          "org/gnome/desktop/interface" = {
-            gtk-theme = lib.mkForce "Clearlooks-Phenix";
-          };
+        home.sessionVariables = {
+          # SDL:
+          SDL_VIDEODRIVER = "wayland";
+          # QT (needs qt5.qtwayland in systemPackages):
+          QT_QPA_PLATFORM = "wayland-egl";
+          QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+          # Fix for some Java AWT applications (e.g. Android Studio),
+          # use this if they aren't displayed properly:
+          _JAVA_AWT_WM_NONREPARENTING = "1";
+          # Others
+          MOZ_ENABLE_WAYLAND = "1";
+          XDG_SESSION_TYPE = "wayland";
+          XDG_CURRENT_DESKTOP = "sway";
+          ELECTRON_OZONE_PLATFORM_HINT = "wayland";
         };
         # home manager programs
         programs = {
@@ -163,6 +152,7 @@ in
             enable = true;
             font = "Berkeley Mono 14";
             package = pkgs.rofi-wayland;
+            terminal = lib.getExe pkgs.ghostty;
             theme =
               let
                 inherit (hm-config.lib.formats.rasi) mkLiteral;
@@ -175,19 +165,37 @@ in
                   border-color = mkLiteral "#1d2e86";
                   width = 512;
                 };
-
                 "#inputbar" = {
                   children = map mkLiteral [
                     "prompt"
                     "entry"
                   ];
                 };
-
                 "#textbox-prompt-colon" = {
                   expand = false;
                   str = ":";
                   margin = mkLiteral "0px 0.3em 0em 0em";
                   text-color = mkLiteral "@foreground-color";
+                };
+                "element" = {
+                  background-color = mkLiteral "transparent";
+                  text-color = mkLiteral "@foreground-color";
+                };
+                "element selected" = {
+                  background-color = mkLiteral "#1d2e86";
+                  text-color = mkLiteral "#ffffff";
+                  border = mkLiteral "2px";
+                  border-color = mkLiteral "#2b3ea6";
+                  border-radius = 6;
+                };
+                "element-text" = {
+                  highlight = mkLiteral "underline #9fb3ff";
+                };
+                "element selected element-text" = {
+                  highlight = mkLiteral "none";
+                };
+                "element alternate" = {
+                  background-color = mkLiteral "#171233";
                 };
               };
           };
@@ -204,13 +212,14 @@ in
             settings = {
               email = "me@huma.id";
               base_url = "https://vault.alq.ae";
-              pinentry = pkgs.pinentry-tty;
+              pinentry = pkgs.pinentry-gnome3;
             };
           };
         };
 
         # home manager services
         services = {
+          gnome-keyring.enable = true;
           lxqt-policykit-agent.enable = true;
           swayidle = {
             enable = true;
@@ -284,7 +293,9 @@ in
               "${mod}+Shift+Return" = "exec ghostty";
               "${mod}+Shift+c" = "kill";
               "${mod}+Shift+r" = "reload";
-              "${mod}+p" = "exec rofi -modi drun -show-icons -show drun";
+              "${mod}+p" =
+                "exec rofi -modi drun -show-icons -show drun -drun-display-format \"{name} ({categories})\"";
+              "${mod}+shift+p" = "exec rofi -show run -show-icons";
               "${mod}+o" = "exec ${lib.getExe pkgs.rofi-rbw}";
               "${mod}+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f";
 

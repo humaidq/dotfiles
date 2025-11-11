@@ -44,10 +44,7 @@ in
         dconf-editor
         #gnome-pomodoro
         gnome-solanum
-        papers # replacing evince
-        showtime # replacing totem
         halftone
-        flare-signal
         resources
         gnome-epub-thumbnailer
         #gradia # not yet available in nixpkgs

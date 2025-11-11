@@ -37,6 +37,8 @@ in
       ax25-tools
       ax25-apps
       direwolf
+      # cw
+      unixcw
     ];
 
     hardware.rtl-sdr.enable = true;

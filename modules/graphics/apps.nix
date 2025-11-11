@@ -22,26 +22,23 @@ in
           noto-fonts-cjk-sans
           noto-fonts-emoji
           noto-fonts-extra
-          #source-code-pro
-          #source-sans-pro
-          #source-serif-pro
+          source-code-pro
+          source-sans-pro
+          source-serif-pro
           amiri
-          #corefonts
           roboto
-          #ubuntu_font_family
           fira-code
           cantarell-fonts
           freefont_ttf
           inconsolata
           liberation_ttf
-          #lmodern
           ttf_bitstream_vera
           inter
           ibm-plex
           merriweather
-          #jetbrains-mono
+          jetbrains-mono
           # Bitmap fonts
-          #terminus_font
+          terminus_font
           cherry
           spleen
           nerd-fonts.fira-code
@@ -57,13 +54,16 @@ in
         pinta
         inkscape
         libreoffice
-        rpi-imager
+        # rpi-imager # broken
         prusa-slicer
         gnome-firmware
         bitwarden-desktop
         ghostty
         calibre
         xournalpp
+        vlc
+        papers # replacing evince
+        showtime # replacing totem
 
         decibels # audio, soon in gnome 48
         gnome-calendar
@@ -90,11 +90,11 @@ in
         #paper-clip
         #solanum
         textpieces
-        forge-sparks
       ];
       services.fwupd.enable = true;
       #services.power-profiles-daemon.enable = true;
 
+      # for localsend
       networking.firewall.allowedTCPPorts = [ 53317 ];
       networking.firewall.allowedUDPPorts = [ 53317 ];
     })
