@@ -41,6 +41,9 @@ mindrocketsapis.com
 chatbot.tax.gov.ae
 chat.dubai.ae
 ask.u.ae
+# Others
+gamification.etisalat.ae
+# exp.ssf.ae #fazaa experience?
 
 # Chat
 *.chat-avenue.com

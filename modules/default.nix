@@ -142,20 +142,16 @@ in
         auto-optimise-store = true;
 
         trusted-substituters = substituters ++ [
-          # substituters ++
           "https://dev-cache.vedenemo.dev"
-          "https://cache.ssrcdevops.tii.ae"
           "https://ghaf-dev.cachix.org"
         ];
 
         substituters = lib.optional (
           config.networking.hostName != "oreamnos"
-        ) "https://cache.huma.id?priority=51";
+        ) "https://cache.huma.id?priority=20";
 
         trusted-public-keys = [
           "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM="
-          "ghaf-infra-dev:EdgcUJsErufZitluMOYmoJDMQE+HFyveI/D270Cr84I="
-          "cache.ssrcdevops.tii.ae:oOrzj9iCppf+me5/3sN/BxEkp5SaFkHfKTPPZ97xXQk="
           "ghaf-dev.cachix.org-1:S3M8x3no8LFQPBfHw1jl6nmP8A7cVWKntoMKN3IsEQY="
         ];
       };
