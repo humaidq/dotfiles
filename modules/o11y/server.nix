@@ -9,10 +9,21 @@ in
   config = {
     services.grafana = lib.mkIf cfg.enable {
       enable = true;
-      settings.server = {
-        http_addr = "0.0.0.0";
-        http_port = 3000;
-        domain = "localhost";
+      settings = {
+        server = {
+          http_addr = "0.0.0.0";
+          http_port = 3000;
+          domain = "localhost";
+        };
+        smtp = {
+          enabled = true;
+          host = "smtp.migadu.com:587";
+          user = "oreamnos@alq.ae";
+          from_address = "oreamnos@alq.ae";
+          from_name = "Grafana";
+          startTLS_policy = "MandatoryStartTLS";
+          password = "$__file{${config.sops.secrets."smtp/oreamnos_pass".path}}";
+        };
       };
     };
     services.prometheus = lib.mkIf cfg.enable {
