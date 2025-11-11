@@ -31,6 +31,8 @@
   };
   sops.secrets."smtp/oreamnos_pass" = {
     sopsFile = ../../secrets/oreamnos.yaml;
+    owner = "grafana"; # used also by zfs/smartd but those are root
+    mode = "600";
   };
 
   # My configuration specific settings
