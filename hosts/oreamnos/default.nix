@@ -350,9 +350,9 @@
   services.zfs.zed = {
     enableMail = true;
     settings = {
-      ZED_EMAIL_ADDR = "me.alerts@huma.id";
-      ZED_EMAIL_PROG = "mail";
-      ZED_EMAIL_OPTS = "-s '@SUBJECT@' @ADDRESS@";
+      ZED_EMAIL_ADDR = [ "me.alerts@huma.id" ];
+      ZED_EMAIL_PROG = "${pkgs.msmtp}/bin/msmtp";
+      ZED_EMAIL_OPTS = "@ADDRESS@";
 
       ZED_NOTIFY_INTERVAL_SECS = 3600;
       ZED_NOTIFY_VERBOSE = true;
