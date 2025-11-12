@@ -362,16 +362,15 @@
     enable = true;
     autodetect = true;
 
-    defaults = {
-      monitored = "-a -o on -n standby,15,q";
-      autodetected = "-a -o on -n standby,15,q";
-    };
-
-    notifications.mail = {
-      enable = true;
-      recipient = "me.alerts@huma.id";
-      sender = "oreamnos@alq.ae";
-      mailer = lib.getExe pkgs.msmtp;
+    notifications = {
+      mail = {
+        enable = true;
+        recipient = "me.alerts@huma.id";
+        sender = "oreamnos@alq.ae";
+        mailer = lib.getExe pkgs.msmtp;
+      };
+      wall.enable = false;
+      x11.enable = false;
     };
   };
   services.nebula.networks.sifr0.firewall = {
