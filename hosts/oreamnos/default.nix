@@ -371,7 +371,7 @@
       enable = true;
       recipient = "me.alerts@huma.id";
       sender = "oreamnos@alq.ae";
-      mailer = "/run/wrappers/bin/sendmail -t";
+      mailer = lib.getExe pkgs.msmtp;
     };
   };
   services.nebula.networks.sifr0.firewall = {
