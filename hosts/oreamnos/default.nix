@@ -344,7 +344,9 @@
       port = 587;
       from = "oreamnos@alq.ae";
       user = "oreamnos@alq.ae";
-      passwordeval = "cat ${config.sops.secrets."smtp/oreamnos_pass".path}";
+      passwordeval = "${lib.getExe' pkgs.coreutils "cat"} ${
+        config.sops.secrets."smtp/oreamnos_pass".path
+      }";
     };
   };
   services.zfs.zed = {
