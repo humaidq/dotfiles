@@ -47,6 +47,19 @@ in
     services.xserver.displayManager.lightdm.enable = false;
     services.gnome.gnome-online-accounts.enable = true;
 
+    systemd.user.services = {
+      ianny = {
+        enable = true;
+        description = "ianny daemon";
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = "${pkgs.ianny}/bin/ianny";
+        };
+        partOf = [ "graphical-session.target" ];
+        wantedBy = [ "graphical-session.target" ];
+      };
+    };
+
     xdg.portal = {
       enable = true;
       wlr.enable = true; # xdg-desktop-portal-wlr backend
@@ -258,7 +271,7 @@ in
               global = {
                 origin = "top-right";
                 frame_color = "#130e24";
-                font = "Berkeley Mono 11";
+                font = "Berkeley Mono 8";
               };
               urgency_normal = {
                 background = "#1d2e86";
@@ -285,6 +298,14 @@ in
             };
             seat."*" = {
               xcursor_theme = "Adwaita 24";
+            };
+            floating = {
+              criteria = [
+                { class = "wlogout"; }
+                { class = "file_progress"; }
+                { class = "confirm"; }
+                { class = "dialog"; }
+              ];
             };
 
             terminal = "ghostty";
