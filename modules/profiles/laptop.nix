@@ -57,10 +57,45 @@ in
         model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
         ppdOptions = {
           PageSize = "A4";
-          DefaultOutputOrder = "Reverse";
+          OutputOrder = "Reverse";
         };
       }
     ];
+
+    # Make UI responsive
+    services.system76-scheduler = {
+      enable = true;
+      assignments = {
+        nix-builds = {
+          nice = 10;
+          class = "batch";
+          ioClass = "idle";
+          matchers = [ "nix-daemon" ];
+        };
+
+        desktop = {
+          nice = -10;
+          class = "other";
+          ioClass = "best-effort";
+          matchers = [
+            "sway"
+            "ghostty"
+          ];
+        };
+
+        browser = {
+          nice = -10;
+          class = "other";
+          ioClass = "best-effort";
+          matchers = [
+            "chrome"
+            "google-chrome"
+            "google-chrome-stable"
+            "chromium"
+          ];
+        };
+      };
+    };
 
     # disable due to security
     services.avahi = {

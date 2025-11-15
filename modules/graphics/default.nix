@@ -62,7 +62,7 @@ in
 
       # Make system look better overall when we have a graphical system
       boot.plymouth = {
-        enable = true;
+        enable = false;
         logo = ../../assets/sifr-icon-blue.png;
       };
 
