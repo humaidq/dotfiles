@@ -18,7 +18,7 @@ in
 {
   imports = [
     ./gnome.nix
-    ./sway.nix
+    ./sway
     ./apps.nix
   ];
   options.sifr.graphics = {
@@ -33,6 +33,9 @@ in
       description = "Enables sound server and configurations";
       type = types.bool;
       default = cfg.enable;
+    };
+    berkeley = {
+      enable = mkEnableOption "Berkeley Mono font across applications";
     };
   };
   config = mkMerge [
@@ -97,7 +100,7 @@ in
           enable = true;
           settings = {
             theme = "Dracula";
-            font-family = "Berkeley Mono";
+            font-family = if cfg.berkeley.enable then "Berkeley Mono" else "Fira Code";
             font-size = "12";
           };
         };

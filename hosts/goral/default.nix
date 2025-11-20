@@ -18,7 +18,6 @@
     };
     v12n.docker.enable = true;
     v12n.emulation.systems = [ "x86_64-linux" ];
-    hardware.vm = true;
     profiles.basePlus = true;
     development.enable = true;
     security.yubikey = true;

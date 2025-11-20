@@ -20,11 +20,6 @@ in
       type = types.str;
       default = "Humaid Alqasimi";
     };
-    hardware.vm = mkOption {
-      description = "Enables VM hardware specific configurations.";
-      type = types.bool;
-      default = false;
-    };
     banner = mkOption {
       description = "System use banner";
       type = types.str;

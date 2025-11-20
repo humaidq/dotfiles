@@ -56,8 +56,7 @@ in
 
       services.pcscd.enable = true;
     })
-    (mkIf (cfg.harden && !config.sifr.hardware.vm) {
-      # Only enable firewall on non-VMs. VMs rely on host's firewall.
+    (mkIf cfg.harden {
       networking.firewall.enable = true;
       networking.networkmanager.wifi.macAddress = "random";
     })

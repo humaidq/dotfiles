@@ -209,7 +209,39 @@ in
               alias open="xdg-open"
             fi
 
-            echo "$fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."
+            uptime_badge() {
+              local up_field up_seconds days badge color
+
+              if [[ -r /proc/uptime ]]; then
+                # Take only the first field before the first space
+                up_field=''${$(< /proc/uptime)%% *}
+                # Strip fractional part
+                up_seconds=''${up_field%%.*}
+              else
+                up_seconds=0
+              fi
+
+              (( days = up_seconds / 86400 ))
+
+              if (( days >= 3 )); then
+                badge="[■■■]"
+                color=$fg[1]        # dark red (8-colour palette "red")
+              elif (( days == 2 )); then
+                badge="[■■ ]"
+                color=$fg[red]      # bright red
+              elif (( days == 1 )); then
+                badge="[■  ]"
+                color=$fg[yellow]
+              else
+                badge="[   ]"
+                color=$fg[white]
+              fi
+
+              print -n "''${color}''${badge}''${reset_color}"
+            }
+
+            uptime_badge
+            echo " $fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."
           '';
 
         };

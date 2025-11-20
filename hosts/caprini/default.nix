@@ -49,6 +49,7 @@
       #gnome.enable = true;
       sway.enable = true;
       apps = true;
+      berkeley.enable = true;
     };
     profiles = {
       basePlus = true;

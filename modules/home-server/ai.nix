@@ -22,6 +22,7 @@ in
     services.ollama.environmentVariables.OLLAMA_ORIGINS = "https://ai.alq.ae";
 
     services.open-webui = {
+      package = pkgs.unstable.open-webui;
       enable = true;
       port = 2343;
     };
