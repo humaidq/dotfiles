@@ -70,7 +70,7 @@
       Restart = "always";
       ExecStart = "${
         inputs.humaid-qsl.packages.${pkgs.system}.humaid-qsl
-      }/bin/humaid-qsl --port 8181 --adif ./all.adif";
+      }/bin/humaid-qsl run --port 8181 --adif /srv/all.adif";
       DynamicUser = true;
       RuntimeDirectory = "humaid-qsl";
       StateDirectory = "humaid-qsl";
