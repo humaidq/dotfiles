@@ -6,11 +6,39 @@
   ...
 }:
 let
-  cfg = config.sifr.graphics.sway;
+  cfg = config.sifr.graphics.wayland-services;
   gfxCfg = config.sifr.graphics;
+  swayEnabled = config.sifr.graphics.sway.enable;
+  labwcEnabled = config.sifr.graphics.labwc.enable;
 in
 {
+  options.sifr.graphics.wayland-services = {
+    enable = lib.mkEnableOption "shared wayland services" // {
+      default = swayEnabled || labwcEnabled;
+    };
+  };
+
   config = lib.mkIf cfg.enable {
+    environment.systemPackages = with pkgs; [
+      swaylock-effects # lockscreen
+      swayidle
+      libnotify
+      dunst # notification daemon
+    ];
+
+    systemd.user.services = {
+      ianny = {
+        enable = true;
+        description = "ianny daemon";
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = "${pkgs.ianny}/bin/ianny";
+        };
+        partOf = [ "graphical-session.target" ];
+        wantedBy = [ "graphical-session.target" ];
+      };
+    };
+
     home-manager.users."${vars.user}" = {
       # home manager services
       services = {

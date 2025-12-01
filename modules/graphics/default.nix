@@ -19,6 +19,7 @@ in
   imports = [
     ./gnome.nix
     ./sway
+    ./labwc
     ./apps.nix
   ];
   options.sifr.graphics = {

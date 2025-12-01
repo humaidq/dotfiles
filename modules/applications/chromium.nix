@@ -14,7 +14,7 @@ in
   options.sifr.applications.chromium.enable = lib.mkOption {
     description = "Enables chromium configurations";
     type = lib.types.bool;
-    default = config.sifr.graphics.apps;
+    default = false;
   };
   config = lib.mkIf cfg.chromium.enable {
     environment.systemPackages = [ pkgs.google-chrome ];

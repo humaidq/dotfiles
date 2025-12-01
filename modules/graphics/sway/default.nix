@@ -14,8 +14,8 @@ in
 {
   imports = [
     ./bar.nix
-    ./services.nix
     ./applications.nix
+    ../wayland-services.nix
   ];
 
   options.sifr.graphics = {
@@ -39,7 +39,6 @@ in
 
     programs.xwayland.enable = true;
 
-    # TODO add switch option for berkeley mono
     fonts.packages = with pkgs; [
       cherry
       spleen
@@ -54,18 +53,19 @@ in
     services.xserver.displayManager.lightdm.enable = false;
     services.gnome.gnome-online-accounts.enable = true;
 
-    systemd.user.services = {
-      ianny = {
-        enable = true;
-        description = "ianny daemon";
-        serviceConfig = {
-          Type = "simple";
-          ExecStart = "${pkgs.ianny}/bin/ianny";
-        };
-        partOf = [ "graphical-session.target" ];
-        wantedBy = [ "graphical-session.target" ];
-      };
+    # Thunar functionality
+    programs.thunar = {
+      enable = true;
+      plugins = with pkgs.xfce; [
+        thunar-archive-plugin
+        thunar-volman
+        thunar-vcs-plugin
+        thunar-media-tags-plugin
+      ];
     };
+
+    services.gvfs.enable = true;
+    services.tumbler.enable = true;
 
     xdg.portal = {
       enable = true;
@@ -86,12 +86,7 @@ in
         alsa-utils
         pamixer
 
-        swaylock-effects # lockscreen
         pavucontrol
-        swayidle
-
-        libnotify
-        dunst # notification daemon
         kanshi # auto-configure display outputs
         wdisplays
         wl-clipboard
@@ -99,7 +94,6 @@ in
         wtype
         libsForQt5.qt5.qtwayland
 
-        libnotify
         networkmanagerapplet
       ];
       extraSessionCommands = '''';
@@ -121,6 +115,9 @@ in
         XDG_CURRENT_DESKTOP = "sway";
         ELECTRON_OZONE_PLATFORM_HINT = "wayland";
       };
+
+      #xfconf.settings = {
+      #};
 
       wayland.windowManager.sway = {
         enable = true;

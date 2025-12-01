@@ -156,6 +156,12 @@ in
           }
         '';
 
+        "qsl.huma.id".extraConfig = ''
+          handle / {
+            reverse_proxy 127.0.0.1:8181
+          }
+        '';
+
         "sdr.huma.id".extraConfig = ''
           reverse_proxy http://sdr.alq.ae {
             header_up Host sdr.alq.ae

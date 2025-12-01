@@ -48,6 +48,7 @@
     graphics = {
       #gnome.enable = true;
       sway.enable = true;
+      labwc.enable = true;
       apps = true;
       berkeley.enable = true;
     };
@@ -70,6 +71,7 @@
     o11y.client.enable = true;
     applications.emacs.enable = true;
     applications.amateur.enable = true;
+    applications.chromium.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [
@@ -172,6 +174,9 @@
         ".config/zsh_history"
         ".config/Code"
         ".config/github-copilot"
+        ".config/hamradio" # qlog
+        ".local/share/WSJT-X"
+        ".local/share/hamradio/QLog"
         ".local/share/fish"
         ".local/share/zsh"
         ".local/share/keyrings"

@@ -9,7 +9,14 @@
 
   inputs = {
     # Personal imports
-    humaid-site.url = "github:humaidq/huma.id";
+    humaid-site = {
+      url = "github:humaidq/huma.id";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    humaid-qsl = {
+      url = "github:humaidq/humaid-qsl";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";

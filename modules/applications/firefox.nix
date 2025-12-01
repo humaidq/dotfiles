@@ -15,7 +15,7 @@ in
   options.sifr.applications.firefox.enable = lib.mkOption {
     description = "Enables firefox configurations";
     type = lib.types.bool;
-    default = false;
+    default = config.sifr.graphics.apps;
   };
   config = lib.mkIf cfg.firefox.enable {
     environment.variables.BROWSER = "firefox";
@@ -54,7 +54,7 @@ in
           SkipOnboarding = true;
         };
         SearchEngines = {
-          Default = "DuckDuckGo";
+          Default = "Google";
         };
         EnableTrackingProtection = {
           Value = true;
@@ -68,15 +68,16 @@ in
         };
         ExtensionSettings = {
           # Block all except listed
-          "*".installation_mode = "blocked";
+          #"*".installation_mode = "blocked";
+          "zotero@chnm.gmu.edu".installation_mode = "allowed";
           # Extension IDs are found in "about:support"
           "jid1-BoFifL9Vbdl2zQ@jetpack" = extension "decentraleyes";
-          "jid1-MnnxcxisBPnSXQ@jetpack" = extension "privacy-badger17";
           "savepage-we@DW-dev" = extension "save-page-we";
-          "sponsorBlocker@ajay.app" = extension "sponsor-block";
           "uBlock0@raymondhill.net" = extension "ublock-origin";
           "{74145f27-f039-47ce-a470-a662b129930a}" = extension "clearurls";
           "{9063c2e9-e07c-4c2c-9646-cfe7ca8d0498}" = extension "old-reddit-redirect";
+          "{446900e4-71c2-419f-a6a7-df9c091e268b}" = extension "bitwarden-password-manager";
+          "floccus@handmadeideas.org" = extension "floccus";
           # This was removed from extension store
           # "{d133e097-46d9-4ecc-9903-fa6a722a6e0e}" = extension "bypass-paywalls-clean";
         };
@@ -84,9 +85,9 @@ in
           "browser.aboutConfig.showWarning" = false;
           # Preferences
           "browser.newtabpage.enabled" = false; # Blank new page tab
-          "browser.startup.homepage" = "https://start.duckduckgo.com";
-          "browser.urlbar.placeholderName" = "DuckDuckGo";
-          "browser.search.defaultenginename" = "DuckDuckGo";
+          #"browser.startup.homepage" = "https://start.duckduckgo.com";
+          #"browser.urlbar.placeholderName" = "DuckDuckGo";
+          #"browser.search.defaultenginename" = "DuckDuckGo";
           "signon.rememberSignons" = false; # we use a separate password manager
           "browser.formfill.enable" = false;
           "findbar.highlightAll" = true;
