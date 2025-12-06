@@ -47,6 +47,7 @@
 
     net = {
       sifr0 = true;
+      cacheOverPublic = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
     };

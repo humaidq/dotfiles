@@ -12,6 +12,11 @@ in
   options.sifr.net = {
     sifr0 = lib.mkEnableOption "sifr0 overlay network";
     isLighthouse = lib.mkEnableOption "Lighthouse mode";
+    cacheOverPublic = lib.mkOption {
+      description = "Use public DNS resolution for cache.huma.id instead of Nebula host entries";
+      type = lib.types.bool;
+      default = false;
+    };
     node-crt = lib.mkOption {
       description = "Nebula network node certificate";
       type = lib.types.str;
@@ -63,7 +68,7 @@ in
         "oreamnos"
         "oreamnos.alq"
       ]
-      ++ vars.homeServerDomains;
+      ++ lib.optionals (!cfg.cacheOverPublic) vars.homeServerDomains;
       "10.10.0.13" = [
         "duisk"
         "duisk.alq"

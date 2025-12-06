@@ -45,6 +45,7 @@
     net = {
       sifr0 = true;
       isLighthouse = true;
+      cacheOverPublic = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
       ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
