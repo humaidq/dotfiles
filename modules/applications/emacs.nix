@@ -45,13 +45,13 @@ in
       # :term vterm
       gnumake
       cmake
-      copilot-language-server-fhs
+      copilot-language-server
 
       # :tools editorconfig
       editorconfig-core-c
 
       # :tools docker
-      nodePackages.dockerfile-language-server-nodejs
+      dockerfile-language-server
 
       # :lang cc
       clang

@@ -130,7 +130,7 @@ in
         netcat
         nmap
         pwgen
-        du-dust
+        dust
         gping
         traceroute
         borgbackup

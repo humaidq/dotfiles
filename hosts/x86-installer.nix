@@ -21,7 +21,7 @@
     enable = true;
     inherit (vars) user;
   };
-  services.xserver.displayManager.gdm.autoSuspend = false;
+  services.displayManager.gdm.autoSuspend = false;
 
   system.stateVersion = "24.05";
 

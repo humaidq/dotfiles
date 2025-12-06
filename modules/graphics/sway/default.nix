@@ -32,7 +32,7 @@ in
     services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
       enable = true;
       settings.default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd sway";
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
         user = "greeter";
       };
     };

@@ -20,7 +20,7 @@ in
       texliveFull
       tectonic
       typst
-      typst-fmt
+      typstyle
       typst-live
     ];
   };

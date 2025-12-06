@@ -23,7 +23,7 @@ in
     home-manager.useUserPackages = true;
     home-manager.sharedModules = [
       inputs.sops-nix.homeManagerModules.sops
-      inputs.nixvim.homeManagerModules.nixvim
+      inputs.nixvim.homeModules.nixvim
     ]
     ++ lib.optionals (pkgs.hostPlatform.system != "riscv64-linux") [
       inputs.nix-index-database.homeModules.nix-index

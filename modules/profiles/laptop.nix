@@ -25,8 +25,8 @@ in
       "bgrt_disable"
     ];
 
-    services.logind.lidSwitch = "suspend";
-    services.logind.lidSwitchExternalPower = lib.mkForce "ignore";
+    services.logind.settings.Login.HandleLidSwitch = "suspend";
+    services.logind.settings.Login.HandleLidSwitchExternalPower = lib.mkForce "ignore";
 
     hardware.bluetooth.enable = true;
     users.users.${vars.user}.extraGroups = [
@@ -158,11 +158,11 @@ in
       '';
 
       # Don't suspend
-      services.logind.lidSwitch = lib.mkForce "ignore";
-      services.logind.lidSwitchExternalPower = lib.mkForce "ignore";
+      services.logind.settings.Login.HandleLidSwitch = lib.mkForce "ignore";
+      services.logind.settings.Login.HandleLidSwitchExternalPower = lib.mkForce "ignore";
 
       # We don't want GUI
-      services.xserver.displayManager.gdm.autoSuspend = lib.mkForce false;
+      services.displayManager.gdm.autoSuspend = lib.mkForce false;
       sifr.graphics.gnome.enable = lib.mkForce false;
       sifr.graphics.sway.enable = lib.mkForce false;
       sifr.graphics.apps = lib.mkForce false;

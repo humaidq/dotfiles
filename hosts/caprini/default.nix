@@ -155,7 +155,7 @@
     ];
     users."${vars.user}" = {
       files = [
-        ".claude.json"
+        #".claude.json" #problematic
       ];
       directories = [
         "inbox"
@@ -185,6 +185,7 @@
         ".zotero"
         ".vscode"
         ".claude"
+        ".aider"
       ];
     };
   };

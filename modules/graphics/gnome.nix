@@ -15,7 +15,7 @@ in
   };
 
   config = lib.mkIf cfg.gnome.enable {
-    services.xserver.desktopManager.gnome.enable = true;
+    services.desktopManager.gnome.enable = true;
     #services.gnome.gnome-online-accounts.enable = false;
     #services.gnome.gnome-keyring.enable = lib.mkForce false;
 

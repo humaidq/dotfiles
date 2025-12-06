@@ -59,26 +59,16 @@ in
         programs.git = {
           enable = true;
           lfs.enable = true;
-          aliases = {
-            co = "checkout";
-          };
-          includes = [
-            {
-              condition = "gitdir:~/tii/";
-              contents = {
-                user.email = "humaid.alqassimi@tii.ae";
-                user.signingkey = "~/.ssh/id_ed25519_sk_tii.pub";
-                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_sk_tii";
-                commit.gpgSign = true;
-              };
-            }
-          ];
+          settings = {
 
-          userName = "Humaid Alqasimi";
-          userEmail = "git@huma.id";
-          signing.key = "~/.ssh/id_ed25519_sk.pub";
-          signing.signByDefault = true;
-          extraConfig = {
+            user = {
+              name = "Humaid Alqasimi";
+              email = "git@huma.id";
+            };
+            alias = {
+              co = "checkout";
+            };
+
             core.editor = "nvim";
             init.defaultBranch = "main";
 
@@ -96,11 +86,27 @@ in
             commit.gpgSign = true;
 
             # Mailer
-            sendemail.smtpserver = "smtp.migadu.com";
-            sendemail.smtpuser = "me@huma.id";
-            sendemail.smtpencryption = "tls";
-            sendemail.smtpserverport = "587";
+            sendemail = {
+              smtpserver = "smtp.migadu.com";
+              smtpuser = "me@huma.id";
+              smtpencryption = "tls";
+              smtpserverport = "587";
+            };
           };
+          includes = [
+            {
+              condition = "gitdir:~/tii/";
+              contents = {
+                user.email = "humaid.alqassimi@tii.ae";
+                user.signingkey = "~/.ssh/id_ed25519_sk_tii.pub";
+                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_sk_tii";
+                commit.gpgSign = true;
+              };
+            }
+          ];
+
+          signing.key = "~/.ssh/id_ed25519_sk.pub";
+          signing.signByDefault = true;
         };
       };
     }
@@ -112,9 +118,9 @@ in
       home-manager.users."${vars.user}" = {
         programs = {
           git = {
-            package = pkgs.gitAndTools.gitFull;
-            delta.enable = true;
+            package = pkgs.gitFull;
           };
+          delta.enable = true; # for git
 
           direnv = {
             enable = true;
@@ -202,6 +208,7 @@ in
 
         # AI
         claude-code
+        aider-chat-full
       ];
     })
   ];

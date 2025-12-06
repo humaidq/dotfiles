@@ -98,10 +98,11 @@ in
         EndSection
       '';
 
-      displayManager.sessionCommands = ''
-        ${open-vm-tools}/bin/vmware-user-suid-wrapper
-      '';
     };
+
+    services.displayManager.sessionCommands = ''
+      ${open-vm-tools}/bin/vmware-user-suid-wrapper
+    '';
 
     services.udev.packages = [ open-vm-tools ];
   };

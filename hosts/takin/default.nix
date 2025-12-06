@@ -33,7 +33,7 @@
     editorconfig-core-c
 
     # :tools docker
-    nodePackages.dockerfile-language-server-nodejs
+    dockerfile-language-server-nodejs
 
     # :lang cc
     clang

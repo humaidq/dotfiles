@@ -51,7 +51,7 @@ in
 
     services.nginx = {
       enable = true;
-      recommendedZstdSettings = true;
+      # recommendedZstdSettings = true; # bugs, renamed to experimentalZstdSettings
       recommendedTlsSettings = true;
       recommendedProxySettings = true;
       recommendedOptimisation = true;

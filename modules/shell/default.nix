@@ -108,7 +108,7 @@ in
       home-manager.users."${vars.user}" = {
         programs.zsh = {
           enable = true;
-          dotDir = ".config/zsh";
+          dotDir = "${config.home-manager.users.${vars.user}.xdg.configHome}/zsh";
           autocd = true;
           enableVteIntegration = true;
           history = {

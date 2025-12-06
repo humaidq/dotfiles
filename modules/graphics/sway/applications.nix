@@ -47,7 +47,6 @@ in
           rofi = {
             enable = true;
             font = if gfxCfg.berkeley.enable then "Berkeley Mono 14" else "Fira Code 14";
-            package = pkgs.rofi-wayland;
             terminal = lib.getExe pkgs.ghostty;
             theme =
               let

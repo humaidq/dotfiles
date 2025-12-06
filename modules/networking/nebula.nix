@@ -7,6 +7,48 @@
 }:
 let
   cfg = config.sifr.net;
+  
+  # Network configuration constants
+  nebulaPort = 4242;
+  lighthouseIP = "10.10.0.10";
+  lighthousePublicEndpoint = "139.84.173.48:4242";
+  
+  # Host mappings
+  hostMappings = {
+    "10.10.0.10" = [ "lighthouse" "lighthouse.alq" ];
+    "10.10.0.11" = [ "serow" "serow.alq" ];
+    "10.10.0.12" = [ "oreamnos" "oreamnos.alq" ] 
+      ++ lib.optionals (!cfg.cacheOverPublic) vars.homeServerDomains;
+    "10.10.0.13" = [ "duisk" "duisk.alq" ];
+  };
+  
+  # Firewall rules
+  nebulaFirewallRules = {
+    outbound = [
+      {
+        host = "any";
+        port = "any";
+        proto = "any";
+      }
+    ];
+    inbound = [
+      {
+        host = "any";
+        port = "any";
+        proto = "icmp";
+      }
+      {
+        groups = [ "trusted" ];
+        port = "any";
+        proto = "any";
+      }
+      {
+        groups = [ "gadgets" ];
+        port = "22";
+        proto = "any";
+      }
+    ];
+  };
 in
 {
   options.sifr.net = {
@@ -36,111 +78,73 @@ in
 
   config = {
     environment.systemPackages = [ pkgs.nebula ];
-    networking.firewall = {
-      trustedInterfaces = lib.mkIf cfg.sifr0 [ "sifr0" ];
-      allowedUDPPorts = lib.mkIf cfg.sifr0 [
-        4242
-      ];
+    # Firewall configuration
+    networking.firewall = lib.mkIf cfg.sifr0 {
+      trustedInterfaces = [ "sifr0" ];
+      allowedUDPPorts = [ nebulaPort ];
     };
 
+    # SSH configuration for Nebula network access only
     services.openssh = lib.mkIf cfg.sifr0 {
       enable = true;
-
-      # Security: do not allow password auth or root login.
       settings = {
         PasswordAuthentication = false;
         PermitRootLogin = "no";
       };
-
-      # Do not open firewall rules, nebula can access only.
-      openFirewall = false;
-    };
-    networking.hosts = lib.mkIf cfg.sifr0 {
-      "10.10.0.10" = [
-        "lighthouse"
-        "lighthouse.alq"
-      ];
-      "10.10.0.11" = [
-        "serow"
-        "serow.alq"
-      ];
-      "10.10.0.12" = [
-        "oreamnos"
-        "oreamnos.alq"
-      ]
-      ++ lib.optionals (!cfg.cacheOverPublic) vars.homeServerDomains;
-      "10.10.0.13" = [
-        "duisk"
-        "duisk.alq"
-      ];
+      openFirewall = false; # Nebula network access only
     };
 
-    services.nebula.networks = {
-      sifr0 = lib.mkIf cfg.sifr0 {
-        enable = true;
-        inherit (cfg) isLighthouse;
-        isRelay = cfg.isLighthouse;
-        tun.device = "sifr0";
+    # Host name resolution within Nebula network
+    networking.hosts = lib.mkIf cfg.sifr0 hostMappings;
 
-        listen = {
-          host = "0.0.0.0";
-          port = 4242;
+    # Nebula network configuration
+    services.nebula.networks.sifr0 = lib.mkIf cfg.sifr0 {
+      enable = true;
+      inherit (cfg) isLighthouse;
+      isRelay = cfg.isLighthouse;
+      tun.device = "sifr0";
+
+      # Network listening configuration
+      listen = {
+        host = "0.0.0.0";
+        port = nebulaPort;
+      };
+
+      # Certificate and key configuration
+      cert = cfg.node-crt;
+      key = cfg.node-key;
+      ca = ./ca-sifr0.crt;
+
+      # Lighthouse and relay configuration (for non-lighthouse nodes)
+      lighthouses = lib.mkIf (!cfg.isLighthouse) [ lighthouseIP ];
+      relays = lib.mkIf (!cfg.isLighthouse) [ lighthouseIP ];
+      staticHostMap = {
+        ${lighthouseIP} = [ lighthousePublicEndpoint ];
+      };
+
+      # Network behavior settings
+      settings = {
+        punchy = {
+          punch = true;
+          punch_back = true;
+          respond = true;
         };
+        preferred_ranges = [ "192.168.1.0/24" ];
 
-        cert = cfg.node-crt;
-        key = cfg.node-key;
-        ca = ./ca-sifr0.crt;
-
-        lighthouses = lib.mkIf (!cfg.isLighthouse) [ "10.10.0.10" ];
-        relays = lib.mkIf (!cfg.isLighthouse) [ "10.10.0.10" ];
-        staticHostMap = {
-          "10.10.0.10" = [ "139.84.173.48:4242" ];
-        };
-        settings = {
-          punchy = {
-            punch = true;
-            punch_back = true;
-            respond = true;
+        # Optional SSH daemon for debugging
+        sshd = lib.mkIf (cfg.ssh-host-key != null) {
+          enabled = true;
+          listen = "localhost:2202";
+          host_key = cfg.ssh-host-key;
+          authorized_users = lib.lists.singleton {
+            inherit (vars) user;
+            inherit (config.users.users.${vars.user}.openssh.authorizedKeys) keys;
           };
-          preferred_ranges = [ "192.168.1.0/24" ];
-
-          sshd = lib.mkIf (cfg.ssh-host-key != null) {
-            enabled = true;
-            listen = "localhost:2202";
-            host_key = cfg.ssh-host-key;
-            authorized_users = lib.lists.singleton {
-              inherit (vars) user;
-              inherit (config.users.users.${vars.user}.openssh.authorizedKeys) keys;
-            };
-          };
-        };
-        firewall = {
-          outbound = [
-            {
-              host = "any";
-              port = "any";
-              proto = "any";
-            }
-          ];
-          inbound = [
-            {
-              host = "any";
-              port = "any";
-              proto = "icmp";
-            }
-            {
-              groups = [ "trusted" ];
-              port = "any";
-              proto = "any";
-            }
-            {
-              groups = [ "gadgets" ];
-              port = "22";
-              proto = "any";
-            }
-          ];
         };
       };
+
+      # Nebula firewall rules
+      firewall = nebulaFirewallRules;
     };
   };
 }

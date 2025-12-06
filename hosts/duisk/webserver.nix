@@ -4,7 +4,7 @@
   ...
 }:
 let
-  humaid-site = inputs.humaid-site.packages.${pkgs.system}.default;
+  humaid-site = inputs.humaid-site.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   config = {
