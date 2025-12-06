@@ -166,6 +166,7 @@
           mode = "0700";
         }
         ".mozilla"
+        ".tqsl"
         ".config/google-chrome"
         ".local/share/direnv"
         ".config/sops"
@@ -226,12 +227,14 @@
   environment.systemPackages = with pkgs; [
     sbctl # for lanzaboote
     usbguard-notifier
+    asdbctl # apple studio display
   ];
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = false;
+  services.hardware.bolt.enable = true;
 
   services.usbguard = {
-    enable = true;
+    enable = false;
     dbus.enable = true; # for gnome
     IPCAllowedGroups = [ "wheel" ];
     ruleFile = config.sops.secrets."usbguard/policy".path;
@@ -243,6 +246,42 @@
   #  wants = [ "graphical-session.target" ];
   #  after = [ "graphical-session.target" ];
   #};
+
+  home-manager.users."${vars.user}" = {
+    services.kanshi = {
+      inherit (config.sifr.graphics.sway) enable;
+
+      settings = [
+        {
+          profile = {
+            name = "internal";
+            outputs = [
+              {
+                criteria = "Samsung Display Corp. 0x419F Unknown";
+                status = "enable";
+              }
+            ];
+          };
+        }
+        {
+          profile = {
+            name = "desk";
+            outputs = [
+              {
+                criteria = "Samsung Display Corp. 0x419F Unknown";
+                status = "disable";
+              }
+              {
+                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
+                status = "enable";
+                mode = "5120x2880";
+              }
+            ];
+          };
+        }
+      ];
+    };
+  };
 
   system.stateVersion = "25.04";
 }
