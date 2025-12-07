@@ -86,10 +86,11 @@
             options = {
               volblocksize = "4096";
               logbias = "throughput";
-              sync = "always";
+              sync = "disabled";
               primarycache = "metadata";
               secondarycache = "none";
-              compression = "zle";
+              compression = "off";
+              "com.sun:auto-snapshot" = "false";
             };
           };
         };

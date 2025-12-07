@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+_: {
   config = {
     topology.nodes.epson = {
       deviceType = "device";

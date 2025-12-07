@@ -7,21 +7,33 @@
 }:
 let
   cfg = config.sifr.net;
-  
+
   # Network configuration constants
   nebulaPort = 4242;
   lighthouseIP = "10.10.0.10";
   lighthousePublicEndpoint = "139.84.173.48:4242";
-  
+
   # Host mappings
   hostMappings = {
-    "10.10.0.10" = [ "lighthouse" "lighthouse.alq" ];
-    "10.10.0.11" = [ "serow" "serow.alq" ];
-    "10.10.0.12" = [ "oreamnos" "oreamnos.alq" ] 
-      ++ lib.optionals (!cfg.cacheOverPublic) vars.homeServerDomains;
-    "10.10.0.13" = [ "duisk" "duisk.alq" ];
+    "10.10.0.10" = [
+      "lighthouse"
+      "lighthouse.alq"
+    ];
+    "10.10.0.11" = [
+      "serow"
+      "serow.alq"
+    ];
+    "10.10.0.12" = [
+      "oreamnos"
+      "oreamnos.alq"
+    ]
+    ++ lib.optionals (!cfg.cacheOverPublic) vars.homeServerDomains;
+    "10.10.0.13" = [
+      "duisk"
+      "duisk.alq"
+    ];
   };
-  
+
   # Firewall rules
   nebulaFirewallRules = {
     outbound = [

@@ -137,6 +137,7 @@
                   primarycache = "metadata";
                   secondarycache = "none";
                   compression = "zle";
+                  "com.sun:auto-snapshot" = "false";
                 };
               };
 
