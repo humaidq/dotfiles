@@ -540,11 +540,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1764621209,
-        "narHash": "sha256-hB7ZGP8UcvV19Ke+3aifEnlb4yY4H+44wc069BzrpUA=",
+        "lastModified": 1765218899,
+        "narHash": "sha256-Up3eqw6agD1H+JPb4k3x2+cWbovoQBcQ9Yr5A/n+k4E=",
         "owner": "humaidq",
         "repo": "humaid-qsl",
-        "rev": "00da19e1888f8f2d052760e5b43f3f490d2deae5",
+        "rev": "8c0956577f01cb86c5cc97e8212a7c58a9f46ce8",
         "type": "github"
       },
       "original": {
