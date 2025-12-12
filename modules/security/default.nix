@@ -50,9 +50,8 @@ in
         age
       ];
 
-      # TODO 25.11
-      # programs.yubikey-manager.enable
-      # programs.yubikey-touch-detector.enable
+      programs.yubikey-manager.enable = true;
+      programs.yubikey-touch-detector.enable = true;
 
       services.pcscd.enable = true;
     })
@@ -70,7 +69,6 @@ in
         kernelParams = [
           # Reduce boot TTY output
           "quiet"
-          "vga=current"
         ];
 
         kernel.sysctl = {

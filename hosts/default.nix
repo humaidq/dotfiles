@@ -42,14 +42,6 @@
         host-x86-installer = import ./x86-installer.nix;
       };
 
-      darwinConfigurations = {
-        takin = inputs.nix-darwin.lib.darwinSystem {
-          modules = [
-            ./takin
-          ];
-        };
-      };
-
       nixosConfigurations = {
         oreamnos = lib.nixosSystem {
           inherit specialArgs;
@@ -170,13 +162,11 @@
           lighthouse = self.nixosConfigurations.lighthouse.config.system.build.toplevel;
           anoa = self.nixosConfigurations.anoa.config.system.build.toplevel;
 
-          #tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
           #inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
         };
         #aarch64-linux = {
         #  inherit (self.packages.aarch64-linux) rpi4-bootstrap;
         #  inherit (self.packages.aarch64-linux) rpi5-bootstrap;
-        #  goral = self.nixosConfigurations.goral.config.system.build.toplevel;
         #  argali = self.nixosConfigurations.argali.config.system.build.toplevel;
         #  arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;
         #};

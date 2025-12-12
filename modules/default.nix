@@ -184,8 +184,6 @@ in
         #allowBroken = true;
         #allowUnsupportedSystem = true;
         permittedInsecurePackages = [
-          #  "nix-2.24.5"
-
           # For Sonarr
           "aspnetcore-runtime-wrapped-6.0.36"
           "aspnetcore-runtime-6.0.36"
@@ -205,14 +203,7 @@ in
           # doesn't support my all-in-one cooler on oreamnos. so use git master
           liquidctl = import ../overlays/liquidctl { inherit prev; };
 
-          js8call = pkgs.callPackage ../overlays/js8call { };
           ufetch = pkgs.callPackage ../overlays/ufetch { };
-
-          # Solve Chrome crashing wlroots (sway)
-          # Solved probably with wlroots 0.19.1 by this MR https://gitlab.freedesktop.org/wlroots/wlroots/-/merge_requests/5080
-          # So need to remove this in NixOS 25.11
-          #wlroots = pkgs.callPackage ../overlays/wlroots { inherit prev; };
-          #sway-unwrapped = prev.sway-unwrapped.override { inherit (final) wlroots; };
 
           # fix gridtracker crash
           nwjs = prev.nwjs.overrideAttrs {
