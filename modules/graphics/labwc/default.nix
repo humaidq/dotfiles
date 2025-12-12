@@ -143,7 +143,7 @@ in
         mode = "0755";
       };
       #"labwc/menu.xml".text = menuXml;
-      "labwc/environment".text = environment;
+      "xdg/labwc/environment".text = environment;
     };
   };
 }
