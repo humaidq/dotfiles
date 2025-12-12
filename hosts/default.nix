@@ -29,11 +29,9 @@
       nixosModules = {
         host-oreamnos = import ./oreamnos;
         host-serow = import ./serow;
-        host-caprini = import ./caprini;
+        host-anoa = import ./anoa;
         host-duisk = import ./duisk;
         host-lighthouse = import ./lighthouse;
-        #host-goral = import ./goral;
-        #host-tahr = import ./tahr;
         #host-boerbok = import ./boerbok;
         #host-argali = import ./argali;
         #host-arkelli = import ./arkelli;
@@ -69,10 +67,10 @@
             inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
-        caprini = lib.nixosSystem {
+        anoa = lib.nixosSystem {
           inherit specialArgs;
           modules = [
-            self.nixosModules.host-caprini
+            self.nixosModules.host-anoa
             inputs.srvos.nixosModules.desktop
             inputs.srvos.nixosModules.mixins-nix-experimental
           ];
@@ -95,14 +93,6 @@
             inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
-        #goral = lib.nixosSystem {
-        #  inherit specialArgs;
-        #  modules = [ self.nixosModules.host-goral ];
-        #};
-        #tahr = lib.nixosSystem {
-        #  inherit specialArgs;
-        #  modules = [ self.nixosModules.host-tahr ];
-        #};
         #boerbok = lib.nixosSystem {
         #  inherit specialArgs;
         #  modules = [ self.nixosModules.host-boerbok ];
@@ -178,7 +168,7 @@
           serow = self.nixosConfigurations.serow.config.system.build.toplevel;
           duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
           lighthouse = self.nixosConfigurations.lighthouse.config.system.build.toplevel;
-          caprini = self.nixosConfigurations.caprini.config.system.build.toplevel;
+          anoa = self.nixosConfigurations.anoa.config.system.build.toplevel;
 
           #tahr = self.nixosConfigurations.tahr.config.system.build.toplevel;
           #inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;

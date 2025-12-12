@@ -77,6 +77,7 @@
 
   environment.systemPackages = with pkgs; [
     cifs-utils
+    nvme-cli
     liquidctl
     restic
   ];
@@ -148,7 +149,7 @@
   users.users.${vars.user} = {
     isNormalUser = true;
     openssh.authorizedKeys.keys = [
-      # caprini borg ssh
+      # anoa borg ssh
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIATG8oK3/+6po+IHhKj/Dx++qUNEPSnLNY5mj+hvmtrE humaid@caprini"
     ];
   };
@@ -330,6 +331,19 @@
     interval = "weekly";
     pools = [ "dpool" ];
   };
+
+  # Full performance for this system
+  powerManagement.cpuFreqGovernor = "performance";
+  # Fix ATA errors caused by power management policy "med_power_with_dipm"
+  powerManagement.scsiLinkPolicy = "max_performance";
+  boot.kernelParams = [
+    # belts & braces for the ATA errors
+    "ahci.mobile_lpm_policy=1"
+    # Disable kernel-managed PCIe power management
+    "pcie_aspm=off"
+    # Disable USB auto suspend
+    "usbcore.autosuspend=-1"
+  ];
 
   programs.msmtp = {
     enable = true;

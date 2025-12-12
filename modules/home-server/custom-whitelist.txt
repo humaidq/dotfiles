@@ -1,4 +1,8 @@
 alak.bar
+*.alak.bar
+
+boodle.ai
+box.boodle.ai
 
 # Sonarr
 thexem.info

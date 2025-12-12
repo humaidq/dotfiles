@@ -18,29 +18,29 @@
     (import ./hardware.nix)
     (import ./disk.nix)
   ];
-  networking.hostName = "caprini";
+  networking.hostName = "anoa";
 
   # Nebula keys
   sops.secrets."nebula/crt" = {
-    sopsFile = ../../secrets/caprini.yaml;
+    sopsFile = ../../secrets/anoa.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };
   sops.secrets."nebula/key" = {
-    sopsFile = ../../secrets/caprini.yaml;
+    sopsFile = ../../secrets/anoa.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };
   sops.secrets."nebula/ssh_host_key" = {
-    sopsFile = ../../secrets/caprini.yaml;
+    sopsFile = ../../secrets/anoa.yaml;
     owner = "nebula-sifr0";
     mode = "600";
   };
   sops.secrets."usbguard/policy" = {
-    sopsFile = ../../secrets/caprini.yaml;
+    sopsFile = ../../secrets/anoa.yaml;
   };
   sops.secrets."borg/ssh_key" = {
-    sopsFile = ../../secrets/caprini.yaml;
+    sopsFile = ../../secrets/anoa.yaml;
   };
 
   services.upower.ignoreLid = true;
