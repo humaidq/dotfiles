@@ -38,6 +38,9 @@ in
         wantedBy = [ "graphical-session.target" ];
       };
     };
+    services.dbus.packages = [
+      pkgs.gcr
+    ];
 
     home-manager.users."${vars.user}" = {
       # home manager services

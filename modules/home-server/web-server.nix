@@ -81,6 +81,17 @@ in
               root = ./homepage;
             };
           };
+          "unifi.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+            locations."/" = {
+              proxyPass = "https://127.0.0.1:18443";
+              proxyWebsockets = true;
+              extraConfig = ''
+                proxy_ssl_verify off;
+              '';
+            };
+          };
           "ai.alq.ae" = {
             enableACME = true;
             inherit (tls) forceSSL;

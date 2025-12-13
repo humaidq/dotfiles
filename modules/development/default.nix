@@ -208,6 +208,7 @@ in
 
         # AI
         claude-code
+        codex
         aider-chat-full
       ];
     })

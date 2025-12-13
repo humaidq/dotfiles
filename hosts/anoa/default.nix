@@ -155,7 +155,7 @@
     ];
     users."${vars.user}" = {
       files = [
-        #".claude.json" #problematic
+        #".claude.json" #symlink gets overridden :/
       ];
       directories = [
         "inbox"
@@ -167,6 +167,7 @@
         }
         ".mozilla"
         ".tqsl"
+        ".codex"
         ".config/google-chrome"
         ".local/share/direnv"
         ".config/sops"
