@@ -1,10 +1,15 @@
 {
   pkgs,
+  config,
+  lib,
   ...
 }:
 
+let
+  cfg = config.sifr.home-server;
+in
 {
-  config = {
+  config = lib.mkIf cfg.enable {
     services.unifi = {
       enable = true;
       unifiPackage = pkgs.unifi;

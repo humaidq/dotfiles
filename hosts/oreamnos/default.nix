@@ -245,6 +245,7 @@
       "/var/lib/deluge"
       "/var/lib/caddy"
       "/var/lib/uptimed"
+      "/var/lib/unifi"
       {
         directory = "/var/lib/bitwarden_rs";
         mode = "0700";

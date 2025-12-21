@@ -1,6 +1,9 @@
 alak.bar
 *.alak.bar
 
+proxy.mob.maps.yango.com
+eu.asas.yango.com
+
 boodle.ai
 box.boodle.ai
 
