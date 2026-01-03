@@ -42,7 +42,7 @@ in
         };
         "groot" = {
           user = "root";
-          hostname = "192.168.1.161";
+          hostname = "192.168.1.227";
           checkHostIP = false;
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {
@@ -62,7 +62,7 @@ in
           };
         };
         "ghafajump" = {
-          hostname = "192.168.1.101";
+          hostname = "192.168.1.227";
           identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           extraOptions = {
             StrictHostKeyChecking = "no";

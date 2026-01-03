@@ -59,25 +59,35 @@ in
       # home-manager can get angry if dconf is not enabled.
       programs.dconf.enable = true;
 
-      services.xserver.enable = true;
-      services.xserver.excludePackages = [ pkgs.xterm ];
-      services.displayManager.gdm.enable = true;
+      services.xserver = {
+        enable = true;
+        xkb = {
+          layout = "us";
+          options = "ctrl:nocaps"; # make Caps Lock act as Ctrl
+        };
+        excludePackages = [ pkgs.xterm ];
+      };
+
+      console.useXkbConfig = true;
+      #services.displayManager.gdm.enable = true;
       networking.networkmanager.enable = true;
+      systemd.network.enable = false;
+      networking.useNetworkd = false;
 
       # Make system look better overall when we have a graphical system
       boot.plymouth = {
         enable = false;
         logo = ../../assets/sifr-icon-blue.png;
       };
-
+      home-manager.backupFileExtension = "hm-bak";
       home-manager.users."${vars.user}" = {
         # Default themeing for GTK and Qt
-        qt = {
-          enable = true;
-          platformTheme.name = "gtk";
-          style.package = pkgs.adwaita-qt;
-          style.name = "adwaita";
-        };
+        #qt = {
+        #  enable = true;
+        #  platformTheme.name = "gtk";
+        #  style.package = pkgs.adwaita-qt;
+        #  style.name = "adwaita";
+        #};
 
         gtk = {
           enable = true;

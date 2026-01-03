@@ -46,7 +46,7 @@ in
             "--scope" = [
               {
                 "--when" = {
-                  repositories = [ "~/tii" ];
+                  repositories = [ "~/repos/tii" ];
                 };
                 user.email = "humaid.alqassimi@tii.ae";
                 signing.key = "~/.ssh/id_ed25519_sk_tii.pub";
@@ -95,11 +95,11 @@ in
           };
           includes = [
             {
-              condition = "gitdir:~/tii/";
+              condition = "gitdir:~/repos/tii/";
               contents = {
                 user.email = "humaid.alqassimi@tii.ae";
-                user.signingkey = "~/.ssh/id_ed25519_sk_tii.pub";
-                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_sk_tii";
+                user.signingkey = "~/.ssh/id_ed25519_sk_rk_TII.pub";
+                core.sshCommand = "ssh -i ~/.ssh/id_ed25519_sk_rk_TII";
                 commit.gpgSign = true;
               };
             }

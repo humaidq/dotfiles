@@ -37,6 +37,7 @@ in
     environment.systemPackages = [
       config.boot.kernelPackages.cpupower
       pkgs.powertop
+      pkgs.simple-scan
     ];
 
     services.printing = {
@@ -99,13 +100,13 @@ in
 
     # disable due to security
     services.avahi = {
-      #enable = true;
-      #nssmdns4 = true;
-      #nssmdns6 = true;
-      #publish = {
-      #  enable = false;
-      #  addresses = true;
-      #};
+      enable = true;
+      nssmdns4 = true;
+      nssmdns6 = true;
+      publish = {
+        enable = false;
+        addresses = true;
+      };
     };
 
     location.provider = "geoclue2";

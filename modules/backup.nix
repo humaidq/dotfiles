@@ -33,6 +33,8 @@ in
       default = [
         "'**/inbox/web'"
         "'**/.cache'"
+        "'**/repos/**/result'"
+        "'**/repos/**/result/'"
         "'**/.nix-profile'"
         "'**/VirtualBox VMs'"
       ];

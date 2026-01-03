@@ -44,11 +44,13 @@
   };
 
   services.upower.ignoreLid = true;
+
   sifr = {
     graphics = {
       #gnome.enable = true;
-      sway.enable = true;
-      labwc.enable = true;
+      sway.enable = false;
+      labwc.enable = false;
+      enable = true;
       apps = true;
       berkeley.enable = true;
     };
@@ -197,7 +199,10 @@
   fileSystems."/persist".neededForBoot = true;
 
   # Reset root on every boot
-  boot.supportedFilesystems = [ "zfs" ];
+  boot.supportedFilesystems = [
+    "zfs"
+    "udf"
+  ];
 
   boot.initrd.systemd = {
     enable = true;
@@ -215,6 +220,9 @@
       };
     };
   };
+
+  # will do manually, too resource intensive.
+  services.zfs.trim.enable = false;
 
   swapDevices = [
     {
@@ -248,6 +256,22 @@
   #  wants = [ "graphical-session.target" ];
   #  after = [ "graphical-session.target" ];
   #};
+
+  services.postgresql = {
+    enable = true;
+    ensureUsers = [
+      {
+        name = "humaid";
+        ensureClauses = {
+          superuser = true;
+          login = true;
+          createdb = true;
+        };
+      }
+    ];
+  };
+
+  boot.initrd.kernelModules = [ "udf" ];
 
   home-manager.users."${vars.user}" = {
     services.kanshi = {
@@ -283,6 +307,12 @@
         }
       ];
     };
+  };
+
+  services = {
+    desktopManager.plasma6.enable = true;
+    displayManager.sddm.enable = true;
+    displayManager.sddm.wayland.enable = true;
   };
 
   system.stateVersion = "25.04";

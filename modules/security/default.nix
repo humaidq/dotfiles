@@ -191,7 +191,7 @@ in
       };
 
       # too many security issues
-      services.avahi.enable = false;
+      #services.avahi.enable = false;
 
       # don't share hostname
       networking.networkmanager.settings = {
@@ -201,7 +201,7 @@ in
 
         connection = {
           "wifi.cloned-mac-address" = "random";
-          "ethernet.cloned-mac-address" = "random";
+          #"ethernet.cloned-mac-address" = "random";
 
           "ipv4.dhcp-send-hostname" = false;
           "ipv6.dhcp-send-hostname" = false;

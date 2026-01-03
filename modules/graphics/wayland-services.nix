@@ -28,7 +28,7 @@ in
 
     systemd.user.services = {
       ianny = {
-        enable = true;
+        enable = false;
         description = "ianny daemon";
         serviceConfig = {
           Type = "simple";

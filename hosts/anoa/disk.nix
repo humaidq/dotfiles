@@ -45,7 +45,7 @@
         };
         options = {
           ashift = "12";
-          autotrim = "off"; # iowait high
+          autotrim = "on";
         };
         datasets = {
           "enc" = {

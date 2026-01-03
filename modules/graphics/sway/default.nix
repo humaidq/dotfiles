@@ -29,13 +29,13 @@ in
 
   config = lib.mkIf cfg.enable {
     # if gdm not enabled
-    services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
-      enable = true;
-      settings.default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
-        user = "greeter";
-      };
-    };
+    #services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
+    #  enable = true;
+    #  settings.default_session = {
+    #    command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
+    #    user = "greeter";
+    #  };
+    #};
 
     programs.xwayland.enable = true;
 
@@ -100,21 +100,21 @@ in
     };
 
     home-manager.users."${vars.user}" = {
-      home.sessionVariables = {
-        # SDL:
-        SDL_VIDEODRIVER = "wayland";
-        # QT (needs qt5.qtwayland in systemPackages):
-        QT_QPA_PLATFORM = "wayland-egl";
-        QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-        # Fix for some Java AWT applications (e.g. Android Studio),
-        # use this if they aren't displayed properly:
-        _JAVA_AWT_WM_NONREPARENTING = "1";
-        # Others
-        MOZ_ENABLE_WAYLAND = "1";
-        XDG_SESSION_TYPE = "wayland";
-        XDG_CURRENT_DESKTOP = "sway";
-        ELECTRON_OZONE_PLATFORM_HINT = "wayland";
-      };
+      #home.sessionVariables = {
+      #  # SDL:
+      #  SDL_VIDEODRIVER = "wayland";
+      #  # QT (needs qt5.qtwayland in systemPackages):
+      #  QT_QPA_PLATFORM = "wayland-egl";
+      #  QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+      #  # Fix for some Java AWT applications (e.g. Android Studio),
+      #  # use this if they aren't displayed properly:
+      #  _JAVA_AWT_WM_NONREPARENTING = "1";
+      #  # Others
+      #  MOZ_ENABLE_WAYLAND = "1";
+      #  XDG_SESSION_TYPE = "wayland";
+      #  XDG_CURRENT_DESKTOP = "sway";
+      #  ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+      #};
 
       #xfconf.settings = {
       #};
