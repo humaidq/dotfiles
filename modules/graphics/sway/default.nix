@@ -29,13 +29,13 @@ in
 
   config = lib.mkIf cfg.enable {
     # if gdm not enabled
-    #services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
-    #  enable = true;
-    #  settings.default_session = {
-    #    command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
-    #    user = "greeter";
-    #  };
-    #};
+    services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
+      enable = true;
+      settings.default_session = {
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
+        user = "greeter";
+      };
+    };
 
     programs.xwayland.enable = true;
 

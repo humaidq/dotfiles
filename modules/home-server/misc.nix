@@ -21,6 +21,8 @@ in
       mode = "600";
     };
 
+    nixpkgs.overlays = [ inputs.groundwave.overlays.default ];
+
     services.groundwave = {
       enable = true;
       port = 4232;

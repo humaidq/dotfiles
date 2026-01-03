@@ -47,9 +47,7 @@
 
   sifr = {
     graphics = {
-      #gnome.enable = true;
-      sway.enable = false;
-      labwc.enable = false;
+      sway.enable = true;
       enable = true;
       apps = true;
       berkeley.enable = true;
@@ -188,7 +186,6 @@
         ".zotero"
         ".vscode"
         ".claude"
-        ".aider"
       ];
     };
   };
@@ -249,6 +246,7 @@
     IPCAllowedGroups = [ "wheel" ];
     ruleFile = config.sops.secrets."usbguard/policy".path;
   };
+
   #systemd.user.services.usbguard-notifier = {
   #  enable = true;
   #  wantedBy = [ "graphical-session.target" ];
@@ -307,12 +305,6 @@
         }
       ];
     };
-  };
-
-  services = {
-    desktopManager.plasma6.enable = true;
-    displayManager.sddm.enable = true;
-    displayManager.sddm.wayland.enable = true;
   };
 
   system.stateVersion = "25.04";

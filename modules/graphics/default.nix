@@ -61,15 +61,10 @@ in
 
       services.xserver = {
         enable = true;
-        xkb = {
-          layout = "us";
-          options = "ctrl:nocaps"; # make Caps Lock act as Ctrl
-        };
         excludePackages = [ pkgs.xterm ];
       };
 
       console.useXkbConfig = true;
-      #services.displayManager.gdm.enable = true;
       networking.networkmanager.enable = true;
       systemd.network.enable = false;
       networking.useNetworkd = false;
@@ -82,12 +77,12 @@ in
       home-manager.backupFileExtension = "hm-bak";
       home-manager.users."${vars.user}" = {
         # Default themeing for GTK and Qt
-        #qt = {
-        #  enable = true;
-        #  platformTheme.name = "gtk";
-        #  style.package = pkgs.adwaita-qt;
-        #  style.name = "adwaita";
-        #};
+        qt = {
+          enable = true;
+          platformTheme.name = "gtk";
+          style.package = pkgs.adwaita-qt;
+          style.name = "adwaita";
+        };
 
         gtk = {
           enable = true;
