@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -9,6 +10,9 @@ let
   cfg = config.sifr.home-server;
 in
 {
+  imports = [
+    inputs.groundwave.nixosModules.groundwave
+  ];
   config = lib.mkIf cfg.enable {
 
     sops.secrets."groundwave/env" = {
