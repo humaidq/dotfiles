@@ -10,6 +10,19 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
+
+    sops.secrets."groundwave/env" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "groundwave";
+      mode = "600";
+    };
+
+    services.groundwave = {
+      enable = true;
+      port = 4232;
+      envFile = config.sops.secrets."groundwave/env".path;
+    };
+
     services.stirling-pdf = {
       enable = true;
       environment = {

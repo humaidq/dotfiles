@@ -17,6 +17,10 @@
       url = "github:humaidq/humaid-qsl";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    groundwave = {
+      url = "github:humaidq/groundwave";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
