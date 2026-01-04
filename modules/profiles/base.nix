@@ -89,6 +89,7 @@ in
         EDITOR = "nvim";
         VISUAL = "nvim";
         BROWSER = lib.mkDefault "echo";
+        OPENER = "xdg-open";
 
         # clean up
         #XAUTHORITY = "$XDG_RUNTIME_DIR/xauthority"; # breaking DMs
@@ -191,7 +192,6 @@ in
                   ''${{
                 case $(file --mime-type "$(readlink -f $f)" -b) in
                   text/*|application/json|inode/x-empty) $EDITOR $fx ;;
-                  application/*) nvim $fx ;;
                   *) for f in $fx; do setsid $OPENER $f > /dev/null 2> /dev/null & done ;;
                 esac
                 }}

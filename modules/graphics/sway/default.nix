@@ -45,7 +45,6 @@ in
     ];
 
     environment.systemPackages = with pkgs; [
-      rofi
       wev
       bluetui
       hyprpicker
@@ -152,10 +151,10 @@ in
             "${mod}+Shift+Return" = "exec ghostty";
             "${mod}+Shift+c" = "kill";
             "${mod}+Shift+r" = "reload";
-            "${mod}+p" =
-              "exec rofi -modi drun -show-icons -show drun -drun-display-format \"{name} ({categories})\"";
-            "${mod}+shift+p" = "exec rofi -show run -show-icons";
-            "${mod}+o" = "exec ${lib.getExe pkgs.rofi-rbw}";
+            "${mod}+p" = "exec bemenu-run";
+            "${mod}+shift+p" = "exec bemenu-run";
+            "${mod}+o" =
+              "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
             "${mod}+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f";
 
             # laptop bindings

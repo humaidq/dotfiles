@@ -91,6 +91,14 @@
       node-key = config.sops.secrets."nebula/key".path;
       ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
     };
+    rclone = {
+      enable = true;
+      remote = "oreamnos";
+      remotePath = "/mnt/humaid/files";
+      mountPath = "docs/files";
+      sshUser = "humaid";
+      sshKey = "/home/humaid/.ssh/id_ed25519_build";
+    };
     backups = {
       enable = true;
       sshKeyPath = config.sops.secrets."borg/ssh_key".path;

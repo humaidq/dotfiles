@@ -5,6 +5,7 @@
     ./nebula.nix
     ./time.nix
     ./dns.nix
+    ./rclone.nix
   ];
   config = {
     systemd.services.NetworkManager-wait-online.enable = false;

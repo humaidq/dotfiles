@@ -11,106 +11,123 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
-    home-manager.users."${vars.user}" =
-      let
-        hm-config = config.home-manager.users."${vars.user}";
-      in
-      {
-        # home manager programs
-        programs = {
-          zathura = {
-            enable = true;
-            options = {
-              "selection-clipboard" = "clipboard";
-            };
-            mappings = {
-              "i" = "recolor";
-              "r" = "reload";
-              "R" = "rotate";
-              "p" = "print";
-              "u" = "scroll half-up";
-              "d" = "scroll half-down";
-              "D" = "toggle_page_mode";
-              "g" = "goto top";
-            };
+    home-manager.users."${vars.user}" = {
+      # home manager packages
+      home.packages = with pkgs; [
+        imv
+      ];
+
+      # home manager programs
+      programs = {
+        zathura = {
+          enable = true;
+          options = {
+            "selection-clipboard" = "clipboard";
           };
-          foot = {
-            enable = true;
-            settings = {
-              main = {
-                term = "xterm-256color";
-                dpi-aware = "yes";
-                font = if gfxCfg.berkeley.enable then "Berkeley Mono:size=8" else "Fira Code:size=8";
-              };
-            };
+          mappings = {
+            "i" = "recolor";
+            "r" = "reload";
+            "R" = "rotate";
+            "p" = "print";
+            "u" = "scroll half-up";
+            "d" = "scroll half-down";
+            "D" = "toggle_page_mode";
+            "g" = "goto top";
           };
-          rofi = {
-            enable = true;
-            font = if gfxCfg.berkeley.enable then "Berkeley Mono 14" else "Fira Code 14";
-            terminal = lib.getExe pkgs.ghostty;
-            theme =
-              let
-                inherit (hm-config.lib.formats.rasi) mkLiteral;
-              in
-              {
-                "*" = {
-                  background-color = mkLiteral "#130e24";
-                  foreground-color = mkLiteral "#ffffff";
-                  text-color = mkLiteral "#ffffff";
-                  border-color = mkLiteral "#1d2e86";
-                  width = 512;
-                };
-                "#inputbar" = {
-                  children = map mkLiteral [
-                    "prompt"
-                    "entry"
-                  ];
-                };
-                "#textbox-prompt-colon" = {
-                  expand = false;
-                  str = ":";
-                  margin = mkLiteral "0px 0.3em 0em 0em";
-                  text-color = mkLiteral "@foreground-color";
-                };
-                "element" = {
-                  background-color = mkLiteral "transparent";
-                  text-color = mkLiteral "@foreground-color";
-                };
-                "element selected" = {
-                  background-color = mkLiteral "#1d2e86";
-                  text-color = mkLiteral "#ffffff";
-                  border = mkLiteral "2px";
-                  border-color = mkLiteral "#2b3ea6";
-                  border-radius = 6;
-                };
-                "element-text" = {
-                  highlight = mkLiteral "underline #9fb3ff";
-                };
-                "element selected element-text" = {
-                  highlight = mkLiteral "none";
-                };
-                "element alternate" = {
-                  background-color = mkLiteral "#171233";
-                };
-              };
-          };
-          swaylock = {
-            enable = true;
-            settings = {
-              color = "130e24";
-              line-color = "ffffff";
-              show-failed-attempts = true;
-            };
-          };
-          rbw = {
-            enable = true;
-            settings = {
-              email = "me@huma.id";
-              base_url = "https://vault.alq.ae";
-              pinentry = pkgs.pinentry-gnome3;
+        };
+        foot = {
+          enable = true;
+          settings = {
+            main = {
+              term = "xterm-256color";
+              dpi-aware = "yes";
+              font = if gfxCfg.berkeley.enable then "Berkeley Mono:size=8" else "Fira Code:size=8";
             };
           };
         };
+        bemenu = {
+          enable = true;
+          settings = {
+            ignorecase = true;
+            line-height = 28;
+            prompt = "run";
+            fb = "#130e24";
+            ff = "#ffffff";
+            nb = "#130e24";
+            nf = "#ffffff";
+            tb = "#130e24";
+            hb = "#134dae";
+            tf = "#ffffff";
+            hf = "#ffffff";
+            af = "#ffffff";
+            ab = "#130e24";
+            width-factor = 0.3;
+            fn = if gfxCfg.berkeley.enable then "Berkeley Mono 14" else "Fira Code 14";
+          };
+        };
+        swaylock = {
+          enable = true;
+          settings = {
+            color = "130e24";
+            line-color = "ffffff";
+            show-failed-attempts = true;
+          };
+        };
+        rbw = {
+          enable = true;
+          settings = {
+            email = "me@huma.id";
+            base_url = "https://vault.alq.ae";
+            pinentry = pkgs.pinentry-gnome3;
+          };
+        };
       };
+
+      # Set default applications
+      xdg = {
+        enable = true;
+        mimeApps.enable = true;
+        mimeApps.defaultApplications = {
+          # PDF files
+          "application/pdf" = [ "org.pwmt.zathura.desktop" ];
+          "application/postscript" = [ "org.pwmt.zathura.desktop" ];
+          "application/x-bzpdf" = [ "org.pwmt.zathura.desktop" ];
+          "application/x-gzpdf" = [ "org.pwmt.zathura.desktop" ];
+          "application/x-xzpdf" = [ "org.pwmt.zathura.desktop" ];
+
+          # Image files
+          "image/png" = [ "imv.desktop" ];
+          "image/jpeg" = [ "imv.desktop" ];
+          "image/jpg" = [ "imv.desktop" ];
+          "image/gif" = [ "imv.desktop" ];
+          "image/bmp" = [ "imv.desktop" ];
+          "image/svg+xml" = [ "imv.desktop" ];
+          "image/tiff" = [ "imv.desktop" ];
+          "image/webp" = [ "imv.desktop" ];
+
+          # Text files - open with emacsclient
+          "text/plain" = [ "emacsclient.desktop" ];
+          "text/x-shellscript" = [ "emacsclient.desktop" ];
+          "text/x-python" = [ "emacsclient.desktop" ];
+          "text/x-c" = [ "emacsclient.desktop" ];
+          "text/x-c++src" = [ "emacsclient.desktop" ];
+          "text/x-java" = [ "emacsclient.desktop" ];
+          "text/x-lisp" = [ "emacsclient.desktop" ];
+          "text/x-markdown" = [ "emacsclient.desktop" ];
+          "text/x-org" = [ "emacsclient.desktop" ];
+          "application/json" = [ "emacsclient.desktop" ];
+          "application/x-yaml" = [ "emacsclient.desktop" ];
+          "application/xml" = [ "emacsclient.desktop" ];
+
+          # Web browser
+          "text/html" = [ "firefox.desktop" ];
+          "application/xhtml+xml" = [ "firefox.desktop" ];
+          "x-scheme-handler/http" = [ "firefox.desktop" ];
+          "x-scheme-handler/https" = [ "firefox.desktop" ];
+          "x-scheme-handler/about" = [ "firefox.desktop" ];
+          "x-scheme-handler/unknown" = [ "firefox.desktop" ];
+        };
+      };
+    };
   };
 }
