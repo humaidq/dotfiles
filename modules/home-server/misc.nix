@@ -74,9 +74,12 @@ in
     services.librespeed = {
       enable = true;
       domain = "speed.alq.ae";
-      useACMEHost = "speed.alq.ae";
+      # Don't use TLS on backend - nginx handles TLS termination
+      tlsCertificate = lib.mkForce null;
+      tlsKey = lib.mkForce null;
       settings = {
         listen_port = 8990; # 8989 is used by sonarr
+        enable_tls = false;
       };
       frontend = {
         enable = true;
