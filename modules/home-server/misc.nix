@@ -82,7 +82,7 @@ in
         enable = true;
         contactEmail = "local@alq.ae";
         pageTitle = "Speed Test";
-        servers = [
+        servers = lib.mkForce [
           {
             name = "oreamnos";
             server = "https://speed.alq.ae";
