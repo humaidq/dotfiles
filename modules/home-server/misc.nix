@@ -82,6 +82,12 @@ in
         enable = true;
         contactEmail = "local@alq.ae";
         pageTitle = "Speed Test";
+        servers = [
+          {
+            name = "oreamnos";
+            server = "https://speed.alq.ae";
+          }
+        ];
       };
     };
 
