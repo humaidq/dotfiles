@@ -93,6 +93,7 @@ in
             "google-chrome"
             "google-chrome-stable"
             "chromium"
+            "brave"
           ];
         };
       };

@@ -71,5 +71,19 @@ in
       };
     };
 
+    services.librespeed = {
+      enable = true;
+      domain = "speed.alq.ae";
+      useACMEHost = "speed.alq.ae";
+      settings = {
+        listen_port = 8990; # 8989 is used by sonarr
+      };
+      frontend = {
+        enable = true;
+        contactEmail = "local@alq.ae";
+        pageTitle = "Speed Test";
+      };
+    };
+
   };
 }

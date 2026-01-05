@@ -71,7 +71,7 @@
     o11y.client.enable = true;
     applications.emacs.enable = true;
     applications.amateur.enable = true;
-    applications.chromium.enable = true;
+    applications.brave.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [
@@ -185,6 +185,7 @@
         ".config/Code"
         ".config/github-copilot"
         ".config/hamradio" # qlog
+        ".config/BraveSoftware"
         ".local/share/WSJT-X"
         ".local/share/hamradio/QLog"
         ".local/share/fish"

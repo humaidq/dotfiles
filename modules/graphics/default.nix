@@ -87,6 +87,10 @@ in
         gtk = {
           enable = true;
           theme.name = "Adwaita";
+          iconTheme = {
+            name = "Tango";
+            package = pkgs.tango-icon-theme;
+          };
           gtk3.extraConfig = {
             gtk-application-prefer-dark-theme = false;
             gtk-cursor-theme-name = "Adwaita";

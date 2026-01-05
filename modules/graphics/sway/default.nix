@@ -66,10 +66,15 @@ in
     services.gvfs.enable = true;
     services.tumbler.enable = true;
 
+    services.colord.enable = true; # needed for printing
     xdg.portal = {
       enable = true;
       wlr.enable = true; # xdg-desktop-portal-wlr backend
-      config.common.default = "wlr";
+      config.sway = {
+        default = [ "gtk" ];
+        "org.freedesktop.impl.portal.ScreenCast" = [ "wlr" ];
+        "org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
+      };
       extraPortals = with pkgs; [
         xdg-desktop-portal-wlr
         xdg-desktop-portal-gtk
@@ -99,21 +104,24 @@ in
     };
 
     home-manager.users."${vars.user}" = {
-      #home.sessionVariables = {
-      #  # SDL:
-      #  SDL_VIDEODRIVER = "wayland";
-      #  # QT (needs qt5.qtwayland in systemPackages):
-      #  QT_QPA_PLATFORM = "wayland-egl";
-      #  QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
-      #  # Fix for some Java AWT applications (e.g. Android Studio),
-      #  # use this if they aren't displayed properly:
-      #  _JAVA_AWT_WM_NONREPARENTING = "1";
-      #  # Others
-      #  MOZ_ENABLE_WAYLAND = "1";
-      #  XDG_SESSION_TYPE = "wayland";
-      #  XDG_CURRENT_DESKTOP = "sway";
-      #  ELECTRON_OZONE_PLATFORM_HINT = "wayland";
-      #};
+      home.sessionVariables = {
+        # Cursor size for HiDPI
+        XCURSOR_SIZE = "48";
+        XCURSOR_THEME = "Adwaita";
+        # SDL:
+        SDL_VIDEODRIVER = "wayland";
+        # QT (needs qt5.qtwayland in systemPackages):
+        QT_QPA_PLATFORM = "wayland-egl";
+        QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+        # Fix for some Java AWT applications (e.g. Android Studio),
+        # use this if they aren't displayed properly:
+        _JAVA_AWT_WM_NONREPARENTING = "1";
+        # Others
+        MOZ_ENABLE_WAYLAND = "1";
+        XDG_SESSION_TYPE = "wayland";
+        XDG_CURRENT_DESKTOP = "sway";
+        ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+      };
 
       #xfconf.settings = {
       #};
@@ -134,7 +142,7 @@ in
             };
           };
           seat."*" = {
-            xcursor_theme = "Adwaita 24";
+            xcursor_theme = "Adwaita 48";
           };
           floating = {
             criteria = [
@@ -142,6 +150,23 @@ in
               { class = "file_progress"; }
               { class = "confirm"; }
               { class = "dialog"; }
+              # Thunar dialogs and pop-ups
+              {
+                app_id = "thunar";
+                title = "^(File Operation Progress|Confirm to replace files|Delete files).*";
+              }
+              {
+                app_id = "thunar";
+                window_role = "GtkFileChooserDialog";
+              }
+              {
+                class = "Thunar";
+                window_role = "GtkFileChooserDialog";
+              }
+              {
+                class = "Thunar";
+                title = "^(File Operation Progress|Confirm to replace files|Delete files).*";
+              }
             ];
           };
 
@@ -155,7 +180,8 @@ in
             "${mod}+shift+p" = "exec bemenu-run";
             "${mod}+o" =
               "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
-            "${mod}+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f";
+            "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
+            "Mod4+c" = "exec caffeine-toggle";
 
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";

@@ -173,6 +173,10 @@ in
               proxyWebsockets = true;
             };
           };
+          # librespeed creates its own virtualHost, we just need to enable ACME
+          "speed.alq.ae" = {
+            enableACME = true;
+          };
         }
       ];
     };

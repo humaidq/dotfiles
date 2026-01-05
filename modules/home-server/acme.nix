@@ -53,8 +53,8 @@ in
         authority = {
           claims = {
             minTLSCertDuration = "5m";
-            maxTLSCertDuration = "24h";
-            defaultTLSCertDuration = "24h";
+            maxTLSCertDuration = "1080h";
+            defaultTLSCertDuration = "1080h";
           };
           policy = {
             x509 = {

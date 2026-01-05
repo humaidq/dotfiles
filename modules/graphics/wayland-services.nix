@@ -10,6 +10,32 @@ let
   gfxCfg = config.sifr.graphics;
   swayEnabled = config.sifr.graphics.sway.enable;
   labwcEnabled = config.sifr.graphics.labwc.enable;
+
+  # Caffeine toggle script to prevent sleep
+  caffeineToggle = pkgs.writeShellScriptBin "caffeine-toggle" ''
+    INHIBIT_FILE="/tmp/caffeine-inhibit-$USER.pid"
+
+    if [ -f "$INHIBIT_FILE" ]; then
+      # Caffeine is on, turn it off
+      PID=$(cat "$INHIBIT_FILE")
+      if kill "$PID" 2>/dev/null; then
+        rm "$INHIBIT_FILE"
+        ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Sleep enabled"
+      else
+        rm "$INHIBIT_FILE"
+        ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Already disabled"
+      fi
+    else
+      # Caffeine is off, turn it on
+      ${pkgs.systemd}/bin/systemd-inhibit --what=idle:sleep \
+        --why="Caffeine mode - preventing sleep" \
+        --who="$USER" \
+        --mode=block \
+        sleep infinity &
+      echo $! > "$INHIBIT_FILE"
+      ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Sleep disabled (locking still works)"
+    fi
+  '';
 in
 {
   options.sifr.graphics.wayland-services = {
@@ -22,8 +48,10 @@ in
     environment.systemPackages = with pkgs; [
       swaylock-effects # lockscreen
       swayidle
+      chayang # gradual screen dimming
       libnotify
       dunst # notification daemon
+      caffeineToggle
     ];
 
     systemd.user.services = {
@@ -65,12 +93,12 @@ in
           ];
           timeouts = [
             {
-              timeout = 250;
-              command = ''${pkgs.libnotify}/bin/notify-send -t 30000 --urgency critical -- "Screen will lock soon..."'';
+              timeout = 240;
+              command = ''${pkgs.libnotify}/bin/notify-send -t 60000 --urgency critical -- "Screen will lock in 1 minute..."'';
             }
             {
-              timeout = 300;
-              command = "${pkgs.swaylock}/bin/swaylock -f";
+              timeout = 285;
+              command = "${pkgs.chayang}/bin/chayang -d 15 && ${pkgs.swaylock}/bin/swaylock -f";
             }
             {
               timeout = 600;
