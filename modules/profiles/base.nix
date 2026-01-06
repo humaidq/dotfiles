@@ -56,6 +56,8 @@ in
           dig
           pv
           smartmontools
+          iotop
+          parted
 
           nix-output-monitor
           # Crisis tools https://www.brendangregg.com/blog/2024-03-24/linux-crisis-tools.html
@@ -112,6 +114,7 @@ in
     (lib.mkIf cfg.basePlus {
       environment.systemPackages = with pkgs; [
         btop
+        glances
 
         # File processing
         jpegoptim

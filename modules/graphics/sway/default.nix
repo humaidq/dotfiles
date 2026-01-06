@@ -47,6 +47,7 @@ in
     environment.systemPackages = with pkgs; [
       wev
       bluetui
+      impala
       hyprpicker
     ];
     services.xserver.displayManager.lightdm.enable = false;

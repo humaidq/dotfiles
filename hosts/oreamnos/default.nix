@@ -346,6 +346,14 @@
     "usbcore.autosuspend=-1"
   ];
 
+  # attempt fix Reset adapter issue for ethernet
+  boot.extraModprobeConfig = ''
+    options ixgbe IntMode=0
+  '';
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="net", DRIVER=="ixgbe", RUN+="${pkgs.ethtool}/bin/ethtool -K $name tso off gso off gro off lro off", RUN+="${pkgs.ethtool}/bin/ethtool -G $name rx 4096 tx 4096"
+  '';
+
   programs.msmtp = {
     enable = true;
     setSendmail = true;

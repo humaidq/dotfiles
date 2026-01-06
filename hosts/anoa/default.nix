@@ -69,9 +69,11 @@
     development.enable = true;
     ntp.useNTS = true;
     o11y.client.enable = true;
-    applications.emacs.enable = true;
-    applications.amateur.enable = true;
-    applications.brave.enable = true;
+    applications = {
+      chromium.enable = true;
+      emacs.enable = true;
+      amateur.enable = true;
+    };
     v12n.emulation = {
       enable = true;
       systems = [
@@ -138,6 +140,7 @@
     directories = [
       "/var/log"
       "/var/lib/nixos"
+      "/var/lib/iwd"
       "/var/lib/bluetooth"
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
@@ -173,22 +176,17 @@
           directory = ".ssh";
           mode = "0700";
         }
-        ".mozilla"
         ".tqsl"
-        ".codex"
-        ".config/google-chrome"
+        ".config/chromium"
         ".local/share/direnv"
         ".config/sops"
         ".config/emacs"
         ".config/doom"
         ".config/zsh_history"
         ".config/Code"
-        ".config/github-copilot"
         ".config/hamradio" # qlog
-        ".config/BraveSoftware"
         ".local/share/WSJT-X"
         ".local/share/hamradio/QLog"
-        ".local/share/fish"
         ".local/share/zsh"
         ".local/share/keyrings"
         ".local/share/fonts"
@@ -209,6 +207,8 @@
     "zfs"
     "udf"
   ];
+
+  boot.kernelParams = [ "zfs.zfs_arc_max=8589934592" ];
 
   boot.initrd.systemd = {
     enable = true;

@@ -94,6 +94,18 @@ let
     name = "apache2";
     text = builtins.readFile ./apache2-license.bash;
   };
+
+  # DNS switcher for when Nebula/internal DNS is down
+  dns-switch = pkgs.writeShellApplication {
+    name = "dns-switch";
+    runtimeInputs = with pkgs; [
+      networkmanager
+      systemd
+      gnugrep
+      coreutils
+    ];
+    text = builtins.readFile ./dns-switch.bash;
+  };
 in
 {
   options.sifr.scripts.enable = lib.mkOption {
@@ -107,6 +119,7 @@ in
       fan
       zbench
       persist-orphans
+      dns-switch
     ]
     ++ lib.optionals config.sifr.development.enable [
       lacheck

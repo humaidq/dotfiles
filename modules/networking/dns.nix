@@ -7,7 +7,13 @@ in
 
   config = lib.mkIf cfg.encryptDNS {
     networking = {
-      networkmanager.dns = "systemd-resolved";
+      networkmanager = {
+        dns = "systemd-resolved";
+        connectionConfig = {
+          "ipv4.ignore-auto-dns" = true;
+          "ipv6.ignore-auto-dns" = true;
+        };
+      };
       nameservers = [
         "10.10.0.12"
       ];

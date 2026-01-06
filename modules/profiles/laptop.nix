@@ -77,7 +77,7 @@ in
         desktop = {
           nice = -10;
           class = "other";
-          ioClass = "best-effort";
+          ioClass = "realtime";
           matchers = [
             "sway"
             "ghostty"
@@ -87,13 +87,12 @@ in
         browser = {
           nice = -10;
           class = "other";
-          ioClass = "best-effort";
+          ioClass = "realtime";
           matchers = [
             "chrome"
             "google-chrome"
             "google-chrome-stable"
             "chromium"
-            "brave"
           ];
         };
       };

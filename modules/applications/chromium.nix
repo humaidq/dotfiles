@@ -11,15 +11,15 @@ let
 in
 {
 
-  options.sifr.applications.brave.enable = lib.mkOption {
-    description = "Enables brave configurations";
+  options.sifr.applications.chromium.enable = lib.mkOption {
+    description = "Enables chromium configurations";
     type = lib.types.bool;
     default = false;
   };
-  config = lib.mkIf cfg.brave.enable {
-    environment.systemPackages = [ pkgs.brave ];
+  config = lib.mkIf cfg.chromium.enable {
+    environment.systemPackages = [ pkgs.chromium ];
 
-    environment.etc."brave/policies/managed/vanilla.json".text = builtins.toJSON {
+    environment.etc."chromium/policies/managed/vanilla.json".text = builtins.toJSON {
       DefaultBrowserSettingEnabled = false;
       BookmarkBarEnabled = false;
       BrowserSignin = 0;
@@ -27,20 +27,6 @@ in
       SearchSuggestEnabled = false;
       AlternateErrorPagesEnabled = false;
       PasswordManagerEnabled = false;
-
-      BraveRewardsDisabled = true;
-      BraveWalletDisabled = true;
-      BraveVPNDisabled = true;
-      BraveAIChatEnabled = false;
-      BraveNewsDisabled = true;
-      BraveWebDiscoveryEnabled = false;
-      BraveAdsDisabled = true;
-      TorDisabled = true;
-      BraveTalkDisabled = true;
-      BraveSpeedreaderEnabled = false;
-      BraveP3AEnabled = false;
-      BraveStatsPingEnabled = false;
-      SyncDisabled = true;
 
       DefaultSearchProviderEnabled = true;
       DefaultSearchProviderName = "Google";
@@ -51,7 +37,8 @@ in
       ];
 
       ExtensionInstallForcelist = [
-        "cjpalhdlnbpafiamejdnhcphjbkeiagm" # ublock origin
+        # "cjpalhdlnbpafiamejdnhcphjbkeiagm" # ublock origin
+        "bgnkhhnnamicmpeenaelnjfhikgbkllg" # adguard
         "fnaicdffflnofjppbagibeoednhnbjhg" # floccus
         "nngceckbapebfimnlniiiahkandclblb" # bitwarden
         "ekhagklcjbdpajgpjgmbionohlpdbjgc" # zotero connector
@@ -61,11 +48,17 @@ in
     home-manager.users."${vars.user}" = {
       programs.chromium = {
         enable = true;
-        package = pkgs.brave;
+        package = pkgs.chromium;
         commandLineArgs = [
-          # ungoogled-chromium flags
           "--extension-mime-request-handling=always-prompt-for-install"
           "--no-default-browser-check"
+          "--bookmark-bar-ntp"
+          "--custom-ntp=https://alq.ae"
+          "--close-confirmation"
+          "--disable-search-engine-collection"
+          "--fingerprinting-canvas-image-data-noise"
+          "--fingerprinting-canvas-measuretext-noise"
+          "--fingerprinting-client-rects-noise"
 
           "--ozone-platform=wayland"
         ];

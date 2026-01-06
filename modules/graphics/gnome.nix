@@ -65,7 +65,7 @@ in
         dconf.settings = {
           "org/gnome/shell" = {
             favorite-apps = [
-              "google-chrome.desktop"
+              "chromium-browser.desktop"
               "com.mitchellh.ghostty.desktop"
               "org.gnome.Nautilus.desktop"
             ];
@@ -265,7 +265,6 @@ in
             "text/x-shellscript" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-c" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-lisp" = [ "org.gnome.TextEditor.desktop" ];
-            "text/html" = [ "google-chrome.desktop" ];
             "text/x-python" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-markdown" = [ "org.gnome.TextEditor.desktop" ];
             "text/x-c++src" = [ "org.gnome.TextEditor.desktop" ];
@@ -273,10 +272,18 @@ in
             # org mode opens emacs standalone
             "text/x-org" = [ "emacs.desktop" ];
 
+            ## Web browser
+            "text/html" = [ "chromium-browser.desktop" ];
+            "application/xhtml+xml" = [ "chromium-browser.desktop" ];
+            "x-scheme-handler/http" = [ "chromium-browser.desktop" ];
+            "x-scheme-handler/https" = [ "chromium-browser.desktop" ];
+            "x-scheme-handler/about" = [ "chromium-browser.desktop" ];
+            "x-scheme-handler/unknown" = [ "chromium-browser.desktop" ];
+
             ## PDF
             "application/pdf" = [
               "org.gnome.Papers.desktop"
-              "google-chrome.desktop"
+              "chromium-browser.desktop"
             ];
             "application/x-bzpdf" = [ "org.gnome.Papers.desktop" ];
             "application/x-gzpdf" = [ "org.gnome.Papers.desktop" ];

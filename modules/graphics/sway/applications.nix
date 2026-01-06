@@ -120,12 +120,12 @@ in
           "application/xml" = [ "emacsclient.desktop" ];
 
           # Web browser
-          "text/html" = [ "firefox.desktop" ];
-          "application/xhtml+xml" = [ "firefox.desktop" ];
-          "x-scheme-handler/http" = [ "firefox.desktop" ];
-          "x-scheme-handler/https" = [ "firefox.desktop" ];
-          "x-scheme-handler/about" = [ "firefox.desktop" ];
-          "x-scheme-handler/unknown" = [ "firefox.desktop" ];
+          "text/html" = [ "chromium-browser.desktop" ];
+          "application/xhtml+xml" = [ "chromium-browser.desktop" ];
+          "x-scheme-handler/http" = [ "chromium-browser.desktop" ];
+          "x-scheme-handler/https" = [ "chromium-browser.desktop" ];
+          "x-scheme-handler/about" = [ "chromium-browser.desktop" ];
+          "x-scheme-handler/unknown" = [ "chromium-browser.desktop" ];
         };
       };
     };

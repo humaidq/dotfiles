@@ -65,7 +65,10 @@ in
       };
 
       console.useXkbConfig = true;
-      networking.networkmanager.enable = true;
+      networking.networkmanager = {
+        enable = true;
+        wifi.backend = "iwd";
+      };
       systemd.network.enable = false;
       networking.useNetworkd = false;
 

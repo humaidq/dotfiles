@@ -37,7 +37,7 @@
         type = "zpool";
         rootFsOptions = {
           mountpoint = "none";
-          compression = "zstd";
+          compression = "lz4";
           acltype = "posixacl";
           xattr = "sa";
           atime = "off";
@@ -82,7 +82,7 @@
           };
           "enc/swap" = {
             type = "zfs_volume";
-            size = "24G";
+            size = "12G";
             options = {
               volblocksize = "4096";
               logbias = "throughput";
