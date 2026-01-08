@@ -207,7 +207,7 @@ in
         tree-sitter
 
         # AI
-        claude-code
+        unstable.claude-code
         unstable.opencode
       ];
     })

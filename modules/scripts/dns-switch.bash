@@ -34,6 +34,11 @@ get_connection() {
     nmcli -t -f NAME,DEVICE connection show --active | grep -v '^lo:' | head -n1 | cut -d: -f1
 }
 
+get_device() {
+    # Get the active device name (e.g., wlan0)
+    nmcli -t -f NAME,DEVICE connection show --active | grep -v '^lo:' | head -n1 | cut -d: -f2
+}
+
 show_status() {
     echo "=== Current DNS Configuration ==="
     echo
@@ -51,18 +56,28 @@ set_dns() {
     local dns_servers="$1"
     local description="$2"
 
-    local conn
+    local conn device
     conn=$(get_connection)
+    device=$(get_device)
 
     if [ -z "$conn" ]; then
         echo "Error: No active network connection found"
         exit 1
     fi
 
-    echo "Setting DNS to $description on connection: $conn"
+    if [ -z "$device" ]; then
+        echo "Error: No active network device found"
+        exit 1
+    fi
+
+    echo "Setting DNS to $description on connection: $conn (device: $device)"
     sudo nmcli connection modify "$conn" ipv4.dns "$dns_servers"
     sudo nmcli connection modify "$conn" ipv4.ignore-auto-dns yes
     sudo nmcli connection up "$conn" > /dev/null 2>&1 || true
+
+    # Set DNS domain routing to route all queries through this interface
+    echo "Setting DNS domain routing for $device"
+    sudo resolvectl domain "$device" "~."
 
     echo "✓ DNS switched to $description"
     echo
@@ -71,18 +86,28 @@ set_dns() {
 }
 
 reset_dns() {
-    local conn
+    local conn device
     conn=$(get_connection)
+    device=$(get_device)
 
     if [ -z "$conn" ]; then
         echo "Error: No active network connection found"
         exit 1
     fi
 
-    echo "Resetting to automatic DNS on connection: $conn"
+    if [ -z "$device" ]; then
+        echo "Error: No active network device found"
+        exit 1
+    fi
+
+    echo "Resetting to automatic DNS on connection: $conn (device: $device)"
     sudo nmcli connection modify "$conn" ipv4.dns ""
     sudo nmcli connection modify "$conn" ipv4.ignore-auto-dns no
     sudo nmcli connection up "$conn" > /dev/null 2>&1 || true
+
+    # Revert DNS domain routing to default
+    echo "Reverting DNS domain routing for $device"
+    sudo resolvectl revert "$device"
 
     echo "✓ DNS reset to automatic (systemd-resolved)"
     echo
@@ -91,20 +116,30 @@ reset_dns() {
 }
 
 set_dhcp() {
-    local conn
+    local conn device
     conn=$(get_connection)
+    device=$(get_device)
 
     if [ -z "$conn" ]; then
         echo "Error: No active network connection found"
         exit 1
     fi
 
-    echo "Switching to DHCP-provided DNS on connection: $conn"
+    if [ -z "$device" ]; then
+        echo "Error: No active network device found"
+        exit 1
+    fi
+
+    echo "Switching to DHCP-provided DNS on connection: $conn (device: $device)"
     sudo nmcli connection modify "$conn" ipv4.dns ""
     sudo nmcli connection modify "$conn" ipv6.dns ""
     sudo nmcli connection modify "$conn" ipv4.ignore-auto-dns no
     sudo nmcli connection modify "$conn" ipv6.ignore-auto-dns no
     sudo nmcli connection up "$conn" > /dev/null 2>&1 || true
+
+    # Revert DNS domain routing to default (let DHCP handle it)
+    echo "Reverting DNS domain routing for $device"
+    sudo resolvectl revert "$device"
 
     # Flush cache
     sudo resolvectl flush-caches

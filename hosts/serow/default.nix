@@ -1,7 +1,6 @@
 {
   self,
   inputs,
-  pkgs,
   vars,
   config,
   ...
@@ -40,8 +39,6 @@
   # My configuration specific settings
   sifr = {
     graphics = {
-      gnome.enableRemoteDesktop = true;
-      gnome.enable = true;
       sway.enable = true;
       apps = true;
     };
@@ -56,7 +53,7 @@
     };
     security = {
       yubikey = true;
-      encryptDNS = false;
+      encryptDNS = true;
     };
     hasGadgetSecrets = true;
     development.enable = true;
@@ -185,7 +182,6 @@
   #  ruleFile = config.sops.secrets."usbguard/rules".path;
   #};
 
-  boot.kernelPackages = pkgs.linuxPackages_6_17;
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";
 }

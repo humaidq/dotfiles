@@ -10,6 +10,8 @@ let
   gfxCfg = config.sifr.graphics;
   mod = config.sifr.graphics.sway.modifier;
   screen = pkgs.callPackage ../screenshot.nix { };
+  recorder = pkgs.callPackage ../recorder.nix { };
+  clipboardManager = pkgs.callPackage ../clipboard-manager.nix { };
 in
 {
   imports = [
@@ -95,7 +97,9 @@ in
         kanshi # auto-configure display outputs
         wdisplays
         wl-clipboard
+        cliphist # clipboard history
         sway-contrib.grimshot # screenshots
+        wf-recorder # screen recording
         wtype
         libsForQt5.qt5.qtwayland
 
@@ -183,6 +187,7 @@ in
               "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
             "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
             "Mod4+c" = "exec caffeine-toggle";
+            "Mod4+v" = "exec ${clipboardManager}/bin/clipboard-manager";
 
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
@@ -195,6 +200,7 @@ in
             "XF86Display" = "exec ${lib.getExe pkgs.wdisplays}";
 
             "Print" = "exec ${screen}/bin/screen";
+            "Control+Print" = "exec ${recorder}/bin/recorder";
           };
           modifier = mod;
           floating.modifier = mod;

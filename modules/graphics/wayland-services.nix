@@ -52,6 +52,8 @@ in
       libnotify
       dunst # notification daemon
       caffeineToggle
+      cliphist # clipboard history
+      wl-clipboard
     ];
 
     systemd.user.services = {
@@ -61,6 +63,16 @@ in
         serviceConfig = {
           Type = "simple";
           ExecStart = "${pkgs.ianny}/bin/ianny";
+        };
+        partOf = [ "graphical-session.target" ];
+        wantedBy = [ "graphical-session.target" ];
+      };
+      cliphist = {
+        enable = true;
+        description = "Clipboard history daemon";
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
         };
         partOf = [ "graphical-session.target" ];
         wantedBy = [ "graphical-session.target" ];
