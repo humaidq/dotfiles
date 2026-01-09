@@ -111,7 +111,7 @@ in
     home-manager.users."${vars.user}" = {
       home.sessionVariables = {
         # Cursor size for HiDPI
-        XCURSOR_SIZE = "48";
+        XCURSOR_SIZE = "24";
         XCURSOR_THEME = "Adwaita";
         # SDL:
         SDL_VIDEODRIVER = "wayland";
@@ -147,7 +147,7 @@ in
             };
           };
           seat."*" = {
-            xcursor_theme = "Adwaita 48";
+            xcursor_theme = "Adwaita 24";
           };
           floating = {
             criteria = [

@@ -308,13 +308,13 @@ in
 
               (( days = up_seconds / 86400 ))
 
-              if (( days >= 3 )); then
+              if (( days >= 5 )); then
                 badge="[■■■]"
-                color=$fg[1]        # dark red (8-colour palette "red")
-              elif (( days == 2 )); then
+                color=$fg_bold[red]
+              elif (( days >= 3 )); then
                 badge="[■■ ]"
-                color=$fg[red]      # bright red
-              elif (( days == 1 )); then
+                color=$fg[red]
+              elif (( days >= 1 )); then
                 badge="[■  ]"
                 color=$fg[yellow]
               else

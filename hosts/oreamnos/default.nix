@@ -203,6 +203,11 @@
         user = "immich";
         mode = "0700";
       }
+      {
+        directory = "/var/lib/groundwave";
+        user = "groundwave";
+        mode = "0700";
+      }
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"

@@ -13,6 +13,7 @@
   ./networking
   ./o11y
   ./options.nix
+  ./productivity
   ./profiles
   ./scripts
   ./security

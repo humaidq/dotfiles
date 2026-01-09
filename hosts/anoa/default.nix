@@ -105,6 +105,9 @@
       enable = true;
       sshKeyPath = config.sops.secrets."borg/ssh_key".path;
     };
+    productivity.focusMode = {
+      enable = true;
+    };
   };
 
   topology.self = {
