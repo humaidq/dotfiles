@@ -186,6 +186,7 @@
         ".config/emacs"
         ".config/doom"
         ".config/zsh_history"
+        ".config/opencode"
         ".config/Code"
         ".config/hamradio" # qlog
         ".local/share/WSJT-X"
