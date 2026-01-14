@@ -181,7 +181,7 @@ in
             "${mod}+Shift+Return" = "exec ghostty";
             "${mod}+Shift+c" = "kill";
             "${mod}+Shift+r" = "reload";
-            "${mod}+p" = "exec bemenu-run";
+            "${mod}+p" = "exec ${lib.getExe pkgs.j4-dmenu-desktop} --dmenu='bemenu' --term='ghostty'";
             "${mod}+shift+p" = "exec bemenu-run";
             "${mod}+o" =
               "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";

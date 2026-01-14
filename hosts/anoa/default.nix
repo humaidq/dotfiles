@@ -315,6 +315,22 @@
             ];
           };
         }
+        {
+          profile = {
+            name = "desk-mbzuai-a-7-11";
+            outputs = [
+              {
+                criteria = "Samsung Display Corp. 0x419F Unknown";
+                status = "disable";
+              }
+              {
+                criteria = "Dell Inc. DELL P2725H 25FCXZ3";
+                status = "enable";
+                mode = "1920x1080";
+              }
+            ];
+          };
+        }
       ];
     };
   };

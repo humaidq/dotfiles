@@ -372,6 +372,26 @@ enable_focus() {
 }
 
 disable_focus() {
+    # Check if focus mode has actually expired (prevent manual cheating)
+    if [ -f "$ACTIVE_FLAG" ]; then
+        local expiry_ts
+        expiry_ts=$(cat "$ACTIVE_FLAG" 2>/dev/null || echo "0")
+        local current_ts
+        current_ts=$(date +%s)
+
+        if [[ "$expiry_ts" =~ ^[0-9]+$ ]] && [ "$current_ts" -lt "$expiry_ts" ]; then
+            local remaining=$((expiry_ts - current_ts))
+            local hours=$((remaining / 3600))
+            local minutes=$(((remaining % 3600) / 60))
+            echo "Nice try! Focus mode is still active."
+            echo "Remaining: ${hours}h ${minutes}m"
+            echo ""
+            echo "The whole point is that you CAN'T disable it early."
+            echo "Stay focused!"
+            exit 1
+        fi
+    fi
+
     # Log to both stdout and syslog for debugging
     {
         echo "=== Cleaning up Focus Mode ==="

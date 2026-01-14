@@ -85,6 +85,9 @@ let
     libraries = [ pkgs.python312Packages.requests ];
   } (builtins.readFile ./blocate.py);
 
+  vcf2nokia = pkgs.writers.writePython3Bin "vcf2nokia" {
+  } (builtins.readFile ./vcf2nokia.py);
+
   # License generators
   bsd3 = pkgs.writeShellApplication {
     name = "bsd3";
@@ -127,6 +130,7 @@ in
       blocate
       bsd3
       apache2
+      vcf2nokia
     ];
   };
 }

@@ -41,55 +41,79 @@ in
       description = "List of domains to block during focus mode";
       type = lib.types.listOf lib.types.str;
       default = [
-        "youtube.com"
-        "youtu.be"
-        "m.youtube.com"
-        "www.youtube.com"
-        "reddit.com"
-        "www.reddit.com"
-        "old.reddit.com"
-        "twitter.com"
-        "x.com"
-        "xcancel.com"
-        "mobile.twitter.com"
-        "netflix.com"
-        "www.netflix.com"
-        "news.ycombinator.com"
-        "lobste.rs"
+        "9to5google.com"
+        "9to5mac.com"
+        "alternativeto.net"
         "apple.com"
-        "gulfnews.com"
-        "www.khaleejtimes.com"
-        "www.timeoutdubai.com"
-        "www.bloomberg.com"
         "archive.is"
         "archive.ph"
-        "reuters.com"
-        "thenationalnews.com"
-        "gulfbusiness.com"
         "arstechnica.com"
-        "9to5google.com"
-        "www.theverge.com"
-        "9to5mac.com"
-        "www.macrumors.com"
-        "investing.com"
-        "www.ft.com"
-        "gulftoday.ae"
-        "omgubuntu.co.uk"
-        "www.linux.com"
-        "lwn.net"
-        "www.phoronix.com"
-        "hackaday.com"
-        "www.quora.com"
+        "bsky.app"
         "distrowatch.com"
-        "www.amazon.ae"
-        "www.amazon.com"
-        "www.amazon.co.uk"
-        "www.qrz.com"
-        "www.wsj.com"
+        "dxwatch.com"
         "en.wikipedia.org"
+        "finance.yahoo.com"
         "grokipedia.com"
-        "www.wired.com"
+        "gulfbusiness.com"
+        "gulfnews.com"
+        "gulftoday.ae"
+        "hackaday.com"
+        "hamspots.net"
+        "investing.com"
+        "lifehacker.com"
+        "lobste.rs"
+        "lwn.net"
+        "m.youtube.com"
+        "mas.to"
+        "mashable.com"
+        "masto.ai"
+        "mastodon.social"
+        "medium.com"
+        "mobile.twitter.com"
+        "netflix.com"
+        "news.ycombinator.com"
+        "old.reddit.com"
+        "omgubuntu.co.uk"
+        "reddit.com"
+        "reuters.com"
+        "slashdot.org"
+        "thenationalnews.com"
+        "tiktok.com"
+        "twitter.com"
         "web.archive.org"
+        "www.amazon.ae"
+        "www.amazon.co.uk"
+        "www.amazon.com"
+        "www.androidauthority.com"
+        "www.bloomberg.com"
+        "www.dxengineering.com"
+        "www.eham.net"
+        "www.ft.com"
+        "www.hamradio.com"
+        "www.huffpost.com"
+        "www.khaleejtimes.com"
+        "www.linkedin.com"
+        "www.linux.com"
+        "www.macrumors.com"
+        "www.makeuseof.com"
+        "www.marketwatch.com"
+        "www.netflix.com"
+        "www.phoronix.com"
+        "www.producthunt.com"
+        "www.qrz.com"
+        "www.quora.com"
+        "www.reddit.com"
+        "www.reversebeacon.net"
+        "www.theverge.com"
+        "www.timeoutdubai.com"
+        "www.tradingview.com"
+        "www.wired.com"
+        "www.wsj.com"
+        "www.youtube.com"
+        "x.com"
+        "xcancel.com"
+        "youtube.com"
+
       ];
     };
 
@@ -110,15 +134,49 @@ in
       "d /var/lib/focus-mode 0755 root root -"
     ];
 
-    # Optional: Add a cleanup service that runs on boot to clean stale state
-    systemd.services.focus-mode-boot-cleanup = {
-      description = "Clean up stale focus mode state on boot";
+    # Cleanup service that checks if focus mode has expired and cleans up
+    # This runs on boot and can be triggered on resume
+    systemd.services.focus-mode-cleanup-check = {
+      description = "Check and clean up expired focus mode";
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${pkgs.bash}/bin/bash -c 'rm -f /var/lib/focus-mode/active /var/lib/focus-mode/blocked-ips.txt /var/lib/focus-mode/bandwidth'";
+        ExecStart =
+          let
+            cleanupScript = pkgs.writeShellScript "focus-cleanup-check" ''
+              STATE_DIR="/var/lib/focus-mode"
+              ACTIVE_FLAG="$STATE_DIR/active"
+
+              # If no active flag, nothing to clean
+              if [ ! -f "$ACTIVE_FLAG" ]; then
+                echo "No active focus mode, nothing to clean"
+                exit 0
+              fi
+
+              expiry_ts=$(cat "$ACTIVE_FLAG" 2>/dev/null || echo "0")
+              current_ts=$(date +%s)
+
+              # If expired or invalid, run cleanup
+              if ! [[ "$expiry_ts" =~ ^[0-9]+$ ]] || [ "$current_ts" -ge "$expiry_ts" ]; then
+                echo "Focus mode expired or invalid, running cleanup..."
+                # Run the full cleanup using the focus script
+                ${focusScript}/bin/focus _cleanup
+              else
+                remaining=$((expiry_ts - current_ts))
+                echo "Focus mode still active, $remaining seconds remaining"
+              fi
+            '';
+          in
+          "${cleanupScript}";
         RemainAfterExit = false;
       };
     };
+
+    # Use system-sleep hook to run cleanup check on resume
+    # This is the reliable way to catch resume events
+    powerManagement.resumeCommands = ''
+      # Check if focus mode has expired after resume from suspend
+      ${pkgs.systemd}/bin/systemctl start --no-block focus-mode-cleanup-check.service
+    '';
   };
 }
