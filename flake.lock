@@ -581,11 +581,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1768659159,
-        "narHash": "sha256-y+3cmJSBQgwGhE8buIwah5cXvN9K3msUkH967x8vjE8=",
+        "lastModified": 1768670732,
+        "narHash": "sha256-a/tbXPyxd1Cn9rwUWJBEonLy0qM05BziIrgU+FhvNzk=",
         "owner": "humaidq",
         "repo": "groundwave",
-        "rev": "8e8046ec06cc7a2fb909788bf411e9b22cacdd1d",
+        "rev": "bb9adaea289690218d0ce6d2a021340d67639d2f",
         "type": "github"
       },
       "original": {
