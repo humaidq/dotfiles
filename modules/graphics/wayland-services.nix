@@ -27,7 +27,7 @@ let
       fi
     else
       # Caffeine is off, turn it on
-      ${pkgs.systemd}/bin/systemd-inhibit --what=idle:sleep \
+      ${pkgs.systemd}/bin/systemd-inhibit --what=idle:sleep:handle-lid-switch \
         --why="Caffeine mode - preventing sleep" \
         --who="$USER" \
         --mode=block \
@@ -35,6 +35,20 @@ let
       echo $! > "$INHIBIT_FILE"
       ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Sleep disabled (locking still works)"
     fi
+  '';
+
+  suspendIfAllowed = pkgs.writeShellScriptBin "suspend-if-allowed" ''
+    INHIBIT_FILE="/tmp/caffeine-inhibit-$USER.pid"
+
+    if [ -f "$INHIBIT_FILE" ]; then
+      PID=$(cat "$INHIBIT_FILE")
+      if kill -0 "$PID" 2>/dev/null; then
+        exit 0
+      fi
+      rm -f "$INHIBIT_FILE"
+    fi
+
+    exec ${pkgs.systemd}/bin/systemctl suspend
   '';
 in
 {
@@ -52,6 +66,7 @@ in
       libnotify
       dunst # notification daemon
       caffeineToggle
+      suspendIfAllowed
       cliphist # clipboard history
       wl-clipboard
     ];
@@ -114,7 +129,7 @@ in
             }
             {
               timeout = 600;
-              command = "${pkgs.systemd}/bin/systemctl suspend";
+              command = "${lib.getExe suspendIfAllowed}";
             }
           ];
         };

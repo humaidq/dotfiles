@@ -173,7 +173,7 @@ in
 
     services.getty = {
       greetingLine = lib.mkOverride 50 ''<<< Welcome to ${config.networking.hostName} (\l) >>>'';
-      helpLine = lib.mkOverride 50 ''Help: https://github.com/humaidq/dotfiles'';
+      helpLine = lib.mkOverride 50 "Help: https://github.com/humaidq/dotfiles";
     };
 
     hardware.enableAllFirmware = true;

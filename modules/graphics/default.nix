@@ -67,7 +67,7 @@ in
       console.useXkbConfig = true;
       networking.networkmanager = {
         enable = true;
-        wifi.backend = "iwd";
+        wifi.backend = "wpa_supplicant";
       };
       systemd.network.enable = false;
       networking.useNetworkd = false;

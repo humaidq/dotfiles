@@ -143,8 +143,8 @@
     directories = [
       "/var/log"
       "/var/lib/nixos"
-      "/var/lib/iwd"
       "/var/lib/bluetooth"
+
       "/var/lib/systemd/coredump"
       "/var/lib/sops-nix"
       "/var/lib/chrony"

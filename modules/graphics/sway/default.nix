@@ -49,9 +49,9 @@ in
     environment.systemPackages = with pkgs; [
       wev
       bluetui
-      impala
       hyprpicker
     ];
+
     services.xserver.displayManager.lightdm.enable = false;
     services.gnome.gnome-online-accounts.enable = true;
 
@@ -105,7 +105,7 @@ in
 
         networkmanagerapplet
       ];
-      extraSessionCommands = '''';
+      extraSessionCommands = "";
     };
 
     home-manager.users."${vars.user}" = {
