@@ -62,6 +62,7 @@
     hasGadgetSecrets = true;
     home-server.enable = true;
 
+    v12n.docker.enable = true;
     net = {
       sifr0 = true;
       node-crt = config.sops.secrets."nebula/crt".path;
