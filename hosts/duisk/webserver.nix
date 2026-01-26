@@ -111,7 +111,6 @@ in
 
               proxy_hide_header X-Frame-Options;
               proxy_set_header X-Request-ID $request_id;
-              client_header_timeout 10s;
 
               # general
               limit_req zone=general burst=30 nodelay;
@@ -152,7 +151,6 @@ in
         #      ${error-pages}
 
         #      proxy_set_header X-Request-ID $request_id;
-        #      client_header_timeout 10s;
 
         #      # general
         #      limit_req zone=general burst=30 nodelay;
