@@ -145,7 +145,7 @@ in
             ${error-pages-loc}
           '';
           locations."/" = {
-            proxyPass = "http://127.0.0.1:4232";
+            proxyPass = "http://10.10.0.12:4232";
             extraConfig = ''
               ${error-pages}
 
