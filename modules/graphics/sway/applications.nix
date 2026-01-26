@@ -61,7 +61,7 @@ in
             hf = "#ffffff";
             af = "#ffffff";
             ab = "#130e24";
-            width-factor = 0.3;
+            width-factor = 1;
             fn = if gfxCfg.berkeley.enable then "Berkeley Mono 14" else "Fira Code 14";
           };
         };

@@ -43,6 +43,15 @@
     sopsFile = ../../secrets/anoa.yaml;
   };
 
+  sops.secrets."migadu/mehumaid-password" = {
+    sopsFile = ../../secrets/anoa.yaml;
+    owner = "humaid";
+  };
+  sops.secrets."dav/password" = {
+    sopsFile = ../../secrets/anoa.yaml;
+    owner = "humaid";
+  };
+
   services.upower.ignoreLid = true;
 
   sifr = {
@@ -188,12 +197,16 @@
         ".config/zsh_history"
         ".config/opencode"
         ".config/Code"
+        ".config/aerc"
         ".config/hamradio" # qlog
         ".local/share/WSJT-X"
         ".local/share/hamradio/QLog"
         ".local/share/zsh"
         ".local/share/keyrings"
         ".local/share/fonts"
+        ".local/share/contacts"
+        ".local/share/calendar"
+        ".local/share/khal"
         ".zotero"
         ".vscode"
         ".claude"
@@ -285,6 +298,118 @@
   boot.initrd.kernelModules = [ "udf" ];
 
   home-manager.users."${vars.user}" = {
+    programs = {
+      vdirsyncer.enable = true;
+      khard.enable = true;
+      khal = {
+        enable = true;
+        settings = {
+          default = {
+            default_calendar = "06D0D330-6A15-4B40-8D25-40180AD0340A";
+          };
+        };
+      };
+      aerc.enable = true;
+      aerc.extraConfig = {
+        general.unsafe-accounts-conf = true;
+        compose.address-book-cmd = "khard email --parsable --remove-first-line --search-in-source-files %s";
+        viewer.alternatives = "text/plain,text/html";
+        filters = {
+          "text/plain" = "colorize";
+          "text/html" = "html | colorize";
+        };
+      };
+
+    };
+    services.vdirsyncer = {
+      enable = true;
+      frequency = "hourly";
+    };
+
+    accounts.email.accounts.mehumaid = {
+      aerc.enable = true;
+      primary = true;
+      address = "me@huma.id";
+      realName = "Humaid Alqasimi";
+      userName = "me@huma.id";
+
+      imap.host = "imap.migadu.com";
+      imap.port = 993;
+      imap.tls.enable = true;
+      imap.authentication = "plain";
+
+      smtp.host = "smtp.migadu.com";
+      smtp.port = 465;
+      smtp.tls.enable = true;
+      smtp.authentication = "plain";
+
+      passwordCommand = "${pkgs.coreutils}/bin/cat ${
+        config.sops.secrets."migadu/mehumaid-password".path
+      }";
+
+      aerc.extraAccounts = {
+        "source-cred-cmd" = "${pkgs.coreutils}/bin/cat ${
+          config.sops.secrets."migadu/mehumaid-password".path
+        }";
+        "outgoing-cred-cmd" = "${pkgs.coreutils}/bin/cat ${
+          config.sops.secrets."migadu/mehumaid-password".path
+        }";
+      };
+    };
+
+    accounts.contact = {
+      basePath = ".local/share/contacts";
+
+      accounts.alq = {
+        remote = {
+          type = "carddav";
+          url = "https://dav.alq.ae/.well-known/carddav";
+          userName = "humaid";
+          passwordCommand = [
+            "${pkgs.coreutils}/bin/cat"
+            "${config.sops.secrets."dav/password".path}"
+          ];
+        };
+
+        vdirsyncer.enable = true;
+        vdirsyncer.collections = [ "80ef269f-cdde-4a2f-e5b8-dd5fff1ca608" ];
+
+        khard = {
+          enable = true;
+          type = "discover";
+          glob = "*";
+        };
+      };
+
+    };
+
+    accounts.calendar = {
+      basePath = ".local/share/calendars";
+
+      accounts.alq = {
+        remote = {
+          type = "caldav";
+          url = "https://dav.alq.ae/.well-known/caldav";
+          userName = "humaid";
+          passwordCommand = [
+            "${pkgs.coreutils}/bin/cat"
+            "${config.sops.secrets."dav/password".path}"
+          ];
+        };
+
+        vdirsyncer.enable = true;
+        vdirsyncer.collections = [ "06D0D330-6A15-4B40-8D25-40180AD0340A" ];
+
+        khal = {
+          enable = true;
+          type = "discover";
+          glob = "*";
+          addresses = [ "me@huma.id" ];
+        };
+      };
+
+    };
+
     services.kanshi = {
       inherit (config.sifr.graphics.sway) enable;
 

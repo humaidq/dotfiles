@@ -5,97 +5,237 @@
 }:
 let
   humaid-site = inputs.humaid-site.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  security-headers = ''
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    # Enable CSP for your services.
+    #add_header Content-Security-Policy "script-src 'self'; object-src 'none'; base-uri 'none';" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    # clickjacking protection
+    add_header X-Frame-Options "DENY" always;
+    # disable FLOC
+    add_header Permissions-Policy "interest-cohort=()" always;
+    add_header Referrer-Policy "strict-origin" always;
+    proxy_hide_header X-Powered-By;
+    proxy_hide_header Server;
+    proxy_hide_header X-Runtime;
+    add_header Server "huh?" always;
+    # legacy
+    add_header X-XSS-Protection "1; mode=block" always;
+  '';
+  error-pages = ''
+    proxy_intercept_errors on;
+    error_page 502 = /_error/502.html;
+    error_page 504 = /_error/504.html;
+  '';
+  error-pages-loc = ''
+    location = /_error/429.html {
+      internal;
+      default_type text/html;
+      alias ${./error-pages/429.html};
+    }
+
+    location = /_error/502.html {
+      internal;
+      default_type text/html;
+      alias ${./error-pages/502.html};
+    }
+    location = /_error/504.html {
+      internal;
+      default_type text/html;
+      alias ${./error-pages/504.html};
+    }
+  '';
 in
 {
   config = {
-    # Open ports for Caddy
     networking.firewall.allowedTCPPorts = [
       443
       80
     ];
 
-    # Extra hardening
-    systemd.services.caddy.serviceConfig = {
-      # Upstream already sets NoNewPrivileges, PrivateDevices, ProtectHome
-      ProtectSystem = "strict";
-      PrivateTmp = "yes";
+    security.acme = {
+      acceptTerms = true;
+      defaults.email = "acme@huma.id";
     };
 
-    services.caddy = {
+    services.nginx = {
       enable = true;
-      email = "me.caddy@huma.id";
+      recommendedTlsSettings = true;
+      recommendedProxySettings = true;
+      recommendedOptimisation = true;
+      recommendedBrotliSetting = true;
 
-      # Importable configurations
-      extraConfig = ''
-        (header) {
-           header {
-            # enable HSTS
-            Strict-Transport-Security max-age=31536000;
+      appendHttpConfig = ''
+        ${security-headers}
 
-            # disable clients from sniffing the media type
-            X-Content-Type-Options nosniff
-
-            # clickjacking protection
-            X-Frame-Options DENY
-
-
-            # disable FLOC
-            Permissions-Policy interest-cohort=()
-
-            Referrer-Policy strict-origin
-            X-XSS-Protection 1; mode=block
-            server huh?
-            @staticFiles Cache-Control "public, max-age=31536000"
-          }
-
-          @staticFiles {
-            path *.jpg *.jpeg *.png *.gif *.ico *.css *.js *.svg *.webp
-          }
-
+        map $request_method $limit_post {
+          default "";
+          POST    $binary_remote_addr;
         }
 
-        (general) {
-          encode {
-            zstd
-          }
-          #log {
-          #  #format single_field common_log
-          #  output file /var/log/access.log
-          #}
-        }
-
-        (cors) {
-          @origin header Origin {args.0}
-          header @origin Access-Control-Allow-Origin "{args.0}"
-          header @origin Access-Control-Request-Method GET
-        }
+        # Rate limit
+        limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
+        limit_req_zone $binary_remote_addr zone=expensive:10m rate=1r/s;
+        limit_req_zone $limit_post zone=post:10m rate=2r/s;
+        limit_req_status 429;
+        error_page 429 = /_error/429.html;
       '';
 
-      # Main website configuration
       virtualHosts = {
-        "huma.id".extraConfig = ''
-          root * ${humaid-site}
-          file_server
-          import header
-          import cors huma.id
-          import general
-          handle_errors {
-            rewrite * /{http.error.status_code}.html
-            file_server
-          }
-        '';
-
-        "*.alq.ae" = {
+        "huma.id" = {
+          enableACME = true;
+          forceSSL = true;
           extraConfig = ''
-            root * ${./sifr0-error}
-            file_server
-            import header
-            import general
-            handle_errors {
-              file_server
-              rewrite * /
-            }
+            ${error-pages-loc}
           '';
+          locations."/" = {
+            root = humaid-site;
+            extraConfig = ''
+              error_page 404 /404.html;
+
+              limit_req zone=general burst=50 nodelay;
+            '';
+          };
+        };
+
+        "qsl.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+          locations."/" = {
+            proxyPass = "http://127.0.0.1:8181";
+            extraConfig = ''
+              ${error-pages}
+
+              proxy_hide_header X-Frame-Options;
+              proxy_set_header X-Request-ID $request_id;
+              client_header_timeout 10s;
+
+              # general
+              limit_req zone=general burst=30 nodelay;
+
+              # for any post
+              limit_req zone=post burst=2 nodelay;
+            '';
+          };
+        };
+
+        "f.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+          locations."/" = {
+            root = "/srv/files";
+            extraConfig = ''
+              # be explicit, already off by default
+              autoindex off;
+
+              # prevent scraping/bruteforcing
+              limit_req zone=expensive burst=10;
+            '';
+          };
+        };
+
+        #"g.huma.id" = {
+        #  enableACME = true;
+        #  forceSSL = true;
+        #  extraConfig = ''
+        #    ${error-pages-loc}
+        #  '';
+        #  locations."/" = {
+        #    proxyPass = "http://127.0.0.1:4232";
+        #    extraConfig = ''
+        #      ${error-pages}
+
+        #      proxy_set_header X-Request-ID $request_id;
+        #      client_header_timeout 10s;
+
+        #      # general
+        #      limit_req zone=general burst=30 nodelay;
+
+        #      # for any post
+        #      limit_req zone=post burst=2 nodelay;
+        #    '';
+        #  };
+        #};
+
+        "cache.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+
+          locations = {
+            "/" = {
+              proxyPass = "http://10.10.0.12:5000";
+            };
+            "= /" = {
+              root = "${./cache-page}";
+            };
+            "~* \\.jpeg$" = {
+              root = "${./cache-page}";
+            };
+          };
+        };
+
+        "dns.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+          locations = {
+            "/dns-query" = {
+              proxyPass = "http://127.0.0.1:3333";
+              extraConfig = ''
+                proxy_set_header Host $host;
+                proxy_http_version 1.1;
+              '';
+            };
+            "/" = {
+              return = "301 https://lighthouse.huma.id";
+            };
+          };
+        };
+
+        "sdr.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+
+          locations = {
+            "/" = {
+              proxyPass = "http://sdr.alq.ae";
+
+              extraConfig = ''
+                ${error-pages}
+
+                proxy_set_header Host sdr.alq.ae;
+              '';
+            };
+          };
+        };
+
+        "www.huma.id" = {
+          serverAliases = [
+            "humaidq.ae"
+            "www.humaidq.ae"
+          ];
+          forceSSL = true;
+          enableACME = true;
+          globalRedirect = "huma.id";
+        };
+
+        "www.alq.ae" = {
+          enableACME = true;
+          forceSSL = true;
           serverAliases = [
             "alq.ae"
             "tv.alq.ae"
@@ -110,71 +250,72 @@ in
             "dav.alq.ae"
             "webdav.alq.ae"
             "img.alq.ae"
+            "ai.alq.ae"
+            "unifi.alq.ae"
+            "files.alq.ae"
+            "speed.alq.ae"
           ];
+          locations."/" = {
+            root = ./sifr0-error;
+            tryFiles = "$uri =403";
+            extraConfig = ''
+              error_page 403 /index.html;
+            '';
+          };
         };
-        # For serving files
-        "f.huma.id".extraConfig = ''
-          root * /srv/files
-          file_server
-          import header
-          import cors f.huma.id
-          import general
-        '';
+
+        "sarim.huma.id" = {
+          root = "/srv/sarim";
+          forceSSL = true;
+          enableACME = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+
+          basicAuthFile = pkgs.writeText "sarim-htpasswd" ''
+            sarim:$2a$14$QbtiHp/b2Iaue/5At71guutf4XIeA2qANorbuI7dVTSCFli4KBfJa
+          '';
+
+          locations."~ \\.bundle$" = {
+            extraConfig = "default_type application/octet-stream;";
+          };
+        };
 
         # Fun stuff
-        "bot.huma.id".extraConfig = "respond \"beep boop\"";
-        "car.huma.id".extraConfig = "respond \"vroom vroom\"";
-        "xn--e77hia.huma.id".extraConfig = "respond \"UAE flag day!\"";
-
-        # Sarim Repository
-        "sarim.huma.id".extraConfig = ''
-          root * /srv/sarim
-          file_server
-          basicauth * {
-            sarim $2a$14$QbtiHp/b2Iaue/5At71guutf4XIeA2qANorbuI7dVTSCFli4KBfJa
-          }
-          header *.bundle Content-Type "application/octet-stream"
-        '';
-
-        "cache.huma.id".extraConfig = ''
-          @cachepage {
-            path / *.jpeg
-          }
-          handle @cachepage {
-            root * ${./cache-page}
-            file_server
-          }
-          reverse_proxy 10.10.0.12:5000
-        '';
-
-        "dns.huma.id".extraConfig = ''
-          handle / {
-            redir https://lighthouse.huma.id permanent
-          }
-          handle /dns-query* {
-            reverse_proxy 127.0.0.1:3333
-          }
-        '';
-
-        "qsl.huma.id".extraConfig = ''
-          reverse_proxy 127.0.0.1:8181
-        '';
-
-        "sdr.huma.id".extraConfig = ''
-          reverse_proxy http://sdr.alq.ae {
-            header_up Host sdr.alq.ae
-          }
-        '';
-
-        # Redirect all domains back to huma.id, preserving the path.
-        "www.huma.id" = {
-          serverAliases = [
-            "humaidq.ae"
-            "www.humaidq.ae"
-          ];
-          extraConfig = "redir https://huma.id{uri} permanent";
+        "bot.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          locations."/" = {
+            extraConfig = ''
+              default_type text/plain;
+              return 200 'beep boop';
+            '';
+          };
         };
+        "car.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          locations."/" = {
+            extraConfig = ''
+              default_type text/plain;
+              return 200 'vroom vroom';
+            '';
+          };
+        };
+        "xn--e77hia.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          locations."/" = {
+            extraConfig = ''
+              default_type text/plain;
+              return 200 'UAE flag day!';
+            '';
+          };
+        };
+
       };
+
     };
+
   };
 }

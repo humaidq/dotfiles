@@ -53,7 +53,7 @@ in
       {
         name = "L4150";
         description = "Epson L4150";
-        deviceUri = "lpd://192.168.1.188:515/PASSTHRU";
+        deviceUri = "lpd://192.168.1.115:515/PASSTHRU";
         location = "Office";
         model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
         ppdOptions = {

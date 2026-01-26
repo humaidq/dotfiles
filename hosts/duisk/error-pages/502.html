@@ -1,0 +1,125 @@
+<!doctype html>
+<html class="no-js" lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>502 Bad Gateway</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+  html {
+     overflow-y: scroll;
+     scroll-behavior: smooth;
+     font-family: inter, -apple-system, blinkmacsystemfont, source sans pro, roboto, sans-serif;
+}
+ body {
+     font-size: 1.15em;
+     line-height: 1.4em;
+     background-color: #edeee6;
+     max-width: 55em;
+     margin: 0 auto;
+     display: flex;
+     flex-direction: column;
+}
+ main {
+     background-color: #fefefe;
+     padding: 1.1em 2em;
+     margin-top: 1em;
+     flex: 1;
+}
+/* Added flex:1 to push footer down */
+ a {
+     color: #134dae;
+}
+ .title {
+     font-size: 2.5em;
+     font-weight: 700;
+     text-align: left;
+     margin: 0.6em 0;
+     padding: 0;
+}
+/* Adjusted align/padding for error context */
+ h1, h2, h3 {
+     color: #333;
+     margin: 0.5em 0;
+     line-height: 1;
+}
+ footer {
+     padding: 1rem;
+     text-align: center;
+     background-color: #000;
+     color: #cccccc;
+}
+ footer a {
+     color: #eeeeee;
+}
+ footer p {
+     margin: 0;
+}
+/* Error Specific Utilities */
+ .meta-info {
+     margin-top: 2em;
+     font-size: 0.85em;
+     color: #666;
+     border-top: 1px solid #eee;
+     padding-top: 1em;
+}
+ .refresh-link {
+     display: inline-block;
+     margin-top: 1em;
+     font-weight: bold;
+     cursor: pointer;
+}
+/* Dark Mode */
+ @media (prefers-color-scheme: dark) {
+     body {
+         background-color: #252525;
+         color: #eee;
+    }
+     main {
+         background-color: #303030 !important;
+    }
+     h1, h2, h3 {
+         color: #eee;
+    }
+     a {
+         color: #acbbf9;
+    }
+     .meta-info {
+         color: #999;
+         border-top-color: #444;
+    }
+    /* Nav color override for dark mode if you want it, otherwise keeps blue */
+}
+/* Mobile */
+ @media only screen and (max-width: 48rem) {
+     body {
+         font-size: 1.1em;
+    }
+     main {
+         padding: 1.1em 1em;
+    }
+}
+    </style>
+
+  </head>
+  <body>
+    <main>
+        <h1 class="title">Error 502 <small>Bad Gateway</small></h1>
+
+        <p>Oops, the upstream server not responding.</p>
+
+        <a onclick="window.location.reload()" class="refresh-link" tabindex="0">
+            &#x21bb; Reload this page
+        </a>
+
+        <div class="meta-info">
+            <p>Timestamp: <span id="timestamp"></span></p>
+        </div>
+    </main>
+    <script>
+        document.getElementById('timestamp').textContent = new Date().toISOString();
+    </script>
+
+  </body>
+</html>

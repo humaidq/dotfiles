@@ -82,7 +82,7 @@ let
 
   # Geolocate using beacondb.net and provide maidenhead
   blocate = pkgs.writers.writePython3Bin "blocate" {
-    libraries = [ pkgs.python312Packages.requests ];
+    libraries = [ pkgs.python3Packages.requests ];
   } (builtins.readFile ./blocate.py);
 
   vcf2nokia = pkgs.writers.writePython3Bin "vcf2nokia" {

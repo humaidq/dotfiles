@@ -68,8 +68,8 @@ in
 
     services.gvfs.enable = true;
     services.tumbler.enable = true;
-
     services.colord.enable = true; # needed for printing
+
     xdg.portal = {
       enable = true;
       wlr.enable = true; # xdg-desktop-portal-wlr backend
