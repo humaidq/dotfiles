@@ -83,6 +83,7 @@
       emacs.enable = true;
       amateur.enable = true;
     };
+    v12n.docker.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [
