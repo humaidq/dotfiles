@@ -63,7 +63,7 @@ in
       recommendedTlsSettings = true;
       recommendedProxySettings = true;
       recommendedOptimisation = true;
-      recommendedBrotliSetting = true;
+      recommendedBrotliSettings = true;
 
       appendHttpConfig = ''
         ${security-headers}
