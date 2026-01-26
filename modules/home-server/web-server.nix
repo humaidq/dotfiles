@@ -105,13 +105,13 @@ in
             enableACME = true;
             inherit (tls) forceSSL;
           };
-          #"g.huma.id" = {
-          #  inherit (tls) forceSSL;
-          #  enableACME = true;
-          #  locations."/" = {
-          #    proxyPass = "http://127.0.0.1:4232";
-          #  };
-          #};
+          "g.huma.id" = {
+            inherit (tls) forceSSL;
+            enableACME = true;
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:4232";
+            };
+          };
           "cache.huma.id" = {
             inherit (tls) forceSSL;
             enableACME = true;
