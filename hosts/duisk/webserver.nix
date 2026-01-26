@@ -191,8 +191,14 @@ in
             "/dns-query" = {
               proxyPass = "http://127.0.0.1:3333";
               extraConfig = ''
+                proxy_intercept_errors off;
+                proxy_request_buffering off;
+                proxy_buffering off;
                 proxy_set_header Host $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_http_version 1.1;
+                proxy_set_header Connection "";
               '';
             };
             "/" = {
