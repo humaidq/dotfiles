@@ -464,6 +464,11 @@
         port = "5000"; # nix cache
         proto = "tcp";
       }
+      {
+        host = "duisk";
+        port = "4232"; # groundwave
+        proto = "tcp";
+      }
     ];
   };
 

@@ -16,9 +16,8 @@ let
     add_header Permissions-Policy "interest-cohort=()" always;
     add_header Referrer-Policy "strict-origin" always;
     proxy_hide_header X-Powered-By;
-    proxy_hide_header Server;
+    proxy_hide_header server;
     proxy_hide_header X-Runtime;
-    add_header Server "huh?" always;
     # legacy
     add_header X-XSS-Protection "1; mode=block" always;
   '';
@@ -139,27 +138,25 @@ in
           };
         };
 
-        #"g.huma.id" = {
-        #  enableACME = true;
-        #  forceSSL = true;
-        #  extraConfig = ''
-        #    ${error-pages-loc}
-        #  '';
-        #  locations."/" = {
-        #    proxyPass = "http://127.0.0.1:4232";
-        #    extraConfig = ''
-        #      ${error-pages}
+        "g.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+          locations."/" = {
+            proxyPass = "http://127.0.0.1:4232";
+            extraConfig = ''
+              ${error-pages}
 
-        #      proxy_set_header X-Request-ID $request_id;
+              # general
+              limit_req zone=general burst=30 nodelay;
 
-        #      # general
-        #      limit_req zone=general burst=30 nodelay;
-
-        #      # for any post
-        #      limit_req zone=post burst=2 nodelay;
-        #    '';
-        #  };
-        #};
+              # for any post
+              limit_req zone=post burst=2 nodelay;
+            '';
+          };
+        };
 
         "cache.huma.id" = {
           enableACME = true;
