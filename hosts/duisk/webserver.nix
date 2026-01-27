@@ -171,6 +171,10 @@ in
             };
             "= /" = {
               root = "${./cache-page}";
+              extraConfig = ''
+                index index.html;
+                try_files /index.html =404;
+              '';
             };
             "~* \\.jpeg$" = {
               root = "${./cache-page}";
