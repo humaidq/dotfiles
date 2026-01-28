@@ -43,8 +43,8 @@ in
     ]
     ++ (with pkgs; [
       # :term vterm
-      gnumake
-      cmake
+      #gnumake
+      #cmake
       copilot-language-server
 
       # :tools editorconfig
@@ -52,45 +52,54 @@ in
 
       # :tools docker
       dockerfile-language-server
+      dockfmt
+
+      # :lang haskell
+      # haskell-language-server #disable for now
+
+      # :lang ocaml
+      ocamlformat
+      dune
+      ocaml-top
 
       # :lang cc
-      clang
-      clang-tools
+      #clang
+      #clang-tools
       # :lang data
       libxml2 # xmllint
       # :lang go
-      go
+      #go
       gomodifytags
       gotests
       gore
       # :lang javascript
-      nodejs
+      #nodejs
       # :lang latex requires texlive (defined somewhere else)
       # :lang markdown
       go-grip
-      pandoc
+      #pandoc
       discount
       # :lang python
       black
       pipenv
-      python312Packages.pyflakes
-      python312Packages.isort
-      python312Packages.pytest
-      python312Packages.nose2
+      python3Packages.pyflakes
+      python3Packages.isort
+      python3Packages.pytest
+      python3Packages.nose2
       # :lang org (texlive +...)
       gnuplot
       sqlite # +roam2
       # :lang plantuml
-      plantuml
-      graphviz
-      jdk
+      #plantuml
+      #graphviz
+      #jdk
       # :lang rust
-      rustc
-      cargo
-      rust-analyzer
+      #rustc
+      #cargo
+      #rust-analyzer
       # :lang sh
-      shfmt
-      shellcheck
+      #shfmt
+      #shellcheck
       nodePackages.bash-language-server
       # :lang yaml
       nodePackages.yaml-language-server
@@ -99,7 +108,7 @@ in
       stylelint
       html-tidy
       # :lang zig
-      zig
+      #zig
       zls
 
       binutils
@@ -118,7 +127,7 @@ in
       ))
 
       # lookup
-      python3
+      #python3
 
       # lsp
       nodePackages.typescript-language-server

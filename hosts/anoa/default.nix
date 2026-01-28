@@ -51,6 +51,10 @@
     sopsFile = ../../secrets/anoa.yaml;
     owner = "humaid";
   };
+  sops.secrets."mbzuai-calendar" = {
+    sopsFile = ../../secrets/anoa.yaml;
+    owner = "humaid";
+  };
 
   services.upower.ignoreLid = true;
 
@@ -189,28 +193,30 @@
           directory = ".ssh";
           mode = "0700";
         }
-        ".tqsl"
-        ".config/chromium"
-        ".local/share/direnv"
-        ".config/sops"
-        ".config/emacs"
-        ".config/doom"
-        ".config/zsh_history"
-        ".config/opencode"
+        ".claude"
         ".config/Code"
         ".config/aerc"
+        ".config/chromium"
+        ".config/doom"
+        ".config/emacs"
         ".config/hamradio" # qlog
+        ".config/opencode"
+        ".config/sops"
+        ".config/zsh_history"
         ".local/share/WSJT-X"
-        ".local/share/hamradio/QLog"
-        ".local/share/zsh"
-        ".local/share/keyrings"
-        ".local/share/fonts"
+        ".local/share/calendars"
         ".local/share/contacts"
-        ".local/share/calendar"
+        ".local/share/direnv"
+        ".local/share/fonts"
+        ".local/share/hamradio/QLog"
+        ".local/share/keyrings"
         ".local/share/khal"
-        ".zotero"
+        ".local/share/vdirsyncer"
+        ".local/share/zoxide"
+        ".local/share/zsh"
+        ".tqsl"
         ".vscode"
-        ".claude"
+        ".zotero"
       ];
     };
   };
@@ -387,28 +393,44 @@
     accounts.calendar = {
       basePath = ".local/share/calendars";
 
-      accounts.alq = {
-        remote = {
-          type = "caldav";
-          url = "https://dav.alq.ae/.well-known/caldav";
-          userName = "humaid";
-          passwordCommand = [
-            "${pkgs.coreutils}/bin/cat"
-            "${config.sops.secrets."dav/password".path}"
-          ];
+      accounts = {
+        alq = {
+          remote = {
+            type = "caldav";
+            url = "https://dav.alq.ae/.well-known/caldav";
+            userName = "humaid";
+            passwordCommand = [
+              "${pkgs.coreutils}/bin/cat"
+              "${config.sops.secrets."dav/password".path}"
+            ];
+          };
+
+          vdirsyncer.enable = true;
+          vdirsyncer.collections = [ "06D0D330-6A15-4B40-8D25-40180AD0340A" ];
+
+          khal = {
+            enable = true;
+            type = "discover";
+            glob = "*";
+            addresses = [ "me@huma.id" ];
+          };
         };
+        uni = {
+          remote.type = "http";
+          vdirsyncer = {
+            enable = true;
+            urlCommand = [
+              "cat"
+              "${config.sops.secrets.mbzuai-calendar.path}"
+            ];
+          };
 
-        vdirsyncer.enable = true;
-        vdirsyncer.collections = [ "06D0D330-6A15-4B40-8D25-40180AD0340A" ];
-
-        khal = {
-          enable = true;
-          type = "discover";
-          glob = "*";
-          addresses = [ "me@huma.id" ];
+          khal = {
+            enable = true;
+            readOnly = true;
+          };
         };
       };
-
     };
 
     services.kanshi = {

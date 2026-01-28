@@ -9,6 +9,10 @@ maps.yango.com
 boodle.ai
 box.boodle.ai
 
+fontawesome.com
+www.fontawesome.com
+*.fontawesome.com
+
 # Sonarr
 thexem.info
 

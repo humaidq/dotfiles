@@ -54,7 +54,7 @@ in
         libreoffice
         # rpi-imager # broken
         prusa-slicer
-        gnome-firmware
+        #gnome-firmware
         bitwarden-desktop
         ghostty
         calibre
@@ -64,16 +64,16 @@ in
         showtime # replacing totem
 
         decibels # audio, soon in gnome 48
-        gnome-calendar
-        gnome-contacts
-        errands
-        zed-editor
+        #gnome-calendar
+        #gnome-contacts
+        #errands
+        #zed-editor
 
         # GNOME circle apps
         #curtail
-        eyedropper
+        #eyedropper
         gaphor
-        fragments
+        #fragments
         localsend
 
         alsa-utils
@@ -87,7 +87,7 @@ in
         #gnome-obfuscate
         #paper-clip
         #solanum
-        textpieces
+        #textpieces
       ];
       services.fwupd.enable = true;
       #services.power-profiles-daemon.enable = true;

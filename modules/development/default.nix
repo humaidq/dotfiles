@@ -169,6 +169,33 @@ in
 
       # Only include general helpful development tools
       environment.systemPackages = with pkgs; [
+        # Basic compilers
+        # (so no need devshell for fun projects)
+        gcc
+        clang
+        clang-tools
+        go
+        nodejs
+        rustc
+        cargo
+        rust-analyzer
+        python3
+        uv
+        libllvm
+        polyml
+        zig
+        swi-prolog
+        #ghc
+        #haskellPackages.hoogle
+        ocaml
+
+        gnumake
+        cmake
+
+        plantuml
+        graphviz
+        jdk
+        pandoc
         bat
         bvi
         dmtx-utils
@@ -176,11 +203,14 @@ in
         gdb
         gnupg
         imagemagick
-        #licensor #not maintained
+        reuse
         minify
         scc
         sqlite
         valgrind
+        rlwrap
+        shfmt
+        shellcheck
 
         # git
         gh

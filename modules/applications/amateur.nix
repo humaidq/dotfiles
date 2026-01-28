@@ -28,10 +28,10 @@ in
       unstable.qlog
       tqsl
       # sdr
-      gnuradio
+      #gnuradio
       libusb1
       rtl-sdr
-      gqrx
+      #gqrx
       sdrpp
       # ax.25
       ax25-tools

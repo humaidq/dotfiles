@@ -26,7 +26,7 @@ in
           newPostgres = pkgs.postgresql_17.withPackages (pp: [
             pp.vectorchord
             pp.pgvector
-        ]);
+          ]);
           cfg = config.services.postgresql;
         in
         pkgs.writeScriptBin "upgrade-pg-cluster" ''
