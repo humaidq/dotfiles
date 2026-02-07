@@ -9,6 +9,14 @@
 *.click
 *.kp
 
+# Phishing
+*.9000-firebase-works-1769379175747.cluster-hkcruqmgzbd2aqcdnktmz6k7ba.cloudworkstations.dev
+*.fly-uae.com
+
+# Other junk sites
+*.dubai.com
+*.tips.gg
+
 # Other search engines (no safe search)
 # *.ask.com
 # *.brave.com
@@ -30,19 +38,19 @@
 # Local annoyances
 customerpulse.gov.ae
 # Gov web chat
-nicecxone.com
-novelvox.net
-tafseelmoe.novelvox.net
-arabot.io
+*. nicecxone.com
+*. novelvox.net
+*. tafseelmoe.novelvox.net
+*. arabot.io
 # Gov tts accessibility services
-readspeaker.com
-mindrocketsapis.com
+*.readspeaker.com
+*.mindrocketsapis.com
 # Gov AI Chatbots
 chatbot.tax.gov.ae
 chat.dubai.ae
 ask.u.ae
 # Others
-gamification.etisalat.ae
+*.gamification.etisalat.ae
 # exp.ssf.ae #fazaa experience?
 
 # Chat

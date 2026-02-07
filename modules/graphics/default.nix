@@ -69,6 +69,9 @@ in
         enable = true;
         wifi.backend = "wpa_supplicant";
       };
+      environment.systemPackages = with pkgs; [
+        networkmanager-openconnect
+      ];
       systemd.network.enable = false;
       networking.useNetworkd = false;
 

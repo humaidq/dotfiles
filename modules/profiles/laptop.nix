@@ -32,6 +32,7 @@ in
     users.users.${vars.user}.extraGroups = [
       "bluetooth"
       "lp"
+      "scanner"
     ];
     # Allow setting cpupower
     environment.systemPackages = [
@@ -44,12 +45,38 @@ in
       enable = true;
       drivers = with pkgs; [
         gutenprint
+        brlaser
         # Epson L4150
         epson-escpr
       ];
     };
-    hardware.printers.ensureDefaultPrinter = "L4150";
+
+    hardware.sane = {
+      enable = true;
+      #extraBackends = [ pkgs.sane-airscan ];
+      disabledDefaultBackends = [ "escl" ];
+      brscan5 = {
+        enable = true;
+        netDevices.Brother = {
+          name = "Brother";
+          model = "MFC-L8390CDW";
+          ip = "192.168.1.244";
+        };
+      };
+    };
+    hardware.printers.ensureDefaultPrinter = "Brother";
     hardware.printers.ensurePrinters = [
+      {
+        name = "Brother";
+        description = "Brother MFC-L8390CDW";
+        deviceUri = "ipp://192.168.1.244/ipp/print";
+        location = "Office";
+        # driverless for now
+        model = "everywhere";
+        ppdOptions = {
+          PageSize = "A4";
+        };
+      }
       {
         name = "L4150";
         description = "Epson L4150";

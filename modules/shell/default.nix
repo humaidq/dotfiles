@@ -39,6 +39,7 @@ let
     pf = "pfetch";
     pgr = "ps aux | grep";
     ex = "extract";
+    uf = "ufetch";
 
     # Git
     g = "git";

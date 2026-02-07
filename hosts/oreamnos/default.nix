@@ -192,6 +192,7 @@
   #};
 
   # impermanence setup
+  environment.persistence.enable = true;
   environment.persistence."/persist" = {
     hideMounts = true;
     directories = [
