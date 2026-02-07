@@ -28,6 +28,10 @@ in
               source_labels = ["__journal__hostname"]
               target_label = "nodename"
             }
+            rule {
+              source_labels = ["__journal__systemd_unit"]
+              target_label = "source"
+            }
           }
           loki.source.journal "journal" {
             path = "/var/log/journal"
