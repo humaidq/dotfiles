@@ -133,7 +133,12 @@ in
     security.pki.certificateFiles = [ ./alqasimi-ca.pem ];
 
     nix = {
+
       settings = rec {
+experimental-features = [
+  "pipe-operators"
+  "auto-allocate-uids"
+  ];
         allowed-users = [ cfg.username ];
         trusted-users = [
           "root"

@@ -120,9 +120,9 @@ in
             EDITOR = "nvim";
           };
           shellAliases = shellAliases // {
-            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
-            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --show-trace |& nom --json";
-            nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --log-format internal-json -v --option substitute false --show-trace |& nom --json";
+            nrb = "sudo nixos-rebuild switch --flake github:humaidq/dotfiles#$(hostname) --refresh --accept-flake-config --log-format internal-json -v --show-trace |& nom --json";
+            nrbl = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --accept-flake-config --log-format internal-json -v --show-trace |& nom --json";
+            nrblo = "sudo nixos-rebuild switch --flake .#$(hostname) --refresh --accept-flake-config --log-format internal-json -v --option substitute false --show-trace |& nom --json";
           };
           initContent = ''
             # Load colours and set prompt

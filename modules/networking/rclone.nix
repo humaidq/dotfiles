@@ -75,7 +75,7 @@ in
           Service = {
             Type = "notify";
             ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/${cfg.mountPath}";
-            ExecStart = "${pkgs.rclone}/bin/rclone mount ${cfg.remote}:${cfg.remotePath} %h/${cfg.mountPath} --vfs-cache-mode writes --vfs-read-ahead 128M";
+            ExecStart = "${pkgs.rclone}/bin/rclone mount ${cfg.remote}:${cfg.remotePath} %h/${cfg.mountPath} --vfs-cache-mode full --vfs-read-ahead 128M";
             ExecStop = "${pkgs.fuse}/bin/fusermount -u %h/${cfg.mountPath}";
             Restart = "on-failure";
             RestartSec = "10s";
