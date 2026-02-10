@@ -137,6 +137,9 @@ in
       settings = rec {
         experimental-features = [
           "pipe-operators"
+          "auto-allocate-uids"
+        ];
+        extra-experimental-features = [
         ];
         allowed-users = [ cfg.username ];
         trusted-users = [

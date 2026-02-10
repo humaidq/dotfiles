@@ -10,6 +10,7 @@
       "flakes"
       "nix-command"
       "pipe-operators"
+      "auto-allocate-uids"
     ];
     extra-substituters = [ "https://cache.huma.id" ];
     extra-trusted-public-keys = [ "cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=" ];
