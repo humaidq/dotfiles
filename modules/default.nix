@@ -135,10 +135,9 @@ in
     nix = {
 
       settings = rec {
-experimental-features = [
-  "pipe-operators"
-  "auto-allocate-uids"
-  ];
+        experimental-features = [
+          "pipe-operators"
+        ];
         allowed-users = [ cfg.username ];
         trusted-users = [
           "root"
