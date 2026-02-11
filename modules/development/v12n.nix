@@ -34,6 +34,7 @@ in
     (mkIf cfg.emulation.enable {
       environment.systemPackages = with pkgs; [
         qemu_kvm
+        qemu_full
         OVMF
         edk2
       ];
