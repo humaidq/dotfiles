@@ -59,30 +59,5 @@ in
       owner = "radicale";
       mode = "600";
     };
-
-    services.samba = {
-      enable = true;
-      securityType = "user";
-      openFirewall = true;
-      settings = {
-        global = {
-          "workgroup" = "WORKGROUP";
-          "server string" = "smbnix";
-          "netbios name" = "smbnix";
-          "security" = "user";
-        };
-        "private" = {
-          "path" = "/mnt/Shares/Private";
-          "browseable" = "yes";
-          "read only" = "no";
-          "guest ok" = "no";
-          "create mask" = "0644";
-          "directory mask" = "0755";
-          "force user" = "username";
-          "force group" = "groupname";
-        };
-      };
-    };
-
   };
 }

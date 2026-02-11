@@ -35,6 +35,7 @@ in
       environment.systemPackages = with pkgs; [
         qemu_kvm
         OVMF
+        edk2
       ];
     })
     (mkIf (cfg.emulation.systems != [ ]) { boot.binfmt.emulatedSystems = cfg.emulation.systems; })
