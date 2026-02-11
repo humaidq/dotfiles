@@ -1,6 +1,9 @@
 alak.bar
 *.alak.bar
 
+gerrit.googlesource.com
+*.googlesource.com
+
 proxy.mob.maps.yango.com
 eu.asas.yango.com
 maps.yango.com
