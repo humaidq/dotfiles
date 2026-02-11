@@ -37,6 +37,8 @@ in
         qemu_full
         OVMF
         edk2
+        # guestfish files out of qcow2
+        libguestfs
       ];
     })
     (mkIf (cfg.emulation.systems != [ ]) { boot.binfmt.emulatedSystems = cfg.emulation.systems; })
