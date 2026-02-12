@@ -72,7 +72,6 @@ in
         (mkRP "pdf" "8084")
         (mkRP "dav" "5232")
         (mkRP "webdav" "8477")
-        (mkRP "gw" "4232")
 
         {
           "alq.ae" = {
@@ -100,10 +99,6 @@ in
               proxyPass = "http://127.0.0.1:2343";
               proxyWebsockets = true;
             };
-          };
-          "wiki.alq.ae" = {
-            enableACME = true;
-            inherit (tls) forceSSL;
           };
           "g.huma.id" = {
             inherit (tls) forceSSL;

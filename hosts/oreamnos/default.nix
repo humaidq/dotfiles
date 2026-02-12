@@ -212,7 +212,6 @@
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"
-      "/var/lib/dokuwiki"
       {
         directory = "/var/lib/radicale";
         user = "radicale";

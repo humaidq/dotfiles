@@ -245,7 +245,6 @@ in
             "alq.ae"
             "tv.alq.ae"
             "catalogue.alq.ae"
-            "wiki.alq.ae"
             "vault.alq.ae"
             "git.alq.ae"
             "grafana.alq.ae"

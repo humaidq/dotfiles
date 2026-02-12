@@ -20,7 +20,6 @@ in
     ./unifi.nix
     ./vaultwarden.nix
     ./web-server.nix
-    ./wiki.nix
   ];
 
   options.sifr.home-server = {
