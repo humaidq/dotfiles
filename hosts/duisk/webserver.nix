@@ -143,6 +143,7 @@ in
           forceSSL = true;
           extraConfig = ''
             ${error-pages-loc}
+            client_max_body_size 50000M;
           '';
           locations."/" = {
             proxyPass = "http://10.10.0.12:4232";

@@ -71,7 +71,6 @@ in
         (mkRP "tv" "8096")
         (mkRP "pdf" "8084")
         (mkRP "dav" "5232")
-        (mkRP "webdav" "8477")
 
         {
           "alq.ae" = {
@@ -106,6 +105,10 @@ in
             locations."/" = {
               proxyPass = "http://127.0.0.1:4232";
             };
+            extraConfig = ''
+              # allow large file uploads for lfs
+              client_max_body_size 50000M;
+            '';
           };
           "cache.huma.id" = {
             inherit (tls) forceSSL;
@@ -119,6 +122,18 @@ in
             locations."/" = {
               proxyPass = "http://192.168.1.164:8073";
             };
+          };
+          "webdav.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:8477";
+            };
+            extraConfig = ''
+              # allow large file uploads for lfs
+              client_max_body_size 50000M;
+            '';
           };
           "git.alq.ae" = {
             enableACME = true;
