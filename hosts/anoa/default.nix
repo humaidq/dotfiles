@@ -203,6 +203,7 @@
         ".config/opencode"
         ".config/sops"
         ".config/zsh_history"
+        ".cache/rclone"
         ".local/share/WSJT-X"
         ".local/share/calendars"
         ".local/share/contacts"
