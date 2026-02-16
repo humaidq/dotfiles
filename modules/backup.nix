@@ -32,6 +32,7 @@ in
       type = with types; listOf str;
       default = [
         "'**/inbox/web'"
+        "'**/docs/files'"
         "'**/.cache'"
         "'**/repos/**/result'"
         "'**/repos/**/result/'"
