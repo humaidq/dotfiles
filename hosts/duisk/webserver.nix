@@ -51,6 +51,30 @@ let
     # for any post
     limit_req zone=post burst=2 nodelay;
   '';
+  qrzProxyHeaders = ''
+    ${proxyHeaders}
+
+    proxy_hide_header Content-Security-Policy;
+    add_header Content-Security-Policy "frame-ancestors https://qrz.com https://*.qrz.com" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Permissions-Policy "interest-cohort=()" always;
+    add_header Referrer-Policy "strict-origin" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+  '';
+  gCsp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+  gProxyHeaders = ''
+    ${proxyHeaders}
+
+    proxy_hide_header Content-Security-Policy;
+    add_header Content-Security-Policy "${gCsp}" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Permissions-Policy "interest-cohort=()" always;
+    add_header Referrer-Policy "strict-origin" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+  '';
   groundwaveRootLocations = {
     "= /pow" = {
       proxyPass = "${upstream}/pow";
@@ -185,7 +209,7 @@ in
             };
             "= /qrz" = {
               proxyPass = "${upstream}/qrz";
-              extraConfig = proxyHeaders;
+              extraConfig = qrzProxyHeaders;
             };
             "= /oqrs" = {
               proxyPass = "${upstream}/oqrs";
@@ -197,7 +221,7 @@ in
             };
             "^~ /qrz/" = {
               proxyPass = upstream;
-              extraConfig = proxyHeaders;
+              extraConfig = qrzProxyHeaders;
             };
             "/" = {
               proxyPass = upstream;
@@ -236,7 +260,7 @@ in
           '';
           locations."/" = {
             proxyPass = upstream;
-            extraConfig = proxyHeaders;
+            extraConfig = gProxyHeaders;
           };
         };
 
