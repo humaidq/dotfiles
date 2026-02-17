@@ -9,6 +9,17 @@ let
   tls = {
     forceSSL = true;
   };
+  gCsp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+  gHeaders = ''
+    proxy_hide_header Content-Security-Policy;
+    add_header Content-Security-Policy "${gCsp}" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Permissions-Policy "interest-cohort=()" always;
+    add_header Referrer-Policy "strict-origin" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+  '';
   domain = "alq.ae";
   mkRP =
     sub: port:
@@ -106,6 +117,8 @@ in
               proxyPass = "http://127.0.0.1:4232";
             };
             extraConfig = ''
+              ${gHeaders}
+
               # allow large file uploads for lfs
               client_max_body_size 50000M;
             '';

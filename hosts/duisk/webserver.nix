@@ -65,6 +65,16 @@ let
     add_header Referrer-Policy "strict-origin" always;
     add_header X-XSS-Protection "1; mode=block" always;
   '';
+  humaidCsp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+  humaidHeaders = ''
+    add_header Content-Security-Policy "${humaidCsp}" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Permissions-Policy "interest-cohort=()" always;
+    add_header Referrer-Policy "strict-origin" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+  '';
   gCsp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
   gProxyHeaders = ''
     ${proxyHeaders}
@@ -136,6 +146,13 @@ let
       extraConfig = proxyHeaders;
     };
   };
+  fGroundwaveRootLocations = builtins.mapAttrs (
+    _: location:
+    location
+    // {
+      extraConfig = gProxyHeaders;
+    }
+  ) groundwaveRootLocations;
 in
 {
   config = {
@@ -188,6 +205,7 @@ in
           forceSSL = true;
           extraConfig = ''
             ${error-pages-loc}
+            ${humaidHeaders}
           '';
           locations."/" = {
             root = humaid-site;
@@ -239,15 +257,15 @@ in
           extraConfig = ''
             ${error-pages-loc}
           '';
-          locations = groundwaveRootLocations // {
+          locations = fGroundwaveRootLocations // {
             "^~ /f/" = {
               proxyPass = upstream;
-              extraConfig = proxyHeaders;
+              extraConfig = gProxyHeaders;
             };
             "/" = {
               proxyPass = upstream;
               extraConfig = ''
-                ${proxyHeaders}
+                ${gProxyHeaders}
                 rewrite ^/(.*)$ /f/$1 break;
               '';
             };
