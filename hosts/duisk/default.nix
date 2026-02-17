@@ -3,8 +3,6 @@
   vars,
   lib,
   config,
-  inputs,
-  pkgs,
   ...
 }:
 {
@@ -55,27 +53,6 @@
       enable = false;
       exitNode = true;
       ssh = true;
-    };
-  };
-
-  systemd.services.humaid-qsl = {
-    description = "humaid-qsl";
-
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "network-online.target" ];
-    after = [
-      "network-online.target"
-    ];
-
-    serviceConfig = {
-      Restart = "always";
-      ExecStart = "${
-        inputs.humaid-qsl.packages.${pkgs.system}.humaid-qsl
-      }/bin/humaid-qsl run --port 8181 --adif /srv/all.adif";
-      DynamicUser = true;
-      RuntimeDirectory = "humaid-qsl";
-      StateDirectory = "humaid-qsl";
-      WorkingDirectory = "/var/lib/humaid-qsl";
     };
   };
 

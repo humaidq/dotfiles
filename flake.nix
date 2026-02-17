@@ -23,10 +23,6 @@
       url = "github:humaidq/huma.id";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    humaid-qsl = {
-      url = "github:humaidq/humaid-qsl";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     groundwave = {
       url = "github:humaidq/groundwave";
       inputs.nixpkgs.follows = "nixpkgs";

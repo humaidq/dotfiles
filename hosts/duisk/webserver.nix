@@ -27,12 +27,6 @@ let
     error_page 504 = /_error/504.html;
   '';
   error-pages-loc = ''
-    location = /_error/429.html {
-      internal;
-      default_type text/html;
-      alias ${./error-pages/429.html};
-    }
-
     location = /_error/502.html {
       internal;
       default_type text/html;
@@ -44,6 +38,77 @@ let
       alias ${./error-pages/504.html};
     }
   '';
+  upstream = "http://10.10.0.12:4232";
+  proxyHeaders = ''
+    ${error-pages}
+
+    proxy_hide_header X-Frame-Options;
+    proxy_set_header X-Request-ID $request_id;
+
+    # general
+    limit_req zone=general burst=30 nodelay;
+
+    # for any post
+    limit_req zone=post burst=2 nodelay;
+  '';
+  groundwaveRootLocations = {
+    "= /pow" = {
+      proxyPass = "${upstream}/pow";
+      extraConfig = proxyHeaders;
+    };
+    "= /pow/verify" = {
+      proxyPass = "${upstream}/pow/verify";
+      extraConfig = proxyHeaders;
+    };
+    "= /connectivity" = {
+      proxyPass = "${upstream}/connectivity";
+      extraConfig = proxyHeaders;
+    };
+    "= /main.css" = {
+      proxyPass = "${upstream}/main.css";
+      extraConfig = proxyHeaders;
+    };
+    "= /normalize-8.0.1.min.css" = {
+      proxyPass = "${upstream}/normalize-8.0.1.min.css";
+      extraConfig = proxyHeaders;
+    };
+    "= /manifest.json" = {
+      proxyPass = "${upstream}/manifest.json";
+      extraConfig = proxyHeaders;
+    };
+    "= /icon.svg" = {
+      proxyPass = "${upstream}/icon.svg";
+      extraConfig = proxyHeaders;
+    };
+    "= /icon-64.png" = {
+      proxyPass = "${upstream}/icon-64.png";
+      extraConfig = proxyHeaders;
+    };
+    "= /icon-128.png" = {
+      proxyPass = "${upstream}/icon-128.png";
+      extraConfig = proxyHeaders;
+    };
+    "= /icon-512.png" = {
+      proxyPass = "${upstream}/icon-512.png";
+      extraConfig = proxyHeaders;
+    };
+    "= /pow.js" = {
+      proxyPass = "${upstream}/pow.js";
+      extraConfig = proxyHeaders;
+    };
+    "= /pow-worker.js" = {
+      proxyPass = "${upstream}/pow-worker.js";
+      extraConfig = proxyHeaders;
+    };
+    "= /sw.js" = {
+      proxyPass = "${upstream}/sw.js";
+      extraConfig = proxyHeaders;
+    };
+    "= /robots.txt" = {
+      proxyPass = "${upstream}/robots.txt";
+      extraConfig = proxyHeaders;
+    };
+  };
 in
 {
   config = {
@@ -67,17 +132,27 @@ in
       appendHttpConfig = ''
         ${security-headers}
 
+        map $server_name $limit_conn_key {
+          default $binary_remote_addr;
+          cache.huma.id "";
+          dns.huma.id "";
+        }
+
         map $request_method $limit_post {
           default "";
           POST    $binary_remote_addr;
         }
+
+        # Connection limit
+        limit_conn_zone $limit_conn_key zone=all_hosts:10m;
+        limit_conn all_hosts 15;
+        limit_conn_status 429;
 
         # Rate limit
         limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
         limit_req_zone $binary_remote_addr zone=expensive:10m rate=1r/s;
         limit_req_zone $limit_post zone=post:10m rate=2r/s;
         limit_req_status 429;
-        error_page 429 = /_error/429.html;
       '';
 
       virtualHosts = {
@@ -103,20 +178,31 @@ in
           extraConfig = ''
             ${error-pages-loc}
           '';
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:8181";
-            extraConfig = ''
-              ${error-pages}
-
-              proxy_hide_header X-Frame-Options;
-              proxy_set_header X-Request-ID $request_id;
-
-              # general
-              limit_req zone=general burst=30 nodelay;
-
-              # for any post
-              limit_req zone=post burst=2 nodelay;
-            '';
+          locations = groundwaveRootLocations // {
+            "= /" = {
+              proxyPass = "${upstream}/oqrs";
+              extraConfig = proxyHeaders;
+            };
+            "= /qrz" = {
+              proxyPass = "${upstream}/qrz";
+              extraConfig = proxyHeaders;
+            };
+            "= /oqrs" = {
+              proxyPass = "${upstream}/oqrs";
+              extraConfig = proxyHeaders;
+            };
+            "^~ /oqrs/" = {
+              proxyPass = upstream;
+              extraConfig = proxyHeaders;
+            };
+            "^~ /qrz/" = {
+              proxyPass = upstream;
+              extraConfig = proxyHeaders;
+            };
+            "/" = {
+              proxyPass = upstream;
+              extraConfig = proxyHeaders;
+            };
           };
         };
 
@@ -126,15 +212,18 @@ in
           extraConfig = ''
             ${error-pages-loc}
           '';
-          locations."/" = {
-            root = "/srv/files";
-            extraConfig = ''
-              # be explicit, already off by default
-              autoindex off;
-
-              # prevent scraping/bruteforcing
-              limit_req zone=expensive burst=10;
-            '';
+          locations = groundwaveRootLocations // {
+            "^~ /f/" = {
+              proxyPass = upstream;
+              extraConfig = proxyHeaders;
+            };
+            "/" = {
+              proxyPass = upstream;
+              extraConfig = ''
+                ${proxyHeaders}
+                rewrite ^/(.*)$ /f/$1 break;
+              '';
+            };
           };
         };
 
@@ -146,16 +235,8 @@ in
             client_max_body_size 50000M;
           '';
           locations."/" = {
-            proxyPass = "http://10.10.0.12:4232";
-            extraConfig = ''
-              ${error-pages}
-
-              # general
-              limit_req zone=general burst=30 nodelay;
-
-              # for any post
-              limit_req zone=post burst=2 nodelay;
-            '';
+            proxyPass = upstream;
+            extraConfig = proxyHeaders;
           };
         };
 
