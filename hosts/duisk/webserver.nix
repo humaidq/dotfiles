@@ -58,6 +58,9 @@ let
     add_header Content-Security-Policy "frame-ancestors https://qrz.com https://*.qrz.com" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
+    # Must be explicitly redefined at this level so parent header is not inherited.
+    # Empty value avoids blocking embedding; frame-ancestors controls framing policy.
+    add_header X-Frame-Options "" always;
     add_header Permissions-Policy "interest-cohort=()" always;
     add_header Referrer-Policy "strict-origin" always;
     add_header X-XSS-Protection "1; mode=block" always;
