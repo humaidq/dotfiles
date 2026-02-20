@@ -192,10 +192,10 @@ in
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
             "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
-            "XF86AudioRaiseVolume" = "exec amixer set Master 5%+";
-            "XF86AudioLowerVolume" = "exec amixer set Master 5%-";
-            "XF86AudioMute" = "exec amixer set Master toggle";
-            "XF86AudioMicMute" = "exec amixer set Capture toggle";
+            "XF86AudioRaiseVolume" = "exec pamixer -i 5";
+            "XF86AudioLowerVolume" = "exec pamixer -d 5";
+            "XF86AudioMute" = "exec pamixer -t";
+            "XF86AudioMicMute" = "exec pamixer --default-source -t";
             "XF86Sleep" = "exec systemctl suspend";
             "XF86Display" = "exec ${lib.getExe pkgs.wdisplays}";
 

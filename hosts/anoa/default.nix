@@ -215,6 +215,7 @@
         ".local/share/vdirsyncer"
         ".local/share/zoxide"
         ".local/share/zsh"
+        ".local/share/opencode"
         ".tqsl"
         ".vscode"
         ".zotero"

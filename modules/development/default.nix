@@ -230,6 +230,7 @@ in
         nixfmt-rfc-style
         nixpkgs-review
         optinix
+        nix-search-cli
 
         # other tools
         pnpm

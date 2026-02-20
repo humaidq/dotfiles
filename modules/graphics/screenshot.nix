@@ -2,10 +2,12 @@
   bemenu,
   gimp,
   grim,
+  jq,
   libnotify,
   pinta,
   satty,
   slurp,
+  sway,
   wl-clipboard,
   writeShellApplication,
   xdg-user-dirs,
@@ -24,6 +26,9 @@ writeShellApplication {
     gimp
     pinta
     satty
+
+    jq
+    sway
   ];
   text = ''
     function notify() {
@@ -31,7 +36,7 @@ writeShellApplication {
     }
     dir=$(xdg-user-dir HOME)/inbox/screens
     mkdir -p "$dir"
-    file=$dir/$(date +'%_scrn.png')
+    file=$dir/$(date +'%Y%m%d-%H%M%S_scrn.png')
 
     sel=$(printf "select area\\ncurrent window\\nfull screen\\nquit" | bemenu -p Screenshot)
     if [[ "$sel" == "quit" ]]; then
