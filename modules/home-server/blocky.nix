@@ -175,6 +175,9 @@ in
               "https://v.firebog.net/hosts/static/w3kbl.txt"
               "https://v.firebog.net/hosts/neohostsbasic.txt"
               "https://raw.githubusercontent.com/RooneyMcNibNug/pihole-stuff/master/SNAFU.txt"
+
+              # Unsafe sites list
+              "https://raw.githubusercontent.com/fmhy/FMHYFilterlist/main/filterlist-wildcard-domains.txt"
             ];
 
             # Old list but may fill some gaps

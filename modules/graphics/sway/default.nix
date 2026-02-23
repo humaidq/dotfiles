@@ -105,7 +105,10 @@ in
 
         networkmanagerapplet
       ];
-      extraSessionCommands = "";
+      extraSessionCommands = ''
+        export WLR_NO_HARDWARE_CURSORS=1
+        export WLR_DRM_NO_ATOMIC=1
+      '';
     };
 
     home-manager.users."${vars.user}" = {

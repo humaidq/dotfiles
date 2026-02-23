@@ -19,7 +19,7 @@ in
     services.fstrim.enable = true;
 
     boot.kernelParams = [
-      "workqueue.power_efficient=y"
+      #"workqueue.power_efficient=y"
       # Disable vendor OEM logo (BGRT)
       "video=efifb:nobgrt"
       "bgrt_disable"

@@ -234,7 +234,13 @@
     "udf"
   ];
 
-  boot.kernelParams = [ "zfs.zfs_arc_max=8589934592" ];
+  boot.kernelParams = [
+    "zfs.zfs_arc_max=8589934592"
+    # remove when kernel is updated
+    "intel_idle.max_cstate=1"
+    "xe.enable_psr=0"
+    "xe.enable_fbc=0"
+  ];
 
   boot.initrd.systemd = {
     enable = true;
@@ -270,6 +276,7 @@
     sbctl # for lanzaboote
     usbguard-notifier
     asdbctl # apple studio display
+    intel-gpu-tools
   ];
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = false;
