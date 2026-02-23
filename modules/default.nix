@@ -25,7 +25,7 @@ in
       inputs.sops-nix.homeManagerModules.sops
       inputs.nixvim.homeModules.nixvim
     ]
-    ++ lib.optionals (pkgs.hostPlatform.system != "riscv64-linux") [
+    ++ lib.optionals (pkgs.stdenv.hostPlatform.system != "riscv64-linux") [
       inputs.nix-index-database.homeModules.nix-index
     ];
     topology.self.name = config.networking.hostName;
@@ -202,7 +202,7 @@ in
 
         (final: prev: {
           unstable = import inputs.nixpkgs-unstable {
-            inherit (final) system;
+            inherit (final.stdenv.hostPlatform) system;
             config.allowUnfree = true;
           };
 
