@@ -412,6 +412,18 @@ in
           };
         };
 
+        "fleeti.ae" = {
+          enableACME = true;
+          forceSSL = true;
+          serverAliases = [ "www.fleeti.ae" ];
+          locations."/" = {
+            extraConfig = ''
+              default_type text/plain;
+              return 200 'Coming soon';
+            '';
+          };
+        };
+
         # Fun stuff
         "bot.huma.id" = {
           enableACME = true;
