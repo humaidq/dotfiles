@@ -347,7 +347,7 @@ in
 
           locations = {
             "/" = {
-              proxyPass = "http://10.10.0.12:4232";
+              proxyPass = "http://10.10.0.12:4231";
             };
           };
         };
