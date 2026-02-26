@@ -27,6 +27,10 @@
       url = "github:humaidq/groundwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    fleeti = {
+      url = "github:humaidq/fleeti";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";

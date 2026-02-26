@@ -335,6 +335,19 @@ in
           };
         };
 
+        "admin.fleeti.ae" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+
+          locations = {
+            "/" = {
+              proxyPass = "http://10.10.0.12:4232";
+            };
+          };
+        };
         "sdr.huma.id" = {
           enableACME = true;
           forceSSL = true;
@@ -415,13 +428,13 @@ in
         "fleeti.ae" = {
           enableACME = true;
           forceSSL = true;
-          serverAliases = [ "www.fleeti.ae" ];
-          locations."/" = {
-            extraConfig = ''
-              default_type text/plain;
-              return 200 'Coming soon';
-            '';
-          };
+          root = pkgs.fleeti-docs;
+        };
+
+        "www.fleeti.ae" = {
+          enableACME = true;
+          forceSSL = true;
+          globalRedirect = "fleeti.ae";
         };
 
         # Fun stuff

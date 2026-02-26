@@ -12,6 +12,7 @@ in
 {
   imports = [
     inputs.groundwave.nixosModules.groundwave
+    inputs.fleeti.nixosModules.fleeti
   ];
   config = lib.mkIf cfg.enable {
 
@@ -21,12 +22,27 @@ in
       mode = "600";
     };
 
-    nixpkgs.overlays = [ inputs.groundwave.overlays.default ];
+    sops.secrets."fleeti/env" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "fleeti";
+      mode = "600";
+    };
+
+    nixpkgs.overlays = [
+      inputs.groundwave.overlays.default
+      inputs.fleeti.overlays.default
+    ];
 
     services.groundwave = {
       enable = true;
       port = 4232;
       envFile = config.sops.secrets."groundwave/env".path;
+    };
+
+    services.fleeti = {
+      enable = true;
+      port = 4231;
+      envFile = config.sops.secrets."fleeti/env".path;
     };
 
     services.stirling-pdf = {

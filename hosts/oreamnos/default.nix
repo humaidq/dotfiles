@@ -209,6 +209,11 @@
         user = "groundwave";
         mode = "0700";
       }
+      {
+        directory = "/var/lib/fleeti";
+        user = "groundwave";
+        mode = "0700";
+      }
       "/var/lib/chrony"
       "/var/lib/tailscale"
       "/var/lib/grafana"
@@ -467,6 +472,11 @@
       {
         host = "duisk";
         port = "4232"; # groundwave
+        proto = "tcp";
+      }
+      {
+        host = "duisk";
+        port = "4231"; # fleeti
         proto = "tcp";
       }
     ];
