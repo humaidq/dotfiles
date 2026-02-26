@@ -156,6 +156,9 @@ let
 in
 {
   config = {
+    nixpkgs.overlays = [
+      inputs.fleeti.overlays.default
+    ];
     networking.firewall.allowedTCPPorts = [
       443
       80
