@@ -141,7 +141,10 @@ in
         ];
         extra-experimental-features = [
         ];
-        allowed-users = [ cfg.username ];
+        allowed-users = [
+          cfg.username
+          "fleeti"
+        ];
         trusted-users = [
           "root"
           cfg.username
