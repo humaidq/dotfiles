@@ -37,6 +37,11 @@ in
         qemu_full
         OVMF
         edk2
+        (pkgs.writeShellScriptBin "qemu-system-x86_64-uefi" ''
+          qemu-system-x86_64 \
+            -bios ${pkgs.OVMF.fd}/FV/OVMF.fd \
+            "$@"
+        '')
         # guestfish files out of qcow2
         libguestfs
       ];
