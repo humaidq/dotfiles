@@ -411,11 +411,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1772220223,
-        "narHash": "sha256-nMppHlg/2nQpztM3DOTfaO4bF4J9TwCgxQQfHClnnPI=",
+        "lastModified": 1772222496,
+        "narHash": "sha256-LVUdtJGTfsv0VRmRCeGwbAO1FoRv3B7MyZM9BG3hPNE=",
         "owner": "humaidq",
         "repo": "fleeti",
-        "rev": "9ae2f8e4dad14fba0a58fb62daf5059ff86960cf",
+        "rev": "c4bfb5684ad0f576bb38e2d00715f4b5af8f333a",
         "type": "github"
       },
       "original": {
