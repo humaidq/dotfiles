@@ -360,7 +360,7 @@ in
 
           locations = {
             "/" = {
-              proxyPass = "http://sdr.alq.ae";
+              proxyPass = "http://10.10.0.12";
 
               extraConfig = ''
                 ${error-pages}
