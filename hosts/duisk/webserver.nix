@@ -183,6 +183,7 @@ in
           default $binary_remote_addr;
           cache.huma.id "";
           dns.huma.id "";
+          sdr.huma.id "";
         }
 
         map $request_method $limit_post {
