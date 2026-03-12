@@ -12,6 +12,10 @@ maps.yango.com
 boodle.ai
 box.boodle.ai
 
+*.awqaf.gov.ae
+*.awqaf.ae
+*.shahid.net
+
 fontawesome.com
 www.fontawesome.com
 *.fontawesome.com
@@ -20,6 +24,7 @@ www.fontawesome.com
 thexem.info
 
 # Bittorrent trackers
+*.linuxtracker.org
 *.rarbg.com
 0d.kebhana.mx
 1337.abcvg.info

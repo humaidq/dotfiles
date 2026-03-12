@@ -202,6 +202,7 @@
         ".config/hamradio" # qlog
         ".config/opencode"
         ".config/sops"
+        ".config/PrusaSlicer"
         ".config/zsh_history"
         ".cache/rclone"
         ".local/share/WSJT-X"

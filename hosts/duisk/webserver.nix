@@ -363,11 +363,11 @@ in
             "/" = {
               proxyPass = "http://10.10.0.12";
               recommendedProxySettings = false;
+              proxyWebsockets = true;
 
               extraConfig = ''
                 ${error-pages}
 
-                proxy_set_header Connection "";
                 proxy_set_header Host sdr.alq.ae;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

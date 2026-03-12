@@ -134,6 +134,7 @@ in
             enableACME = true;
             locations."/" = {
               proxyPass = "http://192.168.1.164:8073";
+              proxyWebsockets = true;
             };
           };
           "webdav.alq.ae" = {
