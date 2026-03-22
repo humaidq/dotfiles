@@ -14,6 +14,10 @@ in
     services.postgresql = {
       enable = true;
       package = pkgs.postgresql_17;
+      extensions =
+        ps: with ps; [
+          postgis
+        ];
       settings = {
         max_connections = 200;
       };
@@ -24,6 +28,7 @@ in
       (
         let
           newPostgres = pkgs.postgresql_17.withPackages (pp: [
+            pp.postgis
             pp.vectorchord
             pp.pgvector
           ]);

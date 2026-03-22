@@ -300,6 +300,10 @@
 
   services.postgresql = {
     enable = true;
+    extensions =
+      ps: with ps; [
+        postgis
+      ];
     ensureUsers = [
       {
         name = "humaid";
