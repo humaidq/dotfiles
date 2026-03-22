@@ -16,6 +16,18 @@ in
   ];
   config = lib.mkIf cfg.enable {
 
+    systemd.services.postgresql-setup.serviceConfig.ExecStartPost =
+      let
+        sqlFile = pkgs.writeText "groundwave-postgis-setup.sql" ''
+          CREATE EXTENSION IF NOT EXISTS postgis;
+        '';
+      in
+      [
+        ''
+          ${lib.getExe' config.services.postgresql.package "psql"} -d "groundwave" -f "${sqlFile}"
+        ''
+      ];
+
     sops.secrets."groundwave/env" = {
       sopsFile = ../../secrets/home-server.yaml;
       owner = "groundwave";
@@ -37,6 +49,11 @@ in
       enable = true;
       port = 4232;
       envFile = config.sops.secrets."groundwave/env".path;
+    };
+
+    systemd.services.groundwave = {
+      requires = [ "postgresql.target" ];
+      after = [ "postgresql.target" ];
     };
 
     services.fleeti = {
