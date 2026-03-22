@@ -238,9 +238,9 @@
   boot.kernelParams = [
     "zfs.zfs_arc_max=8589934592"
     # remove when kernel is updated
-    "intel_idle.max_cstate=1"
-    "xe.enable_psr=0"
-    "xe.enable_fbc=0"
+    #"intel_idle.max_cstate=1"
+    #"xe.enable_psr=0"
+    #"xe.enable_fbc=0"
   ];
 
   boot.initrd.systemd = {
