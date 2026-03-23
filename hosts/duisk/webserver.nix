@@ -39,10 +39,16 @@ let
     }
   '';
   upstream = "http://10.10.0.12:4232";
+  groundwaveHeaders = ''
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Permissions-Policy "interest-cohort=()" always;
+    add_header Referrer-Policy "strict-origin" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+  '';
   proxyHeaders = ''
     ${error-pages}
 
-    proxy_hide_header X-Frame-Options;
     proxy_set_header X-Request-ID $request_id;
 
     # general
@@ -50,20 +56,7 @@ let
 
     # for any post
     limit_req zone=post burst=2 nodelay;
-  '';
-  qrzProxyHeaders = ''
-    ${proxyHeaders}
-
-    proxy_hide_header Content-Security-Policy;
-    add_header Content-Security-Policy "frame-ancestors https://qrz.com https://*.qrz.com" always;
-    add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    # Must be explicitly redefined at this level so parent header is not inherited.
-    # Empty value avoids blocking embedding; frame-ancestors controls framing policy.
-    add_header X-Frame-Options "" always;
-    add_header Permissions-Policy "interest-cohort=()" always;
-    add_header Referrer-Policy "strict-origin" always;
-    add_header X-XSS-Protection "1; mode=block" always;
+    ${groundwaveHeaders}
   '';
   humaidCsp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
   humaidHeaders = ''
@@ -71,19 +64,6 @@ let
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
-    add_header Permissions-Policy "interest-cohort=()" always;
-    add_header Referrer-Policy "strict-origin" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-  '';
-  gCsp = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; img-src 'self' data: https://flagcdn.com https://*.flagcdn.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; frame-src 'self'; form-action 'self'";
-  gProxyHeaders = ''
-    ${proxyHeaders}
-
-    proxy_hide_header Content-Security-Policy;
-    add_header Content-Security-Policy "${gCsp}" always;
-    add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Permissions-Policy "interest-cohort=()" always;
     add_header Referrer-Policy "strict-origin" always;
     add_header X-XSS-Protection "1; mode=block" always;
@@ -146,13 +126,6 @@ let
       extraConfig = proxyHeaders;
     };
   };
-  fGroundwaveRootLocations = builtins.mapAttrs (
-    _: location:
-    location
-    // {
-      extraConfig = gProxyHeaders;
-    }
-  ) groundwaveRootLocations;
 in
 {
   config = {
@@ -234,7 +207,7 @@ in
             };
             "= /qrz" = {
               proxyPass = "${upstream}/qrz";
-              extraConfig = qrzProxyHeaders;
+              extraConfig = proxyHeaders;
             };
             "= /oqrs" = {
               proxyPass = "${upstream}/oqrs";
@@ -246,7 +219,7 @@ in
             };
             "^~ /qrz/" = {
               proxyPass = upstream;
-              extraConfig = qrzProxyHeaders;
+              extraConfig = proxyHeaders;
             };
             "/" = {
               proxyPass = upstream;
@@ -261,15 +234,15 @@ in
           extraConfig = ''
             ${error-pages-loc}
           '';
-          locations = fGroundwaveRootLocations // {
+          locations = groundwaveRootLocations // {
             "^~ /f/" = {
               proxyPass = upstream;
-              extraConfig = gProxyHeaders;
+              extraConfig = proxyHeaders;
             };
             "/" = {
               proxyPass = upstream;
               extraConfig = ''
-                ${gProxyHeaders}
+                ${proxyHeaders}
                 rewrite ^/(.*)$ /f/$1 break;
               '';
             };
@@ -285,7 +258,7 @@ in
           '';
           locations."/" = {
             proxyPass = upstream;
-            extraConfig = gProxyHeaders;
+            extraConfig = proxyHeaders;
           };
         };
 
