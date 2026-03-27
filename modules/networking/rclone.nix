@@ -65,40 +65,55 @@ in
       '';
 
       systemd.user.services = {
-        "rclone-${cfg.remote}" = {
-          Unit = {
-            Description = "rclone mount for ${cfg.remote}:${cfg.remotePath}";
-            After = [ "network-online.target" ];
-            Wants = [ "network-online.target" ];
-          };
+        "rclone-${cfg.remote}" =
+          let
+            cleanupScript = pkgs.writeShellScript "rclone-mount-cleanup-${cfg.remote}" ''
+              mountpoint="$HOME/${cfg.mountPath}"
 
-          Service = {
-            Type = "notify";
-            ExecStartPre = "${pkgs.coreutils}/bin/mkdir -p %h/${cfg.mountPath}";
-            ExecStart = ''
-              ${pkgs.rclone}/bin/rclone mount ${cfg.remote}:${cfg.remotePath} %h/${cfg.mountPath} \
-                --vfs-cache-mode full \
-                --cache-dir %h/.cache/rclone \
-                --vfs-cache-max-size 200G \
-                --vfs-cache-max-age 720h \
-                --vfs-read-ahead 128M \
-                --dir-cache-time 30s \
-                --attr-timeout 1s \
-                --poll-interval 15s
+              ${pkgs.coreutils}/bin/mkdir -p "$mountpoint"
+
+              if ${pkgs.util-linux}/bin/mountpoint -q "$mountpoint"; then
+                ${pkgs.fuse}/bin/fusermount -uz "$mountpoint" || ${pkgs.util-linux}/bin/umount -l "$mountpoint"
+              fi
             '';
+          in
+          {
+            Unit = {
+              Description = "rclone mount for ${cfg.remote}:${cfg.remotePath}";
+              After = [ "network-online.target" ];
+              Wants = [ "network-online.target" ];
+            };
 
-            ExecStop = "${pkgs.fuse}/bin/fusermount -u %h/${cfg.mountPath}";
-            Restart = "on-failure";
-            RestartSec = "10s";
-            Environment = [
-              "PATH=/run/wrappers/bin/:$PATH"
-            ];
-          };
+            Service = {
+              Type = "notify";
+              ExecStartPre = cleanupScript;
+              ExecStart = ''
+                ${pkgs.rclone}/bin/rclone mount ${cfg.remote}:${cfg.remotePath} %h/${cfg.mountPath} \
+                  --vfs-cache-mode full \
+                  --cache-dir %h/.cache/rclone \
+                  --vfs-cache-max-size 200G \
+                  --vfs-cache-max-age 720h \
+                  --vfs-read-ahead 128M \
+                  --dir-cache-time 30s \
+                  --attr-timeout 1s \
+                  --poll-interval 15s \
+                  --daemon-timeout 10m
+              '';
 
-          Install = {
-            WantedBy = [ "default.target" ];
+              ExecStop = "${pkgs.fuse}/bin/fusermount -uz %h/${cfg.mountPath}";
+              ExecStopPost = cleanupScript;
+              TimeoutStopSec = "30s";
+              Restart = "on-failure";
+              RestartSec = "10s";
+              Environment = [
+                "PATH=/run/wrappers/bin/:$PATH"
+              ];
+            };
+
+            Install = {
+              WantedBy = [ "default.target" ];
+            };
           };
-        };
       };
     };
   };

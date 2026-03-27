@@ -10,6 +10,12 @@ in
     services.grafana = lib.mkIf cfg.enable {
       enable = true;
       settings = {
+        analytics = {
+          reporting_enabled = false;
+          check_for_updates = false;
+          check_for_plugin_updates = false;
+          feedback_links_enabled = false;
+        };
         server = {
           http_addr = "0.0.0.0";
           http_port = 3000;

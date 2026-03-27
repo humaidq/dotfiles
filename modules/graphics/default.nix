@@ -118,6 +118,19 @@ in
             theme = "Dracula";
             font-family = if cfg.berkeley.enable then "Berkeley Mono" else "Fira Code";
             font-size = "12";
+
+            # For ssh
+            shell-integration-features = "ssh-terminfo,ssh-env";
+
+            # Don't inherit working dir
+            working-directory = "home";
+            window-inherit-working-directory = false;
+            tab-inherit-working-directory = false;
+            split-inherit-working-directory = false;
+            confirm-close-surface = false;
+
+            # No "are you sure" dialog
+            window-save-state = "never";
           };
         };
       };

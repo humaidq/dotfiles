@@ -7,6 +7,28 @@
   config,
   ...
 }:
+let
+  resetRootScript = pkgs.writeShellScript "anoa-2-reset-root" ''
+    ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
+    ${pkgs.util-linux}/bin/mount -t btrfs -o subvolid=5 /dev/mapper/crypted /btrfs-root
+
+    delete_subvolume_recursively() {
+      path="$1"
+      subvolumes=$(${pkgs.btrfs-progs}/bin/btrfs subvolume list -o "$path" | ${pkgs.coreutils}/bin/cut -f 9- -d ' ')
+      for nested in $subvolumes; do
+        delete_subvolume_recursively "/btrfs-root/$nested"
+      done
+      ${pkgs.btrfs-progs}/bin/btrfs subvolume delete "$path"
+    }
+
+    if [ -e /btrfs-root/root ]; then
+      delete_subvolume_recursively /btrfs-root/root
+    fi
+
+    ${pkgs.btrfs-progs}/bin/btrfs subvolume create /btrfs-root/root
+    ${pkgs.util-linux}/bin/umount /btrfs-root
+  '';
+in
 {
   imports = [
     self.nixosModules.sifrOS
@@ -165,6 +187,7 @@
       "/var/lib/tailscale"
       "/var/lib/grafana"
       "/var/lib/loki"
+      "/var/lib/postgresql"
       {
         directory = "/var/lib/private";
         mode = "0700";
@@ -231,62 +254,33 @@
 
   # Reset root on every boot
   boot.supportedFilesystems = [
-    "zfs"
+    "btrfs"
     "udf"
   ];
-  boot.kernelPackages = pkgs.linuxPackages_6_12.extend (
-    _: super: {
-      kernel = super.kernel.override {
-        argsOverride = {
-          version = "6.12.74";
-          modDirVersion = "6.12.74";
-          src = pkgs.fetchurl {
-            url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.74.tar.xz";
-            sha256 = "0gm1mjn203gc11dqk82fkbsr96bnwcxq4sx5khc7yhwsvjqywmiv";
-          };
-        };
-      };
-    }
-  );
 
   boot.kernelParams = [
-    "zfs.zfs_arc_max=8589934592"
     # remove when kernel is updated
     #"intel_idle.max_cstate=1"
     #"xe.enable_psr=0"
     #"xe.enable_fbc=0"
   ];
 
-  hardware.intelgpu = {
-    loadInInitrd = false;
-    driver = lib.mkForce "xe";
-  };
+  hardware.intelgpu.loadInInitrd = false;
 
   boot.initrd.systemd = {
     enable = true;
-    services = {
-      "zfs-import-rpool".after = [ "cryptsetup.target" ];
-      impermanence-root = {
-        wantedBy = [ "initrd.target" ];
-        after = [ "zfs-import-rpool.service" ];
-        before = [ "sysroot.mount" ];
-        unitConfig.DefaultDependencies = "no";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${pkgs.zfs}/bin/zfs rollback -r rpool/enc/root@blank";
-        };
+    services.impermanence-root = {
+      wantedBy = [ "initrd.target" ];
+      after = [ "cryptsetup.target" ];
+      before = [ "sysroot.mount" ];
+      unitConfig.DefaultDependencies = "no";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = resetRootScript;
       };
     };
   };
-
-  # will do manually, too resource intensive.
-  services.zfs.trim.enable = false;
-
-  swapDevices = [
-    {
-      device = "/dev/zvol/rpool/enc/swap";
-    }
-  ];
+  boot.initrd.luks.devices.crypted.device = "/dev/disk/by-partlabel/luks";
 
   boot.lanzaboote = {
     enable = true;
@@ -335,7 +329,10 @@
     ];
   };
 
-  boot.initrd.kernelModules = [ "udf" ];
+  boot.initrd.kernelModules = [
+    "btrfs"
+    "udf"
+  ];
 
   home-manager.users."${vars.user}" = {
     programs = {
@@ -475,8 +472,9 @@
             name = "internal";
             outputs = [
               {
-                criteria = "Samsung Display Corp. 0x419F Unknown";
+                criteria = "Unknown-1";
                 status = "enable";
+                scale = 2.0;
               }
             ];
           };
@@ -486,8 +484,9 @@
             name = "desk";
             outputs = [
               {
-                criteria = "Samsung Display Corp. 0x419F Unknown";
+                criteria = "Unknown-1";
                 status = "disable";
+                scale = 2.0;
               }
               {
                 criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
@@ -502,8 +501,9 @@
             name = "desk-mbzuai-a-7-11";
             outputs = [
               {
-                criteria = "Samsung Display Corp. 0x419F Unknown";
+                criteria = "Unknown-1";
                 status = "disable";
+                scale = 2.0;
               }
               {
                 criteria = "Dell Inc. DELL P2725H 25FCXZ3";
