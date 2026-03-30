@@ -72,6 +72,8 @@
           inherit specialArgs;
           modules = [
             self.nixosModules.host-bongo
+            inputs.srvos.nixosModules.server
+            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         duisk = lib.nixosSystem {
