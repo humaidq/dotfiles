@@ -1,12 +1,17 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
   wan = "enp1s0"; # eth0
   lan0 = "enp2s0"; # main lan, eth1 # secondary lan, eth2 (unused)
   ppp = "ppp0";
+  ifb = "ifb0";
+  uploadBandwidth = "270Mbit";
+  downloadBandwidth = "900Mbit";
+  pppdService = "pppd-etisalat.service";
 in
 {
   sops.secrets."etisalat/pppd-config" = {
@@ -18,7 +23,13 @@ in
     group = "dnsmasq";
     mode = "0400";
   };
+  boot.kernelModules = [
+    "ifb"
+    "sch_cake"
+  ];
   boot.kernel.sysctl = {
+    "net.core.default_qdisc" = lib.mkForce "cake";
+
     # Forwarding IPv4/6
     "net.ipv4.ip_forward" = 1;
     "net.ipv6.conf.all.forwarding" = 1;
@@ -47,17 +58,14 @@ in
           DHCP = "no";
           IPv6AcceptRA = false;
           ConfigureWithoutCarrier = true;
-
-          # TODO After confirmation
-          # DHCPPrefixDelegation = true;
-          # IPv6SendRA = true;
+          DHCPPrefixDelegation = true;
+          IPv6SendRA = true;
         };
-        # TODO after confirmation
-        #dhcpPrefixDelegationConfig = {
-        #  UplinkInterface = "ppp0";
-        #  SubnetId = 0;
-        #  Announce = true;
-        #};
+        dhcpPrefixDelegationConfig = {
+          UplinkInterface = ppp;
+          SubnetId = 0;
+          Announce = true;
+        };
       };
       "30-ppp0" = {
         matchConfig.Name = ppp;
@@ -83,6 +91,7 @@ in
   networking = {
     useDHCP = false;
     useNetworkd = true;
+    nameservers = [ "127.0.0.1" ];
     nftables.enable = true;
     firewall = {
       enable = true;
@@ -109,6 +118,7 @@ in
       externalInterface = ppp;
       internalInterfaces = [ lan0 ];
     };
+    resolvconf.useLocalResolver = true;
     nftables.tables = {
       "router-filter" = {
         family = "inet";
@@ -184,9 +194,9 @@ in
       interface = lan0;
 
       server = [
-        "8.8.8.8"
-        "8.8.4.4"
+        "127.0.0.1#1153"
       ];
+      no-resolv = true;
 
       no-hosts = true;
 
@@ -198,6 +208,67 @@ in
   };
 
   services.resolved.enable = false;
+
+  systemd.services = lib.mkIf config.services.pppd.enable {
+    cake-sqm = {
+      description = "Apply CAKE SQM to ${ppp}";
+      after = [ pppdService ];
+      bindsTo = [ pppdService ];
+      partOf = [ pppdService ];
+      wantedBy = [ pppdService ];
+
+      path = with pkgs; [
+        iproute2
+        kmod
+      ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStop = pkgs.writeShellScript "cake-sqm-stop" ''
+          set -euo pipefail
+
+          tc qdisc del dev ${ppp} root 2>/dev/null || true
+          tc qdisc del dev ${ppp} ingress 2>/dev/null || true
+          tc qdisc del dev ${ifb} root 2>/dev/null || true
+          ip link set dev ${ifb} down 2>/dev/null || true
+        '';
+      };
+
+      script = ''
+        set -euo pipefail
+
+        modprobe ifb || true
+
+        if ! ip link show dev ${ifb} >/dev/null 2>&1; then
+          ip link add ${ifb} type ifb
+        fi
+
+        ip link set dev ${ifb} up
+
+        tc qdisc del dev ${ppp} root 2>/dev/null || true
+        tc qdisc del dev ${ppp} ingress 2>/dev/null || true
+        tc qdisc del dev ${ifb} root 2>/dev/null || true
+
+        tc qdisc replace dev ${ppp} root cake \
+          bandwidth ${uploadBandwidth} \
+          besteffort \
+          nat \
+          dual-srchost
+
+        tc qdisc add dev ${ppp} handle ffff: ingress
+
+        tc filter add dev ${ppp} parent ffff: protocol all matchall \
+          action mirred egress redirect dev ${ifb}
+
+        tc qdisc replace dev ${ifb} root cake \
+          bandwidth ${downloadBandwidth} \
+          besteffort \
+          nat \
+          dual-dsthost
+      '';
+    };
+  };
 
   specialisation.client.configuration = {
     boot.kernel.sysctl = {

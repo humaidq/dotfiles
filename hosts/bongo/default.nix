@@ -16,6 +16,7 @@
     (import ./hardware.nix)
     (import ./disk.nix)
     (import ./blocking.nix)
+    (import ./blocky.nix)
     (import ./router.nix)
   ];
   networking.hostName = "bongo";
