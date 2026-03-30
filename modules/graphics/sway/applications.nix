@@ -8,6 +8,15 @@
 let
   cfg = config.sifr.graphics.sway;
   gfxCfg = config.sifr.graphics;
+  desktopEntry = name: command: {
+    executable = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=${name}
+      Exec=${command}
+    '';
+  };
 in
 {
   config = lib.mkIf cfg.enable {
@@ -15,6 +24,7 @@ in
       # home manager packages
       home.packages = with pkgs; [
         imv
+        mpv
       ];
 
       # home manager programs
@@ -86,46 +96,116 @@ in
       # Set default applications
       xdg = {
         enable = true;
+        dataFile."applications/browser.desktop" = desktopEntry "Browser" "${pkgs.chromium}/bin/chromium %U";
+        dataFile."applications/file.desktop" =
+          desktopEntry "File Manager" "${pkgs.xfce.thunar}/bin/thunar %U";
+        dataFile."applications/img.desktop" = desktopEntry "Image Viewer" "${pkgs.imv}/bin/imv %U";
+        dataFile."applications/mail.desktop" =
+          desktopEntry "Mail" "${pkgs.ghostty}/bin/ghostty -e ${pkgs.aerc}/bin/aerc %u";
+        dataFile."applications/media.desktop" = desktopEntry "Media Player" "${pkgs.mpv}/bin/mpv %U";
+        dataFile."applications/pdf.desktop" = desktopEntry "PDF Viewer" "${pkgs.zathura}/bin/zathura %U";
+        dataFile."applications/text.desktop" = desktopEntry "Text Editor" "emacsclient -c -n %F";
         mimeApps.enable = true;
         mimeApps.defaultApplications = {
+          # Directories
+          "inode/directory" = [ "file.desktop" ];
+
           # PDF files
-          "application/pdf" = [ "org.pwmt.zathura.desktop" ];
-          "application/postscript" = [ "org.pwmt.zathura.desktop" ];
-          "application/x-bzpdf" = [ "org.pwmt.zathura.desktop" ];
-          "application/x-gzpdf" = [ "org.pwmt.zathura.desktop" ];
-          "application/x-xzpdf" = [ "org.pwmt.zathura.desktop" ];
+          "application/pdf" = [ "pdf.desktop" ];
+          "application/postscript" = [ "pdf.desktop" ];
+          "application/x-bzpdf" = [ "pdf.desktop" ];
+          "application/x-gzpdf" = [ "pdf.desktop" ];
+          "application/x-xzpdf" = [ "pdf.desktop" ];
 
           # Image files
-          "image/png" = [ "imv.desktop" ];
-          "image/jpeg" = [ "imv.desktop" ];
-          "image/jpg" = [ "imv.desktop" ];
-          "image/gif" = [ "imv.desktop" ];
-          "image/bmp" = [ "imv.desktop" ];
-          "image/svg+xml" = [ "imv.desktop" ];
-          "image/tiff" = [ "imv.desktop" ];
-          "image/webp" = [ "imv.desktop" ];
+          "image/png" = [ "img.desktop" ];
+          "image/jpeg" = [ "img.desktop" ];
+          "image/jpg" = [ "img.desktop" ];
+          "image/gif" = [ "img.desktop" ];
+          "image/bmp" = [ "img.desktop" ];
+          "image/svg+xml" = [ "img.desktop" ];
+          "image/tiff" = [ "img.desktop" ];
+          "image/webp" = [ "img.desktop" ];
 
           # Text files - open with emacsclient
-          "text/plain" = [ "emacsclient.desktop" ];
-          "text/x-shellscript" = [ "emacsclient.desktop" ];
-          "text/x-python" = [ "emacsclient.desktop" ];
-          "text/x-c" = [ "emacsclient.desktop" ];
-          "text/x-c++src" = [ "emacsclient.desktop" ];
-          "text/x-java" = [ "emacsclient.desktop" ];
-          "text/x-lisp" = [ "emacsclient.desktop" ];
-          "text/x-markdown" = [ "emacsclient.desktop" ];
-          "text/x-org" = [ "emacsclient.desktop" ];
-          "application/json" = [ "emacsclient.desktop" ];
-          "application/x-yaml" = [ "emacsclient.desktop" ];
-          "application/xml" = [ "emacsclient.desktop" ];
+          "application/json" = [ "text.desktop" ];
+          "application/x-zerosize" = [ "text.desktop" ];
+          "application/x-yaml" = [ "text.desktop" ];
+          "application/xml" = [ "text.desktop" ];
+          "text/plain" = [ "text.desktop" ];
+          "text/x-c" = [ "text.desktop" ];
+          "text/x-c++src" = [ "text.desktop" ];
+          "text/x-java" = [ "text.desktop" ];
+          "text/x-lisp" = [ "text.desktop" ];
+          "text/x-markdown" = [ "text.desktop" ];
+          "text/x-org" = [ "text.desktop" ];
+          "text/x-python" = [ "text.desktop" ];
+          "text/x-shellscript" = [ "text.desktop" ];
+
+          # Office files
+          "application/msword" = [ "writer.desktop" ];
+          "application/rtf" = [ "writer.desktop" ];
+          "application/vnd.oasis.opendocument.graphics" = [ "draw.desktop" ];
+          "application/vnd.oasis.opendocument.graphics-template" = [ "draw.desktop" ];
+          "application/vnd.oasis.opendocument.presentation" = [ "impress.desktop" ];
+          "application/vnd.oasis.opendocument.presentation-template" = [ "impress.desktop" ];
+          "application/vnd.oasis.opendocument.spreadsheet" = [ "calc.desktop" ];
+          "application/vnd.oasis.opendocument.spreadsheet-template" = [ "calc.desktop" ];
+          "application/vnd.oasis.opendocument.text" = [ "writer.desktop" ];
+          "application/vnd.oasis.opendocument.text-template" = [ "writer.desktop" ];
+          "application/vnd.ms-excel" = [ "calc.desktop" ];
+          "application/vnd.ms-powerpoint" = [ "impress.desktop" ];
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation" = [ "impress.desktop" ];
+          "application/vnd.openxmlformats-officedocument.presentationml.template" = [ "impress.desktop" ];
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" = [ "calc.desktop" ];
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.template" = [ "calc.desktop" ];
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [ "writer.desktop" ];
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.template" = [ "writer.desktop" ];
+
+          # 3D model files
+          "application/prs.wavefront-obj" = [ "PrusaSlicer.desktop" ];
+          "application/sla" = [ "PrusaSlicer.desktop" ];
+          "application/vnd.ms-3mfdocument" = [ "PrusaSlicer.desktop" ];
+          "model/3mf" = [ "PrusaSlicer.desktop" ];
+          "model/obj" = [ "PrusaSlicer.desktop" ];
+          "model/stl" = [ "PrusaSlicer.desktop" ];
+
+          # G-code files
+          "application/x-gcode" = [ "PrusaGcodeviewer.desktop" ];
+          "model/gcode" = [ "PrusaGcodeviewer.desktop" ];
+          "text/x-gcode" = [ "PrusaGcodeviewer.desktop" ];
+
+          # Video files
+          "application/ogg" = [ "media.desktop" ];
+          "video/mp4" = [ "media.desktop" ];
+          "video/mpeg" = [ "media.desktop" ];
+          "video/ogg" = [ "media.desktop" ];
+          "video/quicktime" = [ "media.desktop" ];
+          "video/webm" = [ "media.desktop" ];
+          "video/x-matroska" = [ "media.desktop" ];
+          "video/x-msvideo" = [ "media.desktop" ];
+
+          # Audio files
+          "audio/aac" = [ "media.desktop" ];
+          "audio/flac" = [ "media.desktop" ];
+          "audio/mid" = [ "media.desktop" ];
+          "audio/midi" = [ "media.desktop" ];
+          "audio/mp4" = [ "media.desktop" ];
+          "audio/mpeg" = [ "media.desktop" ];
+          "audio/ogg" = [ "media.desktop" ];
+          "audio/vnd.wav" = [ "media.desktop" ];
+          "audio/vorbis" = [ "media.desktop" ];
+          "audio/x-flac" = [ "media.desktop" ];
+          "audio/x-wav" = [ "media.desktop" ];
 
           # Web browser
-          "text/html" = [ "chromium-browser.desktop" ];
-          "application/xhtml+xml" = [ "chromium-browser.desktop" ];
-          "x-scheme-handler/http" = [ "chromium-browser.desktop" ];
-          "x-scheme-handler/https" = [ "chromium-browser.desktop" ];
-          "x-scheme-handler/about" = [ "chromium-browser.desktop" ];
-          "x-scheme-handler/unknown" = [ "chromium-browser.desktop" ];
+          "application/xhtml+xml" = [ "browser.desktop" ];
+          "text/html" = [ "browser.desktop" ];
+          "x-scheme-handler/about" = [ "browser.desktop" ];
+          "x-scheme-handler/http" = [ "browser.desktop" ];
+          "x-scheme-handler/https" = [ "browser.desktop" ];
+          "x-scheme-handler/mailto" = [ "mail.desktop" ];
+          "x-scheme-handler/unknown" = [ "browser.desktop" ];
         };
       };
     };

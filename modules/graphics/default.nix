@@ -92,14 +92,21 @@ in
 
         gtk = {
           enable = true;
-          theme.name = "Adwaita";
+          theme = {
+            name = "TraditionalOk";
+            package = pkgs.mate.mate-themes;
+          };
           iconTheme = {
-            name = "Tango";
-            package = pkgs.tango-icon-theme;
+            name = "mate";
+            package = pkgs.mate.mate-icon-theme;
+          };
+          cursorTheme = {
+            name = "DMZ-White";
+            package = pkgs.vanilla-dmz;
           };
           gtk3.extraConfig = {
             gtk-application-prefer-dark-theme = false;
-            gtk-cursor-theme-name = "Adwaita";
+            gtk-cursor-theme-name = "DMZ-White";
           };
           gtk3.bookmarks = [
             "file:///home/${vars.user}/docs"

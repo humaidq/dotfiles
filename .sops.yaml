@@ -28,6 +28,11 @@ creation_rules:
           - *anoa
           - *serow
           - *duisk
+  - path_regex: secrets/bongo.yaml$
+    key_groups:
+      - age:
+          - *oreamnos
+          - *anoa
   - path_regex: secrets/lighthouse.yaml$
     key_groups:
       - age:

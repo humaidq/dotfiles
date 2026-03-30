@@ -10,8 +10,6 @@ let
     # Enable CSP for your services.
     #add_header Content-Security-Policy "script-src 'self'; object-src 'none'; base-uri 'none';" always;
     add_header X-Content-Type-Options "nosniff" always;
-    # clickjacking protection
-    add_header X-Frame-Options "DENY" always;
     # disable FLOC
     add_header Permissions-Policy "interest-cohort=()" always;
     add_header Referrer-Policy "strict-origin" always;
@@ -63,7 +61,6 @@ let
     add_header Content-Security-Policy "${humaidCsp}" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "DENY" always;
     add_header Permissions-Policy "interest-cohort=()" always;
     add_header Referrer-Policy "strict-origin" always;
     add_header X-XSS-Protection "1; mode=block" always;

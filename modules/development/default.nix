@@ -182,12 +182,12 @@ in
         python3
         uv
         libllvm
-        polyml
         zig
-        swi-prolog
+        #polyml
+        #swi-prolog
         #ghc
         #haskellPackages.hoogle
-        ocaml
+        #ocaml
 
         gnumake
         cmake
@@ -229,7 +229,7 @@ in
         nix-tree
         nixfmt-rfc-style
         nixpkgs-review
-        optinix
+        optinix # nix search
         nix-search-cli
 
         # other tools

@@ -238,7 +238,6 @@ in
             apps = [
               "htop.desktop"
               "lf.desktop"
-              "fish.desktop"
               "cups.desktop"
             ];
           };
@@ -317,10 +316,8 @@ in
             "audio/mid" = [ "org.gnome.Decibels.desktop" ];
             "audio/x-wav" = [ "org.gnome.Decibels.desktop" ];
             "audio/x-flac" = [ "org.gnome.Decibels.desktop" ];
-
           };
         };
-
       };
   };
 }

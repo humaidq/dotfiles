@@ -54,40 +54,12 @@ in
         libreoffice
         # rpi-imager # broken
         prusa-slicer
-        #gnome-firmware
         bitwarden-desktop
         ghostty
-        calibre
         xournalpp
         vlc
-        papers # replacing evince
-        showtime # replacing totem
-
-        decibels # audio, soon in gnome 48
-        #gnome-calendar
-        #gnome-contacts
-        #errands
-        #zed-editor
-
-        # GNOME circle apps
-        #curtail
-        #eyedropper
-        gaphor
-        #fragments
         localsend
-
         alsa-utils
-
-        #khronos
-        #hieroglyphic
-        #impression
-        #junction
-        #letterpress
-        #lorem
-        #gnome-obfuscate
-        #paper-clip
-        #solanum
-        #textpieces
       ];
       services.fwupd.enable = true;
       #services.power-profiles-daemon.enable = true;

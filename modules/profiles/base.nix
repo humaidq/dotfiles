@@ -24,7 +24,6 @@ in
       environment.systemPackages =
         (with pkgs; [
           # shell related
-          fish
           ghostty.terminfo
 
           # utilities
@@ -65,24 +64,24 @@ in
           tcpdump
           trace-cmd
           ethtool
-          #cpuid
           numactl
         ])
-        ++ lib.optionals pkgs.stdenv.isx86_64 [
-          # x86_64 specific tools
-          pkgs.cpuid
-          pkgs.msr-tools
-          pkgs.tiptop
-        ];
+        ++ lib.optionals pkgs.stdenv.isx86_64 (
+          with pkgs;
+          [
+            # x86_64 specific tools
+            cpuid
+            msr-tools
+            tiptop
+          ]
+        );
 
       # Ensure zsh is recognised as a system shell.
       environment.shells = [
         pkgs.zsh
       ];
 
-      security.sudo-rs = {
-        enable = true;
-      };
+      security.sudo-rs.enable = true;
       security.sudo.extraConfig = ''
         Defaults lecture = never
       '';
@@ -148,8 +147,8 @@ in
         hexyl # hex viewer
         poppler-utils
         ufetch
+        e2fsprogs
 
-        # TODO move to laptop config
         lm_sensors
       ];
 
@@ -189,10 +188,6 @@ in
 
             plugins = with pkgs.tmuxPlugins; [
               sensible
-              #resurrect
-              #copycat
-              #continuum
-              #tmux-thumbs
             ];
             # This fixes esc delay issue with vim
             #escapeTime = 0;

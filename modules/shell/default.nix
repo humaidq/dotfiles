@@ -69,6 +69,8 @@ let
 
     units = "units --history /dev/null";
 
+    where-am-i = "${config.services.geoclue2.package}/libexec/geoclue-2.0/demos/where-am-i";
+
     # Nix
     #rebuild = "doas nixos-rebuild switch";
     #rebuild-offline = "doas nixos-rebuild switch --option substitute false";

@@ -90,41 +90,6 @@ in
     #  }
     #];
 
-    # Make UI responsive
-    services.system76-scheduler = {
-      enable = true;
-      assignments = {
-        nix-builds = {
-          nice = 10;
-          class = "batch";
-          ioClass = "idle";
-          matchers = [ "nix-daemon" ];
-        };
-
-        desktop = {
-          nice = -10;
-          class = "other";
-          ioClass = "realtime";
-          matchers = [
-            "sway"
-            "ghostty"
-          ];
-        };
-
-        browser = {
-          nice = -10;
-          class = "other";
-          ioClass = "realtime";
-          matchers = [
-            "chrome"
-            "google-chrome"
-            "google-chrome-stable"
-            "chromium"
-          ];
-        };
-      };
-    };
-
     # disable due to security
     services.avahi = {
       enable = true;
@@ -169,6 +134,5 @@ in
     };
 
     #services.automatic-timezoned.enable = true;
-
   };
 }

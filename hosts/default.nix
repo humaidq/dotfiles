@@ -30,6 +30,7 @@
         host-oreamnos = import ./oreamnos;
         host-serow = import ./serow;
         host-anoa = import ./anoa;
+        host-bongo = import ./bongo;
         host-duisk = import ./duisk;
         host-lighthouse = import ./lighthouse;
         #host-boerbok = import ./boerbok;
@@ -65,6 +66,12 @@
             self.nixosModules.host-anoa
             inputs.srvos.nixosModules.desktop
             inputs.srvos.nixosModules.mixins-nix-experimental
+          ];
+        };
+        bongo = lib.nixosSystem {
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-bongo
           ];
         };
         duisk = lib.nixosSystem {

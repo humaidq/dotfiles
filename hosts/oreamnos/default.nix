@@ -286,7 +286,6 @@
         ".config/emacs"
         ".config/doom"
         ".config/zsh_history"
-        ".local/share/fish"
         ".local/share/zsh"
       ];
     };
