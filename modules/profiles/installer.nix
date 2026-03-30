@@ -8,5 +8,7 @@ in
     type = lib.types.bool;
     default = false;
   };
-  config = lib.mkIf cfg.installer { };
+  config = lib.mkIf cfg.installer {
+    environment.variables.NIX_CONFIG = "tarball-ttl = 0";
+  };
 }

@@ -15,6 +15,7 @@ in
   sops.secrets."dnsmasq/dhcp-hosts" = {
     sopsFile = ../../secrets/bongo.yaml;
     owner = "dnsmasq";
+    group = "dnsmasq";
     mode = "0400";
   };
   boot.kernel.sysctl = {
