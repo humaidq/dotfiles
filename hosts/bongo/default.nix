@@ -15,7 +15,7 @@
     #inputs.lanzaboote.nixosModules.lanzaboote
     (import ./hardware.nix)
     (import ./disk.nix)
-    #(import ./blocking.nix)
+    (import ./blocking.nix)
     (import ./router.nix)
   ];
   networking.hostName = "bongo";
