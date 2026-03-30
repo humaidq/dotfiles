@@ -2,6 +2,7 @@ keys:
   - &oreamnos age1p75e7j6vzfcexheyzztpy7yklrxwt3vh4wrlakmttvc7ry042veqn0pq78
   - &serow age17va7vnasx8e9dtfvfxcd8epzmc87renc4f7t357m4xaqu7qp24wsgcztj6
   - &anoa age1ec70anc9j3tt7r2t24t9gchpf3c5hm6k9drx43v9wmn5xyvzfufs3repxd
+  - &bongo age1tnl79m5zk9myngmaxvy2znt7rueeup9v8e760y9z3vsdk2650unqm0ckx8
   - &tahr age1v7mnrpev5qc7ylyjuh2prclelh9zyk069gd7um3wvc8kv4gmnv9s8e9a2r
   - &goral age1nnvt7g9achpl2sd7v4d2yga7s4uuq6erpawla587c0x6nhy49u7qzk3wep
   - &argali age197eymld05m9p5asgvxxev79wfcrxmdgfhtflllsp0venzuha2gsskc0l8x
@@ -16,6 +17,7 @@ creation_rules:
           - *serow
           - *anoa
           - *tahr
+          - *bongo
           - *goral
           - *argali
           - *duisk
@@ -33,6 +35,7 @@ creation_rules:
       - age:
           - *oreamnos
           - *anoa
+          - *bongo
   - path_regex: secrets/lighthouse.yaml$
     key_groups:
       - age:
