@@ -187,7 +187,6 @@ in
       "/var/lib/tailscale"
       "/var/lib/grafana"
       "/var/lib/loki"
-      "/var/lib/postgresql"
       {
         directory = "/var/lib/private";
         mode = "0700";

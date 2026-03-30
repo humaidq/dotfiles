@@ -52,9 +52,6 @@ in
       hyprpicker
     ];
 
-    services.xserver.displayManager.lightdm.enable = false;
-    services.gnome.gnome-online-accounts.enable = true;
-
     # Thunar functionality
     programs.thunar = {
       enable = true;
@@ -66,9 +63,14 @@ in
       ];
     };
 
-    services.gvfs.enable = true;
-    services.tumbler.enable = true;
-    services.colord.enable = true; # needed for printing
+    services = {
+      udisks2.enable = true;
+      xserver.displayManager.lightdm.enable = false;
+      gnome.gnome-online-accounts.enable = true;
+      gvfs.enable = true;
+      tumbler.enable = true;
+      colord.enable = true; # needed for printing
+    };
 
     xdg.portal = {
       enable = true;
@@ -180,31 +182,34 @@ in
 
           terminal = "ghostty";
           # https://github.com/nix-community/home-manager/blob/master/modules/services/window-managers/i3-sway/sway.nix
-          keybindings = lib.mkOptionDefault {
-            "${mod}+Shift+Return" = "exec ghostty";
-            "${mod}+Shift+c" = "kill";
-            "${mod}+Shift+r" = "reload";
-            "${mod}+p" = "exec ${lib.getExe pkgs.j4-dmenu-desktop} --dmenu='bemenu' --term='ghostty'";
-            "${mod}+shift+p" = "exec bemenu-run";
-            "${mod}+o" =
-              "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
-            "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
-            "Mod4+c" = "exec caffeine-toggle";
-            "Mod4+v" = "exec ${clipboardManager}/bin/clipboard-manager";
+          keybindings =
+            lib.mkOptionDefault {
+              "${mod}+Shift+Return" = "exec ghostty";
+              "${mod}+Shift+c" = "kill";
+              "${mod}+Shift+r" = "reload";
+              "${mod}+p" = "exec ${lib.getExe pkgs.j4-dmenu-desktop} --dmenu='bemenu' --term='ghostty'";
+              "${mod}+shift+p" = "exec bemenu-run";
+              "${mod}+o" =
+                "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
+              "Mod4+c" = "exec caffeine-toggle";
+              "Mod4+v" = "exec ${clipboardManager}/bin/clipboard-manager";
 
-            # laptop bindings
-            "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
-            "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
-            "XF86AudioRaiseVolume" = "exec pamixer -i 5";
-            "XF86AudioLowerVolume" = "exec pamixer -d 5";
-            "XF86AudioMute" = "exec pamixer -t";
-            "XF86AudioMicMute" = "exec pamixer --default-source -t";
-            "XF86Sleep" = "exec systemctl suspend";
-            "XF86Display" = "exec ${lib.getExe pkgs.wdisplays}";
+              # laptop bindings
+              "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
+              "XF86MonBrightnessDown" = "exec brightnessctl set 5%-";
+              "XF86AudioRaiseVolume" = "exec pamixer -i 5";
+              "XF86AudioLowerVolume" = "exec pamixer -d 5";
+              "XF86AudioMute" = "exec pamixer -t";
+              "XF86AudioMicMute" = "exec pamixer --default-source -t";
+              "XF86Sleep" = "exec systemctl suspend";
+              "XF86Display" = "exec ${lib.getExe pkgs.wdisplays}";
 
-            "Print" = "exec ${screen}/bin/screen";
-            "Control+Print" = "exec ${recorder}/bin/recorder";
-          };
+              "Print" = "exec ${screen}/bin/screen";
+              "Control+Print" = "exec ${recorder}/bin/recorder";
+            }
+            // lib.optionalAttrs (!(lib.attrByPath [ "sifr" "profiles" "installer" ] false config)) {
+              "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
+            };
           modifier = mod;
           floating.modifier = mod;
           output."*".bg = "${../wallhaven-13mk9v.jpg} fill #000000";

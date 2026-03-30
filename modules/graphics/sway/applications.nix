@@ -76,7 +76,7 @@ in
           };
         };
         swaylock = {
-          enable = true;
+          enable = !(lib.attrByPath [ "sifr" "profiles" "installer" ] false config);
           settings = {
             color = "130e24";
             line-color = "ffffff";

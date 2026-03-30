@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   ...
 }:
 let
@@ -74,6 +75,7 @@ in
   };
 
   networking = {
+    nftables.enable = true;
     firewall = {
       enable = true;
       filterForward = true;
@@ -189,6 +191,48 @@ in
         "option:router,192.168.1.1"
         "option:dns-server,192.168.1.1" # Use router as DNS server
       ];
+    };
+  };
+
+  specialisation.client.configuration = {
+    boot.kernel.sysctl = {
+      "net.ipv4.ip_forward" = lib.mkForce 0;
+      "net.ipv6.conf.all.forwarding" = lib.mkForce 0;
+    };
+
+    systemd.network.networks = lib.mkForce {
+      "20-lan0" = {
+        matchConfig.Name = lan0;
+        linkConfig.RequiredForOnline = "routable";
+        networkConfig = {
+          DHCP = "yes";
+          IPv6AcceptRA = true;
+        };
+      };
+    };
+
+    networking = {
+      firewall = {
+        filterForward = lib.mkForce false;
+        interfaces = lib.mkForce { };
+        extraForwardRules = lib.mkForce "";
+      };
+      nat.enable = lib.mkForce false;
+      nftables.tables = {
+        router-filter = lib.mkForce {
+          family = "inet";
+          content = "";
+        };
+        router-nat = lib.mkForce {
+          family = "ip";
+          content = "";
+        };
+      };
+    };
+
+    services = {
+      dnsmasq.enable = lib.mkForce false;
+      pppd.enable = lib.mkForce false;
     };
   };
 

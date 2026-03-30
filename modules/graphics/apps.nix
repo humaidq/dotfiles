@@ -58,6 +58,7 @@ in
         ghostty
         xournalpp
         vlc
+        pdfpc
         localsend
         alsa-utils
       ];

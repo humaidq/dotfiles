@@ -234,6 +234,9 @@
     "zfs"
     "udf"
   ];
+
+  # Due to kernel regressions on 'xe' driver, preventing system from booting.
+  # Will try: 6.12.58
   boot.kernelPackages = pkgs.linuxPackages_6_12.extend (
     _: super: {
       kernel = super.kernel.override {
@@ -256,11 +259,6 @@
     #"xe.enable_psr=0"
     #"xe.enable_fbc=0"
   ];
-
-  hardware.intelgpu = {
-    loadInInitrd = false;
-    driver = lib.mkForce "xe";
-  };
 
   boot.initrd.systemd = {
     enable = true;

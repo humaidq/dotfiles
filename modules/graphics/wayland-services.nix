@@ -8,6 +8,7 @@
 let
   cfg = config.sifr.graphics.wayland-services;
   gfxCfg = config.sifr.graphics;
+  installerEnabled = lib.attrByPath [ "sifr" "profiles" "installer" ] false config;
   swayEnabled = config.sifr.graphics.sway.enable;
   labwcEnabled = config.sifr.graphics.labwc.enable;
 
@@ -59,17 +60,21 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = with pkgs; [
-      swaylock-effects # lockscreen
-      swayidle
-      chayang # gradual screen dimming
-      libnotify
-      dunst # notification daemon
-      caffeineToggle
-      suspendIfAllowed
-      cliphist # clipboard history
-      wl-clipboard
-    ];
+    environment.systemPackages =
+      with pkgs;
+      [
+        swayidle
+        chayang # gradual screen dimming
+        libnotify
+        dunst # notification daemon
+        caffeineToggle
+        suspendIfAllowed
+        cliphist # clipboard history
+        wl-clipboard
+      ]
+      ++ lib.optionals (!installerEnabled) [
+        swaylock-effects # lockscreen
+      ];
 
     systemd.user.services = {
       ianny = {
@@ -103,7 +108,7 @@ in
         gnome-keyring.enable = true;
         lxqt-policykit-agent.enable = true;
         swayidle = {
-          enable = true;
+          enable = !installerEnabled;
           events = [
             {
               event = "before-sleep";

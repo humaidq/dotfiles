@@ -229,8 +229,8 @@ in
         nix-tree
         nixfmt-rfc-style
         nixpkgs-review
-        optinix # nix search
-        nix-search-cli
+        optinix # nix option search
+        nix-search-cli # nix package search
 
         # other tools
         pnpm

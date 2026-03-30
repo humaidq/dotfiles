@@ -140,7 +140,7 @@ in
         qrencode
         gnupatch
         ripgrep
-        lf
+        yazi
         sshfs
         jq # json query
         ouch # compression

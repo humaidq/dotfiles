@@ -106,7 +106,6 @@ in
           "net.ipv4.tcp_fastopen" = 3;
 
           # Enable "TCP Bottleneck Bandwidth and Round-Trip Time Algorithm"
-          "net.inet.tcp.functions_default" = "bbr";
           "net.core.default_qdisc" = "fq"; # cake
         };
 

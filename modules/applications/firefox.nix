@@ -15,7 +15,7 @@ in
   options.sifr.applications.firefox.enable = lib.mkOption {
     description = "Enables firefox configurations";
     type = lib.types.bool;
-    default = config.sifr.graphics.apps;
+    default = false;
   };
   config = lib.mkIf cfg.firefox.enable {
     environment.variables.BROWSER = "firefox";

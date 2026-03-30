@@ -8,9 +8,9 @@
   ...
 }:
 let
-  resetRootScript = pkgs.writeShellScript "anoa-2-reset-root" ''
+  resetRootScript = pkgs.writeShellScript "bongo-reset-root" ''
     ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
-    ${pkgs.util-linux}/bin/mount -t btrfs -o subvolid=5 /dev/mapper/crypted /btrfs-root
+    ${pkgs.util-linux}/bin/mount -t btrfs -o subvolid=5 /dev/disk/by-partlabel/disk-root-root /btrfs-root
 
     delete_subvolume_recursively() {
       path="$1"
@@ -36,6 +36,8 @@ in
     inputs.disko.nixosModules.disko
     inputs.lanzaboote.nixosModules.lanzaboote
     (import ./hardware.nix)
+    (import ./disk.nix)
+    #(import ./blocking.nix)
     (import ./router.nix)
   ];
   networking.hostName = "bongo";
@@ -115,7 +117,7 @@ in
     enable = true;
     services.impermanence-root = {
       wantedBy = [ "initrd.target" ];
-      after = [ "cryptsetup.target" ];
+      after = [ "systemd-udev-settle.service" ];
       before = [ "sysroot.mount" ];
       unitConfig.DefaultDependencies = "no";
       serviceConfig = {
@@ -124,7 +126,7 @@ in
       };
     };
   };
-  boot.initrd.luks.devices.crypted.device = "/dev/disk/by-partlabel/luks";
+  boot.initrd.kernelModules = [ "btrfs" ];
 
   boot.lanzaboote = {
     enable = true;

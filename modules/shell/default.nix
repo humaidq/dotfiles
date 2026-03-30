@@ -200,6 +200,11 @@ in
               emacsclient $args '$1'
             }
 
+            function lf() {
+              echo "Switched to yazi..."
+              yazi
+            }
+
             function mkcd() {
               if [[ -z $1 ]]; then
                 echo "Usage: mkcd <directory>"
