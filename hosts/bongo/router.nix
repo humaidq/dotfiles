@@ -191,6 +191,8 @@ in
     };
   };
 
+  services.resolved.enable = lib.mkForce false;
+
   specialisation.client.configuration = {
     boot.kernel.sysctl = {
       "net.ipv4.ip_forward" = lib.mkForce 0;
@@ -198,8 +200,8 @@ in
     };
 
     systemd.network.networks = lib.mkForce {
-      "20-lan0" = {
-        matchConfig.Name = lan0;
+      "10-wan" = {
+        matchConfig.Name = wan;
         linkConfig.RequiredForOnline = "routable";
         networkConfig = {
           DHCP = "yes";
@@ -211,7 +213,9 @@ in
     networking = {
       firewall = {
         filterForward = lib.mkForce false;
-        interfaces = lib.mkForce { };
+        interfaces = lib.mkForce {
+          ${wan}.allowedTCPPorts = [ 22 ];
+        };
         extraForwardRules = lib.mkForce "";
       };
       nat.enable = lib.mkForce false;
