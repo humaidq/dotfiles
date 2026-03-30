@@ -144,6 +144,7 @@ in
       autostart = true;
       config = ''
         plugin pppoe.so
+        nic-${wan}
 
         file ${config.sops.secrets."etisalat/pppd-config".path}
 
