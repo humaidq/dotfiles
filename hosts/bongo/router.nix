@@ -113,6 +113,11 @@ in
       "router-filter" = {
         family = "inet";
         content = ''
+          chain mss-clamp {
+            type filter hook forward priority mangle; policy accept;
+            oifname "${ppp}" tcp flags syn tcp option maxseg size set rt mtu comment "Clamp MSS for PPPoE WAN"
+          }
+
           chain early-forward {
             type filter hook forward priority -10; policy accept;
 
