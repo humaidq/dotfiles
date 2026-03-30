@@ -7,28 +7,6 @@
   config,
   ...
 }:
-let
-  resetRootScript = pkgs.writeShellScript "bongo-reset-root" ''
-    ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
-    ${pkgs.util-linux}/bin/mount -t btrfs -o subvolid=5 /dev/disk/by-partlabel/disk-root-root /btrfs-root
-
-    delete_subvolume_recursively() {
-      path="$1"
-      subvolumes=$(${pkgs.btrfs-progs}/bin/btrfs subvolume list -o "$path" | ${pkgs.coreutils}/bin/cut -f 9- -d ' ')
-      for nested in $subvolumes; do
-        delete_subvolume_recursively "/btrfs-root/$nested"
-      done
-      ${pkgs.btrfs-progs}/bin/btrfs subvolume delete "$path"
-    }
-
-    if [ -e /btrfs-root/root ]; then
-      delete_subvolume_recursively /btrfs-root/root
-    fi
-
-    ${pkgs.btrfs-progs}/bin/btrfs subvolume create /btrfs-root/root
-    ${pkgs.util-linux}/bin/umount /btrfs-root
-  '';
-in
 {
   imports = [
     self.nixosModules.sifrOS
@@ -131,8 +109,27 @@ in
       unitConfig.DefaultDependencies = "no";
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = resetRootScript;
       };
+      script = ''
+        ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
+        ${pkgs.util-linux}/bin/mount -t btrfs -o subvolid=5 /dev/disk/by-partlabel/disk-root-root /btrfs-root
+
+        delete_subvolume_recursively() {
+          path="$1"
+          subvolumes=$(${pkgs.btrfs-progs}/bin/btrfs subvolume list -o "$path" | ${pkgs.coreutils}/bin/cut -f 9- -d ' ')
+          for nested in $subvolumes; do
+            delete_subvolume_recursively "/btrfs-root/$nested"
+          done
+          ${pkgs.btrfs-progs}/bin/btrfs subvolume delete "$path"
+        }
+
+        if [ -e /btrfs-root/root ]; then
+          delete_subvolume_recursively /btrfs-root/root
+        fi
+
+        ${pkgs.btrfs-progs}/bin/btrfs subvolume create /btrfs-root/root
+        ${pkgs.util-linux}/bin/umount /btrfs-root
+      '';
     };
   };
   boot.initrd.kernelModules = [ "btrfs" ];
