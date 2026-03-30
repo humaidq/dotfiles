@@ -1,7 +1,9 @@
 {
+  inputs,
   vars,
   self,
   lib,
+  pkgs,
   ...
 }:
 {
@@ -35,6 +37,7 @@
   services.getty.autologinUser = vars.user;
   security.sudo-rs.wheelNeedsPassword = false;
   security.sudo.wheelNeedsPassword = false;
+  environment.systemPackages = [ inputs.disko.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 
   users.users.${vars.user} = {
     isNormalUser = true;

@@ -12,6 +12,11 @@ in
   sops.secrets."etisalat/pppd-config" = {
     sopsFile = ../../secrets/bongo.yaml;
   };
+  sops.secrets."dnsmasq/dhcp-hosts" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    owner = "dnsmasq";
+    mode = "0400";
+  };
   boot.kernel.sysctl = {
     # Forwarding IPv4/6
     "net.ipv4.ip_forward" = 1;
@@ -75,6 +80,8 @@ in
   };
 
   networking = {
+    useDHCP = false;
+    useNetworkd = true;
     nftables.enable = true;
     firewall = {
       enable = true;
@@ -105,16 +112,8 @@ in
       "router-filter" = {
         family = "inet";
         content = ''
-          #set abusive4 {
-          #  type ipv4_addr
-          #  flags interval
-          #  elements = { $abusive4Elements} }
-          #}
-
           chain early-forward {
             type filter hook forward priority -10; policy accept;
-
-            ip daddr @abusive4 drop comment "blocked IPv4 destinations"
 
             # Prevent easy DNS bypasses
             #iifname "${lan0}" tcp dport 853 drop comment "block DoT"
@@ -173,23 +172,20 @@ in
   services.dnsmasq = {
     enable = true;
     settings = {
-      # DHCP Configuration
       dhcp-range = [ "192.168.1.100,192.168.1.200,12h" ];
+      dhcp-hostsfile = config.sops.secrets."dnsmasq/dhcp-hosts".path;
       interface = lan0;
 
-      # DNS Configuration
       server = [
         "8.8.8.8"
         "8.8.4.4"
       ];
 
-      # Don't use /etc/hosts
       no-hosts = true;
 
-      # DHCP Options
       dhcp-option = [
         "option:router,192.168.1.1"
-        "option:dns-server,192.168.1.1" # Use router as DNS server
+        "option:dns-server,192.168.1.1"
       ];
     };
   };

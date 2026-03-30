@@ -4,6 +4,7 @@
 {
   imports = [
     ./base.nix
+    ./installer.nix
     ./laptop.nix
     ./server.nix
     ./work.nix
