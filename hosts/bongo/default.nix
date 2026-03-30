@@ -34,7 +34,7 @@ in
     self.nixosModules.sifrOS
     inputs.impermanence.nixosModules.impermanence
     inputs.disko.nixosModules.disko
-    inputs.lanzaboote.nixosModules.lanzaboote
+    #inputs.lanzaboote.nixosModules.lanzaboote
     (import ./hardware.nix)
     (import ./disk.nix)
     #(import ./blocking.nix)
@@ -128,15 +128,17 @@ in
   };
   boot.initrd.kernelModules = [ "btrfs" ];
 
-  boot.lanzaboote = {
-    enable = true;
-    pkiBundle = "/persist/var/lib/sbctl";
-  };
+  #boot.lanzaboote = {
+  #  enable = true;
+  #  pkiBundle = "/persist/var/lib/sbctl";
+  #};
   environment.systemPackages = with pkgs; [
     sbctl # for lanzaboote
   ];
-  boot.loader.systemd-boot.enable = lib.mkForce false;
-  boot.loader.efi.canTouchEfiVariables = false;
+  #boot.loader.systemd-boot.enable = lib.mkForce false;
+  #boot.loader.efi.canTouchEfiVariables = false;
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "25.11";
