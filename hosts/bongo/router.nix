@@ -191,7 +191,7 @@ in
     };
   };
 
-  services.resolved.enable = lib.mkForce false;
+  services.resolved.enable = false;
 
   specialisation.client.configuration = {
     boot.kernel.sysctl = {
@@ -232,6 +232,7 @@ in
     };
 
     services = {
+      resolved.enable = lib.mkForce true;
       dnsmasq.enable = lib.mkForce false;
       pppd.enable = lib.mkForce false;
     };
