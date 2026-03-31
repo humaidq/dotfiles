@@ -39,6 +39,10 @@ in
         allowedUDPPorts = [ config.services.tailscale.port ];
       };
 
+      sifr.persist.dirs = [
+        "/var/lib/tailscale"
+      ];
+
       topology.self.interfaces.tailscale0 = {
         addresses = [ config.networking.hostName ];
         network = "tailscale0";

@@ -75,6 +75,13 @@ in
       systemd.network.enable = false;
       networking.useNetworkd = false;
 
+      sifr.persist = {
+        dirs = [
+          "/var/lib/bluetooth"
+          "/etc/NetworkManager/system-connections"
+        ];
+      };
+
       # Make system look better overall when we have a graphical system
       boot.plymouth = {
         enable = false;

@@ -6,8 +6,12 @@ in
   options.sifr.o11y.server = {
     enable = lib.mkEnableOption "observability server using Grafana and Prometheus";
   };
-  config = {
-    services.grafana = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
+    sifr.persist.dirs = [
+      "/var/lib/prometheus2"
+    ];
+
+    services.grafana = {
       enable = true;
       settings = {
         analytics = {
@@ -32,7 +36,7 @@ in
         };
       };
     };
-    services.prometheus = lib.mkIf cfg.enable {
+    services.prometheus = {
       enable = true;
       port = 9001;
       extraFlags = [ "--web.enable-remote-write-receiver" ];
@@ -48,7 +52,7 @@ in
         }
       ];
     };
-    services.loki = lib.mkIf cfg.enable {
+    services.loki = {
       enable = true;
 
       configuration = {
@@ -78,7 +82,7 @@ in
       };
     };
 
-    networking.firewall.allowedTCPPorts = lib.mkIf cfg.enable [
+    networking.firewall.allowedTCPPorts = [
       9001
       3000
       3100

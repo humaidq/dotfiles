@@ -21,6 +21,8 @@ in
     # multiple options.
     networking.timeServers = [ ];
 
+    sifr.persist.dirs = [ "/var/lib/chrony" ];
+
     services.chrony = {
       enable = true;
       # We don't use NTS yet as it breaks on systems with no RTC

@@ -10,7 +10,6 @@
 {
   imports = [
     self.nixosModules.sifrOS
-    inputs.impermanence.nixosModules.impermanence
     inputs.disko.nixosModules.disko
     (import ./hardware.nix)
     (import ./disk.nix)
@@ -73,6 +72,77 @@
       exitNode = true;
       ssh = true;
       auth = false;
+    };
+
+    persist = {
+      enable = true;
+      zfs = {
+        enable = true;
+        root = "rpool/root";
+      };
+      dirs = [
+        {
+          directory = "/var/lib/immich";
+          user = "immich";
+          mode = "0700";
+        }
+        {
+          directory = "/var/lib/groundwave";
+          user = "groundwave";
+          mode = "0700";
+        }
+        {
+          directory = "/var/lib/fleeti";
+          user = "groundwave";
+          mode = "0700";
+        }
+        {
+          directory = "/var/lib/radicale";
+          user = "radicale";
+          mode = "0700";
+        }
+        {
+          directory = "/var/lib/hydra";
+          user = "hydra";
+          mode = "0700";
+        }
+        {
+          directory = "/var/lib/redis-immich";
+          user = "immich";
+          mode = "0740";
+        }
+        "/var/lib/radarr"
+        "/var/lib/sonarr"
+        {
+          directory = "/var/lib/forgejo";
+          user = "forgejo";
+          group = "forgejo";
+          mode = "0770";
+        }
+        "/var/lib/postgresql"
+        {
+          directory = "/var/lib/jellyfin";
+          user = "jellyfin";
+          mode = "0700";
+        }
+        "/var/lib/deluge"
+        "/var/lib/caddy"
+        "/var/lib/unifi"
+        {
+          directory = "/var/lib/bitwarden_rs";
+          mode = "0700";
+          user = "vaultwarden";
+        }
+      ];
+      user = {
+        enable = true;
+        dirs = [
+          ".local/share/direnv"
+          ".config/emacs"
+          ".config/doom"
+          ".local/share/zsh"
+        ];
+      };
     };
   };
 
@@ -180,141 +250,7 @@
 
   systemd.enableEmergencyMode = false;
 
-  #environment.persistence."/persist-svc" = {
-  #  hideMounts = true;
-  #  directories = [
-  #    {
-  #      directory = "/var/lib/immich";
-  #      user = "immich";
-  #      mode = "0700";
-  #    }
-  #  ];
-  #};
-
-  # impermanence setup
-  environment.persistence."/persist" = {
-    hideMounts = true;
-    directories = [
-      "/var/log"
-      "/var/lib/nixos"
-      "/var/lib/systemd/coredump"
-      "/var/lib/sops-nix"
-      {
-        directory = "/var/lib/immich";
-        user = "immich";
-        mode = "0700";
-      }
-      {
-        directory = "/var/lib/groundwave";
-        user = "groundwave";
-        mode = "0700";
-      }
-      {
-        directory = "/var/lib/fleeti";
-        user = "groundwave";
-        mode = "0700";
-      }
-      "/var/lib/chrony"
-      "/var/lib/tailscale"
-      "/var/lib/grafana"
-      {
-        directory = "/var/lib/radicale";
-        user = "radicale";
-        mode = "0700";
-      }
-      {
-        directory = "/var/lib/hydra";
-        user = "hydra";
-        mode = "0700";
-      }
-      "/var/lib/loki"
-      "/var/lib/prometheus2"
-      {
-        directory = "/var/lib/redis-immich";
-        user = "immich";
-        mode = "0740";
-      }
-      {
-        directory = "/var/lib/private";
-        mode = "0700";
-      }
-      "/var/lib/radarr"
-      "/var/lib/sonarr"
-      {
-        directory = "/var/lib/forgejo";
-        user = "forgejo";
-        group = "forgejo";
-        mode = "0770";
-      }
-      "/var/lib/postgresql"
-      {
-        directory = "/var/lib/jellyfin";
-        user = "jellyfin";
-        mode = "0700";
-      }
-      "/var/lib/deluge"
-      "/var/lib/caddy"
-      "/var/lib/uptimed"
-      "/var/lib/unifi"
-      {
-        directory = "/var/lib/bitwarden_rs";
-        mode = "0700";
-        user = "vaultwarden";
-      }
-      "/etc/NetworkManager/system-connections"
-    ];
-    files = [
-      "/etc/machine-id"
-      "/etc/ssh/ssh_host_rsa_key"
-      "/etc/ssh/ssh_host_rsa_key.pub"
-      "/etc/ssh/ssh_host_ed25519_key"
-      "/etc/ssh/ssh_host_ed25519_key.pub"
-    ];
-    users."${vars.user}" = {
-      directories = [
-        "inbox"
-        "repos"
-        "tii"
-        "docs"
-        {
-          directory = ".ssh";
-          mode = "0700";
-        }
-        ".mozilla"
-        ".local/share/direnv"
-        ".config/sops"
-        ".config/emacs"
-        ".config/doom"
-        ".config/zsh_history"
-        ".local/share/zsh"
-      ];
-    };
-  };
-  # sops loads before impermanence mounts are
-  sops.age.keyFile = lib.mkForce "/persist/var/lib/sops-nix/key.txt";
-
-  fileSystems."/persist".neededForBoot = true;
   fileSystems."/persist-svc".neededForBoot = true;
-
-  # Reset root on every boot
-  boot.supportedFilesystems = [ "zfs" ];
-
-  boot.initrd.systemd = {
-    enable = true;
-    services = {
-      "zfs-import-rpool".after = [ "cryptsetup.target" ];
-      impermanence-root = {
-        wantedBy = [ "initrd.target" ];
-        after = [ "zfs-import-rpool.service" ];
-        before = [ "sysroot.mount" ];
-        unitConfig.DefaultDependencies = "no";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = "${pkgs.zfs}/bin/zfs rollback -r rpool/root@blank";
-        };
-      };
-    };
-  };
 
   swapDevices = [
     {

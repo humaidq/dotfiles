@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LEASE_FILE="${LEASE_FILE:-/var/lib/misc/dnsmasq.leases}"
+LEASE_FILE="${LEASE_FILE:-/var/lib/dnsmasq/dnsmasq.leases}"
 
 if ! command -v ip >/dev/null 2>&1; then
   echo "error: 'ip' command not found" >&2
@@ -37,7 +37,7 @@ fi
 # Example shapes:
 # 192.168.1.10 dev br0 lladdr aa:bb:cc:dd:ee:ff REACHABLE
 # 192.168.1.20 dev br0 INCOMPLETE
-ip neigh | awk '
+ip -4 neigh | awk '
   {
     ip = $1
     dev = "-"

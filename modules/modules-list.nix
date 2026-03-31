@@ -19,5 +19,6 @@
   ./security
   ./shell
   ./router
+  ./persist
   ./topology/home.nix
 ]

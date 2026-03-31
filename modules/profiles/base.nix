@@ -165,6 +165,9 @@ in
 
       # Track highest uptime! :)
       services.uptimed.enable = true;
+      sifr.persist.dirs = [
+        "/var/lib/uptimed"
+      ];
 
       home-manager.users."${vars.user}" = {
         programs.ssh.enable = true;
