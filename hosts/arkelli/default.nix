@@ -12,10 +12,6 @@
   ];
 
   sifr = {
-    tailscale = {
-      enable = true;
-      ssh = true;
-    };
     profiles.server = true;
     o11y.client.enable = true;
 

@@ -1,4 +1,5 @@
 {
+  modulesPath,
   pkgs,
   vars,
   self,
@@ -8,6 +9,7 @@
 }:
 {
   imports = [
+    (modulesPath + "/installer/sd-card/sd-image-aarch64.nix")
     inputs.nixos-hardware.nixosModules.raspberry-pi-4
     self.nixosModules.sifrOS
   ];

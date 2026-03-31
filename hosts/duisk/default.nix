@@ -24,7 +24,6 @@
     hashedPasswordFile = lib.mkForce null;
     extraGroups = [ "caddy" ];
   };
-  services.tailscale.useRoutingFeatures = "both";
 
   sops.secrets."nebula/crt" = {
     sopsFile = ../../secrets/duisk.yaml;
@@ -48,11 +47,6 @@
       cacheOverPublic = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
-    };
-    tailscale = {
-      enable = false;
-      exitNode = true;
-      ssh = true;
     };
   };
 

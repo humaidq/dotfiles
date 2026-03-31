@@ -67,12 +67,6 @@
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
     };
-    tailscale = {
-      enable = true;
-      exitNode = true;
-      ssh = true;
-      auth = false;
-    };
 
     persist = {
       enable = true;

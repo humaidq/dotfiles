@@ -94,6 +94,39 @@
             inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
+        x86-installer = lib.nixosSystem {
+          system = "x86_64-linux";
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-x86-installer
+            inputs.srvos.nixosModules.mixins-nix-experimental
+            {
+              isoImage = {
+                squashfsCompression = "zstd -Xcompression-level 6";
+              };
+            }
+          ];
+        };
+        rpi4-bootstrap = lib.nixosSystem {
+          system = "aarch64-linux";
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-rpi4-bootstrap
+            { sdImage.compressImage = false; }
+          ];
+        };
+        rpi5-bootstrap = lib.nixosSystem {
+          system = "aarch64-linux";
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-rpi5-bootstrap
+            {
+              sdImage.compressImage = false;
+
+              nixpkgs.buildPlatform = "x86_64-linux";
+            }
+          ];
+        };
         #boerbok = lib.nixosSystem {
         #  inherit specialArgs;
         #  modules = [ self.nixosModules.host-boerbok ];
@@ -109,20 +142,9 @@
       };
 
       packages.x86_64-linux = {
-        installer = inputs.nixos-generators.nixosGenerate {
-          format = "iso";
-          system = "x86_64-linux";
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-x86-installer
-            inputs.srvos.nixosModules.mixins-nix-experimental
-            {
-              isoImage = {
-                squashfsCompression = "zstd -Xcompression-level 6";
-              };
-            }
-          ];
-        };
+        installer = self.nixosConfigurations.x86-installer.config.system.build.isoImage;
+        rpi4-bootstrap = self.nixosConfigurations.rpi4-bootstrap.config.system.build.sdImage;
+        rpi5-bootstrap = self.nixosConfigurations.rpi5-bootstrap.config.system.build.sdImage;
 
         #boerbok-sd-from-x86_64 =
         #  (lib.nixosSystem {
@@ -138,29 +160,8 @@
       };
 
       packages.aarch64-linux = {
-        rpi4-bootstrap = inputs.nixos-generators.nixosGenerate {
-          format = "sd-aarch64";
-          system = "aarch64-linux";
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-rpi4-bootstrap
-            { sdImage.compressImage = false; }
-          ];
-        };
-        rpi5-bootstrap = inputs.nixos-generators.nixosGenerate {
-          format = "sd-aarch64";
-          system = "aarch64-linux";
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-rpi5-bootstrap
-            {
-              sdImage.compressImage = false;
-
-              nixpkgs.buildPlatform = "x86_64-linux";
-            }
-          ];
-        };
-
+        rpi4-bootstrap = self.nixosConfigurations.rpi4-bootstrap.config.system.build.sdImage;
+        rpi5-bootstrap = self.nixosConfigurations.rpi5-bootstrap.config.system.build.sdImage;
       };
 
       hydraJobs = {

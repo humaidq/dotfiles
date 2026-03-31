@@ -22,7 +22,6 @@
     hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
     hashedPasswordFile = lib.mkForce null;
   };
-  services.tailscale.useRoutingFeatures = "both";
 
   # Nebula keys
   sops.secrets."nebula/crt" = {
@@ -54,12 +53,6 @@
     profiles.server = true;
     autoupgrade.enable = true;
     o11y.client.enable = true;
-
-    tailscale = {
-      enable = false;
-      exitNode = true;
-      ssh = true;
-    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";

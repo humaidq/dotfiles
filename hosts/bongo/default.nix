@@ -30,16 +30,16 @@
     hashedPasswordFile = lib.mkForce null;
   };
 
-  #sops.secrets."nebula/crt" = {
-  #  sopsFile = ../../secrets/bongo.yaml;
-  #  owner = "nebula-sifr0";
-  #  mode = "600";
-  #};
-  #sops.secrets."nebula/key" = {
-  #  sopsFile = ../../secrets/bongo.yaml;
-  #  owner = "nebula-sifr0";
-  #  mode = "600";
-  #};
+  sops.secrets."nebula/crt" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
+  sops.secrets."nebula/key" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    owner = "nebula-sifr0";
+    mode = "600";
+  };
 
   sops.secrets."etisalat/pppd-config" = {
     sopsFile = ../../secrets/bongo.yaml;
@@ -64,7 +64,7 @@
     };
 
     net = {
-      sifr0 = false;
+      sifr0 = true;
       cacheOverPublic = true;
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;

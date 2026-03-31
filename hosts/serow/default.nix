@@ -69,11 +69,6 @@
       ];
     };
 
-    tailscale = {
-      enable = true;
-      ssh = true;
-      auth = false;
-    };
     net = {
       sifr0 = true;
       node-crt = config.sops.secrets."nebula/crt".path;

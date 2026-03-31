@@ -1,5 +1,6 @@
 {
   inputs,
+  modulesPath,
   vars,
   self,
   lib,
@@ -7,7 +8,10 @@
   ...
 }:
 {
-  imports = [ self.nixosModules.sifrOS ];
+  imports = [
+    (modulesPath + "/installer/cd-dvd/iso-image.nix")
+    self.nixosModules.sifrOS
+  ];
   networking.hostName = "sifrOS-installer";
   networking.hostId = "00000000";
   nixpkgs.hostPlatform = "x86_64-linux";
