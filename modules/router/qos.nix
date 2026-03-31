@@ -54,7 +54,7 @@ in
 
           tc qdisc replace dev ${cfg.ppp} root cake \
             bandwidth ${cfg.bandwidth.upload} \
-            besteffort \
+            diffserv4 \
             nat \
             dual-srchost
 
@@ -65,7 +65,7 @@ in
 
           tc qdisc replace dev ${cfg.ifb} root cake \
             bandwidth ${cfg.bandwidth.download} \
-            besteffort \
+            diffserv4 \
             nat \
             dual-dsthost
         '';

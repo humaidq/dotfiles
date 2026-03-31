@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.sifr.router;
+  formatPorts = ports: lib.concatMapStringsSep ", " toString ports;
 in
 {
   imports = [
@@ -55,6 +56,38 @@ in
         description = "Upload speed from WAN.";
       };
     };
+    qos = {
+      highPriorityPorts = lib.mkOption {
+        type = with lib.types; listOf port;
+        default = [ ];
+        description = "TCP/UDP ports to mark as high-priority latency-sensitive traffic.";
+      };
+      highPriorityMark = lib.mkOption {
+        type = lib.types.int;
+        default = 2;
+        description = "Conntrack mark used for high-priority traffic classification.";
+      };
+      highPriorityDscp = lib.mkOption {
+        type = lib.types.str;
+        default = "cs5";
+        description = "DSCP class applied to high-priority traffic.";
+      };
+      lowPriorityPorts = lib.mkOption {
+        type = with lib.types; listOf port;
+        default = [ ];
+        description = "TCP/UDP ports to mark as low-priority bulk traffic.";
+      };
+      lowPriorityMark = lib.mkOption {
+        type = lib.types.int;
+        default = 1;
+        description = "Conntrack mark used for low-priority traffic classification.";
+      };
+      lowPriorityDscp = lib.mkOption {
+        type = lib.types.str;
+        default = "cs1";
+        description = "DSCP class applied to low-priority traffic.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -80,7 +113,14 @@ in
       bmon
     ];
 
-    services.ntopng.enable = true;
+    services.ntopng = {
+      enable = true;
+      interfaces = [
+        cfg.wan
+        cfg.ppp
+        cfg.lan0
+      ];
+    };
 
     systemd.network = {
       enable = true;
@@ -207,6 +247,28 @@ in
             chain mss-clamp {
               type filter hook forward priority mangle; policy accept;
               oifname "${cfg.ppp}" tcp flags syn tcp option maxseg size set rt mtu comment "Clamp MSS for PPPoE WAN"
+            }
+
+            chain qos-mark {
+              type filter hook forward priority mangle; policy accept;
+
+              ${lib.optionalString (cfg.qos.highPriorityPorts != [ ]) ''
+                tcp sport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP source ports"
+                tcp dport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP destination ports"
+                udp sport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority UDP source ports"
+                udp dport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority UDP destination ports"
+                ct mark ${toString cfg.qos.highPriorityMark} ip dscp set ${cfg.qos.highPriorityDscp} comment "Prioritise marked IPv4 traffic"
+                ct mark ${toString cfg.qos.highPriorityMark} ip6 dscp set ${cfg.qos.highPriorityDscp} comment "Prioritise marked IPv6 traffic"
+              ''}
+
+              ${lib.optionalString (cfg.qos.lowPriorityPorts != [ ]) ''
+                tcp sport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority TCP source ports"
+                tcp dport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority TCP destination ports"
+                udp sport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP source ports"
+                udp dport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP destination ports"
+                ct mark ${toString cfg.qos.lowPriorityMark} ip dscp set ${cfg.qos.lowPriorityDscp} comment "Deprioritise marked IPv4 traffic"
+                ct mark ${toString cfg.qos.lowPriorityMark} ip6 dscp set ${cfg.qos.lowPriorityDscp} comment "Deprioritise marked IPv6 traffic"
+              ''}
             }
 
             chain early-forward {

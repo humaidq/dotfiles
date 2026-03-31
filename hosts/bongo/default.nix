@@ -61,6 +61,14 @@
     router = {
       enable = true;
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      qos.lowPriorityPorts = [
+        6881
+        51413
+      ];
+      qos.highPriorityPorts = [
+        53
+        853
+      ];
     };
 
     net = {
@@ -74,6 +82,11 @@
     persist = {
       enable = true;
       btrfs.enable = true;
+      dirs = [
+        "/var/lib/nft-blocklists"
+        "/var/lib/ntopng"
+        "/var/lib/redis-ntopng"
+      ];
     };
   };
 
