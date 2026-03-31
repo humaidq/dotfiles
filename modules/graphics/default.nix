@@ -17,16 +17,15 @@ let
 in
 {
   imports = [
-    ./gnome.nix
     ./sway
     ./labwc
     ./apps.nix
   ];
   options.sifr.graphics = {
     enable = mkOption {
-      description = "Sets up the graphical user environment with X11";
+      description = "Sets up the graphical user environment";
       type = types.bool;
-      default = cfg.gnome.enable || cfg.sway.enable;
+      default = cfg.sway.enable || cfg.labwc.enable;
     };
     hidpi = mkEnableOption "HIDPI screen configuration";
     # Have separate option as we want the ability to disable for VMs with GUI

@@ -235,7 +235,7 @@
 
   services.usbguard = {
     enable = false;
-    dbus.enable = true; # for gnome
+    dbus.enable = true;
     IPCAllowedGroups = [ "wheel" ];
     ruleFile = config.sops.secrets."usbguard/policy".path;
   };

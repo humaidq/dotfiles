@@ -24,11 +24,10 @@
     profiles.installer = true;
   };
 
-  services.displayManager.autoLogin = {
-    enable = true;
+  services.greetd.settings.initial_session = {
+    command = lib.getExe pkgs.sway;
     inherit (vars) user;
   };
-  services.displayManager.gdm.autoSuspend = false;
 
   system.stateVersion = "25.11";
 

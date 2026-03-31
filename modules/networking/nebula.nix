@@ -71,6 +71,11 @@ in
       type = lib.types.bool;
       default = false;
     };
+    firewallInterfaces = lib.mkOption {
+      description = "Interfaces on which to open the Nebula port; null opens it on all interfaces";
+      type = lib.types.nullOr (lib.types.listOf lib.types.str);
+      default = null;
+    };
     node-crt = lib.mkOption {
       description = "Nebula network node certificate";
       type = lib.types.str;
@@ -91,10 +96,25 @@ in
   config = {
     environment.systemPackages = [ pkgs.nebula ];
     # Firewall configuration
-    networking.firewall = lib.mkIf cfg.sifr0 {
-      trustedInterfaces = [ "sifr0" ];
-      allowedUDPPorts = [ nebulaPort ];
-    };
+    networking.firewall = lib.mkIf cfg.sifr0 (
+      lib.mkMerge [
+        {
+          trustedInterfaces = [ "sifr0" ];
+        }
+        (
+          if cfg.firewallInterfaces == null then
+            {
+              allowedUDPPorts = [ nebulaPort ];
+            }
+          else
+            {
+              interfaces = lib.genAttrs cfg.firewallInterfaces (_: {
+                allowedUDPPorts = [ nebulaPort ];
+              });
+            }
+        )
+      ]
+    );
 
     # SSH configuration for Nebula network access only
     services.openssh = lib.mkIf cfg.sifr0 {

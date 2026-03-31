@@ -66,6 +66,7 @@
     net = {
       sifr0 = true;
       cacheOverPublic = true;
+      firewallInterfaces = [ config.sifr.router.lan0 ];
       node-crt = config.sops.secrets."nebula/crt".path;
       node-key = config.sops.secrets."nebula/key".path;
     };

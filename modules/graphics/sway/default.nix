@@ -30,8 +30,7 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # if gdm not enabled
-    services.greetd = lib.mkIf (!config.sifr.graphics.gnome.enable) {
+    services.greetd = {
       enable = true;
       settings.default_session = {
         command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";

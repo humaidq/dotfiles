@@ -1,5 +1,6 @@
 {
   config,
+  pkgs,
   lib,
   ...
 }:
@@ -71,6 +72,15 @@ in
       "net.ipv6.conf.all.accept_redirects" = 0;
       "net.ipv6.conf.default.accept_redirects" = 0;
     };
+
+    environment.systemPackages = with pkgs; [
+      conntrack-tools
+      flent
+      iftop
+      bmon
+    ];
+
+    services.ntopng.enable = true;
 
     systemd.network = {
       enable = true;
@@ -157,10 +167,39 @@ in
         "router-filter" = {
           family = "inet";
           content = ''
+            set wan_bogon4 {
+              type ipv4_addr
+              flags interval
+              elements = {
+                0.0.0.0/8,
+                10.0.0.0/8,
+                100.64.0.0/10,
+                127.0.0.0/8,
+                169.254.0.0/16,
+                172.16.0.0/12,
+                192.168.0.0/16,
+                224.0.0.0/4,
+                240.0.0.0/4
+              }
+            }
+
+            set wan_bogon6 {
+              type ipv6_addr
+              flags interval
+              elements = {
+                ::/128,
+                ::1/128,
+                fc00::/7,
+                fe80::/10,
+                ff00::/8
+              }
+            }
+
             chain early-input {
               type filter hook input priority -10; policy accept;
 
-              iifname "${cfg.ppp}" ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } drop comment "Drop RFC1918 spoofed IPv4 sources on WAN"
+              iifname "${cfg.ppp}" ip saddr @wan_bogon4 drop comment "Drop bogon or spoofed IPv4 sources on WAN"
+              iifname "${cfg.ppp}" ip6 saddr @wan_bogon6 drop comment "Drop bogon or spoofed IPv6 sources on WAN"
               iifname "${cfg.ppp}" ip protocol icmp icmp type echo-request drop comment "Drop WAN IPv4 ping to router"
               iifname "${cfg.ppp}" meta l4proto ipv6-icmp icmpv6 type echo-request drop comment "Drop WAN IPv6 ping to router"
             }
@@ -173,7 +212,8 @@ in
             chain early-forward {
               type filter hook forward priority -10; policy accept;
 
-              iifname "${cfg.ppp}" ip saddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } drop comment "Drop RFC1918 spoofed IPv4 sources on WAN"
+              iifname "${cfg.ppp}" ip saddr @wan_bogon4 drop comment "Drop bogon or spoofed IPv4 sources on WAN"
+              iifname "${cfg.ppp}" ip6 saddr @wan_bogon6 drop comment "Drop bogon or spoofed IPv6 sources on WAN"
               oifname "${cfg.ppp}" tcp dport { 23, 25, 139, 445 } drop comment "Drop forwarded insecure TCP services to WAN"
               oifname "${cfg.ppp}" udp dport { 69, 137, 138 } drop comment "Drop forwarded insecure UDP services to WAN"
 
