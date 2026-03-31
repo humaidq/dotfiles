@@ -38,6 +38,7 @@
   sifr = {
     profiles = {
       basePlus = true;
+      server = true;
       work = true;
     };
     v12n.emulation = {

@@ -53,7 +53,7 @@
   };
 
   sifr = {
-    #profiles.basePlus = true;
+    profiles.basePlus = true;
     profiles.server = true;
     autoupgrade.enable = true;
     o11y.client.enable = true;

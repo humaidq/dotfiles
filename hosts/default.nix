@@ -11,12 +11,7 @@
       baseArgs = { inherit self inputs vars; };
       homeServerSystem = lib.nixosSystem {
         specialArgs = baseArgs;
-        modules = [
-          self.nixosModules.host-oreamnos
-          #inputs.srvos.nixosModules.server
-          inputs.srvos.nixosModules.desktop
-          inputs.srvos.nixosModules.mixins-nix-experimental
-        ];
+        modules = [ self.nixosModules.host-oreamnos ];
       };
       homeServerDomains = builtins.attrNames homeServerSystem.config.services.nginx.virtualHosts;
       specialArgs = baseArgs // {
@@ -34,6 +29,8 @@
         host-duisk = import ./duisk;
         host-lighthouse = import ./lighthouse;
         #host-boerbok = import ./boerbok;
+
+        # Unmaintained / inactive hosts
         #host-argali = import ./argali;
         #host-arkelli = import ./arkelli;
 
@@ -49,7 +46,6 @@
           modules = [
             self.nixosModules.host-oreamnos
             inputs.srvos.nixosModules.server
-            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         serow = lib.nixosSystem {
@@ -57,7 +53,6 @@
           modules = [
             self.nixosModules.host-serow
             inputs.srvos.nixosModules.desktop
-            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         anoa = lib.nixosSystem {
@@ -65,7 +60,6 @@
           modules = [
             self.nixosModules.host-anoa
             inputs.srvos.nixosModules.desktop
-            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         bongo = lib.nixosSystem {
@@ -73,7 +67,6 @@
           modules = [
             self.nixosModules.host-bongo
             inputs.srvos.nixosModules.server
-            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         duisk = lib.nixosSystem {
@@ -82,7 +75,6 @@
             self.nixosModules.host-duisk
             inputs.srvos.nixosModules.server
             inputs.srvos.nixosModules.hardware-vultr-vm
-            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         lighthouse = lib.nixosSystem {
@@ -91,7 +83,6 @@
             self.nixosModules.host-lighthouse
             inputs.srvos.nixosModules.server
             inputs.srvos.nixosModules.hardware-vultr-vm
-            inputs.srvos.nixosModules.mixins-nix-experimental
           ];
         };
         x86-installer = lib.nixosSystem {
@@ -99,7 +90,6 @@
           inherit specialArgs;
           modules = [
             self.nixosModules.host-x86-installer
-            inputs.srvos.nixosModules.mixins-nix-experimental
             {
               isoImage = {
                 squashfsCompression = "zstd -Xcompression-level 6";
@@ -131,6 +121,7 @@
         #  inherit specialArgs;
         #  modules = [ self.nixosModules.host-boerbok ];
         #};
+        # Unmaintained / inactive hosts
         #argali = lib.nixosSystem {
         #  inherit specialArgs;
         #  modules = [ self.nixosModules.host-argali ];

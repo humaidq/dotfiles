@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inputs,
   vars,
   ...
 }:
@@ -9,6 +10,8 @@ let
   cfg = config.sifr.profiles;
 in
 {
+  imports = [ inputs.srvos.nixosModules.mixins-nix-experimental ];
+
   options.sifr.profiles.base = lib.mkOption {
     description = "Sifr minimal base for all systems";
     type = lib.types.bool;
