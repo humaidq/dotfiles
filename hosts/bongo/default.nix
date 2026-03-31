@@ -61,7 +61,7 @@
     router = {
       enable = true;
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
-      suricata.enable = true;
+      suricata.enable = false;
       qos.lowPriorityPorts = [
         6881
         51413
