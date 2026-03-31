@@ -214,31 +214,31 @@ in
           output."*".bg = "${../wallhaven-13mk9v.jpg} fill #000000";
           fonts = {
             names = [ (if gfxCfg.berkeley.enable then "Berkeley Mono" else "Fira Code") ];
-            size = 8.0;
+            size = 7.0;
           };
           defaultWorkspace = "workspace number 1";
           colors = {
             background = "#130e24";
             focused = {
-              border = "#1d2e86";
+              border = "#10245f";
               background = "#1d2e86";
               text = "#eeeeee";
-              indicator = "#1d2e86";
-              childBorder = "#1d2e86";
+              indicator = "#10245f";
+              childBorder = "#10245f";
             };
             focusedInactive = {
-              border = "#130e24";
+              border = "#18264f";
               background = "#130e24";
               text = "#bbbbbb";
               indicator = "#484e50";
-              childBorder = "#130e24";
+              childBorder = "#18264f";
             };
             unfocused = {
-              border = "#130e24";
+              border = "#1a1830";
               background = "#130e24";
               text = "#bbbbbb";
               indicator = "#484e50";
-              childBorder = "#130e24";
+              childBorder = "#1a1830";
             };
           };
         };

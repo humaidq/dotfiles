@@ -41,26 +41,26 @@ in
         {
           fonts = {
             names = [ (if gfxCfg.berkeley.enable then "Berkeley Mono" else "Fira Code") ];
-            size = 8.0;
+            size = 7.0;
           };
           position = "top";
           statusCommand = "${pkgs.python3}/bin/python3 ${bar}/bin/i3status-with-orgclock";
           colors = {
             background = "#130e24";
             activeWorkspace = {
-              background = "#1d2e86";
-              border = "#130e24";
+              background = "#163672";
+              border = "#10245f";
               text = "#eeeeee";
             };
             focusedWorkspace = {
               background = "#1d2e86";
-              border = "#130e24";
-              text = "#eeeeee";
+              border = "#10245f";
+              text = "#ffffff";
             };
             inactiveWorkspace = {
-              background = "#130e24";
-              border = "#130e24";
-              text = "#eeeeee";
+              background = "#1a1830";
+              border = "#0f1733";
+              text = "#bbbbbb";
             };
           };
         }
