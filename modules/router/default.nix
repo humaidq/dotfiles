@@ -13,6 +13,7 @@ in
     ./dns.nix
     ./qos.nix
     ./pppd.nix
+    ./suricata.nix
     ./client-mode.nix
     ./ip-blocklist.nix
     ./tools.nix

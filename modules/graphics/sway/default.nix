@@ -179,14 +179,14 @@ in
             ];
           };
 
-          terminal = "ghostty";
+          terminal = "foot";
           # https://github.com/nix-community/home-manager/blob/master/modules/services/window-managers/i3-sway/sway.nix
           keybindings =
             lib.mkOptionDefault {
-              "${mod}+Shift+Return" = "exec ghostty";
+              "${mod}+Shift+Return" = "exec foot";
               "${mod}+Shift+c" = "kill";
               "${mod}+Shift+r" = "reload";
-              "${mod}+p" = "exec ${lib.getExe pkgs.j4-dmenu-desktop} --dmenu='bemenu' --term='ghostty'";
+              "${mod}+p" = "exec ${lib.getExe pkgs.j4-dmenu-desktop} --dmenu='bemenu' --term='foot'";
               "${mod}+shift+p" = "exec bemenu-run";
               "${mod}+o" =
                 "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
