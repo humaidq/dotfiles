@@ -18,5 +18,6 @@
   ./scripts
   ./security
   ./shell
+  ./router
   ./topology/home.nix
 ]

@@ -15,9 +15,6 @@
     #inputs.lanzaboote.nixosModules.lanzaboote
     (import ./hardware.nix)
     (import ./disk.nix)
-    (import ./blocking.nix)
-    (import ./blocky.nix)
-    (import ./router.nix)
   ];
   networking.hostName = "bongo";
 
@@ -46,11 +43,27 @@
   #  mode = "600";
   #};
 
+  sops.secrets."etisalat/pppd-config" = {
+    sopsFile = ../../secrets/bongo.yaml;
+  };
+
+  sops.secrets."dnsmasq/dhcp-hosts" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    owner = "dnsmasq";
+    group = "dnsmasq";
+    mode = "0400";
+  };
+
   sifr = {
     #profiles.basePlus = true;
     profiles.server = true;
     autoupgrade.enable = true;
     o11y.client.enable = true;
+
+    router = {
+      enable = true;
+      pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+    };
 
     net = {
       sifr0 = false;
@@ -134,6 +147,8 @@
     };
   };
   boot.initrd.kernelModules = [ "btrfs" ];
+
+  services.dnsmasq.settings.dhcp-hostsfile = config.sops.secrets."dnsmasq/dhcp-hosts".path;
 
   #boot.lanzaboote = {
   #  enable = true;

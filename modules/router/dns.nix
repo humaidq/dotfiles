@@ -1,5 +1,37 @@
-_: {
-  config = {
+{
+  config,
+  lib,
+  ...
+}:
+let
+  cfg = config.sifr.router;
+in
+
+{
+  config = lib.mkIf cfg.enable {
+
+    services.dnsmasq = {
+      enable = true;
+      settings = {
+        dhcp-range = [ "192.168.1.100,192.168.1.200,12h" ];
+        interface = cfg.lan0;
+
+        server = [
+          "127.0.0.1#1153"
+        ];
+        no-resolv = true;
+
+        no-hosts = true;
+
+        dhcp-option = [
+          "option:router,192.168.1.1"
+          "option:dns-server,192.168.1.1"
+        ];
+      };
+    };
+
+    services.resolved.enable = false;
+
     services.blocky = {
       enable = true;
       settings = {
@@ -132,6 +164,7 @@ _: {
           };
         };
       };
-    };
+    }; # end blocky
+
   };
 }
