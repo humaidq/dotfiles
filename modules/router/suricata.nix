@@ -206,6 +206,12 @@ in
       '';
     };
 
+    system.activationScripts.suricata-dirs.text = ''
+      install -d -m 0755 -o ${config.services.suricata.settings.run-as.user} -g ${config.services.suricata.settings.run-as.group} /var/log/suricata
+      install -d -m 0755 -o ${config.services.suricata.settings.run-as.user} -g ${config.services.suricata.settings.run-as.group} /var/lib/suricata
+      install -d -m 0755 -o ${config.services.suricata.settings.run-as.user} -g ${config.services.suricata.settings.run-as.group} /var/lib/suricata/rules
+    '';
+
     systemd.services.suricata = {
       after = [
         "network-online.target"
