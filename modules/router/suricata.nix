@@ -232,6 +232,8 @@ in
           "CAP_NET_ADMIN"
           "CAP_NET_RAW"
         ];
+        LogsDirectory = "suricata";
+        StateDirectory = "suricata";
         LimitNOFILE = 65536;
         LimitMEMLOCK = "infinity";
       };

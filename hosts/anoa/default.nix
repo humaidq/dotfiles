@@ -185,17 +185,16 @@
     distributedBuilds = true;
   };
 
-  # Due to kernel regressions on 'xe' driver, preventing system from booting.
-  # Will try: 6.12.58
+  # Due to kernel regressions on the xe driver, pin a known-good kernel.
   boot.kernelPackages = pkgs.linuxPackages_6_12.extend (
     _: super: {
       kernel = super.kernel.override {
         argsOverride = {
-          version = "6.12.74";
-          modDirVersion = "6.12.74";
+          version = "6.12.58";
+          modDirVersion = "6.12.58";
           src = pkgs.fetchurl {
-            url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.74.tar.xz";
-            sha256 = "0gm1mjn203gc11dqk82fkbsr96bnwcxq4sx5khc7yhwsvjqywmiv";
+            url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.58.tar.xz";
+            sha256 = "1b0k8snqa2hhviv9imn02y6jrbbb62an3ypx8q8ai9k0cra4q72z";
           };
         };
       };

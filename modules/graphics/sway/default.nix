@@ -181,8 +181,8 @@ in
 
           terminal = "foot";
           # https://github.com/nix-community/home-manager/blob/master/modules/services/window-managers/i3-sway/sway.nix
-          keybindings =
-            lib.mkOptionDefault {
+          keybindings = lib.mkOptionDefault (
+            {
               "${mod}+Shift+Return" = "exec foot";
               "${mod}+Shift+c" = "kill";
               "${mod}+Shift+r" = "reload";
@@ -208,7 +208,8 @@ in
             }
             // lib.optionalAttrs (!(lib.attrByPath [ "sifr" "profiles" "installer" ] false config)) {
               "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
-            };
+            }
+          );
           modifier = mod;
           floating.modifier = mod;
           output."*".bg = "${../wallhaven-13mk9v.jpg} fill #000000";

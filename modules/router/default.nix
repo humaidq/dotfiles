@@ -115,7 +115,7 @@ in
     ];
 
     services.ntopng = {
-      enable = true;
+      enable = false;
       interfaces = [
         cfg.wan
         cfg.ppp
