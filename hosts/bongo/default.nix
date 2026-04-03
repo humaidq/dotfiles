@@ -61,7 +61,6 @@
     router = {
       enable = true;
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
-      suricata.enable = false;
       qos.lowPriorityPorts = [
         6881
         51413
@@ -85,8 +84,6 @@
       btrfs.enable = true;
       dirs = [
         "/var/lib/nft-blocklists"
-        "/var/lib/ntopng"
-        "/var/lib/redis-ntopng"
       ];
     };
   };

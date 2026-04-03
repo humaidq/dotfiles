@@ -44,6 +44,20 @@ let
     add_header Referrer-Policy "strict-origin" always;
     add_header X-XSS-Protection "1; mode=block" always;
   '';
+  proxyDefaults = ''
+    proxy_redirect off;
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 60s;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $hostname;
+  '';
   proxyHeaders = ''
     ${error-pages}
 
@@ -142,11 +156,13 @@ in
     services.nginx = {
       enable = true;
       recommendedTlsSettings = true;
-      recommendedProxySettings = true;
+      recommendedProxySettings = false;
       recommendedOptimisation = true;
       recommendedBrotliSettings = true;
 
       appendHttpConfig = ''
+        ${proxyDefaults}
+
         ${security-headers}
 
         map $server_name $limit_conn_key {
@@ -297,7 +313,7 @@ in
                 proxy_request_buffering off;
                 proxy_buffering off;
                 proxy_set_header Host $host;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-For "";
                 proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_http_version 1.1;
                 proxy_set_header Connection "";
@@ -340,7 +356,7 @@ in
 
                 proxy_set_header Host sdr.alq.ae;
                 proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-For "";
                 proxy_set_header X-Forwarded-Proto $scheme;
                 proxy_set_header X-Forwarded-Host $host;
                 proxy_set_header X-Forwarded-Server $hostname;

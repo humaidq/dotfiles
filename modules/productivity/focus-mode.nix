@@ -9,6 +9,7 @@ let
 
   # Convert blocklist to space-separated string for bash script
   blocklistStr = lib.concatStringsSep " " cfg.blocklist;
+  whitelistStr = lib.concatStringsSep " " cfg.whitelist;
 
   # Create the focus command script
   focusScript = pkgs.writeShellApplication {
@@ -19,14 +20,13 @@ let
       systemd # systemd-run
       coreutils # date, mkdir, chmod, etc.
       gnugrep # grep
+      gnused # sed
       bc # for floating point arithmetic
-      iproute2 # tc (traffic control), ip link
-      kmod # modprobe for loading ifb kernel module
       util-linux # logger for syslog
     ];
-    text =
-      lib.replaceStrings [ "@blocklist@" "@slow_bandwidth@" ] [ blocklistStr cfg.slowBandwidthLimit ]
-        (builtins.readFile ./focus-script.bash);
+    text = lib.replaceStrings [ "@blocklist@" "@whitelist@" ] [ blocklistStr whitelistStr ] (
+      builtins.readFile ./focus-script.bash
+    );
   };
 in
 {
@@ -44,6 +44,7 @@ in
         "9to5google.com"
         "9to5mac.com"
         "alternativeto.net"
+        "amazon.ae"
         "apple.com"
         "archive.is"
         "archive.ph"
@@ -61,6 +62,7 @@ in
         "hamspots.net"
         "investing.com"
         "lifehacker.com"
+        "linkedin.com"
         "lobste.rs"
         "lwn.net"
         "m.youtube.com"
@@ -72,6 +74,7 @@ in
         "mobile.twitter.com"
         "netflix.com"
         "news.ycombinator.com"
+        "noon.com"
         "old.reddit.com"
         "omgubuntu.co.uk"
         "reddit.com"
@@ -113,15 +116,20 @@ in
         "x.com"
         "xcancel.com"
         "youtube.com"
-
       ];
     };
 
-    slowBandwidthLimit = lib.mkOption {
-      description = "Bandwidth limit when --slow flag is used (e.g., '1mbit', '5mbit', '512kbit')";
-      type = lib.types.str;
-      default = "1mbit";
-      example = "512kbit";
+    whitelist = lib.mkOption {
+      description = "Domains whose resolved IP addresses should stay reachable even if blocked domains share them";
+      type = lib.types.listOf lib.types.str;
+      default = [
+        "google.com"
+        "channels.nixos.org"
+        "cache.nixos.org"
+        "notebooklm.google.com"
+        "outlook.cloud.microsoft"
+        "teams.cloud.microsoft"
+      ];
     };
   };
 

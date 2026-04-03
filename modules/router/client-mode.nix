@@ -10,8 +10,6 @@ in
   config = lib.mkIf cfg.enable {
     # Specialisation for allowing router to act as a client
     specialisation.client.configuration = {
-      sifr.router.suricata.enable = lib.mkForce false;
-
       boot.kernel.sysctl = {
         "net.ipv4.ip_forward" = lib.mkForce 0;
         "net.ipv6.conf.all.forwarding" = lib.mkForce 0;

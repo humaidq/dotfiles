@@ -13,7 +13,6 @@ in
     ./dns.nix
     ./qos.nix
     ./pppd.nix
-    ./suricata.nix
     ./client-mode.nix
     ./ip-blocklist.nix
     ./tools.nix
@@ -113,15 +112,6 @@ in
       iftop
       bmon
     ];
-
-    services.ntopng = {
-      enable = false;
-      interfaces = [
-        cfg.wan
-        cfg.ppp
-        cfg.lan0
-      ];
-    };
 
     systemd.network = {
       enable = true;
