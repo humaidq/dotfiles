@@ -118,28 +118,6 @@ in
         xsession.enable = true;
         xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
 
-        xdg = {
-          enable = true;
-          mimeApps.enable = true;
-          mimeApps.defaultApplications = { };
-          userDirs = {
-            enable = true;
-            createDirectories = false;
-            desktop = "$HOME";
-            documents = "$HOME/docs";
-            download = "$HOME/inbox/web";
-            pictures = "$HOME/docs/pics";
-            videos = "$HOME/docs/vids";
-            music = "";
-            publicShare = "";
-            templates = "";
-          };
-          configFile."user-dirs.locale".text = "en_GB";
-          configFile."mimeapps.list".force = true;
-          configFile."user-dirs.locale".force = true;
-          configFile."user-dirs.dirs".force = true;
-        };
-
         programs.ghostty = {
           enable = true;
           settings = {
