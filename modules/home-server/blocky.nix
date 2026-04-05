@@ -8,7 +8,6 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
-    topology.self.services.adguardhome.info = "https://adguard.alq.ae";
     services.resolved.enable = lib.mkForce false;
     networking.resolvconf.useLocalResolver = true;
     networking.firewall.allowedUDPPorts = [ 53 ];

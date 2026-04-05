@@ -9,7 +9,12 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.laptop
+    self.nixosModules.sifrOS.desktop
+    self.nixosModules.sifrOS.security
+    self.nixosModules.sifrOS.persist
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-x1-13th-gen
     inputs.disko.nixosModules.disko
     # https://github.com/nix-community/lanzaboote/blob/master/docs/QUICK_START.md
@@ -58,33 +63,47 @@
   services.upower.ignoreLid = true;
 
   sifr = {
-    graphics = {
+    desktop = {
       sway.enable = true;
       enable = true;
       apps = true;
       berkeley.enable = true;
     };
-    profiles = {
-      basePlus = true;
-      laptop = true;
-      work = true;
-      security-research = true;
-      research = true;
-      university = true;
-      receipt = true;
-    };
     security = {
       yubikey = true;
-      encryptDNS = true;
     };
     hasGadgetSecrets = true;
     development.enable = true;
-    ntp.useNTS = true;
-    o11y.client.enable = true;
+    basePlus.enable = true;
+    personal = {
+      ntp.useNTS = true;
+      o11y.client.enable = true;
+      focusMode.enable = true;
+      amateur.enable = true;
+      dns.enable = true;
+      receipt.enable = true;
+      research.enable = true;
+      securityResearch.enable = true;
+      work.enable = true;
+      university.enable = true;
+      net = {
+        sifr0 = true;
+        node-crt = config.sops.secrets."nebula/crt".path;
+        node-key = config.sops.secrets."nebula/key".path;
+        ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
+      };
+      rclone = {
+        enable = true;
+        remote = "oreamnos";
+        remotePath = "/mnt/humaid/files";
+        mountPath = "docs/files";
+        sshUser = "humaid";
+        sshKey = "/home/humaid/.ssh/id_ed25519_build";
+      };
+    };
     applications = {
       chromium.enable = true;
       emacs.enable = true;
-      amateur.enable = true;
     };
     v12n.docker.enable = true;
     v12n.emulation = {
@@ -95,20 +114,6 @@
       ];
     };
 
-    net = {
-      sifr0 = true;
-      node-crt = config.sops.secrets."nebula/crt".path;
-      node-key = config.sops.secrets."nebula/key".path;
-      ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
-    };
-    rclone = {
-      enable = true;
-      remote = "oreamnos";
-      remotePath = "/mnt/humaid/files";
-      mountPath = "docs/files";
-      sshUser = "humaid";
-      sshKey = "/home/humaid/.ssh/id_ed25519_build";
-    };
     backups = {
       enable = true;
       sshKeyPath = config.sops.secrets."borg/ssh_key".path;
@@ -153,13 +158,6 @@
         ];
       };
     };
-    productivity.focusMode = {
-      enable = true;
-    };
-  };
-
-  topology.self = {
-    hardware.info = "Lenovo ThinkPad X1 Carbon Gen 13";
   };
 
   nix = {
@@ -399,7 +397,7 @@
     };
 
     services.kanshi = {
-      inherit (config.sifr.graphics.sway) enable;
+      inherit (config.sifr.desktop.sway) enable;
 
       settings = [
         {

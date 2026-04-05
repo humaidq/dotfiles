@@ -8,17 +8,18 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
     "${inputs.nixos-hardware-star64}/pine64/star64/sd-image.nix"
   ];
   networking.hostName = "boerbok";
 
   sifr = {
+    basePlus.enable = true;
     security.harden = false;
     # LuaJIT not available for riscv64
     applications.neovim.enable = false;
-    profiles.base = true;
-    profiles.basePlus = true;
   };
 
   hardware.deviceTree.overlays = [

@@ -11,7 +11,9 @@
   imports = [
     (modulesPath + "/installer/sd-card/sd-image-aarch64.nix")
     inputs.nixos-hardware.nixosModules.raspberry-pi-4
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
   ];
   nixpkgs = {
     hostPlatform = "aarch64-linux";
@@ -25,9 +27,8 @@
   };
 
   sifr = {
+    basePlus.enable = true;
     security.harden = false;
-    profiles.base = true;
-    profiles.basePlus = true;
   };
 
   system.stateVersion = "24.05";

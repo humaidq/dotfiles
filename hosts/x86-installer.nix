@@ -10,18 +10,20 @@
 {
   imports = [
     (modulesPath + "/installer/cd-dvd/iso-image.nix")
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.desktop
+    self.nixosModules.sifrOS.installer
+    self.nixosModules.sifrOS.security
   ];
   networking.hostName = "sifrOS-installer";
   networking.hostId = "00000000";
   nixpkgs.hostPlatform = "x86_64-linux";
 
   sifr = {
-    graphics.sway.enable = true;
+    desktop.sway.enable = true;
+    installer.enable = true;
     security.harden = false;
-    profiles.base = true;
-    profiles.basePlus = false;
-    profiles.installer = true;
   };
 
   services.greetd.settings.initial_session = {

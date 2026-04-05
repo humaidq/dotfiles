@@ -62,6 +62,10 @@ in
       envFile = config.sops.secrets."fleeti/env".path;
     };
 
+    nix.settings.allowed-users = [
+      "fleeti"
+    ];
+
     services.stirling-pdf = {
       enable = true;
       environment = {

@@ -42,7 +42,6 @@
     flake-root.url = "github:srid/flake-root";
 
     impermanence.url = "github:nix-community/impermanence";
-    nix-topology.url = "github:oddlama/nix-topology";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -98,65 +97,88 @@
 
   outputs =
     inputs@{ nixpkgs, flake-parts, ... }:
-    flake-parts.lib.mkFlake
-      {
-        inherit inputs;
-        specialArgs = {
-          inherit (nixpkgs) lib;
-          vars = {
-            user = "humaid";
-          };
-        };
-      }
-      {
-        imports = [
-          inputs.flake-root.flakeModule
-          inputs.treefmt-nix.flakeModule
-          inputs.nix-topology.flakeModule
-          ./hosts
-        ];
-        flake = {
-          nixosModules = {
-            sifrOS = import ./modules;
-          };
-        };
-        systems = [
-          "x86_64-linux"
-          "aarch64-linux"
-          "aarch64-darwin"
-          #"riscv64-linux"
-        ];
-        perSystem =
+    let
+      flakeOutputs =
+        flake-parts.lib.mkFlake
           {
-            config,
-            system,
-            pkgs,
-            ...
-          }:
+            inherit inputs;
+            specialArgs = {
+              inherit (nixpkgs) lib;
+              vars = {
+                user = "humaid";
+              };
+            };
+          }
           {
-            #topology.modules = [./topology/default.nix];
-            _module.args = {
-              pkgs = import inputs.nixpkgs {
-                inherit system inputs;
-                config = {
-                  allowUnfree = true;
+            imports = [
+              inputs.flake-root.flakeModule
+              inputs.treefmt-nix.flakeModule
+              ./hosts
+            ];
+            systems = [
+              "x86_64-linux"
+              "aarch64-linux"
+              "aarch64-darwin"
+              #"riscv64-linux"
+            ];
+            perSystem =
+              {
+                config,
+                system,
+                pkgs,
+                ...
+              }:
+              {
+                _module.args = {
+                  pkgs = import inputs.nixpkgs {
+                    inherit system inputs;
+                    config = {
+                      allowUnfree = true;
+                    };
+                  };
                 };
-                overlays = [ inputs.nix-topology.overlays.default ];
+                devShells.default = pkgs.mkShell { inputsFrom = [ config.flake-root.devShell ]; };
+                treefmt.config = {
+                  package = pkgs.treefmt;
+                  inherit (config.flake-root) projectRootFile;
+                  programs = {
+                    nixfmt.enable = true;
+                    nixfmt.package = pkgs.nixfmt-rfc-style;
+                    deadnix.enable = true;
+                    statix.enable = true;
+                    shellcheck.enable = true;
+                  };
+                };
+                formatter = config.treefmt.build.wrapper;
               };
-            };
-            devShells.default = pkgs.mkShell { inputsFrom = [ config.flake-root.devShell ]; };
-            treefmt.config = {
-              package = pkgs.treefmt;
-              inherit (config.flake-root) projectRootFile;
-              programs = {
-                nixfmt.enable = true;
-                nixfmt.package = pkgs.nixfmt-rfc-style;
-                deadnix.enable = true;
-                statix.enable = true;
-                shellcheck.enable = true;
-              };
-            };
-            formatter = config.treefmt.build.wrapper;
           };
+    in
+    flakeOutputs
+    // {
+      nixosModules = flakeOutputs.nixosModules // {
+        sifrOS = {
+          base = import ./modules/base;
+          desktop = import ./modules/desktop;
+          installer = import ./modules/installer;
+          laptop = import ./modules/laptop;
+          router = import ./modules/router;
+          security = import ./modules/security;
+          server = import ./modules/server;
+          persist = import ./modules/persist;
+          personal = {
+            amateur = import ./modules/personal/amateur.nix;
+            base = import ./modules/personal/base.nix;
+            dns = import ./modules/personal/dns.nix;
+            focusMode = import ./modules/personal/focus-mode;
+            networking = import ./modules/personal/networking;
+            o11y = import ./modules/personal/o11y;
+            receipt = import ./modules/personal/receipt.nix;
+            research = import ./modules/personal/research.nix;
+            securityResearch = import ./modules/personal/security-research.nix;
+            university = import ./modules/personal/university.nix;
+            work = import ./modules/personal/work.nix;
+          };
+        };
       };
+    };
 }

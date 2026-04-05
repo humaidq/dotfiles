@@ -8,7 +8,12 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
+    self.nixosModules.sifrOS.router
+    self.nixosModules.sifrOS.persist
+    self.nixosModules.sifrOS.server
     inputs.disko.nixosModules.disko
     #inputs.lanzaboote.nixosModules.lanzaboote
     (import ./hardware.nix)
@@ -53,10 +58,18 @@
   };
 
   sifr = {
-    profiles.basePlus = true;
-    profiles.server = true;
     autoupgrade.enable = true;
-    o11y.client.enable = true;
+    basePlus.enable = true;
+    personal = {
+      net = {
+        sifr0 = true;
+        cacheOverPublic = true;
+        firewallInterfaces = [ config.sifr.router.lan0 ];
+        node-crt = config.sops.secrets."nebula/crt".path;
+        node-key = config.sops.secrets."nebula/key".path;
+      };
+      o11y.client.enable = true;
+    };
 
     router = {
       enable = true;
@@ -69,14 +82,6 @@
         53
         853
       ];
-    };
-
-    net = {
-      sifr0 = true;
-      cacheOverPublic = true;
-      firewallInterfaces = [ config.sifr.router.lan0 ];
-      node-crt = config.sops.secrets."nebula/crt".path;
-      node-key = config.sops.secrets."nebula/key".path;
     };
 
     persist = {

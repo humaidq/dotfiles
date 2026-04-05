@@ -1,5 +1,0 @@
-{
-  imports = [
-    ./focus-mode.nix
-  ];
-}

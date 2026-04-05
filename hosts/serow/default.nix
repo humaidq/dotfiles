@@ -7,7 +7,11 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.laptop
+    self.nixosModules.sifrOS.desktop
+    self.nixosModules.sifrOS.security
     inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t590
     (import ./hardware.nix)
   ];
@@ -38,29 +42,33 @@
   services.upower.ignoreLid = true;
   # My configuration specific settings
   sifr = {
-    graphics = {
+    desktop = {
       sway.enable = true;
       apps = true;
     };
-    profiles = {
-      basePlus = true;
-      laptop = true;
-      work = true;
-      security-research = true;
-      research = true;
-      receipt = true;
-      university = true;
-    };
     security = {
       yubikey = true;
-      encryptDNS = true;
     };
     hasGadgetSecrets = true;
     development.enable = true;
-    ntp.useNTS = true;
-    o11y.client.enable = true;
+    basePlus.enable = true;
+    personal = {
+      amateur.enable = true;
+      dns.enable = true;
+      ntp.useNTS = true;
+      o11y.client.enable = true;
+      receipt.enable = true;
+      research.enable = true;
+      securityResearch.enable = true;
+      work.enable = true;
+      university.enable = true;
+      net = {
+        sifr0 = true;
+        node-crt = config.sops.secrets."nebula/crt".path;
+        node-key = config.sops.secrets."nebula/key".path;
+      };
+    };
     applications.emacs.enable = true;
-    applications.amateur.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [
@@ -69,12 +77,6 @@
       ];
     };
 
-    net = {
-      sifr0 = true;
-      node-crt = config.sops.secrets."nebula/crt".path;
-      node-key = config.sops.secrets."nebula/key".path;
-      #  ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
-    };
   };
 
   #nix.settings = {
@@ -94,10 +96,6 @@
 
     efi.canTouchEfiVariables = true;
   };
-  topology.self = {
-    hardware.info = "Lenovo ThinkPad T590";
-  };
-
   swapDevices = [
     {
       device = "/swap";
@@ -137,7 +135,7 @@
 
   home-manager.users."${vars.user}" = {
     services.kanshi = {
-      inherit (config.sifr.graphics.sway) enable;
+      inherit (config.sifr.desktop.sway) enable;
 
       settings = [
         {

@@ -7,6 +7,27 @@
 }:
 let
   cfg = config.sifr.persist;
+  desktopEnabled = lib.attrByPath [ "sifr" "desktop" "enable" ] false config;
+  tailscaleEnabled = lib.attrByPath [ "sifr" "personal" "tailscale" "enable" ] false config;
+  o11yClientEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "client" "enable" ] false config;
+  o11yServerEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "server" "enable" ] false config;
+  extraDirs =
+    lib.optionals desktopEnabled [
+      "/var/lib/bluetooth"
+      "/etc/NetworkManager/system-connections"
+    ]
+    ++ lib.optionals tailscaleEnabled [
+      "/var/lib/tailscale"
+    ]
+    ++ lib.optionals config.services.chrony.enable [ "/var/lib/chrony" ]
+    ++ lib.optionals config.services.uptimed.enable [ "/var/lib/uptimed" ]
+    ++ lib.optionals (o11yClientEnabled || o11yServerEnabled) [
+      "/var/lib/grafana"
+      "/var/lib/loki"
+    ]
+    ++ lib.optionals o11yServerEnabled [
+      "/var/lib/prometheus2"
+    ];
 in
 {
   imports = [
@@ -30,6 +51,7 @@ in
       dirs = lib.mkOption {
         description = "User directories to persist";
         type = lib.types.listOf lib.types.anything;
+        default = [ ];
       };
     };
     persistPath = lib.mkOption {
@@ -40,22 +62,26 @@ in
     dirs = lib.mkOption {
       description = "Global directories to persist";
       type = lib.types.listOf lib.types.anything;
+      default = [ ];
     };
   };
 
   config = lib.mkIf cfg.enable {
     environment.persistence.${cfg.persistPath} = {
       hideMounts = true;
-      directories = cfg.dirs ++ [
-        "/var/log"
-        "/var/lib/nixos"
-        "/var/lib/systemd/coredump"
-        "/var/lib/sops-nix"
-        {
-          directory = "/var/lib/private";
-          mode = "0700";
-        }
-      ];
+      directories =
+        cfg.dirs
+        ++ extraDirs
+        ++ [
+          "/var/log"
+          "/var/lib/nixos"
+          "/var/lib/systemd/coredump"
+          "/var/lib/sops-nix"
+          {
+            directory = "/var/lib/private";
+            mode = "0700";
+          }
+        ];
       files = [
         "/etc/machine-id"
         "/etc/ssh/ssh_host_rsa_key"

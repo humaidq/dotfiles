@@ -7,7 +7,10 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
+    self.nixosModules.sifrOS.server
     (import ./hardware.nix)
     (import ./webserver.nix)
   ];
@@ -41,18 +44,19 @@
   };
 
   sifr = {
-    net = {
-      sifr0 = true;
-      isLighthouse = true;
-      cacheOverPublic = true;
-      node-crt = config.sops.secrets."nebula/crt".path;
-      node-key = config.sops.secrets."nebula/key".path;
-      ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
-    };
-    profiles.basePlus = true;
-    profiles.server = true;
     autoupgrade.enable = true;
-    o11y.client.enable = true;
+    basePlus.enable = true;
+    personal = {
+      net = {
+        sifr0 = true;
+        isLighthouse = true;
+        cacheOverPublic = true;
+        node-crt = config.sops.secrets."nebula/crt".path;
+        node-key = config.sops.secrets."nebula/key".path;
+        ssh-host-key = config.sops.secrets."nebula/ssh_host_key".path;
+      };
+      o11y.client.enable = true;
+    };
   };
 
   nixpkgs.hostPlatform = "x86_64-linux";

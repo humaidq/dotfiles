@@ -6,20 +6,21 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
+    self.nixosModules.sifrOS.server
     inputs.nixos-hardware.nixosModules.raspberry-pi-4
     (import ./hardware.nix)
   ];
 
   sifr = {
-    profiles.server = true;
-    o11y.client.enable = true;
+    personal.o11y.client.enable = true;
 
     # TODO re-enable
     security.harden = false;
   };
 
-  topology.self.interfaces.end0.network = "home";
   networking = {
     hostName = "argali";
 

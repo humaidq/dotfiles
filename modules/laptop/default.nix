@@ -1,0 +1,130 @@
+{
+  lib,
+  pkgs,
+  vars,
+  config,
+  ...
+}:
+{
+  config = {
+    # Assumption: all laptops use SSDs
+    services.fstrim.enable = true;
+
+    boot.kernelParams = [
+      #"workqueue.power_efficient=y"
+      # Disable vendor OEM logo (BGRT)
+      "video=efifb:nobgrt"
+      "bgrt_disable"
+    ];
+
+    services.logind.settings.Login.HandleLidSwitch = "suspend";
+    services.logind.settings.Login.HandleLidSwitchExternalPower = lib.mkForce "ignore";
+
+    hardware.bluetooth.enable = true;
+    users.users.${vars.user}.extraGroups = [
+      "bluetooth"
+      "lp"
+      "scanner"
+    ];
+    # Allow setting cpupower
+    environment.systemPackages = [
+      config.boot.kernelPackages.cpupower
+      pkgs.powertop
+      pkgs.simple-scan
+    ];
+
+    services.printing = {
+      enable = true;
+      drivers = with pkgs; [
+        gutenprint
+        brlaser
+        # Epson L4150
+        epson-escpr
+      ];
+    };
+
+    hardware.sane = {
+      enable = true;
+      #extraBackends = [ pkgs.sane-airscan ];
+      disabledDefaultBackends = [ "escl" ];
+      brscan5 = {
+        enable = true;
+        netDevices.Brother = {
+          name = "Brother";
+          model = "MFC-L8390CDW";
+          ip = "192.168.1.244";
+        };
+      };
+    };
+    #hardware.printers.ensureDefaultPrinter = "Brother";
+    #hardware.printers.ensurePrinters = [
+    #  {
+    #    name = "Brother";
+    #    description = "Brother MFC-L8390CDW";
+    #    deviceUri = "ipp://192.168.1.244/ipp/print";
+    #    location = "Office";
+    #    # driverless for now
+    #    model = "everywhere";
+    #    ppdOptions = {
+    #      PageSize = "A4";
+    #    };
+    #  }
+    #  {
+    #    name = "L4150";
+    #    description = "Epson L4150";
+    #    deviceUri = "lpd://192.168.1.115:515/PASSTHRU";
+    #    location = "Office";
+    #    model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
+    #    ppdOptions = {
+    #      PageSize = "A4";
+    #      OutputOrder = "Reverse";
+    #    };
+    #  }
+    #];
+
+    # disable due to security
+    services.avahi = {
+      enable = true;
+      nssmdns4 = true;
+      nssmdns6 = true;
+      publish = {
+        enable = false;
+        addresses = true;
+      };
+    };
+
+    location.provider = "geoclue2";
+
+    services.geoclue2 = {
+      enable = true;
+      geoProviderUrl = "https://api.beacondb.net/v1/geolocate";
+      submissionUrl = "https://api.beacondb.net/v2/geosubmit";
+      submitData = true;
+      appConfig = {
+        "org.gnome.Maps" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+        "geoclue-demo-agent" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+        "geoclue-where-am-i" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+        "where-am-i" = {
+          isAllowed = true;
+          isSystem = false;
+        };
+      };
+
+      #appConfig.gammastep = {
+      #  isAllowed = true;
+      #  isSystem = false;
+      #};
+    };
+
+    #services.automatic-timezoned.enable = true;
+  };
+}

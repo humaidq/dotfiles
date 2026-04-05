@@ -7,7 +7,10 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
+    self.nixosModules.sifrOS.server
     (import ./hardware.nix)
     (import ./webserver.nix)
     (import ./blocky.nix)
@@ -37,16 +40,16 @@
   };
 
   sifr = {
-    profiles.basePlus = true;
-    profiles.server = true;
     autoupgrade.enable = true;
-    o11y.client.enable = true;
-
-    net = {
-      sifr0 = true;
-      cacheOverPublic = true;
-      node-crt = config.sops.secrets."nebula/crt".path;
-      node-key = config.sops.secrets."nebula/key".path;
+    basePlus.enable = true;
+    personal = {
+      net = {
+        sifr0 = true;
+        cacheOverPublic = true;
+        node-crt = config.sops.secrets."nebula/crt".path;
+        node-key = config.sops.secrets."nebula/key".path;
+      };
+      o11y.client.enable = true;
     };
   };
 

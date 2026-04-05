@@ -9,7 +9,11 @@
 }:
 {
   imports = [
-    self.nixosModules.sifrOS
+    self.nixosModules.sifrOS.base
+    self.nixosModules.sifrOS.personal.base
+    self.nixosModules.sifrOS.security
+    self.nixosModules.sifrOS.persist
+    self.nixosModules.sifrOS.server
     inputs.disko.nixosModules.disko
     (import ./hardware.nix)
     (import ./disk.nix)
@@ -36,10 +40,19 @@
 
   # My configuration specific settings
   sifr = {
-    profiles = {
-      basePlus = true;
-      server = true;
-      work = true;
+    basePlus.enable = true;
+    personal = {
+      ntp.useNTS = false;
+      o11y = {
+        server.enable = true;
+        client.enable = true;
+      };
+      net = {
+        sifr0 = true;
+        node-crt = config.sops.secrets."nebula/crt".path;
+        node-key = config.sops.secrets."nebula/key".path;
+      };
+      work.enable = true;
     };
     v12n.emulation = {
       enable = true;
@@ -50,25 +63,13 @@
     };
     security.yubikey = true;
     development.enable = true;
-    ntp.useNTS = false;
     applications.emacs.enable = true;
     autoupgrade.enable = true;
-
-    o11y = {
-      server.enable = true;
-      client.enable = true;
-    };
 
     hasGadgetSecrets = true;
     home-server.enable = true;
 
     v12n.docker.enable = true;
-    net = {
-      sifr0 = true;
-      node-crt = config.sops.secrets."nebula/crt".path;
-      node-key = config.sops.secrets."nebula/key".path;
-    };
-
     persist = {
       enable = true;
       zfs = {
