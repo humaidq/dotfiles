@@ -47,6 +47,8 @@ in
       };
     }
     (lib.mkIf cfg.enable {
+      nix.gc.options = lib.mkOverride 1000 "--delete-older-than 60d";
+
       documentation = {
         dev.enable = true;
         #man.generateCaches = true;
