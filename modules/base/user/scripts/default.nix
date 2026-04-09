@@ -109,6 +109,16 @@ let
     ];
     text = builtins.readFile ./dns-switch.bash;
   };
+
+  captivity = pkgs.writeShellApplication {
+    name = "captivity";
+    runtimeInputs = with pkgs; [
+      dns-switch
+      networkmanager
+      xdg-utils
+    ];
+    text = builtins.readFile ./captivity.bash;
+  };
 in
 {
   options.sifr.scripts.enable = lib.mkOption {
@@ -123,6 +133,7 @@ in
       zbench
       persist-orphans
       dns-switch
+      captivity
     ]
     ++ lib.optionals config.sifr.development.enable [
       lacheck

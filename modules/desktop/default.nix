@@ -27,7 +27,6 @@ in
       type = types.bool;
       default = cfg.sway.enable || cfg.labwc.enable;
     };
-    hidpi = mkEnableOption "HIDPI screen configuration";
     # Have separate option as we want the ability to disable for VMs with GUI
     enableSound = mkOption {
       description = "Enables sound server and configurations";
@@ -39,11 +38,6 @@ in
     };
   };
   config = mkMerge [
-    # All HiDPI graphical systems
-    (mkIf (cfg.enable && cfg.hidpi) {
-      hardware.opengl.enable = true;
-      services.xserver.dpi = 180;
-    })
     (mkIf cfg.enableSound {
       services.pipewire = {
         enable = true;
@@ -58,11 +52,6 @@ in
       # home-manager can get angry if dconf is not enabled.
       programs.dconf.enable = true;
 
-      services.xserver = {
-        enable = true;
-        excludePackages = [ pkgs.xterm ];
-      };
-
       environment.systemPackages = with pkgs; [
         networkmanager-openconnect
       ];
@@ -72,6 +61,14 @@ in
         networkmanager = {
           enable = true;
           wifi.backend = "wpa_supplicant";
+          settings = {
+            connectivity = {
+              enabled = true;
+              uri = "http://nmcheck.gnome.org/check_network_status.txt";
+              response = "NetworkManager is online";
+              interval = 300;
+            };
+          };
         };
         useNetworkd = false;
       };
@@ -95,6 +92,10 @@ in
             name = "TraditionalOk";
             package = pkgs.mate.mate-themes;
           };
+          gtk4.theme = {
+            name = "adw-gtk3";
+            package = pkgs.adw-gtk3;
+          };
           iconTheme = {
             name = "mate";
             package = pkgs.mate.mate-icon-theme;
@@ -115,11 +116,8 @@ in
           ];
         };
 
-        xsession.enable = true;
-        xsession.profileExtra = "export PATH=$PATH:$HOME/.bin";
-
         programs.ghostty = {
-          enable = true;
+          enable = false;
           settings = {
             theme = "Dracula";
             font-family = if cfg.berkeley.enable then "Berkeley Mono" else "Fira Code";

@@ -32,14 +32,11 @@ let
     #sudo = "doas";
     doas = "sudo";
     ptop = "sudo powertop";
-    #bsd2 = "licensor BSD-2-Clause \"${config.sifr.fullname}\" > LICENSE";
-    #agpl = "licensor AGPL-3.0 \"${config.sifr.fullname}\" > LICENSE";
     yt = "yt-dlp --add-metadata -ic";
     yta = "yt-dlp -f bestaudio/best --add-metadata -xic";
     pf = "pfetch";
     pgr = "ps aux | grep";
     ex = "extract";
-    uf = "ufetch";
 
     # Git
     g = "git";
@@ -47,6 +44,7 @@ let
     gad = "git add .";
     gc = "git commit -s";
     gs = "git status";
+    gsw = "git switch";
     gd = "git diff";
     gds = "git diff --staged";
     gpl = "git pull";
@@ -56,6 +54,14 @@ let
     gco = "git checkout";
     gcb = "git checkout -b";
     gpa = "git remote | xargs -L1 git push --all";
+
+    # systemd
+    sc = "systemctl";
+    scu = "systemctl --user";
+    j = "journalctl";
+    sat = "systemd-analyze time";
+    sab = "systemd-analyze blame";
+    sac = "systemd-analyze critical-chain";
 
     # Always recursive
     cp = "cp -r";
@@ -332,6 +338,34 @@ in
 
               print -n "''${color}''${badge}''${reset_color}"
             }
+
+            # service control
+            sst()     { systemctl status "$@"; }
+            ss()      { systemctl list-units --type=service; }
+            ssall()   { systemctl list-unit-files --type=service; }
+            ssf()     { systemctl list-units --state=failed; }
+
+            sen()     { sudo systemctl enable "$@" && sudo systemctl start "$@"; }
+            sdis()    { sudo systemctl disable "$@" && sudo systemctl stop "$@"; }
+            sstart()  { sudo systemctl start "$@"; }
+            sstop()   { sudo systemctl stop "$@"; }
+            sre()     { sudo systemctl restart "$@"; }
+
+            # logs
+            ju()      { journalctl -u "$@"; }
+            jub()     { journalctl -b -u "$@"; }      # current boot only
+            jprev()   { journalctl -b -1 "$@"; }      # previous boot
+            jf()      { journalctl -f -u "$@"; }      # follow unit logs
+            jxu()     { journalctl -xeu "$@"; }       # interactive debugging, noisy
+
+            # user/session services
+            ust()     { systemctl --user status "$@"; }
+            ure()     { systemctl --user restart "$@"; }
+            uju()     { journalctl --user-unit "$@"; }
+
+            # analysis / debugging
+            sver()    { systemd-analyze verify "$@"; }
+            ssec()    { systemd-analyze security "$@"; }
 
             uptime_badge
             echo " $fg[cyan]Welcome back ${config.sifr.fullname} to your local terminal."

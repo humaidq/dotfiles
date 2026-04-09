@@ -3,11 +3,13 @@
   lib,
   pkgs,
   vars,
+  inputs,
   ...
 }:
 
 let
   cfg = config.sifr.applications;
+  helium = inputs.helium.packages.${pkgs.system}.default;
 in
 {
 
@@ -17,32 +19,37 @@ in
     default = false;
   };
   config = lib.mkIf cfg.chromium.enable {
-    environment.systemPackages = [ pkgs.chromium ];
+    environment.variables.BROWSER = "helium";
+
+    environment.systemPackages = [
+      pkgs.chromium
+      helium
+    ];
 
     environment.etc."chromium/policies/managed/vanilla.json".text = builtins.toJSON {
       DefaultBrowserSettingEnabled = false;
       BookmarkBarEnabled = false;
       BrowserSignin = 0;
 
-      SearchSuggestEnabled = false;
-      AlternateErrorPagesEnabled = false;
+      #SearchSuggestEnabled = false;
+      #AlternateErrorPagesEnabled = false;
       PasswordManagerEnabled = false;
 
-      DefaultSearchProviderEnabled = true;
-      DefaultSearchProviderName = "Google";
-      DefaultSearchProviderSearchURL = "https://www.google.com/search?q={searchTerms}";
-      DefaultSearchProviderSuggestURL = "https://www.google.com/complete/search?output=chrome&q={searchTerms}";
-      DefaultSearchProviderAlternateURLS = [
-        "https://search.nixos.org/packages?channel=unstable&query={searchTerms}"
-      ];
+      #DefaultSearchProviderEnabled = true;
+      #DefaultSearchProviderName = "Google";
+      #DefaultSearchProviderSearchURL = "https://www.google.com/search?q={searchTerms}";
+      #DefaultSearchProviderSuggestURL = "https://www.google.com/complete/search?output=chrome&q={searchTerms}";
+      #DefaultSearchProviderAlternateURLS = [
+      #  "https://search.nixos.org/packages?channel=unstable&query={searchTerms}"
+      #];
 
-      ExtensionInstallForcelist = [
-        # "cjpalhdlnbpafiamejdnhcphjbkeiagm" # ublock origin
-        "bgnkhhnnamicmpeenaelnjfhikgbkllg" # adguard
-        "fnaicdffflnofjppbagibeoednhnbjhg" # floccus
-        "nngceckbapebfimnlniiiahkandclblb" # bitwarden
-        "ekhagklcjbdpajgpjgmbionohlpdbjgc" # zotero connector
-      ];
+      #ExtensionInstallForcelist = [
+      #  # "cjpalhdlnbpafiamejdnhcphjbkeiagm" # ublock origin
+      #  "bgnkhhnnamicmpeenaelnjfhikgbkllg" # adguard
+      #  "fnaicdffflnofjppbagibeoednhnbjhg" # floccus
+      #  "nngceckbapebfimnlniiiahkandclblb" # bitwarden
+      #  "ekhagklcjbdpajgpjgmbionohlpdbjgc" # zotero connector
+      #];
     };
 
     home-manager.users."${vars.user}" = {

@@ -2,12 +2,14 @@
   config,
   pkgs,
   lib,
+  inputs,
   vars,
   ...
 }:
 let
   cfg = config.sifr.desktop.sway;
   gfxCfg = config.sifr.desktop;
+  helium = inputs.helium.packages.${pkgs.system}.default;
   desktopEntry = name: command: {
     executable = true;
     text = ''
@@ -24,6 +26,7 @@ in
       # home manager packages
       home.packages = with pkgs; [
         imv
+        j4-dmenu-desktop
         mpv
       ];
 
@@ -78,24 +81,35 @@ in
             };
           };
         };
-        bemenu = {
+        fuzzel = {
           enable = true;
           settings = {
-            ignorecase = true;
-            line-height = 28;
-            prompt = "run";
-            fb = "#130e24";
-            ff = "#ffffff";
-            nb = "#130e24";
-            nf = "#ffffff";
-            tb = "#130e24";
-            hb = "#134dae";
-            tf = "#ffffff";
-            hf = "#ffffff";
-            af = "#ffffff";
-            ab = "#130e24";
-            width-factor = 1;
-            fn = if gfxCfg.berkeley.enable then "Berkeley Mono 14" else "Fira Code 14";
+            main = {
+              tabs = 4;
+              terminal = "${lib.getExe pkgs.foot} -e";
+              layer = "overlay";
+              width = 40;
+              font = if gfxCfg.berkeley.enable then "Berkeley Mono:size=14" else "Fira Code:size=14";
+              "dpi-aware" = "yes";
+              "inner-pad" = 10;
+              "vertical-pad" = 15;
+              "horizontal-pad" = 15;
+            };
+            colors = {
+              background = "130e24ff";
+              text = "eeeeeeff";
+              prompt = "bbbbbbff";
+              input = "eeeeeeff";
+              match = "eeeeeeff";
+              selection = "1d2e86ff";
+              "selection-match" = "eeeeeeff";
+              "selection-text" = "eeeeeeff";
+              border = "10245fff";
+            };
+            border = {
+              width = 2;
+              radius = 0;
+            };
           };
         };
         swaylock = {
@@ -118,7 +132,7 @@ in
       # Set default applications
       xdg = {
         enable = true;
-        dataFile."applications/browser.desktop" = desktopEntry "Browser" "${pkgs.chromium}/bin/chromium %U";
+        dataFile."applications/browser.desktop" = desktopEntry "Browser" "${helium}/bin/helium %U";
         dataFile."applications/file.desktop" =
           desktopEntry "File Manager" "${pkgs.xfce.thunar}/bin/thunar %U";
         dataFile."applications/img.desktop" = desktopEntry "Image Viewer" "${pkgs.imv}/bin/imv %U";

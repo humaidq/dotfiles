@@ -1,5 +1,5 @@
 {
-  bemenu,
+  fuzzel,
   libnotify,
   slurp,
   wf-recorder,
@@ -9,7 +9,7 @@
 writeShellApplication {
   name = "recorder";
   runtimeInputs = [
-    bemenu
+    fuzzel
     libnotify
     slurp
     wf-recorder
@@ -41,7 +41,7 @@ writeShellApplication {
     mkdir -p "$dir"
     file=$dir/$(date +'%Y%m%d-%H%M%S_rec.mp4')
 
-    sel=$(printf "select area\\nfull screen\\nquit" | bemenu -p Recording)
+    sel=$(printf "select area\\nfull screen\\nquit" | fuzzel --dmenu -p Recording)
     if [[ "$sel" == "quit" ]]; then
        exit 0
     fi

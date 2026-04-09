@@ -81,7 +81,6 @@
       focusMode.enable = true;
       amateur.enable = true;
       dns.enable = true;
-      receipt.enable = true;
       research.enable = true;
       securityResearch.enable = true;
       work.enable = true;
@@ -105,7 +104,6 @@
       chromium.enable = true;
       emacs.enable = true;
     };
-    v12n.docker.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [
@@ -138,6 +136,7 @@
           ".config/emacs"
           ".config/hamradio" # qlog
           ".config/opencode"
+          ".config/net.imput.helium"
           ".config/PrusaSlicer"
           ".cache/rclone"
           ".local/share/WSJT-X"

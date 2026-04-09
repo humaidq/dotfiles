@@ -6,7 +6,7 @@
 }:
 let
   cfg = config.sifr.desktop.labwc;
-  screen = pkgs.callPackage ../screenshot.nix { };
+  screen = pkgs.callPackage ../screenshot.nix { inherit (pkgs) fuzzel; };
 
   autostart = ''
     systemctl --user import-environment WAYLAND_DISPLAY

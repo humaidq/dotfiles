@@ -1,5 +1,5 @@
 {
-  bemenu,
+  fuzzel,
   gimp,
   grim,
   jq,
@@ -15,7 +15,7 @@
 writeShellApplication {
   name = "screen";
   runtimeInputs = [
-    bemenu
+    fuzzel
     grim
     libnotify
     slurp
@@ -38,12 +38,12 @@ writeShellApplication {
     mkdir -p "$dir"
     file=$dir/$(date +'%Y%m%d-%H%M%S_scrn.png')
 
-    sel=$(printf "select area\\ncurrent window\\nfull screen\\nquit" | bemenu -p Screenshot)
+    sel=$(printf "select area\\ncurrent window\\nfull screen\\nquit" | fuzzel --dmenu -p Screenshot)
     if [[ "$sel" == "quit" ]]; then
        exit 0
     fi
 
-    del=$(printf "0" | bemenu -p "Delay (s)")
+    del=$(printf "0" | fuzzel --dmenu -p "Delay (s)")
     sleep "$del"
 
     case "$sel" in
@@ -53,7 +53,7 @@ writeShellApplication {
     esac
 
     notify "*click!* Screenshot taken!"
-    edit=$(printf "no\\nsatty\\npinta\\ngimp" | bemenu -p Edit?)
+    edit=$(printf "no\\nsatty\\npinta\\ngimp" | fuzzel --dmenu -p Edit?)
     if [[ "$edit" != "no" ]]; then
        notify "Launching editor... Image will be copied when the editor exits."
     fi

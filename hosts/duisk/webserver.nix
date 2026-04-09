@@ -70,6 +70,17 @@ let
     limit_req zone=post burst=2 nodelay;
     ${groundwaveHeaders}
   '';
+  groundwaveProxyHeaders = ''
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $hostname;
+
+    ${proxyHeaders}
+  '';
   humaidCsp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
   humaidHeaders = ''
     add_header Content-Security-Policy "${humaidCsp}" always;
@@ -82,59 +93,59 @@ let
   groundwaveRootLocations = {
     "= /pow" = {
       proxyPass = "${upstream}/pow";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /pow/verify" = {
       proxyPass = "${upstream}/pow/verify";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /connectivity" = {
       proxyPass = "${upstream}/connectivity";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /main.css" = {
       proxyPass = "${upstream}/main.css";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /normalize-8.0.1.min.css" = {
       proxyPass = "${upstream}/normalize-8.0.1.min.css";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /manifest.json" = {
       proxyPass = "${upstream}/manifest.json";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /icon.svg" = {
       proxyPass = "${upstream}/icon.svg";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /icon-64.png" = {
       proxyPass = "${upstream}/icon-64.png";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /icon-128.png" = {
       proxyPass = "${upstream}/icon-128.png";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /icon-512.png" = {
       proxyPass = "${upstream}/icon-512.png";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /pow.js" = {
       proxyPass = "${upstream}/pow.js";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /pow-worker.js" = {
       proxyPass = "${upstream}/pow-worker.js";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /sw.js" = {
       proxyPass = "${upstream}/sw.js";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
     "= /robots.txt" = {
       proxyPass = "${upstream}/robots.txt";
-      extraConfig = proxyHeaders;
+      extraConfig = groundwaveProxyHeaders;
     };
   };
 in
@@ -216,27 +227,27 @@ in
           locations = groundwaveRootLocations // {
             "= /" = {
               proxyPass = "${upstream}/oqrs";
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
             "= /qrz" = {
               proxyPass = "${upstream}/qrz";
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
             "= /oqrs" = {
               proxyPass = "${upstream}/oqrs";
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
             "^~ /oqrs/" = {
               proxyPass = upstream;
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
             "^~ /qrz/" = {
               proxyPass = upstream;
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
             "/" = {
               proxyPass = upstream;
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
           };
         };
@@ -250,12 +261,12 @@ in
           locations = groundwaveRootLocations // {
             "^~ /f/" = {
               proxyPass = upstream;
-              extraConfig = proxyHeaders;
+              extraConfig = groundwaveProxyHeaders;
             };
             "/" = {
               proxyPass = upstream;
               extraConfig = ''
-                ${proxyHeaders}
+                ${groundwaveProxyHeaders}
                 rewrite ^/(.*)$ /f/$1 break;
               '';
             };
@@ -271,7 +282,7 @@ in
           '';
           locations."/" = {
             proxyPass = upstream;
-            extraConfig = proxyHeaders;
+            extraConfig = groundwaveProxyHeaders;
           };
         };
 

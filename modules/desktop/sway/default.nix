@@ -9,9 +9,9 @@ let
   cfg = config.sifr.desktop.sway;
   gfxCfg = config.sifr.desktop;
   mod = config.sifr.desktop.sway.modifier;
-  screen = pkgs.callPackage ../screenshot.nix { };
-  recorder = pkgs.callPackage ../recorder.nix { };
-  clipboardManager = pkgs.callPackage ../clipboard-manager.nix { };
+  screen = pkgs.callPackage ../screenshot.nix { inherit (pkgs) fuzzel; };
+  recorder = pkgs.callPackage ../recorder.nix { inherit (pkgs) fuzzel; };
+  clipboardManager = pkgs.callPackage ../clipboard-manager.nix { inherit (pkgs) fuzzel; };
 in
 {
   imports = [
@@ -185,10 +185,9 @@ in
             "${mod}+Shift+Return" = "exec foot";
             "${mod}+Shift+c" = "kill";
             "${mod}+Shift+r" = "reload";
-            "${mod}+p" = "exec ${lib.getExe pkgs.j4-dmenu-desktop} --dmenu='bemenu' --term='foot'";
-            "${mod}+shift+p" = "exec bemenu-run";
+            "${mod}+p" = "exec ${lib.getExe pkgs.fuzzel}";
             "${mod}+o" =
-              "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | bemenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
+              "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | ${lib.getExe pkgs.fuzzel} --dmenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
             "Mod4+c" = "exec caffeine-toggle";
             "Mod4+v" = "exec ${clipboardManager}/bin/clipboard-manager";
 

@@ -1,5 +1,5 @@
 {
-  bemenu,
+  fuzzel,
   cliphist,
   libnotify,
   wl-clipboard,
@@ -8,7 +8,7 @@
 writeShellApplication {
   name = "clipboard-manager";
   runtimeInputs = [
-    bemenu
+    fuzzel
     cliphist
     libnotify
     wl-clipboard
@@ -19,7 +19,7 @@ writeShellApplication {
     }
 
     # Show clipboard history and copy selected item
-    selected=$(cliphist list | bemenu -p "Clipboard History" | cliphist decode)
+    selected=$(cliphist list | fuzzel --dmenu -p "Clipboard History" | cliphist decode)
 
     if [[ -n "$selected" ]]; then
       echo -n "$selected" | wl-copy
