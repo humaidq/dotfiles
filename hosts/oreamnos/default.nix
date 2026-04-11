@@ -228,15 +228,11 @@
     3300
     80
     443
-    53
-    # dns over https
-    3333
   ];
   networking.firewall.allowedUDPPorts = [
     123
     22
     2222
-    53
   ];
 
   services.chrony.extraConfig = lib.mkAfter ''
@@ -343,12 +339,6 @@
       {
         host = "any";
         port = "123";
-        proto = "udp";
-      }
-      # DNS
-      {
-        host = "any";
-        port = "53";
         proto = "udp";
       }
       # DNS over https

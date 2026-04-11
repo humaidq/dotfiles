@@ -73,6 +73,7 @@
 
     router = {
       enable = true;
+      localDomain = "v6.alq.ae";
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
       qos.lowPriorityPorts = [
         6881
@@ -94,6 +95,21 @@
   };
 
   services.dnsmasq.settings.dhcp-hostsfile = config.sops.secrets."dnsmasq/dhcp-hosts".path;
+
+  services.nebula.networks.sifr0.firewall = {
+    inbound = [
+      {
+        host = "any";
+        port = "53";
+        proto = "udp";
+      }
+      {
+        host = "any";
+        port = "53";
+        proto = "tcp";
+      }
+    ];
+  };
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

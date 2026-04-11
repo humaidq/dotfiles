@@ -35,6 +35,11 @@ in
       default = "ppp0";
       description = "The PPP interface.";
     };
+    localDomain = lib.mkOption {
+      type = lib.types.str;
+      default = "home.arpa";
+      description = "Local DNS domain served by the router for DHCP hostnames.";
+    };
     pppdConfig = lib.mkOption {
       type = lib.types.path;
       description = "Path to file containing the ISP provided credentials for PPPoE authentication.";
@@ -270,9 +275,11 @@ in
               oifname "${cfg.ppp}" tcp dport { 23, 25, 139, 445 } drop comment "Drop forwarded insecure TCP services to WAN"
               oifname "${cfg.ppp}" udp dport { 69, 137, 138 } drop comment "Drop forwarded insecure UDP services to WAN"
 
-              # Prevent easy DNS bypasses
-              #iifname "${cfg.lan0}" tcp dport 853 drop comment "block DoT"
-              #iifname "${cfg.lan0}" udp dport 853 drop comment "block DoT"
+              # Keep LAN clients on the router's resolver while allowing the router itself upstream access.
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 53 drop comment "Block LAN DNS bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 53 drop comment "Block LAN DNS bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 853 drop comment "Block LAN DoT bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 853 drop comment "Block LAN DoT bypass to WAN"
             }
           '';
         };

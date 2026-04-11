@@ -1,4 +1,7 @@
 { lib, ... }:
+let
+  blockyCommon = import ../../modules/router/blocky-common.nix;
+in
 {
   config = {
     users.groups.blocky = { };
@@ -18,7 +21,7 @@
     ];
     services.blocky = {
       enable = true;
-      settings = {
+      settings = lib.recursiveUpdate blockyCommon {
         ports = {
           dns = 1153;
           http = 3333;
@@ -27,18 +30,6 @@
         };
         certFile = "/var/lib/acme/dns.huma.id/cert.pem";
         keyFile = "/var/lib/acme/dns.huma.id/key.pem";
-        upstreams = {
-          strategy = "strict";
-          groups = {
-            default = [
-              "10.10.0.12"
-            ];
-          };
-        };
-        caching = {
-          minTime = "6h";
-          prefetching = true;
-        };
       };
     };
   };

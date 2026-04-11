@@ -36,7 +36,8 @@ in
       };
     };
 
-    services.languagetool.enable = true;
+    # Memory hungry
+    services.languagetool.enable = false;
 
     environment.systemPackages = [
       emacs
@@ -45,7 +46,7 @@ in
       # :term vterm
       #gnumake
       #cmake
-      copilot-language-server
+      #copilot-language-server
 
       # :tools editorconfig
       editorconfig-core-c
@@ -115,7 +116,7 @@ in
       zstd
 
       # :checkers grammar
-      languagetool
+      #languagetool
       # :cherkers spell
       (aspellWithDicts (
         ds: with ds; [

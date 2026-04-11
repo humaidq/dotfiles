@@ -12,7 +12,7 @@
         dns = "systemd-resolved";
       };
       nameservers = [
-        "10.10.0.12"
+        "10.10.0.16"
       ];
     };
 
