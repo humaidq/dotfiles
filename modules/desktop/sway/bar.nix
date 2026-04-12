@@ -47,20 +47,32 @@ in
           statusCommand = "${pkgs.python3}/bin/python3 ${bar}/bin/i3status-with-orgclock";
           colors = {
             background = "#130e24";
+            statusline = "#eeeeee";
+            separator = "#484e50";
             activeWorkspace = {
-              background = "#163672";
               border = "#10245f";
+              background = "#163672";
               text = "#eeeeee";
             };
             focusedWorkspace = {
-              background = "#1d2e86";
               border = "#10245f";
+              background = "#1d2e86";
               text = "#ffffff";
             };
             inactiveWorkspace = {
-              background = "#1a1830";
               border = "#0f1733";
+              background = "#1a1830";
               text = "#bbbbbb";
+            };
+            urgentWorkspace = {
+              border = "#900000";
+              background = "#900000";
+              text = "#ffffff";
+            };
+            bindingMode = {
+              border = "#10245f";
+              background = "#1d2e86";
+              text = "#ffffff";
             };
           };
         }

@@ -219,6 +219,7 @@ in
               }
             }
 
+            # Allow link-local ISP sources on PPP WAN so DHCPv6-PD and RA work.
             set wan_bogon6 {
               type ipv6_addr
               flags interval
@@ -226,7 +227,6 @@ in
                 ::/128,
                 ::1/128,
                 fc00::/7,
-                fe80::/10,
                 ff00::/8
               }
             }

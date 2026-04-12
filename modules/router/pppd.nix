@@ -7,6 +7,7 @@
 
 let
   cfg = config.sifr.router;
+  pppdService = "pppd-etisalat.service";
 in
 {
   config = lib.mkIf cfg.enable {
@@ -44,16 +45,16 @@ in
     };
 
     #  Restart pppd if systemd-networkd restarts
-    systemd.services."pppd-uplink" = {
+    systemd.services."pppd-etisalat" = {
       partOf = [ "systemd-networkd.service" ];
     };
 
     # Enfore redial once a day
     systemd.services."pppd-uplink-redial" = {
-      requires = [ "pppd-uplink.service" ];
+      requires = [ pppdService ];
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${pkgs.systemd}/bin/systemctl kill -s HUP --kill-who=main pppd-uplink";
+        ExecStart = "${pkgs.systemd}/bin/systemctl kill -s HUP --kill-who=main ${pppdService}";
       };
     };
 

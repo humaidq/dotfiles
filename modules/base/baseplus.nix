@@ -12,34 +12,35 @@ in
 
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
-      btop
-      glances
-      jpegoptim
-      optipng
-      yt-dlp
-      strace
-      netcat
-      nmap
-      pwgen
-      dust
-      gping
-      traceroute
       borgbackup
-      qrencode
-      gnupatch
-      ripgrep
-      sshfs
-      jq
-      ouch
-      hexyl
-      poppler-utils
-      ufetch
+      btop
+      dust
       e2fsprogs
       exiftool
-      resvg
+      glances
+      gnupatch
+      gping
+      hexyl
+      jpegoptim
+      jq
       lm_sensors
+      netcat
+      nmap
+      optipng
+      ouch
+      poppler-utils
+      pwgen
+      qrencode
+      resvg
+      ripgrep
+      sshfs
+      strace
+      traceroute
+      ufetch
+      yt-dlp
     ];
 
+    # keep track of uptime!
     services.uptimed.enable = true;
   };
 }

@@ -29,7 +29,7 @@ writeScriptBin "i3status-with-orgclock" ''
       h, m = divmod(max(minutes, 0), 60)
       return f"{h:02d}:{m:02d}"
 
-  def shorten(text: str, limit: int = 40) -> str:
+  def shorten(text: str, limit: int = 30) -> str:
       text = text.strip()
       if len(text) <= limit:
           return text

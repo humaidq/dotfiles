@@ -47,76 +47,79 @@ in
       }
     ];
 
-    home-manager.useGlobalPkgs = true;
-    home-manager.useUserPackages = true;
-    home-manager.sharedModules = [
-      inputs.nixvim.homeModules.nixvim
-    ]
-    ++ lib.optionals (pkgs.stdenv.hostPlatform.system != "riscv64-linux") [
-      inputs.nix-index-database.homeModules.nix-index
-    ];
-
-    users.mutableUsers = false;
-    users.users.${vars.user} = {
-      isNormalUser = true;
-      uid = 1000;
-      extraGroups = [
-        "plugdev"
-        "dialout"
-        "video"
-        "audio"
-        "disk"
-        "networkmanager"
-        "wheel"
-        "kvm"
-      ];
-      description = cfg.fullname;
-      openssh.authorizedKeys.keys = config.users.users.root.openssh.authorizedKeys.keys;
+    users = {
+      mutableUsers = false;
+      users.${vars.user} = {
+        isNormalUser = true;
+        uid = 1000;
+        extraGroups = [
+          "plugdev"
+          "dialout"
+          "video"
+          "audio"
+          "disk"
+          "networkmanager"
+          "wheel"
+          "kvm"
+        ];
+        description = cfg.fullname;
+        openssh.authorizedKeys.keys = config.users.users.root.openssh.authorizedKeys.keys;
+      };
+      groups.plugdev = { };
     };
-    users.groups.plugdev = { };
 
-    home-manager.users.${vars.user} = {
-      home.stateVersion = "23.05";
-      home.sessionPath = [ "$HOME/.bin" ];
+    home-manager = {
+      useGlobalPkgs = true;
+      useUserPackages = true;
+      sharedModules = [
+        inputs.nixvim.homeModules.nixvim
+      ]
+      ++ lib.optionals (pkgs.stdenv.hostPlatform.system != "riscv64-linux") [
+        inputs.nix-index-database.homeModules.nix-index
+      ];
+      users.${vars.user} = {
+        home.stateVersion = "23.05";
+        home.sessionPath = [ "$HOME/.bin" ];
+      };
     };
 
     environment.systemPackages =
       (with pkgs; [
         ghostty.terminfo
-        wget
-        htop
-        rsync
-        bc
-        units
-        sops
-        git
-        tmux
-        curl
-        lsof
-        xz
-        zip
-        pstree
-        lz4
-        unzip
-        tree
-        fd
         acpi
-        usbutils
-        pciutils
-        killall
-        file
-        fd
+        bc
+        curl
         dig
-        pv
-        smartmontools
+        ethtool
+        fd
+        fd
+        file
+        git
+        htop
         iotop
-        parted
+        killall
+        lsof
+        lz4
         nix-output-monitor
+        numactl
+        parted
+        pciutils
+        pstree
+        pv
+        rsync
+        smartmontools
+        sops
         sysstat
         tcpdump
+        tmux
         trace-cmd
-        ethtool
-        numactl
+        tree
+        units
+        unzip
+        usbutils
+        wget
+        xz
+        zip
       ])
       ++ lib.optionals pkgs.stdenv.isx86_64 (
         with pkgs;

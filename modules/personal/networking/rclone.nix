@@ -73,7 +73,7 @@ in
               ${pkgs.coreutils}/bin/mkdir -p "$mountpoint"
 
               if ${pkgs.util-linux}/bin/mountpoint -q "$mountpoint"; then
-                ${pkgs.fuse}/bin/fusermount -uz "$mountpoint" || ${pkgs.util-linux}/bin/umount -l "$mountpoint"
+                ${pkgs.fuse}/bin/fusermount -uz "$mountpoint" || ${pkgs.util-linux.mount}/bin/umount -l "$mountpoint"
               fi
             '';
           in

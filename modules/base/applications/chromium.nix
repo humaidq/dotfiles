@@ -9,7 +9,7 @@
 
 let
   cfg = config.sifr.applications;
-  helium = inputs.helium.packages.${pkgs.system}.default;
+  helium = inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
 
