@@ -16,6 +16,7 @@ in
 
     boot.initrd.systemd = {
       enable = true;
+      storePaths = [ config.boot.initrd.systemd.package.util-linux.mount ];
       services.impermanence-root = {
         wantedBy = [ "initrd.target" ];
         after = [ "systemd-udev-settle.service" ];
@@ -26,7 +27,7 @@ in
         };
         script = ''
           ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
-          ${pkgs.util-linux.mount}/bin/mount -t btrfs -o subvolid=5 /dev/disk/by-partlabel/disk-root-root /btrfs-root
+          /bin/mount -t btrfs -o subvolid=5 /dev/disk/by-partlabel/disk-root-root /btrfs-root
 
           delete_subvolume_recursively() {
             path="$1"
@@ -42,7 +43,7 @@ in
           fi
 
           ${pkgs.btrfs-progs}/bin/btrfs subvolume create /btrfs-root/root
-          ${pkgs.util-linux.mount}/bin/umount /btrfs-root
+          /bin/umount /btrfs-root
         '';
       };
     };
