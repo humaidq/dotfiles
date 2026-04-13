@@ -2,10 +2,13 @@
   config,
   lib,
   pkgs,
+  utils,
   ...
 }:
 let
   cfg = config.sifr.persist;
+  rootDevice = config.fileSystems."/".device;
+  rootDeviceUnit = "${utils.escapeSystemdPath rootDevice}.device";
 in
 {
   config = lib.mkIf (cfg.enable && cfg.btrfs.enable) {
@@ -19,7 +22,11 @@ in
       storePaths = [ config.boot.initrd.systemd.package.util-linux.mount ];
       services.impermanence-root = {
         wantedBy = [ "initrd.target" ];
-        after = [ "systemd-udev-settle.service" ];
+        requires = [ rootDeviceUnit ];
+        after = [
+          "systemd-udev-settle.service"
+          rootDeviceUnit
+        ];
         before = [ "sysroot.mount" ];
         unitConfig.DefaultDependencies = "no";
         serviceConfig = {
@@ -27,7 +34,7 @@ in
         };
         script = ''
           ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
-          /bin/mount -t btrfs -o subvolid=5 /dev/disk/by-partlabel/disk-root-root /btrfs-root
+          /bin/mount -t btrfs -o subvolid=5 ${lib.escapeShellArg rootDevice} /btrfs-root
 
           delete_subvolume_recursively() {
             path="$1"
