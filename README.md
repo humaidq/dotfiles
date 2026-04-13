@@ -41,7 +41,8 @@ Systems managed by this flake.
 | `oreamnos`   | Home Workstation         | AMD 5995WX   | 128GB | NVIDIA RTX 4070   | Server | NixOS | OK     |
 | `anoa`       | ThinkPad X1 Carbon Gen13 | Ultra 7 268V | 32GB  | Intel Arc 140V    | Laptop | NixOS | OK     |
 | `serow`      | ThinkPad T590            | i7-8565U     | 16GB  | Intel UHD 8th Gen | Laptop | NixOS | OK     |
-| `bongo`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | WIP    |
+| `bongo`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | OK     |
+| `addax`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | OK     |
 | `duisk`      | Vultr VPS                | vCPU         | 2GB   | None              | Server | NixOS | OK     |
 | `lighthouse` | Vultr VPS                | vCPU         | 1GB   | None              | Server | NixOS | OK     |
 | `boerbok`    | Star64                   | SiFive       | 8GB   | None              | Server | NixOS | Broken |

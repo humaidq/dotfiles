@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Router</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at top, #1e293b, #020617 60%);
+      }
+
+      main {
+        width: min(40rem, calc(100% - 2rem));
+        padding: 2rem;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 1rem;
+        background: rgba(15, 23, 42, 0.82);
+        box-shadow: 0 1.5rem 3rem rgba(2, 6, 23, 0.45);
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+
+      p {
+        line-height: 1.6;
+        color: #cbd5e1;
+      }
+
+      .badge {
+        display: inline-block;
+        margin-bottom: 1rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.15);
+        color: #7dd3fc;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="badge">Local router landing page</span>
+      <h1>Router is online</h1>
+      <p>
+        This is the default landing page served directly by the router over plain HTTP on the LAN.
+      </p>
+    </main>
+  </body>
+</html>

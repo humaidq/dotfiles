@@ -16,6 +16,7 @@ in
     ./client-mode.nix
     ./ip-blocklist.nix
     ./tools.nix
+    ./web.nix
   ];
 
   options.sifr.router = {
@@ -181,6 +182,7 @@ in
           allowedTCPPorts = [
             53 # DNS TCP
             22 # SSH from LAN
+            80 # Router landing page
           ];
           allowedUDPPorts = [
             53 # DNS UDP
