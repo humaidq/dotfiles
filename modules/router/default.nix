@@ -83,7 +83,7 @@ in
       };
       leasesFile = lib.mkOption {
         type = lib.types.str;
-        default = "/var/lib/misc/dnsmasq.leases";
+        default = "/var/lib/dnsmasq/dnsmasq.leases";
         description = "Path to the dnsmasq DHCP leases file.";
       };
       hostsFile = lib.mkOption {
