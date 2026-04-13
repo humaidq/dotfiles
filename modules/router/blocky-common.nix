@@ -61,6 +61,9 @@
       "test.huma.id" = "1.1.1.1";
       "alq.ae" = "10.10.0.12,192.168.1.250";
 
+      # routers
+      "v6.alq.ae" = "192.168.1.1";
+
       # Nebula
       "lighthouse.s.alq.ae" = "10.10.0.10";
       "serow.s.alq.ae" = "10.10.0.11";
