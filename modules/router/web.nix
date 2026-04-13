@@ -15,6 +15,10 @@ in
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
+      path = with pkgs; [
+        iproute2
+        procps
+      ];
 
       serviceConfig = {
         DynamicUser = true;
