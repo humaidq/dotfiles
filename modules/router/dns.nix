@@ -23,6 +23,7 @@ in
         domain = cfg.localDomain;
         local = "/${cfg.localDomain}/";
         expand-hosts = true;
+        host-record = [ "${cfg.localDomain},${cfg.dhcp.routerAddress}" ];
 
         server = [
           "127.0.0.1#1153"
