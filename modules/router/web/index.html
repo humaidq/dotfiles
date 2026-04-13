@@ -93,6 +93,10 @@
           <dd>{{ .PPPInterface }}</dd>
           <dt>State</dt>
           <dd>{{ .PPPState }}</dd>
+          <dt>Session started</dt>
+          <dd>{{ .PPPStartedAt }}</dd>
+          <dt>Session uptime</dt>
+          <dd>{{ .PPPSessionUptime }}</dd>
           <dt>IPv4</dt>
           <dd>{{ .IPv4 }}</dd>
           <dt>IPv6</dt>
@@ -119,6 +123,8 @@
           <dd>{{ .DHCPDNS }}</dd>
           <dt>Local domain</dt>
           <dd>{{ .LocalDomain }}</dd>
+          <dt>Total clients</dt>
+          <dd>{{ .LANClientCount }}</dd>
           <dt>Active leases</dt>
           <dd>{{ .DHCPLeaseCount }}</dd>
           <dt>Static reservations</dt>

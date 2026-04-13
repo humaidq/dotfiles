@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ import (
 type pageData struct {
 	PPPInterface         string
 	PPPState             string
+	PPPStartedAt         string
+	PPPSessionUptime     string
 	IPv4                 string
 	IPv6                 string
 	LANInterface         string
@@ -31,6 +34,7 @@ type pageData struct {
 	DHCPLeasesFile       string
 	DHCPHostsFile        string
 	DHCPLeaseCount       string
+	LANClientCount       string
 	DHCPLeaseFileUpdated string
 	DHCPStaticHosts      string
 	WANRxBytes           string
@@ -151,8 +155,60 @@ func countFileEntries(path string) (int, error) {
 	return count, nil
 }
 
+func readPPPSession() (string, string) {
+	psPath, err := exec.LookPath("ps")
+	if err != nil {
+		return "unavailable", "unavailable"
+	}
+
+	output, err := exec.Command(psPath, "-C", "pppd", "-o", "lstart=,etime=,cmd=").Output()
+	if err != nil {
+		return "unavailable", "unavailable"
+	}
+
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || len(line) < 25 {
+			continue
+		}
+
+		startedAt := strings.TrimSpace(line[:24])
+		remainder := strings.TrimSpace(line[24:])
+		fields := strings.Fields(remainder)
+		if len(fields) < 2 {
+			continue
+		}
+
+		return startedAt, fields[0]
+	}
+
+	return "unavailable", "unavailable"
+}
+
+func countLANClients() string {
+	ipPath, err := exec.LookPath("ip")
+	if err != nil {
+		return "unavailable"
+	}
+
+	output, err := exec.Command(ipPath, "-4", "neigh", "show").Output()
+	if err != nil {
+		return "unavailable"
+	}
+
+	count := 0
+	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+		if strings.TrimSpace(line) != "" {
+			count++
+		}
+	}
+
+	return strconv.Itoa(count)
+}
+
 func readLeaseSummary(data pageData) pageData {
 	data.DHCPLeaseCount = "unavailable"
+	data.LANClientCount = countLANClients()
 	data.DHCPLeaseFileUpdated = "unavailable"
 	data.DHCPStaticHosts = "none"
 
@@ -179,6 +235,8 @@ func readLeaseSummary(data pageData) pageData {
 
 func readSystemState(data pageData) pageData {
 	data.PPPState = "missing"
+	data.PPPStartedAt = "unavailable"
+	data.PPPSessionUptime = "unavailable"
 	data.IPv4 = "not assigned"
 	data.IPv6 = "not assigned"
 	data.LoadAverage = "unavailable"
@@ -211,6 +269,8 @@ func readSystemState(data pageData) pageData {
 		data.Hostname = hostname
 	}
 
+	data.PPPStartedAt, data.PPPSessionUptime = readPPPSession()
+
 	data.WANRxBytes, data.WANTxBytes = readInterfaceCounters(data.PPPInterface)
 	data.LANRxBytes, data.LANTxBytes = readInterfaceCounters(data.LANInterface)
 
@@ -226,7 +286,7 @@ func readSystemState(data pageData) pageData {
 		return readLeaseSummary(data)
 	}
 
-	if data.PPPState == "missing" {
+	if data.PPPState == "missing" || data.PPPState == "unknown" {
 		if iface.Flags&net.FlagUp != 0 {
 			data.PPPState = "up"
 		} else {
@@ -252,11 +312,17 @@ func readSystemState(data pageData) pageData {
 
 		if ip4 := ip.To4(); ip4 != nil {
 			data.IPv4 = ip4.String()
+			if data.PPPState == "unknown" {
+				data.PPPState = "up"
+			}
 			continue
 		}
 
 		if data.IPv6 == "not assigned" {
 			data.IPv6 = ip.String()
+			if data.PPPState == "unknown" {
+				data.PPPState = "up"
+			}
 		}
 	}
 
