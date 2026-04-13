@@ -75,6 +75,7 @@
       enable = true;
       localDomain = "v6.alq.ae";
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      dhcp.hostsFile = config.sops.secrets."dnsmasq/dhcp-hosts".path;
       qos.lowPriorityPorts = [
         6881
         51413
@@ -93,8 +94,6 @@
       ];
     };
   };
-
-  services.dnsmasq.settings.dhcp-hostsfile = config.sops.secrets."dnsmasq/dhcp-hosts".path;
 
   services.nebula.networks.sifr0.firewall = {
     inbound = [

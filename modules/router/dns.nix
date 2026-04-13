@@ -14,7 +14,8 @@ in
     services.dnsmasq = {
       enable = true;
       settings = {
-        dhcp-range = [ "192.168.1.100,192.168.1.200,12h" ];
+        dhcp-range = [ "${cfg.dhcp.rangeStart},${cfg.dhcp.rangeEnd},${cfg.dhcp.leaseTime}" ];
+        dhcp-leasefile = cfg.dhcp.leasesFile;
         interface = [
           cfg.lan0
           "sifr0"
@@ -31,9 +32,12 @@ in
         no-hosts = true;
 
         dhcp-option = [
-          "option:router,192.168.1.1"
-          "option:dns-server,192.168.1.1"
+          "option:router,${cfg.dhcp.routerAddress}"
+          "option:dns-server,${cfg.dhcp.dnsServer}"
         ];
+      }
+      // lib.optionalAttrs (cfg.dhcp.hostsFile != null) {
+        dhcp-hostsfile = cfg.dhcp.hostsFile;
       };
     };
 

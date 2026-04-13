@@ -31,6 +31,11 @@ in
       default = "enp2s0";
       description = "The LAN0 interface.";
     };
+    lanAddress = lib.mkOption {
+      type = lib.types.str;
+      default = "192.168.1.1/24";
+      description = "The LAN address configured on the router interface.";
+    };
     ppp = lib.mkOption {
       type = lib.types.str;
       default = "ppp0";
@@ -49,6 +54,43 @@ in
       type = lib.types.str;
       default = "ifb0";
       description = "Virtual interface for traffic shaping.";
+    };
+    dhcp = {
+      rangeStart = lib.mkOption {
+        type = lib.types.str;
+        default = "192.168.1.100";
+        description = "Start of the DHCP lease range.";
+      };
+      rangeEnd = lib.mkOption {
+        type = lib.types.str;
+        default = "192.168.1.200";
+        description = "End of the DHCP lease range.";
+      };
+      leaseTime = lib.mkOption {
+        type = lib.types.str;
+        default = "12h";
+        description = "Default DHCP lease time.";
+      };
+      routerAddress = lib.mkOption {
+        type = lib.types.str;
+        default = "192.168.1.1";
+        description = "Router address advertised over DHCP.";
+      };
+      dnsServer = lib.mkOption {
+        type = lib.types.str;
+        default = "192.168.1.1";
+        description = "DNS server advertised over DHCP.";
+      };
+      leasesFile = lib.mkOption {
+        type = lib.types.str;
+        default = "/var/lib/misc/dnsmasq.leases";
+        description = "Path to the dnsmasq DHCP leases file.";
+      };
+      hostsFile = lib.mkOption {
+        type = with lib.types; nullOr str;
+        default = null;
+        description = "Optional path to a dnsmasq static DHCP hosts file.";
+      };
     };
     bandwidth = {
       upload = lib.mkOption {
@@ -133,7 +175,7 @@ in
         };
         "20-lan0" = {
           matchConfig.Name = cfg.lan0;
-          address = [ "192.168.1.1/24" ];
+          address = [ cfg.lanAddress ];
           linkConfig.RequiredForOnline = "routable";
           networkConfig = {
             DHCP = "no";

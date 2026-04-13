@@ -3,61 +3,149 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Router</title>
+    <title>Gateway Status</title>
     <style>
       :root {
-        color-scheme: light dark;
-        font-family: sans-serif;
-        background: #0f172a;
-        color: #e2e8f0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f5f5;
+        color: #111;
       }
 
       body {
         margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        background:
-          radial-gradient(circle at top, #1e293b, #020617 60%);
+        background: #f5f5f5;
       }
 
       main {
-        width: min(40rem, calc(100% - 2rem));
-        padding: 2rem;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        border-radius: 1rem;
-        background: rgba(15, 23, 42, 0.82);
-        box-shadow: 0 1.5rem 3rem rgba(2, 6, 23, 0.45);
+        width: min(46rem, calc(100% - 2rem));
+        margin: 2rem auto;
+        padding: 1.5rem;
+        border: 1px solid #bdbdbd;
+        background: #fff;
       }
 
       h1 {
-        margin-top: 0;
-        font-size: clamp(2rem, 4vw, 3rem);
+        margin: 0 0 0.5rem;
+        font-size: 1.75rem;
+        font-weight: 700;
       }
 
       p {
-        line-height: 1.6;
-        color: #cbd5e1;
+        margin: 0.5rem 0;
+        line-height: 1.5;
       }
 
-      .badge {
-        display: inline-block;
-        margin-bottom: 1rem;
-        padding: 0.35rem 0.75rem;
-        border-radius: 999px;
-        background: rgba(56, 189, 248, 0.15);
-        color: #7dd3fc;
+      dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 0.75rem 1rem;
+        margin: 0;
+      }
+
+      dt {
+        font-weight: 700;
+      }
+
+      dd {
+        margin: 0;
+        font-family: monospace;
+      }
+
+      .section {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #d6d6d6;
+      }
+
+      .section h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1.1rem;
+      }
+
+      .muted {
+        color: #444;
+      }
+
+      footer {
+        margin-top: 1.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #d6d6d6;
+        color: #444;
         font-size: 0.95rem;
+      }
+
+      .footer-line + .footer-line {
+        margin-top: 0.4rem;
       }
     </style>
   </head>
   <body>
     <main>
-      <span class="badge">Local router landing page</span>
-      <h1>Router is online</h1>
-      <p>
-        This is the default landing page served directly by the router over plain HTTP on the LAN.
+      <h1>Gateway Status</h1>
+      <p class="muted">
+        This router is remotely managed.
       </p>
+
+      <section class="section" aria-labelledby="wan-status">
+        <h2 id="wan-status">WAN / PPP Status</h2>
+        <dl>
+          <dt>PPP interface</dt>
+          <dd>{{ .PPPInterface }}</dd>
+          <dt>State</dt>
+          <dd>{{ .PPPState }}</dd>
+          <dt>IPv4</dt>
+          <dd>{{ .IPv4 }}</dd>
+          <dt>IPv6</dt>
+          <dd>{{ .IPv6 }}</dd>
+          <dt>Updated</dt>
+          <dd>{{ .UpdatedAt }}</dd>
+        </dl>
+      </section>
+
+      <section class="section" aria-labelledby="dhcp-status">
+        <h2 id="dhcp-status">LAN / DHCP</h2>
+        <dl>
+          <dt>LAN interface</dt>
+          <dd>{{ .LANInterface }}</dd>
+          <dt>LAN address</dt>
+          <dd>{{ .LANAddress }}</dd>
+          <dt>DHCP range</dt>
+          <dd>{{ .DHCPRangeStart }} - {{ .DHCPRangeEnd }}</dd>
+          <dt>Lease time</dt>
+          <dd>{{ .DHCPLeaseTime }}</dd>
+          <dt>Router option</dt>
+          <dd>{{ .DHCPRouter }}</dd>
+          <dt>DNS option</dt>
+          <dd>{{ .DHCPDNS }}</dd>
+          <dt>Local domain</dt>
+          <dd>{{ .LocalDomain }}</dd>
+          <dt>Active leases</dt>
+          <dd>{{ .DHCPLeaseCount }}</dd>
+          <dt>Static reservations</dt>
+          <dd>{{ .DHCPStaticHosts }}</dd>
+          <dt>Lease file updated</dt>
+          <dd>{{ .DHCPLeaseFileUpdated }}</dd>
+        </dl>
+      </section>
+
+      <section class="section" aria-labelledby="traffic-status">
+        <h2 id="traffic-status">Traffic Counters</h2>
+        <dl>
+          <dt>WAN RX</dt>
+          <dd>{{ .WANRxBytes }}</dd>
+          <dt>WAN TX</dt>
+          <dd>{{ .WANTxBytes }}</dd>
+          <dt>LAN RX</dt>
+          <dd>{{ .LANRxBytes }}</dd>
+          <dt>LAN TX</dt>
+          <dd>{{ .LANTxBytes }}</dd>
+        </dl>
+      </section>
+
+      <footer>
+        <div class="footer-line">Load average: {{ .LoadAverage }} | Uptime: {{ .Uptime }}</div>
+        <div class="footer-line">Hostname: {{ .Hostname }} | Time: {{ .CurrentTime }}</div>
+      </footer>
     </main>
   </body>
 </html>
