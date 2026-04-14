@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   pkgs,
   lib,
   vars,
@@ -9,7 +10,10 @@ let
   cfg = config.sifr.desktop.sway;
   gfxCfg = config.sifr.desktop;
   mod = config.sifr.desktop.sway.modifier;
-  screen = pkgs.callPackage ../screenshot.nix { inherit (pkgs) fuzzel; };
+  screen = pkgs.callPackage ../screenshot.nix {
+    inherit (pkgs) fuzzel;
+    inherit (inputs.blueshot.packages.${pkgs.system}) blueshot;
+  };
   recorder = pkgs.callPackage ../recorder.nix { inherit (pkgs) fuzzel; };
   clipboardManager = pkgs.callPackage ../clipboard-manager.nix { inherit (pkgs) fuzzel; };
 in

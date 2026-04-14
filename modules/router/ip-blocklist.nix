@@ -6,7 +6,10 @@
 }:
 
 let
-  hageziTifUrl = "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/ips/tif.txt";
+  ipBlocklistUrls = [
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/ips/tif.txt"
+    "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt"
+  ];
 
   # Optional whitelists
   allow4 = [ ];
@@ -75,8 +78,8 @@ in
       script = ''
         set -euo pipefail
 
-        if [ -s "$STATE_DIRECTORY/hagezi-tif.nft" ]; then
-          nft -f "$STATE_DIRECTORY/hagezi-tif.nft"
+        if [ -s "$STATE_DIRECTORY/ip-blocklists.nft" ]; then
+          nft -f "$STATE_DIRECTORY/ip-blocklists.nft"
         fi
       '';
     };
@@ -106,12 +109,18 @@ in
         set -euo pipefail
 
         tmp="$(mktemp)"
+        downloads="$(mktemp -d)"
         tmpnft="$(mktemp)"
-        trap 'rm -f "$tmp" "$tmpnft"' EXIT
+        trap 'rm -rf "$downloads"; rm -f "$tmp" "$tmpnft"' EXIT
 
-        curl --fail --silent --show-error --location \
-          "${hageziTifUrl}" \
-          -o "$tmp"
+        : > "$tmp"
+        ${lib.concatMapStringsSep "\n" (url: ''
+          curl --fail --silent --show-error --location \
+            "${url}" \
+            -o "$downloads/${builtins.hashString "sha256" url}.txt"
+          cat "$downloads/${builtins.hashString "sha256" url}.txt" >> "$tmp"
+          printf '\n' >> "$tmp"
+        '') ipBlocklistUrls}
 
         python3 - "$tmp" "$tmpnft" <<'PY'
         import ipaddress
@@ -126,6 +135,8 @@ in
 
         v4 = []
         v6 = []
+        seen4 = set()
+        seen6 = set()
 
         for line in src.read_text().splitlines():
             s = line.split("#", 1)[0].strip()
@@ -137,11 +148,15 @@ in
                 continue
 
             if net.version == 4:
-                if str(net) not in allow4:
-                    v4.append(str(net))
+                net_str = str(net)
+                if net_str not in allow4 and net_str not in seen4:
+                    seen4.add(net_str)
+                    v4.append(net_str)
             else:
-                if str(net) not in allow6:
-                    v6.append(str(net))
+                net_str = str(net)
+                if net_str not in allow6 and net_str not in seen6:
+                    seen6.add(net_str)
+                    v6.append(net_str)
 
         # Sanity guard: refuse obviously broken / truncated downloads
         if len(v4) + len(v6) < 1000:
@@ -169,8 +184,8 @@ in
         nft -c -f "$tmpnft"
         nft -f "$tmpnft"
 
-        install -Dm0644 "$tmp"    "$STATE_DIRECTORY/hagezi-tif.txt"
-        install -Dm0644 "$tmpnft" "$STATE_DIRECTORY/hagezi-tif.nft"
+        install -Dm0644 "$tmp"    "$STATE_DIRECTORY/ip-blocklists.txt"
+        install -Dm0644 "$tmpnft" "$STATE_DIRECTORY/ip-blocklists.nft"
       '';
     };
 
@@ -179,8 +194,8 @@ in
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnBootSec = "5min";
-        OnUnitActiveSec = "6h";
-        RandomizedDelaySec = "30min";
+        OnUnitActiveSec = "10min";
+        RandomizedDelaySec = "2min";
         Persistent = true;
       };
     };

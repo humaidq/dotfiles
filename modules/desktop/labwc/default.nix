@@ -1,12 +1,16 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 let
   cfg = config.sifr.desktop.labwc;
-  screen = pkgs.callPackage ../screenshot.nix { inherit (pkgs) fuzzel; };
+  screen = pkgs.callPackage ../screenshot.nix {
+    inherit (pkgs) fuzzel;
+    inherit (inputs.blueshot.packages.${pkgs.system}) blueshot;
+  };
 
   autostart = ''
     systemctl --user import-environment WAYLAND_DISPLAY

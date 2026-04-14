@@ -1,4 +1,5 @@
 {
+  blueshot,
   fuzzel,
   gimp,
   grim,
@@ -23,6 +24,7 @@ writeShellApplication {
     xdg-user-dirs
 
     # editors
+    blueshot
     gimp
     pinta
     satty
@@ -53,11 +55,12 @@ writeShellApplication {
     esac
 
     notify "*click!* Screenshot taken!"
-    edit=$(printf "no\\nsatty\\npinta\\ngimp" | fuzzel --dmenu -p Edit?)
+    edit=$(printf "no\\nblueshot\\nsatty\\npinta\\ngimp" | fuzzel --dmenu -p Edit?)
     if [[ "$edit" != "no" ]]; then
        notify "Launching editor... Image will be copied when the editor exits."
     fi
     case "$edit" in
+         "blueshot") blueshot "$file" ;;
          "satty") satty -f "$file" ;;
          "pinta") pinta "$file" ;;
          "gimp") gimp -n -s "$file" ;;

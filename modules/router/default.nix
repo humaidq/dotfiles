@@ -15,6 +15,7 @@ in
     ./pppd.nix
     ./client-mode.nix
     ./ip-blocklist.nix
+    ./suricata.nix
     ./tools.nix
     ./web.nix
   ];

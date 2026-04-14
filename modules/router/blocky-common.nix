@@ -121,6 +121,11 @@
         "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts"
       ];
 
+      devdan = [
+        "https://www.github.developerdan.com/hosts/lists/hate-and-junk-extended.txt"
+        "https://www.github.developerdan.com/hosts/lists/dating-services-extended.txt"
+      ];
+
       extras = [
         # DMCA abusers
         "https://paulgb.github.io/BarbBlock/blacklists/hosts-file.txt"
@@ -174,6 +179,7 @@
 
       ips = [
         "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/ips/tif.txt"
+        "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt"
       ];
 
       custom = [

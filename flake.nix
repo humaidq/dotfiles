@@ -31,6 +31,10 @@
       url = "github:humaidq/fleeti";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    blueshot = {
+      url = "github:humaidq/blueshot";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     # External imports
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
