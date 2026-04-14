@@ -84,6 +84,7 @@
         53
         853
       ];
+      suricata.enable = true;
     };
 
     persist = {
