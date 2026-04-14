@@ -7,9 +7,21 @@
 let
   routerCfg = config.sifr.router;
   cfg = routerCfg.suricata;
+  yaml = pkgs.formats.yaml { };
   python = pkgs.python3.withPackages (ps: with ps; [ pyyaml ]);
   suricataUpdate = "${python.interpreter} ${config.services.suricata.package}/bin/suricata-update";
   mkSourceName = url: "sifr-${builtins.substring 0 16 (builtins.hashString "sha256" url)}";
+  renderedConfigFile =
+    pkgs.runCommandLocal "suricata.yaml"
+      {
+        suricataSettings = yaml.generate "suricata-settings-raw.yaml" (
+          lib.filterAttrsRecursive (_: value: value != null) config.services.suricata.settings
+        );
+      }
+      ''
+        printf '%s\n' '%YAML 1.1' '---' > "$out"
+        cat "$suricataSettings" >> "$out"
+      '';
   sourceCommands = lib.concatMapStringsSep "\n" (
     url:
     let
@@ -41,6 +53,7 @@ in
   config = lib.mkIf (routerCfg.enable && cfg.enable) {
     services.suricata = {
       enable = true;
+      configFile = renderedConfigFile;
       enabledSources = [ ];
       settings = {
         af-packet = map (interface: { inherit interface; }) cfg.interfaces;
