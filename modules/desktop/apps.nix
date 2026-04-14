@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inputs,
   ...
 }:
 let
@@ -53,6 +54,7 @@ in
         pinta
         inkscape
         libreoffice
+        inputs.blueshot.packages.${pkgs.system}.blueshot
         # rpi-imager # broken
         prusa-slicer
         bitwarden-desktop

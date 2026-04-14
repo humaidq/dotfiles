@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776107016,
-        "narHash": "sha256-+d33xVhXJFnWo5aXazJJ/4UUCw0A4BHOEf39uZ0ljEY=",
+        "lastModified": 1776160664,
+        "narHash": "sha256-/XnBvUzwlsHxVW5wf62w+chxGqoqxhLazgTwsT+Qff0=",
         "owner": "humaidq",
         "repo": "blueshot",
-        "rev": "55d72324f370635a31b2a1ddd15d80da8de6d5b3",
+        "rev": "c5d8163129feebaff1bd25858f75a652ebf226cd",
         "type": "github"
       },
       "original": {
@@ -645,11 +645,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1776074776,
-        "narHash": "sha256-mBS1rCA+/WXWTGcF02izj7mQZBcVmzt2eesCWV8IxO4=",
+        "lastModified": 1776161992,
+        "narHash": "sha256-nXEUjZB3XmsONl4G8aRr2xFZjsfpNXmeKm7MNGWBr3Q=",
         "owner": "humaidq",
         "repo": "groundwave",
-        "rev": "cbe5781c78877718ce5e0a2de2c80ce73c96ab04",
+        "rev": "1c8c99ee36bfee6b77908591d55ed400d7ff0945",
         "type": "github"
       },
       "original": {
