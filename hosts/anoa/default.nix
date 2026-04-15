@@ -266,6 +266,9 @@
     "udf" # dvds
   ];
 
+  networking.firewall.allowedTCPPorts = [
+    8081
+  ];
   home-manager.users."${vars.user}" = {
     programs = {
       vdirsyncer.enable = true;
@@ -415,14 +418,32 @@
             name = "desk";
             outputs = [
               {
-                criteria = "Samsung Display Corp. 0x419F Unknown";
+                criteria = "Samsung Display Corp. 0x419F (eDP-1)";
                 status = "disable";
               }
               {
-                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E";
+                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E (DP-1)";
                 status = "enable";
                 mode = "5120x2880";
+                scale = 2.0;
+                position = "0,0";
               }
+              {
+                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E (DP-2)";
+                status = "disable";
+              }
+            ];
+            exec = [
+              ''${pkgs.sway}/bin/swaymsg "workspace 1, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 2, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 3, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 4, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 5, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 6, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 7, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 8, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 9, move workspace to output DP-1"''
+              ''${pkgs.sway}/bin/swaymsg "workspace 10, move workspace to output DP-1"''
             ];
           };
         }
