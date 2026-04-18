@@ -25,8 +25,8 @@ in
     hardware.enableRedistributableFirmware = true;
     services.openssh.enable = true;
     networking.firewall.enable = false;
-    services.getty.autologinUser = vars.user;
-    security.sudo-rs.wheelNeedsPassword = false;
+    services.getty.autologinUser = lib.mkForce vars.user;
+    security.sudo-rs.enable = lib.mkForce false;
     security.sudo.wheelNeedsPassword = false;
     environment.systemPackages = [ inputs.disko.packages.${pkgs.stdenv.hostPlatform.system}.default ];
 

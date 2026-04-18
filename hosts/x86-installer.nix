@@ -5,7 +5,7 @@
 }:
 {
   imports = [
-    (modulesPath + "/installer/cd-dvd/iso-image.nix")
+    (modulesPath + "/installer/cd-dvd/installation-cd-base.nix")
     self.nixosModules.sifrOS.base
     self.nixosModules.sifrOS.personal.base
     self.nixosModules.sifrOS.desktop

@@ -43,44 +43,51 @@
       ];
     };
 
-    hardware.sane = {
-      enable = true;
-      #extraBackends = [ pkgs.sane-airscan ];
-      disabledDefaultBackends = [ "escl" ];
-      brscan5 = {
+    systemd.services.ensure-printers = {
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+    };
+
+    hardware = {
+      sane = {
         enable = true;
-        netDevices.Brother = {
-          name = "Brother";
-          model = "MFC-L8390CDW";
-          ip = "192.168.1.244";
+        #extraBackends = [ pkgs.sane-airscan ];
+        disabledDefaultBackends = [ "escl" ];
+        brscan5 = {
+          enable = true;
+          netDevices.Brother = {
+            name = "Brother";
+            model = "MFC-L8390CDW";
+            ip = "192.168.1.244";
+          };
         };
       };
+      printers.ensureDefaultPrinter = "Brother";
+      printers.ensurePrinters = [
+        {
+          name = "Brother";
+          description = "Brother MFC-L8390CDW";
+          deviceUri = "ipp://192.168.1.244/ipp/print";
+          location = "Office";
+          # driverless for now
+          model = "everywhere";
+          ppdOptions = {
+            PageSize = "A4";
+          };
+        }
+        #  {
+        #    name = "L4150";
+        #    description = "Epson L4150";
+        #    deviceUri = "lpd://192.168.1.115:515/PASSTHRU";
+        #    location = "Office";
+        #    model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
+        #    ppdOptions = {
+        #      PageSize = "A4";
+        #      OutputOrder = "Reverse";
+        #    };
+        #  }
+      ];
     };
-    #hardware.printers.ensureDefaultPrinter = "Brother";
-    #hardware.printers.ensurePrinters = [
-    #  {
-    #    name = "Brother";
-    #    description = "Brother MFC-L8390CDW";
-    #    deviceUri = "ipp://192.168.1.244/ipp/print";
-    #    location = "Office";
-    #    # driverless for now
-    #    model = "everywhere";
-    #    ppdOptions = {
-    #      PageSize = "A4";
-    #    };
-    #  }
-    #  {
-    #    name = "L4150";
-    #    description = "Epson L4150";
-    #    deviceUri = "lpd://192.168.1.115:515/PASSTHRU";
-    #    location = "Office";
-    #    model = "epson-inkjet-printer-escpr/Epson-L4150_Series-epson-escpr-en.ppd";
-    #    ppdOptions = {
-    #      PageSize = "A4";
-    #      OutputOrder = "Reverse";
-    #    };
-    #  }
-    #];
 
     # disable due to security
     services.avahi = {

@@ -11,13 +11,16 @@ let
 
     bmg.avoin@gmail.com sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIEJ9ewKwo5FLj6zE30KnTn8+nw7aKdei9SeTwaAeRdJDAAAABHNzaDo=
     bmg.avoin@gmail.com sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIA/pwHnzGNM+ZU4lANGROTRe2ZHbes7cnZn72Oeun/MCAAAABHNzaDo=
+
+    r.muhairi@pm.me ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOoKHNrD2HhQXy4UbDiZyRvukYcb5vPw4Io/MBtggeEW
+    r.muhairi@pm.me ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFM0CwQ/afmHExkS2LtUEuJ1q/Uz9PKBbo1fVd2wiEI1
   '';
 in
 {
   config = {
     home-manager.users.${vars.user} = {
       programs.jujutsu = {
-        enable = false;
+        enable = true;
         settings = {
           user = {
             name = config.sifr.fullname;
