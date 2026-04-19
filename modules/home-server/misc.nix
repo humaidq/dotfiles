@@ -20,6 +20,7 @@ in
       let
         sqlFile = pkgs.writeText "groundwave-postgis-setup.sql" ''
           CREATE EXTENSION IF NOT EXISTS postgis;
+          CREATE EXTENSION IF NOT EXISTS vector;
         '';
       in
       [
