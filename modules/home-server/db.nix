@@ -17,6 +17,7 @@ in
       extensions =
         ps: with ps; [
           postgis
+          pgvector
         ];
       settings = {
         max_connections = 200;

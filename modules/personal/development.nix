@@ -30,6 +30,7 @@ in
           signing = {
             sign-all = true;
             backend = "ssh";
+            behavior = "own";
             key = "~/.ssh/id_ed25519_sk.pub";
           };
 

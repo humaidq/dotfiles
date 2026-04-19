@@ -249,6 +249,7 @@
     extensions =
       ps: with ps; [
         postgis
+        pgvector
       ];
     ensureUsers = [
       {

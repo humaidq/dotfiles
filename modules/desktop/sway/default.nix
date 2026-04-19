@@ -107,6 +107,7 @@ in
         wf-recorder # screen recording
         wtype
         libsForQt5.qt5.qtwayland
+        lxqt.lxqt-openssh-askpass
 
         networkmanagerapplet
       ];
@@ -134,6 +135,8 @@ in
         XDG_SESSION_TYPE = "wayland";
         XDG_CURRENT_DESKTOP = "sway";
         ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+        SSH_ASKPASS = lib.getExe pkgs.lxqt.lxqt-openssh-askpass;
+        SSH_ASKPASS_REQUIRE = "prefer";
       };
 
       #xfconf.settings = {
@@ -163,6 +166,7 @@ in
               { class = "file_progress"; }
               { class = "confirm"; }
               { class = "dialog"; }
+              { title = "^OpenSSH Authentication .* request$"; }
               # Thunar dialogs and pop-ups
               {
                 app_id = "thunar";
