@@ -106,6 +106,7 @@ in
         sway-contrib.grimshot # screenshots
         wf-recorder # screen recording
         wtype
+        gtk_engines # GTK2 Clearlooks engine for TraditionalOk
         libsForQt5.qt5.qtwayland
         lxqt.lxqt-openssh-askpass
 

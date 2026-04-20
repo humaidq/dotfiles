@@ -1,6 +1,8 @@
 alak.bar
 *.alak.bar
 
+*.etisalat-amazonprime.com
+
 gerrit.googlesource.com
 *.googlesource.com
 fonts.gstatic.com
