@@ -270,6 +270,7 @@
   networking.firewall.allowedTCPPorts = [
     8081
   ];
+
   home-manager.users."${vars.user}" = {
     programs = {
       vdirsyncer.enable = true;
