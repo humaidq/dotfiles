@@ -30,8 +30,12 @@ in
           signing = {
             sign-all = true;
             backend = "ssh";
-            behavior = "own";
+            behavior = "drop";
             key = "~/.ssh/id_ed25519_sk.pub";
+          };
+
+          git = {
+            sign-on-push = true;
           };
 
           "--scope" = [
