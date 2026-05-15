@@ -24,6 +24,7 @@
       nixosModules = {
         host-oreamnos = import ./oreamnos;
         host-serow = import ./serow;
+        host-serow-vm = import ./serow-vm;
         host-anoa = import ./anoa;
         host-bongo = import ./bongo;
         host-duisk = import ./duisk;
@@ -52,6 +53,13 @@
           inherit specialArgs;
           modules = [
             self.nixosModules.host-serow
+            inputs.srvos.nixosModules.desktop
+          ];
+        };
+        serow-vm = lib.nixosSystem {
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-serow-vm
             inputs.srvos.nixosModules.desktop
           ];
         };
@@ -134,6 +142,7 @@
 
       packages.x86_64-linux = {
         installer = self.nixosConfigurations.x86-installer.config.system.build.isoImage;
+        serow-vm = self.nixosConfigurations.serow-vm.config.system.build.vm;
         rpi4-bootstrap = self.nixosConfigurations.rpi4-bootstrap.config.system.build.sdImage;
         rpi5-bootstrap = self.nixosConfigurations.rpi5-bootstrap.config.system.build.sdImage;
 

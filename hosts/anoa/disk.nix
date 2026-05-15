@@ -69,6 +69,7 @@
             type = "zfs_fs";
             mountpoint = "/nix";
             options = {
+              "com.sun:auto-snapshot" = "false";
               refreservation = "10G";
             };
           };

@@ -212,7 +212,11 @@ in
 
           liquidctl = import ../../overlays/liquidctl { inherit prev; };
 
-          ufetch = pkgs.callPackage ../../overlays/ufetch { };
+          ls-colors = final.callPackage ../../overlays/ls-colors { };
+
+          ufetch = final.callPackage ../../overlays/ufetch { };
+
+          zsh-extract = final.callPackage ../../overlays/zsh-extract { };
 
           nwjs = prev.nwjs.overrideAttrs {
             version = "0.84.0";

@@ -199,6 +199,7 @@ in
         "yahoo.com"
         "youtube.com"
         "zdnet.com"
+        "lite.cnn.com"
       ];
     };
 
@@ -212,9 +213,23 @@ in
         "notebooklm.google.com"
         "outlook.cloud.microsoft"
         "teams.cloud.microsoft"
+        "outlook.cloud.microsoft"
         "web.whatsapp.com"
+        "openai.com"
+        "oaistatic.com"
+        "oaiusercontent.com"
+        "openai.com.cdn.cloudflare.net"
+        "openaiapi-site.azureedge.net"
+        "openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net"
+        "openaicom.imgix.net"
+        "openaicomproductionae4b.blob.core.windows.net"
+        "production-openaicom-storage.azureedge.net"
+        "crixet.com"
+        "overleaf.com"
+        "cdn.overleaf.com"
         "google.ae"
         "www.google.com"
+
       ];
     };
   };

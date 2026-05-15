@@ -85,6 +85,7 @@
       securityResearch.enable = true;
       work.enable = true;
       university.enable = true;
+tailscale.enable  = true;
       net = {
         sifr0 = true;
         node-crt = config.sops.secrets."nebula/crt".path;

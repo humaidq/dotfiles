@@ -28,7 +28,6 @@ creation_rules:
       - age:
           - *oreamnos
           - *anoa
-          - *serow
           - *duisk
   - path_regex: secrets/bongo.yaml$
     key_groups:

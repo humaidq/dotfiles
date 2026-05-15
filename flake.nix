@@ -179,6 +179,7 @@
             base = import ./modules/personal/base.nix;
             dns = import ./modules/personal/dns.nix;
             focusMode = import ./modules/personal/focus-mode;
+            kids = import ./modules/personal/kids.nix;
             networking = import ./modules/personal/networking;
             o11y = import ./modules/personal/o11y;
             receipt = import ./modules/personal/receipt.nix;

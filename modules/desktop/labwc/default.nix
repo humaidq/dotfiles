@@ -16,7 +16,7 @@ let
     systemctl --user import-environment WAYLAND_DISPLAY
     dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
     sleep 0.3 # make sure variables are set
-    ${pkgs.sfwbar}/bin/sfwbar &
+    ${pkgs.xfce.xfce4-panel}/bin/xfce4-panel &
     ${pkgs.swaybg}/bin/swaybg -m fill -i ${../wallhaven-13mk9v.jpg} &
   '';
 
@@ -136,10 +136,18 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    services.greetd = {
+      enable = true;
+      settings.default_session = {
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd labwc";
+        user = "greeter";
+      };
+    };
+
     programs.xwayland.enable = true;
     programs.labwc.enable = true;
 
-    environment.systemPackages = with pkgs; [ sfwbar ];
+    environment.systemPackages = with pkgs; [ xfce.xfce4-panel ];
     environment.etc = {
       "xdg/labwc/rc.xml".text = rcXml;
       "xdg/labwc/autostart" = {

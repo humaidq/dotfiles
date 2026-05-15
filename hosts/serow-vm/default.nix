@@ -1,9 +1,13 @@
 {
   self,
-  inputs,
   ...
 }:
 {
+  fileSystems."/" = {
+    device = "none";
+    fsType = "tmpfs";
+  };
+
   imports = [
     self.nixosModules.sifrOS.base
     self.nixosModules.sifrOS.personal.base
@@ -11,33 +15,15 @@
     self.nixosModules.sifrOS.laptop
     self.nixosModules.sifrOS.desktop
     self.nixosModules.sifrOS.security
-    inputs.nixos-hardware.nixosModules.lenovo-thinkpad-t590
-    (import ./hardware.nix)
   ];
-  networking.hostName = "serow";
+  networking.hostName = "serow-vm";
+  boot.loader.grub.device = "nodev";
 
   # My configuration specific settings
   sifr = {
-    desktop = {
-      labwc.enable = true;
-    };
     personal.kids.enable = true;
     basePlus.enable = true;
   };
-
-  boot.loader = {
-    systemd-boot = {
-      enable = true;
-      consoleMode = "auto";
-    };
-    efi.canTouchEfiVariables = true;
-  };
-  swapDevices = [
-    {
-      device = "/swap";
-      size = 32 * 1024;
-    }
-  ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
   system.stateVersion = "23.11";

@@ -7,15 +7,6 @@
 }:
 let
   cfg = config.sifr.shell;
-  lscolors = fetchGit {
-    url = "https://github.com/trapd00r/LS_COLORS";
-    rev = "810ce8cac886ac50e75d84fb438b549a1f9478ee"; # Jun 6, 2025
-  };
-  zsh-extract = fetchGit {
-    url = "https://github.com/le0me55i/zsh-extract";
-    # Project is stagnant (Dec 2019), though works perfectly fine.
-    rev = "ecad02d5dbd9468e0f77181c4e0786cdcd6127a9";
-  };
   shellAliases = {
     ka = "killall";
     vim = "nvim";
@@ -177,8 +168,8 @@ in
 
             source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
             source ${pkgs.zsh-nix-shell}/share/zsh-nix-shell/nix-shell.plugin.zsh
-            source ${lscolors}/lscolors.sh
-            source ${zsh-extract}/extract.plugin.zsh
+            source ${pkgs.ls-colors}/share/ls-colors/lscolors.sh
+            source ${pkgs.zsh-extract}/share/zsh/plugins/zsh-extract/extract.plugin.zsh
 
             function ghafa-rebuild() {
               nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa reboot
