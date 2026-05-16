@@ -37,7 +37,7 @@ in
 
     sops.secrets."fleeti/env" = {
       sopsFile = ../../secrets/home-server.yaml;
-      owner = "fleeti";
+      owner = "fleeti-service";
       mode = "600";
     };
 
