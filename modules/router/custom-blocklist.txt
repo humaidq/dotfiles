@@ -9,27 +9,6 @@
 *.click
 *.kp
 
-# Phishing
-*.9000-firebase-works-1769379175747.cluster-hkcruqmgzbd2aqcdnktmz6k7ba.cloudworkstations.dev
-*.fly-uae.com
-*.uae-updates.ae
-*.icpsmartsservices.com
-*.appicpsmartservicesuae.com
-*.icpsmartservicesuae.online
-*.omangovchecks.com
-*.icauaeupdate.com
-*.icpservices.info
-*.icasmartpass.services
-*.icauaeinfoportal.com
-*.icpuae.services
-*.sharjahpolice-govt.com
-*.updateinfo.ae
-*.icauaeupdates.com
-*.aeicaservices.com
-*.dubailegalupdates.ae
-*.dubailegalcheck.ae
-*.uaelegalupdate.com
-
 # Other junk sites
 *.dubai.com
 *.tips.gg

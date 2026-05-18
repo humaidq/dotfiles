@@ -8,26 +8,35 @@ let
   cfg = config.sifr.personal.kids;
   user = "user";
   url = "https://starfall.com";
-  chromiumKiosk = pkgs.writeShellScript "chromium-kiosk" ''
-    while ! ${pkgs.systemd}/bin/systemctl --user show-environment | ${pkgs.gnugrep}/bin/grep -q '^WAYLAND_DISPLAY='; do
-      sleep 1
-    done
-
-    while IFS= read -r line; do
-      export "$line"
-    done < <(
-      ${pkgs.systemd}/bin/systemctl --user show-environment \
-        | ${pkgs.gnugrep}/bin/grep -E '^(WAYLAND_DISPLAY|DISPLAY|XDG_CURRENT_DESKTOP)='
-    )
-
+  starfallLauncher = pkgs.writeShellScriptBin "starfall" ''
     exec ${pkgs.chromium}/bin/chromium \
-      --ozone-platform=wayland \
-      --kiosk \
+      --app=${url} \
+      --user-data-dir="$HOME/.local/share/chromium-starfall" \
+      --class=Starfall \
+      --name=Starfall \
       --no-first-run \
-      --no-default-browser-check \
-      --disable-session-crashed-bubble \
-      ${url}
+      --disable-translate \
+      --disable-features=Translate
   '';
+
+  starfallDesktop = pkgs.makeDesktopItem {
+    name = "starfall";
+    desktopName = "Starfall";
+    genericName = "Educational website";
+    comment = "Open Starfall.com";
+    categories = [ "Education" ];
+    icon = "applications-games";
+
+    exec = "${starfallLauncher}/bin/starfall";
+  };
+
+  hideDesktopIds =
+    ids:
+    lib.genAttrs (map (id: lib.removeSuffix ".desktop" id) ids) (id: {
+      name = id;
+      exec = "${pkgs.coreutils}/bin/true";
+      settings.Hidden = "true";
+    });
 in
 {
   options.sifr.personal.kids.enable = lib.mkEnableOption "kids desktop";
@@ -53,21 +62,39 @@ in
       hashedPasswordFile = lib.mkForce null;
     };
 
+    environment.xfce.excludePackages = with pkgs.xfce; [
+      xfce4-screenshooter
+      xfce4-terminal
+      xfce4-appfinder
+    ];
+
     environment.systemPackages = with pkgs; [
       xfce.xfce4-panel
       xfce.xfce4-panel-profiles
       xfce.xfce4-whiskermenu-plugin
-      xfce.thunar
-      xfce.thunar-archive-plugin
-      xfce.thunar-volman
-      xfce.mousepad
-      xfce.ristretto
-      xfce.parole
-      xfce.orage
-      xfce.xfce4-dict
+      #xfce.thunar
+      #xfce.thunar-archive-plugin
+      #xfce.thunar-volman
+      #xfce.mousepad
+      #xfce.ristretto
+      #xfce.parole
+      #xfce.orage
+      #xfce.xfce4-dict
+
+      bibata-cursors
 
       chromium
       foot
+
+      # Pre-school
+      starfallDesktop
+      kdePackages.kapman
+      kdePackages.bovo
+      kdePackages.blinken
+      kdePackages.palapeli
+      kdePackages.ktuberling
+      gcompris
+      tuxpaint
     ];
     services.xserver = {
       enable = true;
@@ -77,13 +104,23 @@ in
           enable = true;
           noDesktop = true;
           enableXfwm = false;
+          enableScreensaver = false;
         };
       };
     };
     programs.xfconf.enable = true;
+    environment.sessionVariables = {
+      XCURSOR_THEME = lib.mkForce "Bibata-Modern-Classic";
+      XCURSOR_SIZE = lib.mkForce "48";
+    };
 
     home-manager.users.${user} = {
       home.stateVersion = "23.05";
+      xdg.desktopEntries = hideDesktopIds [
+        "btop.desktop"
+        "cups.desktop"
+        "xterm.desktop"
+      ];
       gtk = {
         enable = true;
         iconTheme = {
@@ -127,6 +164,12 @@ in
 
           # 1. Whisker menu
           "plugins/plugin-1" = "whiskermenu";
+          # Whisker menu favourites
+          "plugins/plugin-1/favorites" = [
+            "starfall.desktop"
+          ];
+          "plugins/plugin-1/show-command-lockscreen" = false;
+          "plugins/plugin-1/show-command-logout" = false;
 
           # 2. Task list: running apps/windows
           "plugins/plugin-2" = "tasklist";
@@ -158,23 +201,6 @@ in
         };
       };
 
-      systemd.user.services.chromium-kiosk = {
-        Unit = {
-          Description = "Chromium kiosk for kids";
-          PartOf = [ "graphical-session.target" ];
-        };
-
-        Service = {
-          Type = "simple";
-          ExecStart = chromiumKiosk;
-          #Restart = "always";
-          #RestartSec = "2s";
-        };
-
-        Install = {
-          WantedBy = [ "default.target" ];
-        };
-      };
     };
   };
 }

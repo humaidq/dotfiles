@@ -3,3 +3,4 @@ result
 *.iso
 .aider*
 router-web
+*.qcow2

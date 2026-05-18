@@ -89,6 +89,7 @@ in
               terminal = "${lib.getExe pkgs.foot} -e";
               layer = "overlay";
               width = 40;
+              "exit-on-keyboard-focus-loss" = "no";
               font = if gfxCfg.berkeley.enable then "Berkeley Mono:size=14" else "Fira Code:size=14";
               "dpi-aware" = "yes";
               "inner-pad" = 10;

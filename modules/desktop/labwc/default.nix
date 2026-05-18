@@ -17,7 +17,7 @@ let
     dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
     sleep 0.3 # make sure variables are set
     ${pkgs.xfce.xfce4-panel}/bin/xfce4-panel &
-    ${pkgs.swaybg}/bin/swaybg -m fill -i ${../wallhaven-13mk9v.jpg} &
+    ${pkgs.swaybg}/bin/swaybg -m fill -i ${../../../.../../assets/sifr-spiral-wallpaper.png} &
   '';
 
   environment = ''
