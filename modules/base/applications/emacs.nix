@@ -101,11 +101,11 @@ in
       # :lang sh
       #shfmt
       #shellcheck
-      nodePackages.bash-language-server
+      bash-language-server
       # :lang yaml
-      nodePackages.yaml-language-server
+      yaml-language-server
       # :lang web
-      nodePackages.js-beautify
+      js-beautify
       stylelint
       html-tidy
       # :lang zig
@@ -131,8 +131,8 @@ in
       #python3
 
       # lsp
-      nodePackages.typescript-language-server
-      nodePackages.vscode-langservers-extracted
+      typescript-language-server
+      vscode-langservers-extracted
 
     ]);
   };

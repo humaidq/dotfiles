@@ -62,16 +62,16 @@ in
       hashedPasswordFile = lib.mkForce null;
     };
 
-    environment.xfce.excludePackages = with pkgs.xfce; [
+    environment.xfce.excludePackages = with pkgs; [
       xfce4-screenshooter
       xfce4-terminal
       xfce4-appfinder
     ];
 
     environment.systemPackages = with pkgs; [
-      xfce.xfce4-panel
-      xfce.xfce4-panel-profiles
-      xfce.xfce4-whiskermenu-plugin
+      xfce4-panel
+      xfce4-panel-profiles
+      xfce4-whiskermenu-plugin
       #xfce.thunar
       #xfce.thunar-archive-plugin
       #xfce.thunar-volman

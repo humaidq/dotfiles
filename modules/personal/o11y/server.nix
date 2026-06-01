@@ -10,6 +10,7 @@ in
     services.grafana = {
       enable = true;
       settings = {
+        security.secret_key = "SW2YcwTIb9zpOOhoPsMm"; # default old key
         analytics = {
           reporting_enabled = false;
           check_for_updates = false;

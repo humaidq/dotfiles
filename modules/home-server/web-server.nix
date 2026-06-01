@@ -89,7 +89,7 @@ in
         (mkRP "radarr" "7878")
         (mkRP "sonarr" "8989")
         (mkRP "prowlarr" "9696")
-        (mkRP "catalogue" (builtins.toString config.services.jellyseerr.port))
+        (mkRP "catalogue" (builtins.toString config.services.seerr.port))
         (mkRP "tv" "8096")
         (mkRP "pdf" "8084")
         (mkRP "dav" "5232")

@@ -54,10 +54,10 @@ in
         pinta
         inkscape
         libreoffice
-        inputs.blueshot.packages.${pkgs.system}.blueshot
+        inputs.blueshot.packages.${pkgs.stdenv.hostPlatform.system}.blueshot
         # rpi-imager # broken
         prusa-slicer
-        bitwarden-desktop
+        # bitwarden-desktop # electron eol
         ghostty
         xournalpp
         vlc

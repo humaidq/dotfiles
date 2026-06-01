@@ -9,14 +9,14 @@ let
   cfg = config.sifr.desktop.labwc;
   screen = pkgs.callPackage ../screenshot.nix {
     inherit (pkgs) fuzzel;
-    inherit (inputs.blueshot.packages.${pkgs.system}) blueshot;
+    inherit (inputs.blueshot.packages.${pkgs.stdenv.hostPlatform.system}) blueshot;
   };
 
   autostart = ''
     systemctl --user import-environment WAYLAND_DISPLAY
     dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
     sleep 0.3 # make sure variables are set
-    ${pkgs.xfce.xfce4-panel}/bin/xfce4-panel &
+    ${pkgs.xfce4-panel}/bin/xfce4-panel &
     ${pkgs.swaybg}/bin/swaybg -m fill -i ${../../../.../../assets/sifr-spiral-wallpaper.png} &
   '';
 

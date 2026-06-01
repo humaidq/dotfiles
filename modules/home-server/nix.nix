@@ -28,8 +28,7 @@ in
 
     sops.secrets."nix-cache/privkey" = {
       sopsFile = ../../secrets/home-server.yaml;
-      owner = "harmonia";
-      mode = "600";
+      mode = "0400";
     };
     nix = {
       buildMachines = [
@@ -53,11 +52,13 @@ in
     };
 
     services.harmonia = {
-      enable = true;
-      signKeyPaths = [ config.sops.secrets."nix-cache/privkey".path ];
-      settings = {
-        bind = "0.0.0.0:5000";
-        priority = 50;
+      cache = {
+        signKeyPaths = [ config.sops.secrets."nix-cache/privkey".path ];
+        enable = true;
+        settings = {
+          bind = "0.0.0.0:5000";
+          priority = 50;
+        };
       };
     };
   };

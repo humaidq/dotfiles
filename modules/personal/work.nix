@@ -9,47 +9,39 @@
 
   config = lib.mkIf config.sifr.personal.work.enable {
     home-manager.users."${vars.user}" = {
-      programs.ssh.matchBlocks = {
+      programs.ssh.settings = {
         "ghafa-orin" = {
-          hostname = "192.168.1.32";
-          user = "root";
-          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
-          checkHostIP = false;
-          extraOptions = {
-            StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
-          };
+          HostName = "192.168.1.148";
+          User = "root";
+          IdentityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
+          CheckHostIP = false;
+          StrictHostKeyChecking = "no";
+          UserKnownHostsFile = "/dev/null";
         };
         "groot" = {
-          user = "root";
-          hostname = "192.168.1.227";
-          checkHostIP = false;
-          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
-          extraOptions = {
-            StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
-          };
+          User = "root";
+          HostName = "192.168.1.227";
+          CheckHostIP = false;
+          IdentityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
+          StrictHostKeyChecking = "no";
+          UserKnownHostsFile = "/dev/null";
         };
         "ghafa" = {
-          user = "root";
-          hostname = "192.168.100.2";
-          proxyJump = "ghafajump";
-          checkHostIP = false;
-          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
-          extraOptions = {
-            StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
-          };
+          User = "root";
+          HostName = "192.168.100.2";
+          ProxyJump = "ghafajump";
+          CheckHostIP = false;
+          IdentityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
+          StrictHostKeyChecking = "no";
+          UserKnownHostsFile = "/dev/null";
         };
         "ghafajump" = {
-          hostname = "192.168.1.227";
-          identityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
-          extraOptions = {
-            StrictHostKeyChecking = "no";
-            UserKnownHostsFile = "/dev/null";
-          };
-          user = "ghaf";
-          checkHostIP = false;
+          HostName = "192.168.1.227";
+          IdentityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
+          StrictHostKeyChecking = "no";
+          UserKnownHostsFile = "/dev/null";
+          User = "ghaf";
+          CheckHostIP = false;
         };
       };
     };

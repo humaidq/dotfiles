@@ -12,7 +12,7 @@ let
   mod = config.sifr.desktop.sway.modifier;
   screen = pkgs.callPackage ../screenshot.nix {
     inherit (pkgs) fuzzel;
-    inherit (inputs.blueshot.packages.${pkgs.system}) blueshot;
+    inherit (inputs.blueshot.packages.${pkgs.stdenv.hostPlatform.system}) blueshot;
   };
   recorder = pkgs.callPackage ../recorder.nix { inherit (pkgs) fuzzel; };
   clipboardManager = pkgs.callPackage ../clipboard-manager.nix { inherit (pkgs) fuzzel; };
@@ -58,7 +58,7 @@ in
     # Thunar functionality
     programs.thunar = {
       enable = true;
-      plugins = with pkgs.xfce; [
+      plugins = with pkgs; [
         thunar-archive-plugin
         thunar-volman
         thunar-vcs-plugin

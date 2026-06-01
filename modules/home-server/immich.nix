@@ -14,7 +14,6 @@ in
       port = 3011;
       host = "127.0.0.1";
       mediaLocation = "/persist-svc/immich";
-      database.enableVectors = false; # after pg17 upgrade, not needed
     };
   };
 }

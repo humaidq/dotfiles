@@ -23,6 +23,7 @@
     (import ./disk.nix)
   ];
   networking.hostName = "anoa";
+  networking.hostId = "616e6f61";
 
   # Nebula keys
   sops.secrets."nebula/crt" = {
@@ -85,7 +86,7 @@
       securityResearch.enable = true;
       work.enable = true;
       university.enable = true;
-tailscale.enable  = true;
+      tailscale.enable = true;
       net = {
         sifr0 = true;
         node-crt = config.sops.secrets."nebula/crt".path;
@@ -184,20 +185,20 @@ tailscale.enable  = true;
   };
 
   # Due to kernel regressions on the xe driver, pin a known-good kernel.
-  boot.kernelPackages = pkgs.linuxPackages_6_12.extend (
-    _: super: {
-      kernel = super.kernel.override {
-        argsOverride = {
-          version = "6.12.58";
-          modDirVersion = "6.12.58";
-          src = pkgs.fetchurl {
-            url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.58.tar.xz";
-            sha256 = "1b0k8snqa2hhviv9imn02y6jrbbb62an3ypx8q8ai9k0cra4q72z";
-          };
-        };
-      };
-    }
-  );
+  # boot.kernelPackages = pkgs.linuxPackages_6_12.extend (
+  #   _: super: {
+  #     kernel = super.kernel.override {
+  #       argsOverride = {
+  #         version = "6.12.58";
+  #         modDirVersion = "6.12.58";
+  #         src = pkgs.fetchurl {
+  #           url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.58.tar.xz";
+  #           sha256 = "1b0k8snqa2hhviv9imn02y6jrbbb62an3ypx8q8ai9k0cra4q72z";
+  #         };
+  #       };
+  #     };
+  #   }
+  # );
 
   boot.kernelParams = [
     "zfs.zfs_arc_max=8589934592"

@@ -102,7 +102,7 @@ in
       };
     })
     (lib.mkIf cfg.zsh {
-      documentation.man.generateCaches = false; # speed up rebuild
+      documentation.man.cache.enable = false; # speed up rebuild
       programs.zsh.enable = true;
       users.users."${vars.user}".shell = pkgs.zsh;
       home-manager.users."${vars.user}" = {
@@ -386,6 +386,7 @@ in
         };
         programs.yazi = {
           enable = true;
+          shellWrapperName = "y"; # silence warning for 26.05
           keymap = {
             mgr.prepend_keymap = [
               {

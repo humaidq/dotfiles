@@ -207,10 +207,10 @@ in
         };
       };
       services.resolved = {
-        llmnr = "false";
-        extraConfig = lib.mkAfter ''
-          MulticastDNS=no
-        '';
+        settings.Resolve = {
+          LLMNR = "false";
+          MulticastDNS = "no";
+        };
       };
 
       networking.stevenblack = {

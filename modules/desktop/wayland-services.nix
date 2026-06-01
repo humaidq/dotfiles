@@ -104,20 +104,11 @@ in
         lxqt-policykit-agent.enable = true;
         swayidle = {
           enable = true;
-          events = [
-            {
-              event = "before-sleep";
-              command = "${lib.getExe pkgs.swaylock} -f";
-            }
-            {
-              event = "lock";
-              command = "${lib.getExe pkgs.swaylock} -f";
-            }
-            {
-              event = "unlock";
-              command = "${pkgs.procps}/bin/pkill -USR1 swaylock";
-            }
-          ];
+          events = {
+            before-sleep = "${lib.getExe pkgs.swaylock} -f";
+            lock = "${lib.getExe pkgs.swaylock} -f";
+            unlock = "${pkgs.procps}/bin/pkill -USR1 swaylock";
+          };
           timeouts = [
             {
               timeout = 240;

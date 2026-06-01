@@ -37,7 +37,7 @@
     };
 
     # External imports
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixos-hardware.url = "github:nixos/nixos-hardware";
     nixos-hardware-star64.url = "github:humaidq/nixos-hardware/star64";
@@ -63,7 +63,7 @@
     };
 
     srvos = {
-      url = "github:nix-community/srvos/c4a21c42efec0506ec352891fec84490dae2ded0";
+      url = "github:nix-community/srvos/46b488a30af5c61c98fe251911fdcdcead3110ee";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -83,23 +83,22 @@
     };
 
     lanzaboote = {
-      url = "github:nix-community/lanzaboote/v0.4.3";
+      url = "github:nix-community/lanzaboote/v1.0.0";
       #inputs.nixpkgs.follows = "nixpkgs";
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       #url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nixvim = {
-      url = "github:nix-community/nixvim/nixos-25.11";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:nix-community/nixvim/nixos-26.05";
     };
 
     nix-darwin = {
-      url = "github:LnL7/nix-darwin/nix-darwin-25.11";
+      url = "github:LnL7/nix-darwin/nix-darwin-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -152,7 +151,7 @@
                   inherit (config.flake-root) projectRootFile;
                   programs = {
                     nixfmt.enable = true;
-                    nixfmt.package = pkgs.nixfmt-rfc-style;
+                    nixfmt.package = pkgs.nixfmt;
                     deadnix.enable = true;
                     statix.enable = true;
                     shellcheck.enable = true;

@@ -163,7 +163,7 @@ in
         nix-info
         nix-melt
         nix-tree
-        nixfmt-rfc-style
+        nixfmt
         nixpkgs-review
         optinix # nix option search
         nix-search-cli # nix package search

@@ -153,7 +153,7 @@ in
                   };
                   sources = [
                     { name = "nvim_lsp"; }
-                    { name = "emoji"; }
+                    #{ name = "emoji"; }
                     { name = "buffer"; }
                     { name = "path"; }
                     { name = "luasnip"; }
@@ -177,7 +177,7 @@ in
               cmp-buffer.enable = dev;
               cmp-path.enable = dev;
               cmp_luasnip.enable = dev;
-              cmp-emoji.enable = dev;
+              #cmp-emoji.enable = dev; #unfree?
               lspkind.enable = dev;
               git-worktree = {
                 enable = dev;

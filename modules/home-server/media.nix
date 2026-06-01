@@ -28,7 +28,7 @@ in
     };
     networking.firewall.allowedTCPPorts = [ config.services.netatalk.port ];
 
-    services.jellyseerr = {
+    services.seerr = {
       enable = true;
     };
 

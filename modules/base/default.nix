@@ -79,6 +79,7 @@ in
       ];
       users.${vars.user} = {
         home.stateVersion = "23.05";
+        xdg.userDirs.setSessionVariables = false;
         home.sessionPath = [ "$HOME/.bin" ];
       };
     };
@@ -138,7 +139,7 @@ in
     '';
 
     environment.variables = {
-      EDITOR = "nvim";
+      EDITOR = lib.mkForce "nvim";
       VISUAL = "nvim";
       BROWSER = lib.mkDefault "echo";
       OPENER = "xdg-open";

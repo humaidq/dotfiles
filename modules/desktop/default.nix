@@ -90,7 +90,7 @@ in
           enable = true;
           theme = {
             name = "TraditionalOk";
-            package = pkgs.mate.mate-themes;
+            package = pkgs.mate-themes;
           };
           gtk4.theme = {
             name = "adw-gtk3";
@@ -98,7 +98,7 @@ in
           };
           iconTheme = {
             name = "mate";
-            package = pkgs.mate.mate-icon-theme;
+            package = pkgs.mate-icon-theme;
           };
           cursorTheme = {
             name = "DMZ-White";

@@ -9,7 +9,7 @@
 let
   cfg = config.sifr.desktop.sway;
   gfxCfg = config.sifr.desktop;
-  helium = inputs.helium.packages.${pkgs.system}.default;
+  helium = inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default;
   desktopEntry = name: command: {
     executable = true;
     text = ''
@@ -56,7 +56,7 @@ in
               dpi-aware = "yes";
               font = if gfxCfg.berkeley.enable then "Berkeley Mono:size=8" else "Fira Code:size=8";
             };
-            colors = {
+            colors-dark = {
               background = "282a36";
               foreground = "f8f8f2";
               regular0 = "21222c";
@@ -134,8 +134,7 @@ in
       xdg = {
         enable = true;
         dataFile."applications/browser.desktop" = desktopEntry "Browser" "${helium}/bin/helium %U";
-        dataFile."applications/file.desktop" =
-          desktopEntry "File Manager" "${pkgs.xfce.thunar}/bin/thunar %U";
+        dataFile."applications/file.desktop" = desktopEntry "File Manager" "${pkgs.thunar}/bin/thunar %U";
         dataFile."applications/img.desktop" = desktopEntry "Image Viewer" "${pkgs.imv}/bin/imv %U";
         dataFile."applications/mail.desktop" =
           desktopEntry "Mail" "${lib.getExe pkgs.foot} -e ${pkgs.aerc}/bin/aerc %u";
