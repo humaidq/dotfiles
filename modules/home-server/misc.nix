@@ -64,7 +64,7 @@ in
     };
 
     nix.settings.allowed-users = [
-      "fleeti"
+      "fleeti-service"
     ];
 
     services.stirling-pdf = {

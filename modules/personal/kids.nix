@@ -72,14 +72,14 @@ in
       xfce4-panel
       xfce4-panel-profiles
       xfce4-whiskermenu-plugin
-      #xfce.thunar
-      #xfce.thunar-archive-plugin
-      #xfce.thunar-volman
-      #xfce.mousepad
-      #xfce.ristretto
-      #xfce.parole
-      #xfce.orage
-      #xfce.xfce4-dict
+      #thunar
+      #thunar-archive-plugin
+      #thunar-volman
+      #mousepad
+      #ristretto
+      #parole
+      #orage
+      #xfce4-dict
 
       bibata-cursors
 

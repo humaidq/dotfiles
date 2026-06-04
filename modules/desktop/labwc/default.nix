@@ -147,7 +147,7 @@ in
     programs.xwayland.enable = true;
     programs.labwc.enable = true;
 
-    environment.systemPackages = with pkgs; [ xfce.xfce4-panel ];
+    environment.systemPackages = with pkgs; [ xfce4-panel ];
     environment.etc = {
       "xdg/labwc/rc.xml".text = rcXml;
       "xdg/labwc/autostart" = {

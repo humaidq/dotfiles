@@ -168,6 +168,7 @@ in
               { class = "confirm"; }
               { class = "dialog"; }
               { title = "^OpenSSH Authentication .* request$"; }
+              { title = "^Picture in picture$"; }
               # Thunar dialogs and pop-ups
               {
                 app_id = "thunar";

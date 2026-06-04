@@ -40,6 +40,24 @@ in
 
     security.pki.certificateFiles = [ ../alqasimi-ca.pem ];
 
+    i18n = {
+      supportedLocales = [
+        "en_GB.UTF-8/UTF-8"
+        "en_US.UTF-8/UTF-8"
+        "ar_AE.UTF-8/UTF-8"
+      ];
+      # LC_TIME stays en_GB so week starts on Monday; ar_AE has
+      # first_weekday=1 (Sunday), wrong since the 2022 UAE workweek change.
+      extraLocaleSettings = {
+        LC_TIME = "en_GB.UTF-8";
+        LC_MONETARY = "ar_AE.UTF-8";
+        LC_PAPER = "ar_AE.UTF-8";
+        LC_MEASUREMENT = "ar_AE.UTF-8";
+        LC_ADDRESS = "ar_AE.UTF-8";
+        LC_TELEPHONE = "ar_AE.UTF-8";
+      };
+    };
+
     home-manager.users.${vars.user} = {
       xdg = {
         enable = true;

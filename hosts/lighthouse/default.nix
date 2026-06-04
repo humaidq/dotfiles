@@ -1,7 +1,5 @@
 {
   self,
-  vars,
-  lib,
   config,
   ...
 }:
@@ -19,11 +17,6 @@
   boot.loader.grub = {
     enable = true;
     device = "/dev/vda";
-  };
-
-  users.users."${vars.user}" = {
-    hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
-    hashedPasswordFile = lib.mkForce null;
   };
 
   # Nebula keys

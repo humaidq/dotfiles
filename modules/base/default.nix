@@ -148,7 +148,6 @@ in
       SQLITE_HISTORY = "/tmp/sqlite_history";
       TMUX_TMPDIR = "$XDG_RUNTIME_DIR";
       GOPATH = "$HOME/repos/go";
-      LC_ALL = "en_US.UTF-8";
       DO_NOT_TRACK = "1";
       _JAVA_AWT_WM_NONREPARENTING = "1";
     };

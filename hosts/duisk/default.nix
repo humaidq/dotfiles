@@ -1,7 +1,6 @@
 {
   self,
   vars,
-  lib,
   config,
   ...
 }:
@@ -22,11 +21,7 @@
     device = "/dev/vda";
   };
 
-  users.users."${vars.user}" = {
-    hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
-    hashedPasswordFile = lib.mkForce null;
-    extraGroups = [ "caddy" ];
-  };
+  users.users."${vars.user}".extraGroups = [ "caddy" ];
 
   sops.secrets."nebula/crt" = {
     sopsFile = ../../secrets/duisk.yaml;

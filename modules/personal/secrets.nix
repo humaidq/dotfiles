@@ -15,7 +15,7 @@
       age.keyFile = "/var/lib/sops-nix/key.txt";
       age.generateKey = true;
       secrets = {
-        user-passwd = {
+        user-passwd = lib.mkIf (!config.sifr.bootstrap) {
           sopsFile = ../../secrets/all.yaml;
           neededForUsers = true;
         };
@@ -41,7 +41,18 @@
       };
     };
 
-    users.users.${vars.user}.hashedPasswordFile = config.sops.secrets.user-passwd.path;
+    users.users.${vars.user} =
+      if config.sifr.bootstrap then
+        {
+          hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
+          hashedPasswordFile = lib.mkForce null;
+        }
+      else
+        {
+          hashedPasswordFile = config.sops.secrets.user-passwd.path;
+        };
+
+    warnings = lib.optional config.sifr.bootstrap "sifr.bootstrap is enabled: the primary user has a known placeholder password. Disable it once sops is configured for this host.";
 
     sifr.personal.tailscale.authKeyPath = lib.mkIf config.sifr.hasGadgetSecrets config.sops.secrets.tskey.path;
   };

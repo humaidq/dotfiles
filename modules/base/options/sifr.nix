@@ -38,5 +38,12 @@ in
       '';
     };
     hasGadgetSecrets = lib.mkEnableOption "gadget secrets";
+    bootstrap = lib.mkEnableOption ''
+      bootstrap mode for new systems without sops keys yet.
+      Sets a known placeholder hashedPassword for the primary user
+      instead of reading it from sops, so first login works before
+      the host's age key has been added to .sops.yaml. Disable once
+      sops is configured for the host
+    '';
   };
 }

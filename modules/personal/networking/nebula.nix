@@ -119,10 +119,6 @@ in
     # SSH configuration for Nebula network access only
     services.openssh = lib.mkIf cfg.sifr0 {
       enable = true;
-      settings = {
-        PasswordAuthentication = false;
-        PermitRootLogin = "no";
-      };
       openFirewall = false; # Nebula network access only
     };
 

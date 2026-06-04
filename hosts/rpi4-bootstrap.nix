@@ -1,10 +1,8 @@
 {
   modulesPath,
   pkgs,
-  vars,
   self,
   inputs,
-  lib,
   ...
 }:
 {
@@ -28,6 +26,7 @@
 
   sifr = {
     basePlus.enable = true;
+    bootstrap = true;
     security.harden = false;
   };
 
@@ -53,9 +52,4 @@
       4. Rebuild.
   '';
 
-  users.users.${vars.user} = {
-    isNormalUser = true;
-    hashedPassword = "$6$67sQfb8Pm3Jyvdvo$OPXnLbgHCdoRfhlhhz/pygvJ32ZA.L0HifV.fBSVW47SsfKK6xiroi/Xx.hcB6YJ94XXaiUH5zqDvnAmKq6gE1";
-    hashedPasswordFile = lib.mkForce null;
-  };
 }

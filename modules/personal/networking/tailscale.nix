@@ -55,13 +55,6 @@ in
     (mkIf (cfg.enable && cfg.ssh) {
       services.openssh = {
         enable = true;
-
-        # Security: do not allow password auth or root login.
-        settings = {
-          PasswordAuthentication = false;
-          PermitRootLogin = "no";
-        };
-
         # Do not open firewall rules, tailscale can access only.
         openFirewall = false;
       };

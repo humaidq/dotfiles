@@ -89,7 +89,7 @@
         }
         {
           directory = "/var/lib/fleeti";
-          user = "groundwave";
+          user = "fleeti-service";
           mode = "0700";
         }
         {

@@ -36,17 +36,8 @@ in
           ${pkgs.coreutils}/bin/mkdir -p /btrfs-root
           /bin/mount -t btrfs -o subvolid=5 ${lib.escapeShellArg rootDevice} /btrfs-root
 
-          delete_subvolume_recursively() {
-            path="$1"
-            subvolumes=$(${pkgs.btrfs-progs}/bin/btrfs subvolume list -o "$path" | ${pkgs.coreutils}/bin/cut -f 9- -d ' ')
-            for nested in $subvolumes; do
-              delete_subvolume_recursively "/btrfs-root/$nested"
-            done
-            ${pkgs.btrfs-progs}/bin/btrfs subvolume delete "$path"
-          }
-
           if [ -e /btrfs-root/root ]; then
-            delete_subvolume_recursively /btrfs-root/root
+            ${pkgs.btrfs-progs}/bin/btrfs subvolume delete -R /btrfs-root/root
           fi
 
           ${pkgs.btrfs-progs}/bin/btrfs subvolume create /btrfs-root/root
