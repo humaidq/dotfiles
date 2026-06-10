@@ -606,11 +606,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1780664938,
-        "narHash": "sha256-oYYhPmTyRK1U9Hpg6AFFWFIkJ+yMJ4EX+yCzeWhV7rg=",
+        "lastModified": 1781063471,
+        "narHash": "sha256-tPKpJuCaBaXOZnLOh5UfeXluoPmYaXkjLH+uCaev12k=",
         "owner": "humaidq",
         "repo": "groundwave",
-        "rev": "a023e81830b89fcb6465913e675fc83398eb154f",
+        "rev": "a26d0b7de828190eb9d82dc5d94d9b969a82fe66",
         "type": "github"
       },
       "original": {

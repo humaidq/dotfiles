@@ -177,6 +177,9 @@ in
             function ghafa-orin-rebuild() {
               nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
             }
+            function ghafa-humanoid-rebuild() {
+              nixos-rebuild --flake .#delivery-orin-agx-lab --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
+            }
 
             function ntp() {
               chronyd -Q -t 3 "server $1 iburst maxsamples 1"

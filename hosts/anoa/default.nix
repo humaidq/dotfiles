@@ -165,7 +165,10 @@
     buildMachines = [
       {
         hostName = "oreamnos";
-        system = "x86_64-linux";
+        systems = [
+          "x86_64-linux"
+          "aarch64-linux"
+        ];
         maxJobs = 64;
         speedFactor = 1;
         supportedFeatures = [
