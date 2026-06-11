@@ -32,10 +32,15 @@ in
       enable = true;
     };
 
+    sops.secrets."deluge-auth" = {
+      sopsFile = ../../secrets/gadgets.yaml;
+      # The deluge service reads authFile as the `deluge` user.
+      owner = "deluge";
+    };
     services.deluge = {
       enable = true;
-      #authFile = config.sops.secrets."deluge-auth".path;
-      #declarative = true;
+      authFile = config.sops.secrets."deluge-auth".path;
+      declarative = true;
       web.enable = true;
     };
     services.radarr = {
