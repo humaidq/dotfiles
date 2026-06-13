@@ -58,7 +58,7 @@
           netDevices.Brother = {
             name = "Brother";
             model = "MFC-L8390CDW";
-            ip = "192.168.1.244";
+            ip = "10.20.0.244";
           };
         };
       };
@@ -67,7 +67,7 @@
         {
           name = "Brother";
           description = "Brother MFC-L8390CDW";
-          deviceUri = "ipp://192.168.1.244/ipp/print";
+          deviceUri = "ipp://10.20.0.244/ipp/print";
           location = "Office";
           # driverless for now
           model = "everywhere";

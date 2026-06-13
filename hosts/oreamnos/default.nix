@@ -236,7 +236,7 @@
   ];
 
   services.chrony.extraConfig = lib.mkAfter ''
-    server 192.168.1.146 iburst
+    server 10.20.0.146 iburst
     allow all
   '';
 

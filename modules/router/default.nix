@@ -34,7 +34,7 @@ in
     };
     lanAddress = lib.mkOption {
       type = lib.types.str;
-      default = "192.168.1.1/24";
+      default = "10.20.0.1/16";
       description = "The LAN address configured on the router interface.";
     };
     ppp = lib.mkOption {
@@ -59,12 +59,12 @@ in
     dhcp = {
       rangeStart = lib.mkOption {
         type = lib.types.str;
-        default = "192.168.1.100";
+        default = "10.20.0.100";
         description = "Start of the DHCP lease range.";
       };
       rangeEnd = lib.mkOption {
         type = lib.types.str;
-        default = "192.168.1.200";
+        default = "10.20.0.200";
         description = "End of the DHCP lease range.";
       };
       leaseTime = lib.mkOption {
@@ -74,12 +74,12 @@ in
       };
       routerAddress = lib.mkOption {
         type = lib.types.str;
-        default = "192.168.1.1";
+        default = "10.20.0.1";
         description = "Router address advertised over DHCP.";
       };
       dnsServer = lib.mkOption {
         type = lib.types.str;
-        default = "192.168.1.1";
+        default = "10.20.0.1";
         description = "DNS server advertised over DHCP.";
       };
       leasesFile = lib.mkOption {

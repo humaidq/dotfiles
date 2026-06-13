@@ -144,7 +144,7 @@ in
           "sdr.alq.ae" = {
             enableACME = true;
             locations."/" = {
-              proxyPass = "http://192.168.1.164:8073";
+              proxyPass = "http://10.20.0.164:8073";
               proxyWebsockets = true;
             };
           };

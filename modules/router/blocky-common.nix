@@ -59,10 +59,10 @@
 
       # way to test
       "test.huma.id" = "1.1.1.1";
-      "alq.ae" = "10.10.0.12,192.168.1.250";
+      "alq.ae" = "10.10.0.12,10.20.0.250";
 
       # routers
-      "v6.alq.ae" = "192.168.1.1";
+      "v6.alq.ae" = "10.20.0.1";
 
       # Nebula
       "lighthouse.s.alq.ae" = "10.10.0.10";
@@ -74,8 +74,8 @@
       "bongo.s.alq.ae" = "10.10.0.16";
 
       # Do locally
-      "cache.huma.id" = "10.10.0.12,192.168.1.250";
-      "g.huma.id" = "10.10.0.12,192.168.1.250";
+      "cache.huma.id" = "10.10.0.12,10.20.0.250";
+      "g.huma.id" = "10.10.0.12,10.20.0.250";
 
       # Fix TII sites
       "jira.tii.ae" = "10.151.12.77";

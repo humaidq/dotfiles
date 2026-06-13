@@ -11,7 +11,7 @@
     home-manager.users."${vars.user}" = {
       programs.ssh.settings = {
         "ghafa-orin" = {
-          HostName = "192.168.1.148";
+          HostName = "10.20.0.148";
           User = "root";
           IdentityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           CheckHostIP = false;
