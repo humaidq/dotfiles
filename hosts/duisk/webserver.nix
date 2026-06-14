@@ -400,7 +400,6 @@ in
             "webdav.alq.ae"
             "img.alq.ae"
             "ai.alq.ae"
-            "unifi.alq.ae"
             "files.alq.ae"
             "speed.alq.ae"
           ];
