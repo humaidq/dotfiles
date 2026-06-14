@@ -122,7 +122,7 @@ in
         # SDL:
         SDL_VIDEODRIVER = "wayland";
         # QT (needs qt5.qtwayland in systemPackages):
-        QT_QPA_PLATFORM = "wayland-egl";
+        QT_QPA_PLATFORM = "wayland";
         QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
         # Fix for some Java AWT applications (e.g. Android Studio),
         # use this if they aren't displayed properly:
