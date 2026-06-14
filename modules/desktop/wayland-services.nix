@@ -68,7 +68,6 @@ in
       suspendIfAllowed
       cliphist # clipboard history
       wl-clipboard
-      swaylock-effects # lockscreen
     ];
 
     systemd.user.services = {
