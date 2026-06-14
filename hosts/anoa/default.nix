@@ -220,19 +220,28 @@
   services.hardware.bolt.enable = true;
 
   services.usbguard = {
-    enable = false;
+    enable = true;
     dbus.enable = true;
     IPCAllowedGroups = [ "wheel" ];
     ruleFile = config.sops.secrets."usbguard/policy".path;
   };
 
-  #systemd.user.services.usbguard-notifier = {
-  #  enable = true;
-  #  wantedBy = [ "graphical-session.target" ];
-  #  partOf = [ "graphical-session.target" ];
-  #  wants = [ "graphical-session.target" ];
-  #  after = [ "graphical-session.target" ];
-  #};
+  # Desktop notifications for USBGuard device/policy events. The NixOS module
+  # ships no user unit, so define one here. The earlier commented-out version
+  # never started because it had no ExecStart; provide it explicitly. "-w"
+  # makes the notifier wait for the daemon's IPC socket instead of failing
+  # when it isn't ready yet at session start.
+  systemd.user.services.usbguard-notifier = {
+    description = "USBGuard device and policy change notifier";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.usbguard-notifier}/bin/usbguard-notifier -w";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+  };
 
   services.postgresql = {
     enable = true;
