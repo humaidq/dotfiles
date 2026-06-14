@@ -116,7 +116,7 @@ in
       tlsCertificate = lib.mkForce null;
       tlsKey = lib.mkForce null;
       settings = {
-        listen_port = 8990; # 8989 is used by sonarr
+        listen_port = 8990;
         enable_tls = false;
       };
       frontend = {

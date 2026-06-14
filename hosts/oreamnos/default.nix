@@ -107,8 +107,6 @@
           user = "immich";
           mode = "0740";
         }
-        "/var/lib/radarr"
-        "/var/lib/sonarr"
         {
           directory = "/var/lib/forgejo";
           user = "forgejo";
@@ -116,12 +114,6 @@
           mode = "0770";
         }
         "/var/lib/postgresql"
-        {
-          directory = "/var/lib/jellyfin";
-          user = "jellyfin";
-          mode = "0700";
-        }
-        "/var/lib/deluge"
         "/var/lib/caddy"
         "/var/lib/unifi"
         {
