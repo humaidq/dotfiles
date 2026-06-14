@@ -51,11 +51,6 @@ in
       type = lib.types.path;
       description = "Path to file containing the ISP provided credentials for PPPoE authentication.";
     };
-    ifb = lib.mkOption {
-      type = lib.types.str;
-      default = "ifb0";
-      description = "Virtual interface for traffic shaping.";
-    };
     dhcp = {
       rangeStart = lib.mkOption {
         type = lib.types.str;
@@ -102,7 +97,7 @@ in
       download = lib.mkOption {
         type = lib.types.str;
         default = "900Mbit";
-        description = "Upload speed from WAN.";
+        description = "Download speed from WAN.";
       };
     };
     qos = {
@@ -141,7 +136,6 @@ in
 
   config = lib.mkIf cfg.enable {
     boot.kernelModules = [
-      "ifb"
       "sch_cake"
     ];
     boot.kernel.sysctl = {
