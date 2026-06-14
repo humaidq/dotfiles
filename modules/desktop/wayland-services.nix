@@ -63,7 +63,6 @@ in
       swayidle
       chayang # gradual screen dimming
       libnotify
-      dunst # notification daemon
       caffeineToggle
       suspendIfAllowed
       cliphist # clipboard history
