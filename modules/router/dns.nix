@@ -21,7 +21,13 @@ in
           "sifr0"
         ];
         domain = cfg.localDomain;
-        local = "/${cfg.localDomain}/";
+        local = [
+          "/${cfg.localDomain}/"
+          # Answer the DoH canary domain authoritatively (NXDOMAIN) so Firefox
+          # and other canary-respecting clients disable DNS-over-HTTPS and stay
+          # on the router's resolver.
+          "/use-application-dns.net/"
+        ];
         expand-hosts = true;
         host-record = [ "${cfg.localDomain},${cfg.dhcp.routerAddress}" ];
 
