@@ -97,6 +97,10 @@ in
       pkgs.gcr
     ];
 
+    # Unlock the gnome-keyring with the login password when logging in through
+    # greetd, so rbw's pinentry-gnome3 / gcr don't prompt for it separately.
+    security.pam.services.greetd.enableGnomeKeyring = true;
+
     home-manager.users."${vars.user}" = {
       # home manager services
       services = {
