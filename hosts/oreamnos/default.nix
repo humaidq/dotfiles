@@ -332,12 +332,6 @@
         port = "123";
         proto = "udp";
       }
-      # DNS over https
-      {
-        host = "any";
-        port = "3333";
-        proto = "any";
-      }
       # Forgejo SSH
       {
         host = "any";
