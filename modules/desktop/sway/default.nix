@@ -210,6 +210,7 @@ in
             "Print" = "exec ${screen}/bin/screen";
             "Control+Print" = "exec ${recorder}/bin/recorder";
             "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
+            "Mod4+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f && systemctl suspend";
           };
           modifier = mod;
           floating.modifier = mod;
