@@ -114,13 +114,28 @@ in
         trap 'rm -rf "$downloads"; rm -f "$tmp" "$tmpnft"' EXIT
 
         : > "$tmp"
+        ok=0
+        failed=0
         ${lib.concatMapStringsSep "\n" (url: ''
-          curl --fail --silent --show-error --location \
-            "${url}" \
-            -o "$downloads/${builtins.hashString "sha256" url}.txt"
-          cat "$downloads/${builtins.hashString "sha256" url}.txt" >> "$tmp"
-          printf '\n' >> "$tmp"
+          if curl --fail --silent --show-error --location \
+               "${url}" \
+               -o "$downloads/${builtins.hashString "sha256" url}.txt"; then
+            cat "$downloads/${builtins.hashString "sha256" url}.txt" >> "$tmp"
+            printf '\n' >> "$tmp"
+            ok=$((ok + 1))
+          else
+            failed=$((failed + 1))
+            echo "nft-blocklists-update: feed download failed, skipping: ${url}" >&2
+          fi
         '') ipBlocklistUrls}
+
+        if [ "$ok" -eq 0 ]; then
+          echo "nft-blocklists-update: all $failed feed(s) failed to download, keeping cached blocklist" >&2
+          exit 1
+        fi
+        if [ "$failed" -gt 0 ]; then
+          echo "nft-blocklists-update: continuing with $ok of $((ok + failed)) feed(s)" >&2
+        fi
 
         python3 - "$tmp" "$tmpnft" <<'PY'
         import ipaddress
