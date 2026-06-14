@@ -279,6 +279,12 @@ def maidenhead(lat, lon):
 
 
 def main():
+    # `--coords` prints just "LAT LON" on stdout for machine consumption
+    # (e.g. feeding wlsunset). Everything else goes to stderr so the single
+    # stdout line stays clean.
+    coords_only = "--coords" in sys.argv[1:]
+    out = sys.stderr if coords_only else sys.stdout
+
     aps = nmcli_scan()
 
     if not aps:
@@ -288,9 +294,9 @@ def main():
     payload = build_payload(aps)
 
     if len(payload["wifiAccessPoints"]) == 0:
-        print("After filtering, no APs were considered valid.")
-        print("Raw scan for debugging:")
-        print(json.dumps(aps, indent=2))
+        print("After filtering, no APs were considered valid.", file=out)
+        print("Raw scan for debugging:", file=out)
+        print(json.dumps(aps, indent=2), file=out)
         sys.exit(2)
 
     if len(payload["wifiAccessPoints"]) < 2:
@@ -302,8 +308,8 @@ def main():
     resp = geolocate(payload)
 
     if "error" in resp and resp["error"]:
-        print("BeaconDB lookup failed:")
-        print(json.dumps(resp, indent=2))
+        print("BeaconDB lookup failed:", file=out)
+        print(json.dumps(resp, indent=2), file=out)
         sys.exit(3)
 
     loc = resp.get("location", {})
@@ -313,9 +319,13 @@ def main():
     lng = loc.get("lng")
 
     if lat is None or lng is None:
-        print("BeaconDB response didn't include coordinates:")
-        print(json.dumps(resp, indent=2))
+        print("BeaconDB response didn't include coordinates:", file=out)
+        print(json.dumps(resp, indent=2), file=out)
         sys.exit(4)
+
+    if coords_only:
+        print(f"{lat} {lng}")
+        return
 
     grid = maidenhead(lat, lng)
 

@@ -50,6 +50,30 @@ let
 
     exec ${pkgs.systemd}/bin/systemctl suspend
   '';
+
+  # WiFi-based geolocation against beacondb.net (shares its source with the
+  # `blocate` helper). `--coords` prints just "LAT LON" for wlsunset.
+  blocate = pkgs.writers.writePython3Bin "blocate" {
+    libraries = [ pkgs.python3Packages.requests ];
+  } (builtins.readFile ../base/user/scripts/blocate.py);
+
+  # Adjust display colour temperature based on the sun, using a location
+  # resolved from beacondb (wlsunset itself only takes static coordinates).
+  wlsunsetBeacondb = pkgs.writeShellApplication {
+    name = "wlsunset-beacondb";
+    runtimeInputs = [
+      blocate
+      pkgs.wlsunset
+      pkgs.networkmanager # nmcli, used by blocate
+    ];
+    text = ''
+      coords="$(blocate --coords)"
+      lat="''${coords%% *}"
+      lon="''${coords##* }"
+      echo "wlsunset: using location from beacondb: $lat $lon"
+      exec wlsunset -l "$lat" -L "$lon" -t 4000 -T 6500
+    '';
+  };
 in
 {
   options.sifr.desktop.wayland-services = {
@@ -86,6 +110,19 @@ in
         serviceConfig = {
           Type = "simple";
           ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --watch ${pkgs.cliphist}/bin/cliphist store";
+        };
+        partOf = [ "graphical-session.target" ];
+        wantedBy = [ "graphical-session.target" ];
+      };
+      wlsunset = {
+        enable = true;
+        description = "Day/night colour temperature (location from beacondb)";
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = "${wlsunsetBeacondb}/bin/wlsunset-beacondb";
+          # Geolocation needs WiFi scans and network; retry until both are up.
+          Restart = "on-failure";
+          RestartSec = 30;
         };
         partOf = [ "graphical-session.target" ];
         wantedBy = [ "graphical-session.target" ];
