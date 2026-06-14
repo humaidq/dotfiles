@@ -185,6 +185,20 @@ in
             ];
           };
 
+          # Stop swayidle from dimming/locking while a window is fullscreen
+          # (e.g. videos). Covers both wayland-native (app_id) and xwayland
+          # (class) clients.
+          window.commands = [
+            {
+              criteria.app_id = ".*";
+              command = "inhibit_idle fullscreen";
+            }
+            {
+              criteria.class = ".*";
+              command = "inhibit_idle fullscreen";
+            }
+          ];
+
           terminal = "foot";
           # https://github.com/nix-community/home-manager/blob/master/modules/services/window-managers/i3-sway/sway.nix
           keybindings = lib.mkOptionDefault {
