@@ -82,7 +82,6 @@ in
         #(mkRP "" "8082")
         (mkRP "cache" "5000")
         (mkRP "hydra" "3300")
-        (mkRP "dns" "3333")
         (mkRP "vault" "8222")
         (mkRP "grafana" "3000")
         (mkRP "pdf" "8084")
