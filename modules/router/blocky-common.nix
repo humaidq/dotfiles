@@ -97,6 +97,7 @@
         "ips"
         "ut1"
         "custom"
+        "doh"
       ];
     };
     denylists = {
@@ -184,6 +185,12 @@
 
       custom = [
         "${./custom-blocklist.txt}"
+      ];
+
+      # Block DoH provider hostnames so clients cannot bootstrap a
+      # DNS-over-HTTPS resolver by name and tunnel past the router's resolver.
+      doh = [
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh.txt"
       ];
     };
     allowlists = {
