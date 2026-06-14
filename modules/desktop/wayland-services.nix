@@ -94,16 +94,6 @@ in
     ];
 
     systemd.user.services = {
-      ianny = {
-        enable = false;
-        description = "ianny daemon";
-        serviceConfig = {
-          Type = "simple";
-          ExecStart = "${pkgs.ianny}/bin/ianny";
-        };
-        partOf = [ "graphical-session.target" ];
-        wantedBy = [ "graphical-session.target" ];
-      };
       cliphist = {
         enable = true;
         description = "Clipboard history daemon";
