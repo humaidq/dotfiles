@@ -210,6 +210,11 @@
     asdbctl # apple studio display
     intel-gpu-tools
   ];
+
+  # Intel VAAPI hardware video decode (iHD/intel-media-driver) so browsers
+  # and mpv offload video off the CPU, saving battery and heat.
+  hardware.graphics.extraPackages = with pkgs; [ intel-media-driver ];
+  environment.sessionVariables.LIBVA_DRIVER_NAME = "iHD";
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = false;
   services.hardware.bolt.enable = true;
