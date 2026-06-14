@@ -391,13 +391,10 @@ in
           forceSSL = true;
           serverAliases = [
             "alq.ae"
-            "tv.alq.ae"
-            "catalogue.alq.ae"
             "vault.alq.ae"
             "git.alq.ae"
             "grafana.alq.ae"
             "cache.alq.ae"
-            "deluge.alq.ae"
             "pdf.alq.ae"
             "dav.alq.ae"
             "webdav.alq.ae"
