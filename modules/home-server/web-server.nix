@@ -48,16 +48,6 @@ let
 in
 {
   config = lib.mkIf cfg.enable {
-    sops.secrets."web/fullchain" = {
-      sopsFile = ../../secrets/home-server.yaml;
-      owner = "nginx";
-      mode = "600";
-    };
-    sops.secrets."web/privkey" = {
-      sopsFile = ../../secrets/home-server.yaml;
-      owner = "nginx";
-      mode = "600";
-    };
     sops.secrets."web/files-htpasswd" = {
       sopsFile = ../../secrets/home-server.yaml;
       owner = "nginx";
