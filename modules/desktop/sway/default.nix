@@ -136,9 +136,6 @@ in
         SSH_ASKPASS_REQUIRE = "prefer";
       };
 
-      #xfconf.settings = {
-      #};
-
       wayland.windowManager.sway = {
         enable = true;
         config = {
