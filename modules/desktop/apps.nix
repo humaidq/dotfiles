@@ -66,7 +66,6 @@ in
         alsa-utils
       ];
       services.fwupd.enable = true;
-      #services.power-profiles-daemon.enable = true;
 
       # for localsend
       networking.firewall.allowedTCPPorts = [ 53317 ];
