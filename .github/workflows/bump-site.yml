@@ -1,9 +1,9 @@
-name: Bump huma.id site
+name: Bump personal flake inputs
 
 on:
   schedule:
     - cron: "0 6 * * *"
-  
+
   workflow_dispatch:
 
 jobs:
@@ -14,14 +14,20 @@ jobs:
 
       - uses: cachix/install-nix-action@v27
       - run: nix flake lock --update-input humaid-site
+      - run: nix flake lock --update-input groundwave
+      - run: nix flake lock --update-input fleeti
 
       - name: Create PR
         uses: peter-evans/create-pull-request@v6
         with:
-          title: Bump huma.id site
-          commit-message: Bump huma.id site
+          title: Bump personal flake inputs
+          commit-message: Bump personal flake inputs
           body: |
-            Update the [humaid-site flake](https://github.com/humaidq/huma.id) to latest.
+            Update the personal flake inputs to latest:
+            - [humaid-site](https://github.com/humaidq/huma.id)
+            - [groundwave](https://github.com/humaidq/groundwave)
+            - [fleeti](https://github.com/humaidq/fleeti)
+
             This is an auto-generated commit.
           labels: automated pr
           assignees: humaidq
