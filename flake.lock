@@ -413,11 +413,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1781879318,
-        "narHash": "sha256-cY4fpqpoc9dPTnsTe4xcMfvAVoKDHxSoN/sNALfJosA=",
+        "lastModified": 1781979477,
+        "narHash": "sha256-okewvjN1QzJe2MGpY5nFPEFrgJ+51mhza428mQIqwuM=",
         "owner": "humaidq",
         "repo": "fleeti",
-        "rev": "4ea8efa9b190f09387a88463d88af18c22f555b2",
+        "rev": "2e124e367fefefa45be06f26108e76996839446a",
         "type": "github"
       },
       "original": {
@@ -606,11 +606,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1781881449,
-        "narHash": "sha256-i+wosVfw2374DxprHVGlK/vy5QguBQj7crjO/H/OU14=",
+        "lastModified": 1781941615,
+        "narHash": "sha256-DaP1gRU8+gHB2OpOFipnT05dYK88sRz/HvBGXrqDTpw=",
         "owner": "humaidq",
         "repo": "groundwave",
-        "rev": "34e84170b944bae95b95e5dc3966278e3dc8fe31",
+        "rev": "445257e7863dbce86db563c8fd3c73e8e630b88c",
         "type": "github"
       },
       "original": {
