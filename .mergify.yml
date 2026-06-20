@@ -1,0 +1,16 @@
+queue_rules:
+  - name: default
+    merge_conditions:
+      - check-success=check
+    merge_method: rebase
+
+pull_request_rules:
+  - name: Automatically queue approved PRs
+    conditions:
+      - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
+      - "-draft"
+      - base=master
+    actions:
+      queue:
+        name: default
