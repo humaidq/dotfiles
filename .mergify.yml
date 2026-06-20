@@ -14,3 +14,13 @@ pull_request_rules:
     actions:
       queue:
         name: default
+
+  - name: Automatically queue PRs labelled merge
+    conditions:
+      - "label=merge"
+      - "#changes-requested-reviews-by=0"
+      - "-draft"
+      - base=master
+    actions:
+      queue:
+        name: default
