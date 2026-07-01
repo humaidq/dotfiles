@@ -41,9 +41,6 @@
     owner = "nebula-sifr0";
     mode = "600";
   };
-  sops.secrets."usbguard/policy" = {
-    sopsFile = ../../secrets/anoa.yaml;
-  };
   sops.secrets."borg/ssh_key" = {
     sopsFile = ../../secrets/anoa.yaml;
   };
@@ -130,7 +127,12 @@
       ];
       user = {
         enable = true;
+        files = [
+          ".claude.json"
+        ];
         dirs = [
+          ".claude"
+          ".xwechat"
           ".config/Code"
           ".config/aerc"
           ".config/chromium"
@@ -187,18 +189,64 @@
     distributedBuilds = true;
   };
 
+  hardware.keyboard.zsa.enable = true;
+
   boot.kernelParams = [
-    "zfs.zfs_arc_max=8589934592"
+    # Cap ZFS ARC at 4 GiB (was 8). On a 30 GiB interactive laptop running
+    # browsers, postgres and qemu emulation, a smaller ARC leaves more baseline
+    # headroom and reduces how often we reach for swap at all. ARC reclaim under
+    # pressure is laggy, so a lower cap is worth the slightly smaller file cache.
+    "zfs.zfs_arc_max=4294967296"
   ];
 
   # will do manually, too resource intensive.
   services.zfs.trim.enable = false;
 
+  # Memory-pressure handling. anoa used to freeze under load (load avg >20, Sway
+  # unresponsive, sometimes needing a hard reset). Root cause was memory thrash,
+  # NOT the CPU scheduler: swap lived on a ZFS zvol, and swapping to a zvol under
+  # pressure is a known OpenZFS deadlock (ZFS must allocate memory to service the
+  # swap I/O). Processes pile up in D state, so load spikes from I/O stall rather
+  # than CPU demand.
+  #
+  # Fix: zram (compressed RAM) becomes primary swap, the ZFS zvol is demoted to a
+  # last-resort overflow, and systemd-oomd kills a runaway app before lockup.
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+    priority = 100;
+  };
+
   swapDevices = [
     {
       device = "/dev/zvol/rpool/enc/swap";
+      # Below zram (100); only touched when zram is exhausted.
+      priority = -2;
     }
   ];
+
+  # zram is cheap, so lean on it instead of evicting page cache, and disable swap
+  # read-ahead (pointless for RAM-backed swap).
+  boot.kernel.sysctl = {
+    "vm.swappiness" = 180;
+    "vm.page-cluster" = 0;
+    "vm.watermark_boost_factor" = 0;
+    "vm.watermark_scale_factor" = 125;
+  };
+
+  # Kill the heaviest cgroup (e.g. a runaway browser tab in the user session)
+  # before memory pressure stalls the whole machine. enableUserSlices is the key
+  # bit: that's where the desktop apps live.
+  systemd.oomd = {
+    enable = true;
+    enableUserSlices = true;
+    enableRootSlice = true;
+    settings.OOM = {
+      DefaultMemoryPressureLimit = "50%";
+      DefaultMemoryPressureDurationSec = "10s";
+    };
+  };
 
   boot.lanzaboote = {
     enable = true;
@@ -206,7 +254,6 @@
   };
   environment.systemPackages = with pkgs; [
     sbctl # for lanzaboote
-    usbguard-notifier
     asdbctl # apple studio display
     intel-gpu-tools
   ];
@@ -218,30 +265,6 @@
   boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = false;
   services.hardware.bolt.enable = true;
-
-  services.usbguard = {
-    enable = true;
-    dbus.enable = true;
-    IPCAllowedGroups = [ "wheel" ];
-    ruleFile = config.sops.secrets."usbguard/policy".path;
-  };
-
-  # Desktop notifications for USBGuard device/policy events. The NixOS module
-  # ships no user unit, so define one here. The earlier commented-out version
-  # never started because it had no ExecStart; provide it explicitly. "-w"
-  # makes the notifier wait for the daemon's IPC socket instead of failing
-  # when it isn't ready yet at session start.
-  systemd.user.services.usbguard-notifier = {
-    description = "USBGuard device and policy change notifier";
-    wantedBy = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.usbguard-notifier}/bin/usbguard-notifier -w";
-      Restart = "on-failure";
-      RestartSec = 2;
-    };
-  };
 
   services.postgresql = {
     enable = true;
@@ -417,20 +440,25 @@
         {
           profile = {
             name = "desk";
+            # Both Studio Display ports share the identical description
+            # "Apple Computer Inc StudioDisplay 0x6EBF361E", so kanshi can only
+            # tell DP-1 (the real 5K panel) from DP-2 by connector name. Match
+            # every output by connector here, otherwise no profile matches and
+            # the internal panel stays on.
             outputs = [
               {
-                criteria = "Samsung Display Corp. 0x419F (eDP-1)";
+                criteria = "eDP-1";
                 status = "disable";
               }
               {
-                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E (DP-1)";
+                criteria = "DP-1";
                 status = "enable";
                 mode = "5120x2880";
                 scale = 2.0;
                 position = "0,0";
               }
               {
-                criteria = "Apple Computer Inc StudioDisplay 0x6EBF361E (DP-2)";
+                criteria = "DP-2";
                 status = "disable";
               }
             ];

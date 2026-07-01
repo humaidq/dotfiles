@@ -83,7 +83,10 @@
           };
           "enc/swap" = {
             type = "zfs_volume";
-            size = "12G";
+            # Last-resort overflow only; zram is primary swap (see hosts/anoa
+            # default.nix). Applies to fresh installs; disko won't resize an
+            # existing zvol on rebuild.
+            size = "4G";
             options = {
               volblocksize = "4096";
               logbias = "throughput";

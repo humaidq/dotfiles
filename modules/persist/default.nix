@@ -53,6 +53,11 @@ in
         type = lib.types.listOf lib.types.anything;
         default = [ ];
       };
+      files = lib.mkOption {
+        description = "User files to persist";
+        type = lib.types.listOf lib.types.anything;
+        default = [ ];
+      };
     };
     persistPath = lib.mkOption {
       type = lib.types.str;
@@ -101,6 +106,7 @@ in
           ".config/sops"
           ".config/zsh_history"
         ];
+        files = cfg.user.files;
       };
     };
 

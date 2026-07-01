@@ -64,6 +64,7 @@ in
         pdfpc
         localsend
         alsa-utils
+        wechat
       ];
       services.fwupd.enable = true;
 
