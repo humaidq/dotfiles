@@ -31,10 +31,6 @@
         host-lighthouse = import ./lighthouse;
         #host-boerbok = import ./boerbok;
 
-        # Unmaintained / inactive hosts
-        #host-argali = import ./argali;
-        #host-arkelli = import ./arkelli;
-
         # Generators hosts
         host-rpi4-bootstrap = import ./rpi4-bootstrap.nix;
         host-rpi5-bootstrap = import ./rpi5-bootstrap.nix;
@@ -129,15 +125,6 @@
         #  inherit specialArgs;
         #  modules = [ self.nixosModules.host-boerbok ];
         #};
-        # Unmaintained / inactive hosts
-        #argali = lib.nixosSystem {
-        #  inherit specialArgs;
-        #  modules = [ self.nixosModules.host-argali ];
-        #};
-        #arkelli = lib.nixosSystem {
-        #  inherit specialArgs;
-        #  modules = [ self.nixosModules.host-arkelli ];
-        #};
       };
 
       packages.x86_64-linux = {
@@ -171,14 +158,13 @@
           duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
           lighthouse = self.nixosConfigurations.lighthouse.config.system.build.toplevel;
           anoa = self.nixosConfigurations.anoa.config.system.build.toplevel;
+          bongo = self.nixosConfigurations.bongo.config.system.build.toplevel;
 
           #inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
         };
         #aarch64-linux = {
         #  inherit (self.packages.aarch64-linux) rpi4-bootstrap;
         #  inherit (self.packages.aarch64-linux) rpi5-bootstrap;
-        #  argali = self.nixosConfigurations.argali.config.system.build.toplevel;
-        #  arkelli = self.nixosConfigurations.arkelli.config.system.build.toplevel;
         #};
         # hydra doesn't support riscv (due to GHC not available)
         #riscv64-linux = {

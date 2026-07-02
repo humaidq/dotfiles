@@ -28,7 +28,7 @@ in
     sway.enable = lib.mkEnableOption "desktop environment with sway";
     sway.modifier = lib.mkOption {
       type = lib.types.str;
-      default = "Mod1";
+      default = "Mod4";
       description = "The modifier key to use with sway";
     };
   };
@@ -205,8 +205,8 @@ in
             "${mod}+p" = "exec ${lib.getExe pkgs.fuzzel}";
             "${mod}+o" =
               "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | ${lib.getExe pkgs.fuzzel} --dmenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
-            "Mod4+c" = "exec caffeine-toggle";
-            "Mod4+v" = "exec ${clipboardManager}/bin/clipboard-manager";
+            "${mod}+c" = "exec caffeine-toggle";
+            "${mod}+v" = "exec ${clipboardManager}/bin/clipboard-manager";
 
             # laptop bindings
             "XF86MonBrightnessUp" = "exec brightnessctl set 5%+";
@@ -220,8 +220,8 @@ in
 
             "Print" = "exec ${screen}/bin/screen";
             "Control+Print" = "exec ${recorder}/bin/recorder";
-            "Mod4+l" = "exec ${lib.getExe pkgs.swaylock} -f";
-            "Mod4+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f && systemctl suspend";
+            "${mod}+l" = "exec ${lib.getExe pkgs.swaylock} -f";
+            "${mod}+Shift+l" = "exec ${lib.getExe pkgs.swaylock} -f && systemctl suspend";
           };
           modifier = mod;
           floating.modifier = mod;

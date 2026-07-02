@@ -17,7 +17,7 @@ let
     dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
     sleep 0.3 # make sure variables are set
     ${pkgs.xfce4-panel}/bin/xfce4-panel &
-    ${pkgs.swaybg}/bin/swaybg -m fill -i ${../../../.../../assets/sifr-spiral-wallpaper.png} &
+    ${pkgs.swaybg}/bin/swaybg -m fill -i ${../../../assets/sifr-spiral-wallpaper.png} &
   '';
 
   environment = ''
@@ -75,22 +75,22 @@ let
         <action name="Execute" command="${lib.getExe pkgs.wdisplays}" />
       </keybind>
       <keybind key="XF86_MonBrightnessUp">
-        <action name="Execute" command="brightnessctl set 5%+" />
+        <action name="Execute" command="${lib.getExe pkgs.brightnessctl} set 5%+" />
       </keybind>
       <keybind key="XF86_MonBrightnessDown">
-        <action name="Execute" command="brightnessctl set 5%-" />
+        <action name="Execute" command="${lib.getExe pkgs.brightnessctl} set 5%-" />
       </keybind>
       <keybind key="XF86_AudioRaiseVolume">
-        <action name="Execute" command="amixer set Master 5%+" />
+        <action name="Execute" command="${pkgs.alsa-utils}/bin/amixer set Master 5%+" />
       </keybind>
       <keybind key="XF86_AudioLowerVolume">
-        <action name="Execute" command="amixer set Master 5%-" />
+        <action name="Execute" command="${pkgs.alsa-utils}/bin/amixer set Master 5%-" />
       </keybind>
       <keybind key="XF86_AudioMute">
-        <action name="Execute" command="amixer set Master toggle" />
+        <action name="Execute" command="${pkgs.alsa-utils}/bin/amixer set Master toggle" />
       </keybind>
       <keybind key="XF86_MicMute">
-        <action name="Execute" command="amixer set Capture toggle" />
+        <action name="Execute" command="${pkgs.alsa-utils}/bin/amixer set Capture toggle" />
       </keybind>
       <keybind key="W-z">
         <action name="ToggleMagnify" />
@@ -154,7 +154,6 @@ in
         text = autostart;
         mode = "0755";
       };
-      #"labwc/menu.xml".text = menuXml;
       "xdg/labwc/environment".text = environment;
     };
   };

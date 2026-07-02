@@ -57,6 +57,12 @@
     sopsFile = ../../secrets/anoa.yaml;
     owner = "humaid";
   };
+  sops.secrets."netrc" = {
+    sopsFile = ../../secrets/anoa.yaml;
+    path = "/home/humaid/.netrc";
+    owner = "humaid";
+    mode = "0400";
+  };
 
   services.upower.ignoreLid = true;
 
@@ -488,6 +494,27 @@
                 criteria = "Dell Inc. DELL P2725H 25FCXZ3";
                 status = "enable";
                 mode = "1920x1080";
+              }
+            ];
+          };
+        }
+        {
+          profile = {
+            name = "tii-crc-desk";
+            outputs = [
+              {
+                criteria = "Dell Inc. DELL U3423WE DYQKMP3";
+                status = "enable";
+                mode = "3440x1440@60Hz";
+                scale = 2.0;
+                position = "0,0";
+              }
+              {
+                criteria = "Samsung Display Corp. 0x419F Unknown";
+                status = "enable";
+                mode = "2880x1800@120Hz";
+                scale = 2.0;
+                position = "140,720";
               }
             ];
           };

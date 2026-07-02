@@ -11,7 +11,6 @@ let
 in
 {
   imports = [
-    ./baseplus.nix
     ./development.nix
     ./secrets.nix
     ./ssh.nix
