@@ -104,7 +104,7 @@ in
     home-manager.users.${vars.user} = {
       programs.swaylock.enable = lib.mkForce false;
       services.swayidle.enable = lib.mkForce false;
-      wayland.windowManager.sway.config.keybindings."Mod4+l" = lib.mkForce "nop";
+      wayland.windowManager.sway.config.keybindings."Mod4+Escape" = lib.mkForce "nop";
       programs.zsh.initContent = lib.mkAfter ''
         echo ""
         echo "  sifrOS installer ready."

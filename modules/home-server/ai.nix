@@ -13,7 +13,7 @@ in
       enable = true;
       user = "ollama";
       host = "0.0.0.0";
-      package = pkgs.unstable.ollama-cuda;
+      package = pkgs.ollama-cuda;
       # loadModels = [
       #   "gemma2"
       #   "falcon2"
