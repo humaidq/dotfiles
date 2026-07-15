@@ -51,6 +51,17 @@ let
     exec ${pkgs.systemd}/bin/systemctl suspend
   '';
 
+  batteryGuard = pkgs.writeShellApplication {
+    name = "battery-guard";
+    runtimeInputs = with pkgs; [
+      coreutils
+      libnotify
+      upower
+      systemd
+    ];
+    text = builtins.readFile ./battery-guard.sh;
+  };
+
   # WiFi-based geolocation against beacondb.net (shares its source with the
   # `blocate` helper). `--coords` prints just "LAT LON" for wlsunset.
   blocate = pkgs.writers.writePython3Bin "blocate" {
@@ -80,6 +91,11 @@ in
     enable = lib.mkEnableOption "shared wayland services" // {
       default = swayEnabled || labwcEnabled;
     };
+    batteryGuard.enable =
+      lib.mkEnableOption "low-battery guard (auto-disable caffeine, suspend when critical)"
+      // {
+        default = true;
+      };
   };
 
   config = lib.mkIf cfg.enable {
@@ -89,6 +105,7 @@ in
       libnotify
       caffeineToggle
       suspendIfAllowed
+      batteryGuard
       cliphist # clipboard history
       wl-clipboard
     ];
@@ -111,6 +128,20 @@ in
           Type = "simple";
           ExecStart = "${wlsunsetBeacondb}/bin/wlsunset-beacondb";
           # Geolocation needs WiFi scans and network; retry until both are up.
+          Restart = "on-failure";
+          RestartSec = 30;
+        };
+        partOf = [ "graphical-session.target" ];
+        wantedBy = [ "graphical-session.target" ];
+      };
+    }
+    // lib.optionalAttrs cfg.batteryGuard.enable {
+      battery-guard = {
+        enable = true;
+        description = "Disable caffeine and suspend on low battery";
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = lib.getExe batteryGuard;
           Restart = "on-failure";
           RestartSec = 30;
         };
