@@ -74,12 +74,12 @@ run_once() {
   case "$action" in
     disable-caffeine)
       clear_caffeine
-      notify-send -t 5000 "🔋 Battery low" "Caffeine disabled — sleep re-enabled (${capacity}%)"
+      notify-send -t 5000 "🔋 Battery low" "Caffeine disabled — sleep re-enabled (${capacity}%)" || true
       ;;
     suspend)
       clear_caffeine
-      notify-send -t 5000 --urgency critical "🔋 Battery critical" "Suspending to save your work (${capacity}%)"
-      systemctl suspend
+      notify-send -t 5000 --urgency critical "🔋 Battery critical" "Suspending to save your work (${capacity}%)" || true
+      systemctl suspend || true
       sleep 5  # debounce after resume so we don't tight-loop on repeated events
       ;;
     none) : ;;
@@ -94,8 +94,11 @@ main() {
   run_once
   if [ -n "$DRY_RUN" ]; then exit 0; fi
   if command -v upower >/dev/null 2>&1; then
-    upower --monitor | while read -r _; do
-      run_once
+    while true; do
+      upower --monitor | while read -r _; do
+        run_once
+      done
+      sleep 5
     done
   else
     while true; do
