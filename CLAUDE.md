@@ -68,4 +68,5 @@ Modules can take `{ self, inputs, vars, ... }`. `vars.user` is the primary usern
 
 - Option flags live under `sifr.*` (per-feature, e.g. `sifr.desktop.sway.enable`, `sifr.personal.work.enable`). Add new options to `modules/base/options/` or a feature-local `options` block rather than scattering them.
 - Keep commit messages concise and descriptive (per `AGENTS.md`).
+- Always commit with `--no-gpg-sign` (the user's signing key is a hardware key that can't be touched from an agent session).
 - The default branch is `master`.
