@@ -5,3 +5,4 @@ result
 router-web
 *.qcow2
 CLAUDE.md
+.claude/

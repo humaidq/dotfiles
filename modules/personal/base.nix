@@ -17,6 +17,7 @@ in
     ./amateur.nix
     ./dns.nix
     ./focus-mode
+    ./moshi.nix
     ./networking
     ./o11y
     ./receipt.nix

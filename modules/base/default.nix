@@ -214,6 +214,8 @@ in
 
           ls-colors = final.callPackage ../../overlays/ls-colors { };
 
+          moshi-hook = final.callPackage ../../overlays/moshi-hook { };
+
           ufetch = final.callPackage ../../overlays/ufetch { };
 
           zsh-extract = final.callPackage ../../overlays/zsh-extract { };

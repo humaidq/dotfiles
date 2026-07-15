@@ -176,6 +176,7 @@ in
         # AI
         unstable.claude-code
         unstable.opencode
+        unstable.herdr
       ];
     })
   ];

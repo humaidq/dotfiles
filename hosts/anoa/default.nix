@@ -66,6 +66,10 @@
 
   services.upower.ignoreLid = true;
 
+  users.users.${vars.user}.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMYrVNuxuD0F8VJr5AYlhMYEHZui4ANt3AfFJIYejRK4 moshi"
+  ];
+
   sifr = {
     desktop = {
       sway.enable = true;
@@ -83,6 +87,7 @@
       ntp.useNTS = true;
       o11y.client.enable = true;
       focusMode.enable = true;
+      moshi.enable = true;
       amateur.enable = true;
       dns.enable = true;
       research.enable = true;
@@ -161,6 +166,7 @@
           ".local/share/zoxide"
           ".local/share/zsh"
           ".local/share/opencode"
+          ".local/state/moshi"
           ".tqsl"
           ".vscode"
           ".zotero"
