@@ -56,6 +56,18 @@
       };
     };
 
+    # Battery thresholds. The battery-guard user service owns the real behavior
+    # (disable caffeine at 20%, suspend at 7%); UPower's own action sits below
+    # that as a last-resort backstop for when the daemon isn't running.
+    services.upower = {
+      enable = true;
+      usePercentageForPolicy = true;
+      percentageLow = 20;
+      percentageCritical = 10;
+      percentageAction = 3;
+      criticalPowerAction = "PowerOff";
+    };
+
     services.printing = {
       enable = true;
       drivers = with pkgs; [
