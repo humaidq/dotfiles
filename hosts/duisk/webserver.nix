@@ -103,20 +103,33 @@ let
       proxyPass = "${upstream}/connectivity";
       extraConfig = groundwaveProxyHeaders;
     };
-    "= /main.css" = {
-      proxyPass = "${upstream}/main.css";
+    # Groundwave serves its whole static tree (embedded src/static) at the
+    # upstream root: stylesheets under /css/, the Vite/React bundle under /app/,
+    # and the PDF.js viewer under /pdfjs/. These must reach the upstream root
+    # unrewritten, so they are ^~ prefixes to outrank the f.huma.id "/" -> /f/
+    # catch-all rewrite. proxyPass without a URI passes the request path as-is.
+    "^~ /css/" = {
+      proxyPass = upstream;
+      extraConfig = groundwaveProxyHeaders;
+    };
+    "^~ /app/" = {
+      proxyPass = upstream;
+      extraConfig = groundwaveProxyHeaders;
+    };
+    "^~ /pdfjs/" = {
+      proxyPass = upstream;
       extraConfig = groundwaveProxyHeaders;
     };
     "= /normalize-8.0.1.min.css" = {
       proxyPass = "${upstream}/normalize-8.0.1.min.css";
       extraConfig = groundwaveProxyHeaders;
     };
-    "= /manifest.json" = {
-      proxyPass = "${upstream}/manifest.json";
+    "= /webauthn.js" = {
+      proxyPass = "${upstream}/webauthn.js";
       extraConfig = groundwaveProxyHeaders;
     };
-    "= /icon.svg" = {
-      proxyPass = "${upstream}/icon.svg";
+    "= /manifest.json" = {
+      proxyPass = "${upstream}/manifest.json";
       extraConfig = groundwaveProxyHeaders;
     };
     "= /icon-64.png" = {
