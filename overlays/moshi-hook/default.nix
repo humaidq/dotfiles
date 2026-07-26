@@ -10,11 +10,11 @@ let
   sources = {
     x86_64-linux = {
       arch = "x86_64";
-      hash = "sha256-lO6QdDwpOBPH19xIF5a1Iinmj7Psn0NMANA4LOQw0UY=";
+      hash = "sha256-i/gySLEEMLGlQDQ2g7QcEkAHIJXE7xT9DZQlvSr/7KQ=";
     };
     aarch64-linux = {
       arch = "arm64";
-      hash = "sha256-d0jrn6keIdBPbZujOecx+6PXddxForkC5gvB8lFDYDM=";
+      hash = "sha256-FkiiWBKFzP55EIOjIpT2A70O9wS+TmsowX+8J0QrP5o=";
     };
   };
   source =
@@ -23,7 +23,7 @@ let
 in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "moshi-hook";
-  version = "0.2.51";
+  version = "0.2.62";
 
   src = fetchurl {
     url = "https://cdn.getmoshi.app/hook/v${finalAttrs.version}/moshi-hook_Linux_${source.arch}.tar.gz";
