@@ -174,7 +174,7 @@ in
         tree-sitter
 
         # AI
-        unstable.claude-code
+        claude-code
         unstable.codex
         unstable.opencode
         unstable.herdr

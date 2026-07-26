@@ -210,6 +210,8 @@ in
             config.allowUnfree = true;
           };
 
+          claude-code = final.callPackage ../../overlays/claude-code { };
+
           liquidctl = import ../../overlays/liquidctl { inherit prev; };
 
           ls-colors = final.callPackage ../../overlays/ls-colors { };
