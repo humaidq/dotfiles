@@ -54,6 +54,11 @@ ask.u.ae
 *.topmip.top
 *.topnip.top
 *.topkip.top
+*.tkppi.top
+*.tkiccp.top
+*.tkbiy.top
+*.tkbby.top
+
 
 # Chat
 *.chat-avenue.com
