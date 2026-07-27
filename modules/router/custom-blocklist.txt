@@ -50,6 +50,7 @@ ask.u.ae
 # exp.ssf.ae #fazaa experience?
 
 # Sus traffic
+*.tophip.top
 *.topjip.top
 *.topmip.top
 *.topnip.top
@@ -58,7 +59,6 @@ ask.u.ae
 *.tkiccp.top
 *.tkbiy.top
 *.tkbby.top
-
 
 # Chat
 *.chat-avenue.com
