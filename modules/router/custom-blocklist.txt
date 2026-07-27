@@ -49,6 +49,12 @@ ask.u.ae
 *.gamification.etisalat.ae
 # exp.ssf.ae #fazaa experience?
 
+# Sus traffic
+*.topjip.top
+*.topmip.top
+*.topnip.top
+*.topkip.top
+
 # Chat
 *.chat-avenue.com
 *.chatango.com
