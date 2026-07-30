@@ -210,6 +210,7 @@
     # pressure is laggy, so a lower cap is worth the slightly smaller file cache.
     "zfs.zfs_arc_max=4294967296"
   ];
+  boot.kernel.sysctl."kernel.sysrq" = lib.mkForce 1;
 
   # will do manually, too resource intensive.
   services.zfs.trim.enable = false;
