@@ -206,6 +206,16 @@ live.tiktok.com
 *.achat.live
 *.ahchat.page.link
 *.ahchat.smart.link
+# SUGO (com.voicemaker.android), which runs on Mico World infrastructure.
+# rpc.q0w8e6r4t2.xyz and rpc.voicelinkhub.net answer on the same IP, and
+# sugo.com shares an IP with api.micoplatform.com.
+*.micoplatform.com
+*.micoworld.net
+*.voicelinkhub.net
+*.q0w8e6r4t2.xyz
+*.eventbus.me
+*.liveseries.net
+*.sugo.com
 # Others in the same category
 *.monkey.app
 *.monkey.cool
