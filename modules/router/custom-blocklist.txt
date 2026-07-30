@@ -98,6 +98,12 @@ live.tiktok.com
 *.ometv.net
 # YouNow
 *.younow.com
+# Chamet (com.hkfuliao.chamet); chametlive.com is already covered upstream
+*.chamet.com
+*.ichamet.com
+*.chametw.com
+*.nchamet.com
+*.hkfuliao.com
 # Others in the same category
 *.monkey.app
 *.monkey.cool
