@@ -85,6 +85,28 @@ live.tiktok.com
 *.likee.video
 *.likee.com
 *.like.video
+*.like-video.com
+*.likevideo.cn
+*.bigoplateform.sg
+*.bigo.onelink.me
+# Fallback backends found in the sg.bigo.live package. The names are
+# deliberately unbranded, but activity.inslive.xyz and activity.linhty.xyz
+# share an IP, and bstream.sgmbocast.com sits in 169.136.79.0/24 with bigo.tv.
+*.inslive.xyz
+*.inslive.live
+*.linhty.xyz
+*.wertn.top
+*.wqehjyz.com
+*.xiyuudi.com
+*.fhsg.club
+*.sharemasala.com
+*.sgmbocast.com
+*.ujoy.store
+*.funkie.chat
+*.ppx520.com
+*.weihuitel.com
+# YY (Joyy, BIGO's parent) — itself a live-streaming platform
+*.yy.com
 # Tango
 *.tango.me
 *.tangome.com
