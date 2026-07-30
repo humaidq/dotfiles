@@ -62,15 +62,17 @@ ask.u.ae
 *.bigo.sg
 logproxy.imoim.app
 
-# TikTok live streaming
-/^push-rtmp-[^.]+\.tiktokcdn\.com$/
-/^push-rtmp-[^.]+\.tiktokrow-cdn\.com$/
-/^push-rtmp-[^.]+\.ttlivecdn\.com$/
-/^push-rtmp-[^.]+\.fcdn\.us\.tiktokv\.com$/
-/^pull-[^.]+\.(tiktokcdn\.com|tiktokrow-cdn\.com|ttlivecdn\.com)$/
-/^pull-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
-webcast.tiktok.com
-/^webcast[^.]*\.tiktokv\.com$/
+# TikTok live streaming. Anchored on the webcast/pull-/push- prefixes so the
+# rest of the app keeps working: the same CDN zones also serve thumbnails
+# (p16-*), video (v19.tiktokcdn.com) and the web app (lf16-*, v16-webapp).
+# The .wsdvs.com and .worldfcdn.com names are the CNAME targets of the live
+# edges, blocked in case a client queries them directly.
+live.tiktok.com
+/^webcast[^.]*\.(?:[^.]+\.)*tiktok\.com$/
+/^webcast[^.]*\.tiktokv\.(?:com|eu|us|jp)$/
+/^(?:pull|push)-[^.]+\.(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokrow-cdn\.com|ttlivecdn\.com)$/
+/^(?:pull|push)-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
+/^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:wsdvs\.com|worldfcdn2?\.com)$/
 
 # Chat
 *.chat-avenue.com
