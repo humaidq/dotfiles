@@ -161,6 +161,22 @@ live.tiktok.com
 *.upiappin.org
 *.imacris.org
 *.ewalletmy.com
+# Metaz Technology: Chatta (com.metaztech.chatta) and Seeta (com.mztech.seeta).
+# Seeta also calls leadercc.com and quantum-nexus.net above, which the BoloJi
+# apps use too. The 520yidui/yidui.me/tie520/playlink hosts are the shared
+# live-streaming and mini-game backend.
+*.metaztech.com
+*.live-social-chat.com
+*.we-chat-social.com
+*.seetaapp.com
+*.whisprys.com
+*.520yidui.com
+*.yidui.me
+*.tie520.com
+*.playlinkcn.com
+*.playlinkhub.com
+*.miliantech.com
+*.siteperformancetest.net
 # Others in the same category
 *.monkey.app
 *.monkey.cool
