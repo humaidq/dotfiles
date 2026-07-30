@@ -59,6 +59,18 @@ ask.u.ae
 *.tkiccp.top
 *.tkbiy.top
 *.tkbby.top
+*.bigo.sg
+logproxy.imoim.app
+
+# TikTok live streaming
+/^push-rtmp-[^.]+\.tiktokcdn\.com$/
+/^push-rtmp-[^.]+\.tiktokrow-cdn\.com$/
+/^push-rtmp-[^.]+\.ttlivecdn\.com$/
+/^push-rtmp-[^.]+\.fcdn\.us\.tiktokv\.com$/
+/^pull-[^.]+\.(tiktokcdn\.com|tiktokrow-cdn\.com|ttlivecdn\.com)$/
+/^pull-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
+webcast.tiktok.com
+/^webcast[^.]*\.tiktokv\.com$/
 
 # Chat
 *.chat-avenue.com
