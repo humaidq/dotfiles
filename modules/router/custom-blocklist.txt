@@ -225,6 +225,21 @@ live.tiktok.com
 # YoHo (com.voicechat.live.group, YoHo Studio) is another Mico World app: it
 # calls the micoplatform and eventbus hosts above. aeorw.com is its own.
 *.aeorw.com
+# GOGO Live (com.gogolive, Global Live Network). api.2-b.xyz,
+# api.codebase23.com and api.wrightwood.xyz all answer on 43.163.40.175 with
+# no CDN in front, so they are three interchangeable names for one origin.
+# papaliveapp.com is the sibling PapaLive app; fanwe.net is the white-label
+# live-streaming platform these are built on.
+*.2-b.xyz
+*.codebase23.com
+*.wrightwood.xyz
+*.facegl.com
+*.gogolive.co
+*.papaliveapp.com
+*.fanwe.net
+# Tencent HTTPDNS. The app resolves through it, which bypasses blocky
+# entirely — the same class of leak as the DoH endpoints blocked upstream.
+*.httpdns.gold
 # Poppo Live (com.baitu.qingshu). Taken from the site's own JS rather than the
 # APK, which no reachable mirror would serve. api.vshow-live.com answers on
 # 98.98.238.184, the same address as v.gameschalo.com above.
