@@ -212,6 +212,8 @@ in
 
           claude-code = final.callPackage ../../overlays/claude-code { };
 
+          codex = final.callPackage ../../overlays/codex/package.nix { };
+
           liquidctl = import ../../overlays/liquidctl { inherit prev; };
 
           ls-colors = final.callPackage ../../overlays/ls-colors { };

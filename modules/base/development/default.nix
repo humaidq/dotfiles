@@ -175,7 +175,7 @@ in
 
         # AI
         claude-code
-        unstable.codex
+        codex
         unstable.opencode
         unstable.herdr
       ];
