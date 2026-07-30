@@ -105,6 +105,51 @@ live.tiktok.com
 *.funkie.chat
 *.ppx520.com
 *.weihuitel.com
+# More of the same pool, from the video.like (Likee) package — 43 dex, so it
+# carries far more infrastructure than sg.bigo.live did. BIGO owns
+# 169.136.0.0/16, and lbs.bnxz.net, imo.bigobuzz.tv and helloktv-esx.520hello.com
+# all answer there on direct A records, which is real evidence rather than a
+# shared CDN POP. livelbs.dinoyy.xyz and gdl.bigodate.xyz share 16.59.210.76 the
+# same way. bnxz.net, mqdngd.com and qsablc.com are three interchangeable zones
+# for one endpoint: atb-lk-stats and atb-lk-conf exist on each, alongside the
+# branded atb-stats-api.like.video. cubetv.sg and da7akni.net front their own
+# hk-cdn/eu-cdn hosts; da7akni is their MENA meme brand. pinpincart.com carries
+# guide/dev-guide/gray-guide/test-guide, matching the bggray-/huidu- grayscale
+# naming used on like.video and bigo.sg. jieyou.shop is the weakest of these —
+# it sits behind Alibaba CDN, so only its presence in the package ties it here.
+*.bnxz.net
+*.mqdngd.com
+*.qsablc.com
+*.dinoyy.xyz
+*.bigodate.xyz
+*.bigodate.com
+*.da7akni.net
+*.memesda7akni.com
+*.cubetv.sg
+*.gametec.live
+*.520hello.com
+*.bigobuzz.tv
+*.weihuijob.com
+*.liketech.site
+*.likeevideo.com
+*.ofree.sg
+*.pinpincart.com
+*.jieyou.shop
+# Likee's CloudFront API fallbacks, the same trick SoulChill uses below. These
+# are provably BIGO's rather than an embedded ad SDK's: a POST to any of them
+# comes back with a bigotraceresponse header and CORS headers advertising
+# bigo-appid, bigo-uid, bigo-signature, and the known-good https-api.like.video
+# returns an identical openresty 405. Exact distribution hostnames only —
+# never wildcard cloudfront.net.
+d10ceo5x75lwxk.cloudfront.net
+d17i393rrrkjz4.cloudfront.net
+d1lhhhvlywiky7.cloudfront.net
+d1mntl620qcbuv.cloudfront.net
+d1t0pcaxkh5ft4.cloudfront.net
+d3rgif8ui183nr.cloudfront.net
+d9nifsca344ir.cloudfront.net
+dbcxwhezi52eu.cloudfront.net
+dqsj71pqtgpha.cloudfront.net
 # YY (Joyy, BIGO's parent) — itself a live-streaming platform
 *.yy.com
 # Tango
@@ -249,10 +294,215 @@ live.tiktok.com
 *.vshow-live.com
 *.pp-static.com
 # MateMet (com.oversea.matemet, Justar HK). The APK is packed the same way
-# Chamet's is — a 73 KiB stub dex, stripped manifest and resources — so only
-# the brand domains could be established. Its backends are unknown.
+# Chamet's is — a 73 KiB stub dex, stripped manifest and resources. Its
+# backends were unknown until Gemgala below, which ships unpacked and reveals
+# the operator's i<brand>.com convention: api./h5./m..imatemet.com are all
+# live, so *.imatemet.com already covers them.
 *.matemet.com
 *.imatemet.com
+# Gemgala - Party & Chat & Games (com.hkjustar.gemgala), the same Justar HK
+# operator as MateMet above — the package embeds com.oversea.chat classes.
+# Extracted from an unpacked 73 MiB dex. The operator fans the same backend
+# out over four zones: <brand>.net, i<brand>.com, x<brand>.com and
+# <role>-<brand>.inlandcha.com. api-gemgala.inlandcha.com and api.igemgala.com
+# share the Alibaba ALB instance alb-n9mrrja5gykl0coqkn — a tenant-specific
+# load balancer, not a shared CDN POP, so inlandcha.com is provably theirs.
+# The pili-* hosts are the live-streaming RTMP ingest, and wblockme.com is the
+# CDN for the bundled BlockMe game. gemgala.org is an unofficial SEO site
+# fronting a login portal for the app; gemgala.com is a parked domain-for-sale
+# page unrelated to the operator, so it is deliberately NOT blocked.
+*.gemgala.net
+*.igemgala.com
+*.xgemgala.com
+*.inlandcha.com
+*.wblockme.com
+*.gemgala.org
+# Baidu HTTPDNS, which Gemgala resolves through — the same blocky-bypassing
+# leak as GOGO Live's httpdns.gold above. Anchored to the one host so the rest
+# of Baidu Cloud is untouched.
+httpdns.baidubce.com
+# SoulChill - Voice Chat & Party (com.live.soulchill, SpaceCape), which is the
+# overseas arm of Hello Group / Momo — hence the immomo, momocdn, wemomo and
+# hellogroup zones, which carry the actual API, IM, push and payment traffic.
+# Blocking those also takes out Momo itself and the hellogroup.com corporate
+# site, which is intended: same operator, same category.
+# api.ikeeru.com is a fallback backend — it CNAMEs to
+# nginx-soulchill-h2.soulchill.live.cdn.cloudflare.net, so the chain names the
+# SoulChill origin rather than merely sharing a Cloudflare POP. www.kkcalk.com
+# is the app's declared substitute for www.soulchill.live, and soulchil.live is
+# their one-letter-short spare. Upstream lists already catch some of these, but
+# they leave api.soulchill.live, httpdns.immomo.com and the CDN hosts live.
+*.soulchill.live
+*.soulchil.live
+*.soulchillcdn.com
+*.spacecape.com
+*.ikeeru.com
+*.kkcalk.com
+*.immomo.com
+*.momocdn.com
+*.wemomo.com
+*.hellogroup.com
+*.hellogroupcdn.com
+# SoulChill ships a hardcoded failover map pairing every host above with a
+# CloudFront mirror, so blocking the brand zones alone is not enough — the app
+# just switches. These are listed as exact distribution hostnames on purpose:
+# a distribution ID belongs to one AWS account, whereas *.cloudfront.net would
+# break a large fraction of the web.
+d1ec5y1xi3rii7.cloudfront.net
+d1khreb1r5v6ig.cloudfront.net
+d1rof24vfwbozv.cloudfront.net
+d29o6w6e36fqv3.cloudfront.net
+d2jvoxmzjt34ie.cloudfront.net
+d2lx36myaoct46.cloudfront.net
+d2q8afz9ooh1pa.cloudfront.net
+d2w7yz19ley72r.cloudfront.net
+d36mydmaycvu94.cloudfront.net
+d3b5yxhw2lrm64.cloudfront.net
+ditgwmtm5t6je.cloudfront.net
+drd0jy176ig60.cloudfront.net
+# Olamet (com.olamet.mobile) and Olamet Lite (com.olametlite.mobile), which
+# share one backend. hulekeji.com is the important one: the apps bundle a
+# first-party SDK under com.hule.* containing DynamicDomainManager and
+# OKHttpDns, and call http://tools.hulekeji.com:30561/domain/get to be handed
+# fresh domains once the hardcoded ones stop resolving. It also ships a
+# NetworkDiagnosticTool that queries ipinfo/ipwhois/geojs to work out whether
+# it is being filtered. Blocking the brand zones alone would just trigger a
+# refresh, so the rotation service has to go first.
+# olamet.net, olametlite.com and soulomet.com share three direct A records with
+# no CDN in front, which is real evidence rather than a shared POP — note that
+# their 98.98.251.23 hosts are all Volcengine (vecdnlb.com/vedcdnlb.com) and
+# prove nothing on their own. wooyavip.com is their tenant platform, addressed
+# as olamet.game/olamet.im/olamet.res and confirmed by the cert on
+# olamet.im.wooyavip.com; the IM socket is wss://olamet.im.wooyavip.com.
+# res.hakiludo.com serves a page titled "Vilaa", a sibling brand, and the apps
+# hit it for a /cdn-cgi/trace connectivity check.
+*.olamet.net
+*.olametlite.com
+*.soulomet.com
+*.wooyavip.com
+*.vchat-onlie.com
+*.hakiludo.com
+*.hulekeji.com
+*.shijianline.cn
+*.erbanyy.com
+# Who - Live Video Chat (com.scorp.who) and Who Lite (com.scorp.wholite,
+# Media Republic Apps / HYPERCHAT LIMITED). Both ship the com.scorp.who
+# codebase and the same backend. The cert on mobile-f.livechat-internal.com
+# gives the whole operation away: one certificate covers the internal-f,
+# webhook-f and hybrid-f hosts alongside api.rabbitvideochat.com,
+# api.sohbetiko.com, api.pinkvideochat.com, api.salsavideochat.com and
+# api.karamelchat.com — six brands, one operator. Every one of those API hosts
+# answers on 34.49.55.61, and gke-mobile.liveapp-dev.com returns the same
+# nginx/1.30.0 + x-powered-by: Express "Ok" as mobile-f, so it is theirs too.
+# rabbitvideochat.com was already caught upstream. events.isprog.com and
+# k.isprog.com are also in the package and already blocked upstream; they are
+# left to that list because it is unclear whether they are the operator's or a
+# shared analytics vendor.
+# Deliberately NOT blocked: www.serveroute.com and loc.countryname.com appear
+# in the package but both now redirect to domain marketplaces (atom.com and
+# hugedomains), so they are parked, not operator infrastructure.
+*.livechat-internal.com
+*.liveapp-dev.com
+*.whoapp.live
+*.whoapplive.com
+*.rabbitvideochat.com
+*.sohbetiko.com
+*.pinkvideochat.com
+*.salsavideochat.com
+*.karamelchat.com
+# Vone (com.love.vone) is Poppo Live's operator under another name: the package
+# ships com.baitu.video and com.qingshu520.chat classes and calls
+# api.vshowapi.com, h5.vshowapi.com and static.pp-static.com, all already
+# blocked above. These are its own zones. api.kb35ucer.com is dead now but is
+# plainly theirs, and these operators rotate.
+*.voneapi.com
+*.pop-chat.net
+*.liaoke520.com
+*.liaokedomain.com
+*.kb35ucer.com
+# StreamKar (com.thankyo.hwgame, Tipping Points Technology), built on Melot's
+# com.melot.meshow stack. The kktv1/2/5/7/8/9 zones are an interchangeable
+# pool — each apex is dead while api./www./into1. under it answer — alongside
+# sktv.live and the mikktv.xyz dev/pay hosts.
+*.streamkar.com
+*.streamkar.tv
+*.streamkarlive.live
+*.kktv1.com
+*.kktv2.com
+*.kktv5.com
+*.kktv7.com
+*.kktv8.com
+*.kktv9.com
+*.sktv.live
+*.mikktv.xyz
+# Litmatch (com.litatom.app, CONSTRUCT TECHNOLOGY). litatom.com, litmatchapp.com
+# and the openim/cloud hosts share direct A records on 43.174.152.213.
+# ksztagent/ksztone/ksztin are its unbranded infrastructure, and
+# datadataxyz.com, eventknock.com and latestgrowing.com are unbranded telemetry
+# that appears in the package with the same test./www. layout as the operator's
+# own hosts — suggestive rather than proven, since they sit behind Tencent
+# EdgeOne (eo.dnse2.com) and so share IPs with unrelated tenants.
+# NOT blocked: litshow.com is parked at HugeDomains despite appearing in the
+# package, and the zmaticoo/maticooads/aarki/appnexus ad-tech it embeds is
+# shared with unrelated apps.
+*.litatom.com
+*.litmatchs.com
+*.litmatchapp.com
+*.ksztagent.com
+*.ksztone.com
+*.ksztin.com
+*.datadataxyz.com
+*.eventknock.com
+*.latestgrowing.com
+*.otcollector.com
+# ShareChat (in.mohalla.sharechat), which also covers the Moj and Vibely
+# properties in the same package. Deliberately NOT blocked: the package is full
+# of Indian netbanking and 3-D Secure hosts (icicibank, hdfcbank, axisbank,
+# kotak, yesbank, onlinesbi, arcot) because they are payment redirect targets —
+# blocking those would break banking for the whole house.
+*.sharechat.com
+*.sharechat.co
+*.mojapp.in
+*.vibely.co.in
+# 4Party / Opa Live (com.soulla.android, YOU JOIN TECHNOLOGY). falla.live is
+# the sibling Falla brand served from the same package.
+*.soulla.me
+*.soulla.app
+*.falla.live
+*.lorycloud.com
+*.hipoapp.net
+*.immoyu.com
+# Vava.chat (com.client.goparty). camfan.chat is the whole backend — api., ws.
+# and source. Its lbs.chatnos.com is shared with Olamet and Bling below and is
+# already blocked upstream. The d1hszqsefh09id.cloudfront.net distribution in
+# this package is deliberately left alone: it could not be attributed to the
+# operator rather than to the bundled Agora/NetEase SDKs.
+*.camfan.chat
+# Toki (com.toki.android, SpreadFun). A Unity app with a 96 KiB dex, so only
+# the brand zone could be established — but rpc./sso./oss-image. under it are
+# the live backend.
+*.tokiapp.net
+# MeYo (com.pita.oyem, MeYo Studio)
+*.meyo.one
+*.pita.live
+# JoyChat (com.chat.joychat). The dex yields no hosts at all, so this comes
+# from the privacy-policy domain on the store listing; api. and ws. under it
+# are live, which confirms it.
+*.joyme.chat
+# Chato (com.chato.amigo). Same story — the dex is clean, so these are the
+# brand sites plus its AppsFlyer OneLink vanity host. chato.chat is parked at
+# atom.com and is deliberately NOT blocked.
+*.chatoapp.com
+*.chatoapp.net
+chato.go.link
+# ZaffaLive (com.waig.nalo). Wrapped in Google's PAIR integrity protection
+# (com.pairip.application.App), so nothing is extractable and this is the brand
+# zone only. Watch the query log if it still works.
+*.zaffalive.com
+# Bling - Video Chat (com.live.bling.android, JHong Technology)
+*.jhongent.com
+*.ucash.mobi
+*.welive.mobi
 # Others in the same category
 *.monkey.app
 *.monkey.cool
