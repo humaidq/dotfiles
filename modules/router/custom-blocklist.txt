@@ -74,6 +74,41 @@ live.tiktok.com
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:wsdvs\.com|worldfcdn2?\.com)$/
 
+# Live streaming & random video chat
+# BIGO Technology (Joyy): BIGO Live, Likee, HelloYo. *.bigo.sg is above.
+*.bigo.tv
+*.bigolive.tv
+*.bigolive.com
+*.bigo.live
+*.usebigo.com
+*.helloyo.sg
+*.likee.video
+*.likee.com
+*.like.video
+# Tango
+*.tango.me
+*.tangome.com
+# Azar (Hyperconnect); hpcnt.com is their backend, azarlive.one is a clone
+*.azarlive.com
+*.azarlive.one
+*.hpcnt.com
+# OmeTV
+*.ome.tv
+*.ometv.chat
+*.ometv.net
+# YouNow
+*.younow.com
+# Others in the same category
+*.monkey.app
+*.monkey.cool
+*.holla.world
+*.camsurf.com
+*.shagle.com
+*.coomeet.com
+*.joingy.com
+*.uhmegle.com
+*.chathub.cam
+
 # Chat
 *.chat-avenue.com
 *.chatango.com
