@@ -216,6 +216,12 @@ live.tiktok.com
 *.eventbus.me
 *.liveseries.net
 *.sugo.com
+# SoMatch and SoMatch Lite (com.somatch.android, com.somatchlite.android,
+# IndiaMasterApp) ship no branded domain at all — they run entirely on the
+# micoplatform/micoworld hosts above. micous.com shares IPs with both
+# micoworld.net and rpc.voicelinkhub.net.
+*.micous.com
+*.crossplayrouterequest.app
 # Others in the same category
 *.monkey.app
 *.monkey.cool
