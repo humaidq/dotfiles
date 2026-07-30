@@ -24,7 +24,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     groundwave = {
-      url = "github:humaidq/groundwave";
+      url = "git+https://git.alq.ae/humaid/groundwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     fleeti = {
