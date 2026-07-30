@@ -88,6 +88,7 @@ live.tiktok.com
 # Tango
 *.tango.me
 *.tangome.com
+*.tango.tv
 # Azar (Hyperconnect); hpcnt.com is their backend, azarlive.one is a clone
 *.azarlive.com
 *.azarlive.one
@@ -113,6 +114,53 @@ live.tiktok.com
 # literary site and is deliberately NOT blocked.
 *.boloji.live
 *.boloji-pro.live
+
+# Backends extracted from the app packages themselves. These operators rotate
+# through disposable domains, so blocking the marketing site alone does
+# nothing. Third-party SDK infrastructure the apps also use (RongCloud, Agora,
+# NetEase Yunxin, SmartCaptcha, Sobot) is deliberately left alone, since it is
+# shared with unrelated apps.
+#
+# Crush Live (com.starlink.crushlive) ships seven interchangeable backends,
+# each with the same activity./api./game./h5./image./invite./proxy./web. hosts.
+*.corelinktech2025.com
+*.glovantec.com
+*.nova2025linksys.com
+*.novasflowstechs.com
+*.seetheworld2025.com
+*.universaldatahub.com
+*.highboxs.com
+*.cgysy.net
+# BoloJi family, shared across com.yakii.videocall.live, com.boloji.live,
+# com.theboloji.videocall, com.boloji.videocall.chatting,
+# com.bolojilite.videocall.chat and org.harshmeet.room.lite.
+*.gameschalo.com
+*.leadercc.com
+*.quantum-nexus.net
+*.akisinn.info
+*.akisinn.site
+*.dewrain.life
+*.dewrain.site
+*.dewrain.world
+*.kvaedit.site
+*.vaicore.site
+*.vaicore.store
+*.vaicore.xyz
+*.pay-faster.com
+*.richypay.net
+*.sharemusic5.com
+*.hiiclub.live
+*.hiiu.live
+*.theboloji.com
+*.vmplayer2019.com
+*.bolojilite.online
+*.starhalo.mobi
+*.harshapp.com
+*.devcom.chat
+*.videocall.chat
+*.upiappin.org
+*.imacris.org
+*.ewalletmy.com
 # Others in the same category
 *.monkey.app
 *.monkey.cool
