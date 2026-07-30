@@ -222,6 +222,14 @@ live.tiktok.com
 # micoworld.net and rpc.voicelinkhub.net.
 *.micous.com
 *.crossplayrouterequest.app
+# Poppo Live (com.baitu.qingshu). Taken from the site's own JS rather than the
+# APK, which no reachable mirror would serve. api.vshow-live.com answers on
+# 98.98.238.184, the same address as v.gameschalo.com above.
+*.poppo.com
+*.poppolive.com
+*.vshowapi.com
+*.vshow-live.com
+*.pp-static.com
 # Others in the same category
 *.monkey.app
 *.monkey.cool
