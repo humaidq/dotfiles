@@ -188,8 +188,8 @@ in
           # the local domain as a search list (DNSSL) so IPv6-only clients have
           # a resolver. The link-local address is used rather than the global
           # one because the delegated prefix changes (e.g. on the daily PPP
-          # redial); the link-local address is stable, and dnsmasq already
-          # listens on it via interface=lan0.
+          # redial); the link-local address is stable, and blocky already
+          # listens on it (it binds every address on port 53).
           ipv6SendRAConfig = {
             EmitDNS = true;
             DNS = [ "_link_local" ];

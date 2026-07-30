@@ -50,6 +50,8 @@ in
       services = {
         resolved.enable = lib.mkForce true;
         dnsmasq.enable = lib.mkForce false;
+        # blocky binds port 53, which collides with systemd-resolved.
+        blocky.enable = lib.mkForce false;
         pppd.enable = lib.mkForce false;
       };
     };
