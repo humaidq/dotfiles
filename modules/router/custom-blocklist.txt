@@ -105,6 +105,14 @@ live.tiktok.com
 *.chametw.com
 *.nchamet.com
 *.hkfuliao.com
+# Crush Live (com.starlink.crushlive, Starlink Network Technology)
+*.crushfun.live
+*.crushfun.com
+# BoloJi. boloji-pro.live serves com.yakii.videocall.live, which is listed as
+# both "BoloJi Pro" and "BolojiChat". Note boloji.com is an unrelated Indian
+# literary site and is deliberately NOT blocked.
+*.boloji.live
+*.boloji-pro.live
 # Others in the same category
 *.monkey.app
 *.monkey.cool
