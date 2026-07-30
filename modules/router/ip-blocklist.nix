@@ -24,17 +24,6 @@ let
   allow6 = [ ];
   cfg = config.sifr.router;
 
-  # Destination ranges dropped for LAN clients regardless of DNS. Unlike the
-  # downloaded feeds these are hand-maintained, so keep the list short and
-  # justify every entry: a range belongs to a hosting provider, not to the
-  # service being blocked, and neighbours in it are collateral.
-  staticBlock4 = [
-    # Zenlayer edge range (98.98.0.0/16 is ZENLA-7). Chamet, Tango, BoloJi,
-    # Achat, Poppo Live, Yidui and starhalo all answer from this /24 — see the
-    # matching entries in custom-blocklist.txt. No host in it has a PTR record.
-    "98.98.238.0/24"
-  ];
-
   # Feeds processed by the update service. Each entry maps a pair of nftables
   # sets to its source URLs and a minimum-size sanity guard that rejects
   # obviously broken / truncated downloads.
@@ -79,24 +68,6 @@ in
         set doh_block6 {
           type ipv6_addr
           flags interval
-        }
-
-        set static_block4 {
-          type ipv4_addr
-          flags interval
-          ${lib.optionalString (
-            staticBlock4 != [ ]
-          ) "elements = { ${lib.concatStringsSep ", " staticBlock4} }"}
-        }
-
-        chain forward_static_block {
-          type filter hook forward priority -10; policy accept;
-
-          # LAN -> WAN only, so the router itself can still reach these ranges
-          # for diagnostics. The counter makes it easy to tell whether a
-          # complaint about a broken site is this rule: `nft list chain inet
-          # router-blocklists forward_static_block`.
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @static_block4 counter drop comment "Block statically listed destination ranges"
         }
 
         chain forward_blocklists {
