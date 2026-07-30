@@ -226,6 +226,7 @@ in
           modifier = mod;
           floating.modifier = mod;
           output."*".bg = "${../wallhaven-13mk9v.jpg} fill #000000";
+          output."Dell Inc. DELL P2725H 25FCXZ3".subpixel = "rgb";
           fonts = {
             names = [ (if gfxCfg.berkeley.enable then "Berkeley Mono" else "Fira Code") ];
             size = 7.0;
