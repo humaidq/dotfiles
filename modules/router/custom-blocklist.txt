@@ -199,6 +199,13 @@ live.tiktok.com
 *.playlinkhub.com
 *.miliantech.com
 *.siteperformancetest.net
+# Achat (com.ahchat.app, Raabta Technology). Its API is the akisinn/dewrain/
+# vaicore/gameschalo/vmplayer2019 pool above, shared with the BoloJi apps.
+# The deep links sit on Firebase and Branch shared zones, so only the app's
+# own host is listed, not page.link or smart.link themselves.
+*.achat.live
+*.ahchat.page.link
+*.ahchat.smart.link
 # Others in the same category
 *.monkey.app
 *.monkey.cool
