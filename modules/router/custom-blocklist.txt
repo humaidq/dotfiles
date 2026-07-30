@@ -222,6 +222,9 @@ live.tiktok.com
 # micoworld.net and rpc.voicelinkhub.net.
 *.micous.com
 *.crossplayrouterequest.app
+# YoHo (com.voicechat.live.group, YoHo Studio) is another Mico World app: it
+# calls the micoplatform and eventbus hosts above. aeorw.com is its own.
+*.aeorw.com
 # Poppo Live (com.baitu.qingshu). Taken from the site's own JS rather than the
 # APK, which no reachable mirror would serve. api.vshow-live.com answers on
 # 98.98.238.184, the same address as v.gameschalo.com above.
