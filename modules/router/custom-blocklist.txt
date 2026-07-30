@@ -230,6 +230,11 @@ live.tiktok.com
 *.vshowapi.com
 *.vshow-live.com
 *.pp-static.com
+# MateMet (com.oversea.matemet, Justar HK). The APK is packed the same way
+# Chamet's is — a 73 KiB stub dex, stripped manifest and resources — so only
+# the brand domains could be established. Its backends are unknown.
+*.matemet.com
+*.imatemet.com
 # Others in the same category
 *.monkey.app
 *.monkey.cool
