@@ -14,6 +14,23 @@ let
 
   # dnsmasq only serves DNS to blocky, on loopback.
   dnsmasqUpstream = "127.0.0.1:5353";
+
+  # blocky's custom DNS resolver runs ahead of its conditional resolver and
+  # matches subdomains, so any mapping at or above the local domain (e.g.
+  # alq.ae for a v6.alq.ae LAN) would shadow every DHCP-derived hostname.
+  # Those entries are moved to dnsmasq instead, which resolves specific
+  # records (DHCP leases, host-record) before its own wildcards.
+  shadowingMappings = lib.filterAttrs (
+    name: _: lib.hasSuffix ".${name}" ".${cfg.localDomain}"
+  ) blockyCommon.customDNS.mapping;
+
+  # dnsmasq takes one address per directive, blocky takes a comma-separated
+  # list, so expand them.
+  shadowingAddresses = lib.concatLists (
+    lib.mapAttrsToList (
+      name: value: map (ip: "/${name}/${ip}") (lib.splitString "," value)
+    ) shadowingMappings
+  );
 in
 
 {
@@ -54,6 +71,10 @@ in
         expand-hosts = true;
         host-record = [ "${cfg.localDomain},${cfg.dhcp.routerAddress}" ];
 
+        # Wildcards taken over from blocky's custom DNS. DHCP leases and the
+        # host-record above are more specific, so they still win.
+        address = shadowingAddresses;
+
         # No upstreams: blocky only ever asks about the local zones above, and
         # forwarding back to blocky would be a resolution loop.
         no-resolv = true;
@@ -74,38 +95,57 @@ in
 
     services.blocky = {
       enable = true;
-      settings = lib.recursiveUpdate blockyCommon {
-        ports = {
-          dns = 53;
-          http = 3333;
-          https = 4333;
-          tls = 853;
-        };
+      settings =
+        lib.recursiveUpdate blockyCommon {
+          ports = {
+            dns = 53;
+            http = 3333;
+            https = 4333;
+            tls = 853;
+          };
 
-        # dnsmasq owns the DHCP-derived zones; hand those queries to it instead
-        # of upstream. fallbackUpstream stays at its default (false) so local
-        # names never leak out.
-        conditional.mapping = {
-          "${cfg.localDomain}" = dnsmasqUpstream;
-          "${reverseZone}" = dnsmasqUpstream;
-          "use-application-dns.net" = dnsmasqUpstream;
-        };
+          # dnsmasq owns the DHCP-derived zones; hand those queries to it instead
+          # of upstream. fallbackUpstream stays at its default (false) so local
+          # names never leak out.
+          conditional.mapping = {
+            "${cfg.localDomain}" = dnsmasqUpstream;
+            "${reverseZone}" = dnsmasqUpstream;
+            "use-application-dns.net" = dnsmasqUpstream;
+          }
+          // lib.mapAttrs (_: _: dnsmasqUpstream) shadowingMappings;
 
-        # Resolve client addresses to device names via dnsmasq's DHCP lease
-        # PTRs, so clientGroupsBlock and the Prometheus metrics are per-device.
-        clientLookup = {
-          upstream = dnsmasqUpstream;
-          singleNameOrder = [
-            1
-            2
+          # The doh denylist also catches the canary domain, and blocking runs
+          # before the conditional resolver, so blocky would answer it with
+          # 0.0.0.0. Clients only disable DoH on NXDOMAIN, which is what dnsmasq
+          # returns, so let the query through to it.
+          blocking.allowlists.general = blockyCommon.blocking.allowlists.general ++ [
+            ''
+              use-application-dns.net
+            ''
           ];
-        };
 
-        # blocky's cache sits in front of its conditional resolver, so the
-        # shared 6h minTime would pin DHCP hostname to address mappings for 6h
-        # after a lease changes. Honour the real TTLs here instead.
-        caching.minTime = "0";
-      };
+          # Resolve client addresses to device names via dnsmasq's DHCP lease
+          # PTRs, so clientGroupsBlock and the Prometheus metrics are per-device.
+          clientLookup = {
+            upstream = dnsmasqUpstream;
+            singleNameOrder = [
+              1
+              2
+            ];
+          };
+
+          # blocky's cache sits in front of its conditional resolver, so the
+          # shared 6h minTime would pin DHCP hostname to address mappings for 6h
+          # after a lease changes. Honour the real TTLs here instead.
+          caching.minTime = "0";
+        }
+        // {
+          # Set outside the recursiveUpdate, which would merge the removed
+          # entries straight back in.
+          customDNS = blockyCommon.customDNS // {
+            mapping = lib.removeAttrs blockyCommon.customDNS.mapping (lib.attrNames shadowingMappings);
+          };
+        };
     }; # end blocky
 
     # Guarded on services.blocky.enable so the client specialisation, which
