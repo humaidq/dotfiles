@@ -75,9 +75,31 @@ boot_emulator() {
 stop_emulator() {
 	[ -n "$emu_pid" ] || return 0
 	adb -s "$serial" emu kill >/dev/null 2>&1 || true
+	local waited=0
+	while kill -0 "$emu_pid" 2>/dev/null; do
+		if [ "$waited" -ge 10 ]; then
+			kill -9 "$emu_pid" 2>/dev/null || true
+			break
+		fi
+		sleep 1
+		waited=$((waited + 1))
+	done
 	wait "$emu_pid" 2>/dev/null || true
 	emu_pid=""
 }
+
+# Guarantee the emulator never outlives the script. Under set -e, a wait_boot
+# timeout or a failed snapshot save aborts the script before the explicit
+# stop_emulator call in ensure_avd runs, which would otherwise orphan
+# qemu-system holding port 5556 and break the next run. stop_emulator is a
+# no-op once emu_pid is already cleared, so running it again here on the
+# ordinary success path is harmless.
+cleanup() {
+	local status=$?
+	stop_emulator
+	exit "$status"
+}
+trap cleanup EXIT
 
 # One cold boot, once. Every later run restores this snapshot instead, which
 # takes seconds and guarantees no residue from the previously tested app.
