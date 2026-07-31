@@ -29,9 +29,12 @@ if [ -n "$local_file" ]; then
 	cp -f "$local_file" "$apk"
 elif [ ! -s "$apk" ]; then
 	echo "fetching $pkg ..." >&2
+	# See apk-sim.sh: /b/APK/ can silently omit a split the manifest marks
+	# as required. /b/XAPK/ always returns the full set when one is
+	# needed, and a byte-identical plain APK when it isn't.
 	curl -sSL --max-time 300 \
 		-A "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36" \
-		-o "$apk" "https://d.apkpure.com/b/APK/$pkg?version=latest"
+		-o "$apk" "https://d.apkpure.com/b/XAPK/$pkg?version=latest"
 fi
 
 case "$(file -b "$apk")" in

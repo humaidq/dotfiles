@@ -430,9 +430,20 @@ if [ -n "$local_file" ]; then
 	cp -f "$local_file" "$apk"
 elif [ ! -s "$apk" ]; then
 	echo "fetching $pkg ..." >&2
+	# /b/APK/ can silently hand back an incomplete package: for an app
+	# whose manifest marks a split as required (com.android.vending.
+	# splits.required -- confirmed on com.live.soulchill, which shipped
+	# without its 196 MiB config.arm64_v8a.apk), the base module alone
+	# still looks like a normal, complete "Android package" to `file`
+	# and to the AndroidManifest.xml-at-root check below, but adb
+	# install-multiple then fails with INSTALL_FAILED_MISSING_SPLIT.
+	# /b/XAPK/ always returns the full split set when one is needed
+	# and -- verified against com.duckduckgo.mobile.android, a
+	# splitless app -- returns a byte-identical plain APK when one
+	# isn't, so there is no downside to asking for it unconditionally.
 	curl -sSL --max-time 300 \
 		-A "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36" \
-		-o "$apk" "https://d.apkpure.com/b/APK/$pkg?version=latest"
+		-o "$apk" "https://d.apkpure.com/b/XAPK/$pkg?version=latest"
 fi
 case "$(file -b "$apk")" in
 *"Android package"* | *"Zip archive"*) ;;
