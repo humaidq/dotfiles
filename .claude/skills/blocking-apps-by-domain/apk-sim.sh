@@ -45,34 +45,81 @@ ensure_sdk() {
 
 avd_home="$cache/avd"
 avd_name="apk-sim"
+snapshot_name="default_boot"
 image="system-images;android-34;google_apis;x86_64"
 serial="emulator-5556"
 emu_pid=""
 capture_pid=""
 cap_dest=""
+stale_snapshot=0
 
 export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
 
+# $1 is 1 for a deliberate cold boot (ensure_avd's -no-snapshot-load, which
+# never even attempts to load a snapshot and genuinely needs the minutes a
+# cold boot takes), 0 for a boot that is meant to restore the golden
+# snapshot in seconds. A restore keeps the tight budget below so a wedged
+# emulator still fails fast, but if the snapshot turns out to be stale it
+# falls back to a cold boot silently (see boot_emulator's post-boot check
+# for the self-heal) — mid-loop detection of that fallback (the same
+# "Failed to load snapshot" line) escalates the budget once, so that a
+# fallback cold boot gets the time it genuinely needs instead of tripping
+# the restore-sized timeout the moment it runs long.
 wait_boot() {
+	local coldboot="${1:-0}" restore_budget=180 coldboot_budget=420
+	local budget=$restore_budget escalated=0 i=0
+	[ "$coldboot" -eq 1 ] && budget=$coldboot_budget
 	adb -s "$serial" wait-for-device
-	for _ in $(seq 1 180); do
+	while [ "$i" -lt "$budget" ]; do
 		if [ "$(adb -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
 			return 0
 		fi
+		if [ "$escalated" -eq 0 ] && [ "$coldboot" -eq 0 ] &&
+			grep -q "Failed to load snapshot '$snapshot_name'" "$cache/emulator.log" 2>/dev/null; then
+			echo "the '$snapshot_name' snapshot failed to load; this boot fell back to a cold" >&2
+			echo "boot, so extending the boot timeout to ${coldboot_budget}s to give it the time that genuinely needs ..." >&2
+			budget=$coldboot_budget
+			escalated=1
+		fi
 		sleep 1
+		i=$((i + 1))
 	done
-	echo "ERROR: emulator did not finish booting within 180s" >&2
+	echo "ERROR: emulator did not finish booting within ${budget}s" >&2
 	return 1
 }
 
 # Always -s emulator-5556: a phone plugged into this workstation would
 # otherwise be a valid adb target, and this script installs and drives apps.
+#
+# Self-heal: a boot that was meant to restore the golden snapshot (anything
+# other than ensure_avd's own -no-snapshot-load cold boot) but that actually
+# hit "Failed to load snapshot" in the guest log means the on-disk snapshot
+# is stale or corrupt and the emulator silently cold-booted instead. That is
+# only a slowdown for *this* run (wait_boot above already gave it the time
+# it needed), but left alone it repeats forever, because ensure_avd's guard
+# only checks whether the snapshot directory exists, not whether it loads.
+# Flagging it here and deleting it in stop_emulator (once the emulator this
+# directory belongs to is confirmed stopped, never before) makes the next
+# ensure_avd call see a missing snapshot and rebuild it through the same
+# cold-boot-and-save path Task 2 already tested, rather than inventing a
+# second way to save one mid-run.
 boot_emulator() {
+	local coldboot=0 arg
+	for arg in "$@"; do
+		[ "$arg" = "-no-snapshot-load" ] && coldboot=1
+	done
 	"$sdk/emulator/emulator" -avd "$avd_name" -port 5556 \
 		-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect \
 		"$@" >"$cache/emulator.log" 2>&1 &
 	emu_pid=$!
-	wait_boot
+	wait_boot "$coldboot"
+	if [ "$coldboot" -eq 0 ] && grep -q "Failed to load snapshot '$snapshot_name'" "$cache/emulator.log" 2>/dev/null; then
+		echo "WARNING: the '$snapshot_name' snapshot failed to load — this run cold-booted instead of" >&2
+		echo "WARNING: restoring, which is why it was slow. The saved snapshot is stale or corrupt;" >&2
+		echo "WARNING: it will be removed once this run's emulator stops, and rebuilt automatically" >&2
+		echo "WARNING: the next time this script runs." >&2
+		stale_snapshot=1
+	fi
 }
 
 stop_emulator() {
@@ -89,6 +136,15 @@ stop_emulator() {
 	done
 	wait "$emu_pid" 2>/dev/null || true
 	emu_pid=""
+	# Deferred from boot_emulator's detection: only remove the stale snapshot
+	# once this emulator (the one that just proved it can't load it) is
+	# confirmed gone, never while it — or anything else — might still be
+	# running against it.
+	if [ "$stale_snapshot" -eq 1 ]; then
+		echo "removing the stale '$snapshot_name' snapshot at $avd_home/$avd_name.avd/snapshots/$snapshot_name ..." >&2
+		rm -rf "${avd_home:?}/$avd_name.avd/snapshots/$snapshot_name"
+		stale_snapshot=0
+	fi
 }
 
 # Guest-side capture. Host-side `-tcpdump` cannot see this AVD's outbound
@@ -343,9 +399,13 @@ trap cleanup EXIT
 
 # One cold boot, once. Every later run restores this snapshot instead, which
 # takes seconds and guarantees no residue from the previously tested app.
+# This guard only proves the snapshot directory exists, not that it still
+# loads — a stale/corrupt snapshot is instead caught live by boot_emulator's
+# self-heal (above), which deletes it via stop_emulator once found, so this
+# check sees it missing again on the very next call and rebuilds it here.
 ensure_avd() {
 	local avdmanager
-	[ -d "$avd_home/$avd_name.avd/snapshots/default_boot" ] && return 0
+	[ -d "$avd_home/$avd_name.avd/snapshots/$snapshot_name" ] && return 0
 	mkdir -p "$avd_home"
 	if [ ! -d "$avd_home/$avd_name.avd" ]; then
 		avdmanager="$(find "$sdk/cmdline-tools" -name avdmanager -type f | head -1)"
@@ -361,11 +421,11 @@ ensure_avd() {
 	boot_emulator -no-snapshot-load
 	sleep 20 # let first-boot background work settle before snapshotting
 	adb -s "$serial" shell input keyevent 82 || true
-	adb -s "$serial" emu avd snapshot save default_boot >&2
+	adb -s "$serial" emu avd snapshot save "$snapshot_name" >&2
 	stop_emulator
 }
 
-capture_flags=(-snapshot default_boot -no-snapshot-save -read-only)
+capture_flags=(-snapshot "$snapshot_name" -no-snapshot-save -read-only)
 
 usage() {
 	echo "usage: apk-sim.sh [-t seconds] [-d resolver] <android.package.name>" >&2
