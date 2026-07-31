@@ -55,6 +55,10 @@ stale_snapshot=0
 
 export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
 
+emulator_alive() {
+	[ -n "$emu_pid" ] && kill -0 "$emu_pid" 2>/dev/null
+}
+
 # $1 is 1 for a deliberate cold boot (ensure_avd's -no-snapshot-load, which
 # never even attempts to load a snapshot and genuinely needs the minutes a
 # cold boot takes), 0 for a boot that is meant to restore the golden
@@ -65,12 +69,29 @@ export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
 # "Failed to load snapshot" line) escalates the budget once, so that a
 # fallback cold boot gets the time it genuinely needs instead of tripping
 # the restore-sized timeout the moment it runs long.
+#
+# Returns 0 booted, 1 timed out or adb never saw the device, 2 the emulator
+# process died before boot completed. 2 is separate because a restore boot
+# that dies is a corrupt-snapshot signature the caller can recover from,
+# whereas a timeout is not something this script can reason about.
 wait_boot() {
 	local coldboot="${1:-0}" restore_budget=180 coldboot_budget=420
 	local budget=$restore_budget escalated=0 i=0
 	[ "$coldboot" -eq 1 ] && budget=$coldboot_budget
-	adb -s "$serial" wait-for-device
+	# Bounded, and inside the budget rather than ahead of it: `adb
+	# wait-for-device` blocks forever on a device that is never coming, so
+	# when qemu dies during snapshot load this call used to hang the whole
+	# run without the poll loop below ever starting to count.
+	if ! timeout "$budget" adb -s "$serial" wait-for-device; then
+		emulator_alive || return 2
+		echo "ERROR: adb never saw $serial within ${budget}s" >&2
+		return 1
+	fi
 	while [ "$i" -lt "$budget" ]; do
+		# Checked every iteration for the same reason: the emulator can die
+		# at any point during boot, and every adb call against a dead one
+		# just fails quietly until the budget runs out.
+		emulator_alive || return 2
 		if [ "$(adb -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
 			return 0
 		fi
@@ -103,16 +124,66 @@ wait_boot() {
 # ensure_avd call see a missing snapshot and rebuild it through the same
 # cold-boot-and-save path Task 2 already tested, rather than inventing a
 # second way to save one mid-run.
-boot_emulator() {
-	local coldboot=0 arg
-	for arg in "$@"; do
-		[ "$arg" = "-no-snapshot-load" ] && coldboot=1
-	done
+launch_emulator() {
 	"$sdk/emulator/emulator" -avd "$avd_name" -port 5556 \
 		-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect \
 		"$@" >"$cache/emulator.log" 2>&1 &
 	emu_pid=$!
-	wait_boot "$coldboot"
+}
+
+boot_emulator() {
+	local coldboot=0 arg rc=0
+	for arg in "$@"; do
+		[ "$arg" = "-no-snapshot-load" ] && coldboot=1
+	done
+	launch_emulator "$@"
+	wait_boot "$coldboot" || rc=$?
+
+	# The other way a stale snapshot presents. The graceful case below prints
+	# "Failed to load snapshot" and cold-boots itself; a genuinely corrupt one
+	# instead crashes qemu mid-restore (seen as a crashpad "read out of range"
+	# on com.imo.android.imoim), which produces no such line and so matched
+	# nothing here. Recover on the process death instead of on the message:
+	# drop the snapshot and cold-boot once, so the run still produces a
+	# capture rather than dying on a cache artifact.
+	if [ "$rc" -eq 2 ] && [ "$coldboot" -eq 0 ]; then
+		echo "WARNING: the emulator died while restoring the '$snapshot_name' snapshot, which is" >&2
+		echo "WARNING: how a corrupt one fails when it takes qemu down with it — there is no" >&2
+		echo "WARNING: 'Failed to load snapshot' line in that case. Discarding the snapshot and" >&2
+		echo "WARNING: cold-booting instead; this run will be slow, and the next one rebuilds it." >&2
+		stale_snapshot=1
+		stop_emulator # reaps the dead process, then deletes the snapshot
+		rc=0
+		# -snapshot has to come back out of the flags for the retry. Pointing
+		# it at a name that no longer exists — which is exactly the state
+		# stop_emulator just created — segfaults qemu within seconds, the same
+		# way a corrupt one does, so a retry that kept it would "fail" for a
+		# reason that has nothing to do with the app. -read-only is deliberately
+		# kept: it is what stops the app under test leaving residue in the AVD,
+		# and it cold-boots fine on its own.
+		local -a cold_args=()
+		local skip=0
+		for arg in "$@"; do
+			[ "$skip" -eq 1 ] && {
+				skip=0
+				continue
+			}
+			[ "$arg" = "-snapshot" ] && {
+				skip=1
+				continue
+			}
+			cold_args+=("$arg")
+		done
+		launch_emulator ${cold_args[@]+"${cold_args[@]}"} -no-snapshot-load
+		wait_boot 1 || rc=$?
+		if [ "$rc" -ne 0 ]; then
+			echo "ERROR: the cold-boot retry failed too — this is not a snapshot problem." >&2
+			return 1
+		fi
+		return 0
+	fi
+	[ "$rc" -eq 0 ] || return 1
+
 	if [ "$coldboot" -eq 0 ] && grep -q "Failed to load snapshot '$snapshot_name'" "$cache/emulator.log" 2>/dev/null; then
 		echo "WARNING: the '$snapshot_name' snapshot failed to load — this run cold-booted instead of" >&2
 		echo "WARNING: restoring, which is why it was slow. The saved snapshot is stale or corrupt;" >&2
