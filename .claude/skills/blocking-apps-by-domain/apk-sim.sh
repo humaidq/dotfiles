@@ -5,8 +5,9 @@
 #   apk-sim.sh -l <file.apk>            # already have the file
 #   apk-sim.sh -t 240 -d 10.10.0.16 <pkg>
 #
-# Needs adb, tshark and a JDK:
-#   nix shell nixpkgs#android-tools nixpkgs#wireshark-cli nixpkgs#jdk17_headless
+# Needs adb, tshark, a JDK, curl and file:
+#   nix shell nixpkgs#android-tools nixpkgs#wireshark-cli nixpkgs#jdk17_headless \
+#     nixpkgs#curl nixpkgs#file
 #
 # Where apk-domains.sh answers "what hostnames are in the package", this
 # answers "what did the app actually dial" — which survives obfuscation,
@@ -225,3 +226,144 @@ if [ "${1:-}" = "--spike" ]; then
 	echo "wrote $cache/spike.pcap ($(stat -c %s "$cache/spike.pcap" 2>/dev/null || echo 0) bytes)" >&2
 	exit 0
 fi
+
+window=120
+resolver="10.20.0.1"
+local_file=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-l)
+		local_file="${2:?usage: apk-sim.sh -l <file.apk>}"
+		shift 2
+		;;
+	-t)
+		window="${2:?usage: apk-sim.sh -t <seconds>}"
+		shift 2
+		;;
+	-d)
+		resolver="${2:?usage: apk-sim.sh -d <resolver>}"
+		shift 2
+		;;
+	*) break ;;
+	esac
+done
+if [ -n "$local_file" ]; then
+	pkg="$(basename "$local_file" .apk)"
+else
+	pkg="${1:?usage: apk-sim.sh <android.package.name>}"
+fi
+
+# Same cache and same mirror as apk-domains.sh, so running both tools on one
+# package costs one download.
+work="${TMPDIR:-/tmp}/apk-domains/$pkg"
+mkdir -p "$work"
+apk="$work/app.apk"
+if [ -n "$local_file" ]; then
+	cp -f "$local_file" "$apk"
+elif [ ! -s "$apk" ]; then
+	echo "fetching $pkg ..." >&2
+	curl -sSL --max-time 300 \
+		-A "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36" \
+		-o "$apk" "https://d.apkpure.com/b/APK/$pkg?version=latest"
+fi
+case "$(file -b "$apk")" in
+*"Android package"* | *"Zip archive"*) ;;
+*)
+	echo "$pkg: not an APK (the mirror may have returned an error page)" >&2
+	exit 1
+	;;
+esac
+
+# apkpure frequently serves an XAPK bundle instead of a plain APK: a zip
+# containing a base .apk, one or more per-ABI native-library splits, and
+# density/locale splits, plus a manifest.json adb knows nothing about. A
+# plain APK has AndroidManifest.xml at its own root; a bundle's payload is
+# nested *.apk files instead. install_apks is fed to `install-multiple`
+# below either way, so a plain APK (a one-element array) takes the same path.
+#
+# The listing is collected into a variable before grep runs over it, rather
+# than piped straight in: `grep -q` exits after its first match and closes
+# the pipe, so `unzip -l` would receive SIGPIPE and exit non-zero — which
+# `pipefail` turns into "not found" for every plain APK, not just bundles.
+install_apks=("$apk")
+listing="$(unzip -l "$apk" 2>/dev/null || true)"
+if ! grep -q ' AndroidManifest\.xml$' <<<"$listing"; then
+	bundle="$work/bundle"
+	rm -rf "$bundle"
+	mkdir -p "$bundle"
+	unzip -qq -o "$apk" -d "$bundle" '*.apk' >/dev/null
+	install_apks=()
+	while IFS= read -r -d '' f; do
+		install_apks+=("$f")
+	done < <(find "$bundle" -maxdepth 1 -name '*.apk' -print0)
+	if [ "${#install_apks[@]}" -eq 0 ]; then
+		echo "$pkg: bundle contained no inner .apk files" >&2
+		exit 1
+	fi
+fi
+
+cap="$work/capture.pcap"
+rm -f "$cap"
+
+# The router, not a clean upstream: blocked names answer 0.0.0.0, so the app's
+# failover fires and reveals the rotation service it would otherwise hide.
+echo "booting emulator (resolver $resolver) ..." >&2
+boot_emulator "${capture_flags[@]}" -dns-server "$resolver"
+
+# Guest-side capture starts right after boot, before install, so nothing the
+# app does at first launch — including its very first DNS lookups — is
+# missed. SECONDS is reset here so the window below is measured from the
+# start of capture, not from the end of the monkey run.
+start_capture
+SECONDS=0
+
+echo "installing $pkg ..." >&2
+# This AVD's x86_64 google_apis image has no ARM native-bridge, so an ABI
+# split it cannot execute (e.g. config.armeabi_v7a.apk) must be dropped
+# rather than handed to install-multiple, which would otherwise reject the
+# whole set as mismatched. Density/locale splits carry no ABI in the name
+# and pass through untouched.
+if [ "${#install_apks[@]}" -gt 1 ]; then
+	abilist="$(adb -s "$serial" shell getprop ro.product.cpu.abilist | tr -d '\r')"
+	filtered=()
+	for f in "${install_apks[@]}"; do
+		case "$(basename "$f")" in
+		config.arm64_v8a.apk | config.armeabi_v7a.apk | config.armeabi.apk | config.mips*.apk | config.x86.apk | config.x86_64.apk)
+			abi="$(basename "$f" .apk | sed 's/^config\.//')"
+			grep -qF "$abi" <<<"$abilist" || continue
+			;;
+		esac
+		filtered+=("$f")
+	done
+	install_apks=("${filtered[@]}")
+fi
+# -g grants runtime permissions up front so no dialog blocks the launch.
+# >&2: adb prints its own "Success" line on stdout, which would otherwise
+# land in the middle of the hostname list this script promises to produce.
+adb -s "$serial" install-multiple -r -g "${install_apks[@]}" >&2
+
+activity="$(adb -s "$serial" shell cmd package resolve-activity --brief "$pkg" |
+	tr -d '\r' | tail -1)"
+echo "launching $activity ..." >&2
+# >&2: same reason — `am start` echoes "Starting: Intent { ... }" to stdout.
+adb -s "$serial" shell am start -n "$activity" >&2
+
+# Seeded, so two runs of the same app take the same path through the UI.
+# --pct-syskeys 0 stops it pressing Home and wandering out of the app.
+adb -s "$serial" shell monkey -p "$pkg" --pct-syskeys 0 --throttle 200 \
+	--ignore-crashes --ignore-timeouts -s 42 300 >/dev/null 2>&1 || true
+
+# Total capture time is $window measured from start_capture, not $window
+# tacked on after the monkey run — sleep only whatever is left of it.
+remaining=$((window - SECONDS))
+if [ "$remaining" -gt 0 ]; then
+	echo "capturing for the remaining ${remaining}s of the ${window}s window ..." >&2
+	sleep "$remaining"
+else
+	echo "monkey run alone used the full ${window}s window" >&2
+fi
+
+finish_capture "$cap"
+stop_emulator
+
+"$(dirname "$0")/pcap-domains.sh" "$cap"
