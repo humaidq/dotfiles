@@ -203,42 +203,57 @@ install_apk() {
 # including its own pidof". Blaming the app for a host-side crash sends
 # whoever reads the write-up hunting for anti-emulator code that isn't there.
 #
-# So the emulator's own liveness is checked first, and it is checked in a way
-# that cannot hang even if adb itself is wedged: `pgrep qemu` (comm-only, no
-# `-f`), not adb — and not `pgrep -f qemu-system` either, which matches
-# against the *full command line*, and qemu's own invocation mentions
-# "qemu-system", so -f matches the pattern against itself and reports a live
-# process even when none is running. Plain `pgrep qemu` only looks at the
-# process name, so it can't self-match.
+# Two earlier versions of this function tried to rule out an emulator crash
+# *before* trusting pidof, first with a single liveness check, then with a
+# second one in front of pidof too. Both still misclassified: there is
+# always another gap between "checked" and "the call that matters", so
+# checking beforehand can never close it — it only moves it. The fix is to
+# stop trying to prove the emulator was healthy in advance and instead
+# confirm, only once pidof's answer is already ambiguous, whether it still
+# is. Nothing can happen "after" that confirmation that changes what the
+# ambiguous answer meant, so there is no gap left to race.
 #
-# That first check only proves qemu was alive at the instant it ran — it can
-# still die a moment later, and a pidof call racing that death must not be
-# read as evidence about the app. adb's own exit status can't be trusted to
-# tell "pidof ran and found nothing" apart from "adb couldn't reach the
-# device at all": both come back as pidof exiting non-zero with empty
-# stdout, because toybox/busybox pidof prints no distinguishing stderr for
-# "not found" either. So `adb get-state` — a call whose entire job is
-# reporting transport health, not app state — is checked first. Only once
-# it reports "device" is pidof's answer trusted as positive evidence about
-# $pkg specifically. If get-state doesn't say "device", qemu is rechecked
-# once more (it may have died in the interim) before falling back to a
-# fourth, explicit "indeterminate" outcome — adb wedged, qemu still present,
-# no honest verdict about the app is possible, so none is given.
+# So: run pidof first. A non-empty answer is unambiguous — the app is
+# alive, full stop, no emulator check needed. Only an empty-or-failed
+# answer needs disambiguating, and it's disambiguated after the fact:
+#   - qemu itself gone (`pgrep qemu`, comm-only, no `-f` — `pgrep -f
+#     qemu-system` matches its own command line, which mentions
+#     "qemu-system", and falsely reports a live process) -> the emulator
+#     crashed, full stop; it does not matter whether that happened before,
+#     during or after the pidof call, the run is void either way.
+#   - qemu present but `adb get-state` won't say "device" -> adb itself is
+#     wedged talking to a still-running qemu; genuinely indeterminate,
+#     not app death and not a crash, so neither is claimed.
+#   - qemu present and adb answers "device" -> pidof's emptiness is now
+#     positive evidence about $pkg specifically, not an artifact of a
+#     dead or wedged transport. Only now is "probable emulator detection"
+#     said.
+# get-state is deliberately not used as an up-front gate: it can report
+# something other than "device" transiently during normal operation, and
+# gating on it there would void perfectly good runs. It only earns its
+# keep here, disambiguating a result that is already suspicious.
 #
-# Every adb call here is `timeout`-bounded, the same convention cleanup()
-# already uses for its own salvage attempts: reproducing this path once
-# (before get-state was added, back when app-death was the fallback for any
-# adb failure) caught qemu dying between the initial pgrep and the forensic
-# `adb logcat` below, and that logcat call hung for good — still blocked,
-# unbounded, after the whole script had already been force-killed around it.
+# Every adb call is `timeout`-bounded, the same convention cleanup()
+# already uses for its own salvage attempts, so a wedged transport can
+# make this function report INDETERMINATE but never makes it hang.
 #
-# Returns 0 if both are alive. Returns 1 if the emulator is alive, adb
-# confirms it, and $pkg's process is gone (probable emulator detection —
-# caller still prints hosts). Returns 2 if the emulator itself is gone (the
-# run is void, not a finding about $pkg — caller must not print hosts).
-# Returns 3 if adb cannot get a straight answer out of a qemu that is still
-# there (indeterminate — also void, also no hosts).
+# Returns 0 if $pkg's process is found (unambiguous — emulator must be
+# answering for pidof to have found anything at all). Returns 1 if pidof
+# came back empty and the emulator is confirmed alive and answering
+# (probable emulator detection — caller still prints hosts). Returns 2 if
+# the emulator is gone (the run is void, not a finding about $pkg — caller
+# must not print hosts). Returns 3 if adb cannot get a straight answer out
+# of a qemu that is still there (indeterminate — also void, also no
+# hosts).
 check_alive() {
+	if [ -n "$(timeout 5 adb -s "$serial" shell pidof "$pkg" 2>/dev/null | tr -d '\r')" ]; then
+		return 0
+	fi
+
+	# pidof came back empty or the call itself failed. That alone proves
+	# nothing about $pkg — it's exactly what a dead or wedged emulator
+	# would also produce — so find out which situation this actually is
+	# before saying anything about the app.
 	if ! pgrep --quiet qemu; then
 		echo >&2
 		echo "ERROR: the emulator process is gone (crashed, or was killed outside" >&2
@@ -252,15 +267,6 @@ check_alive() {
 	local state
 	state="$(timeout 5 adb -s "$serial" get-state 2>/dev/null | tr -d '\r')"
 	if [ "$state" != "device" ]; then
-		if ! pgrep --quiet qemu; then
-			echo >&2
-			echo "ERROR: the emulator process is gone (crashed, or was killed" >&2
-			echo "       outside this script — it was still there a moment ago, but" >&2
-			echo "       isn't now). This run is void — not a finding about $pkg." >&2
-			echo "       Retry the capture." >&2
-			echo >&2
-			return 2
-		fi
 		echo >&2
 		echo "ERROR: adb cannot get a straight answer from the emulator" >&2
 		echo "       (get-state reported '${state:-nothing}'), but the qemu process" >&2
@@ -271,9 +277,6 @@ check_alive() {
 		return 3
 	fi
 
-	if [ -n "$(timeout 5 adb -s "$serial" shell pidof "$pkg" 2>/dev/null | tr -d '\r')" ]; then
-		return 0
-	fi
 	echo >&2
 	echo "WARNING: $pkg is no longer running." >&2
 	timeout 5 adb -s "$serial" logcat -d -t 200 2>/dev/null |
