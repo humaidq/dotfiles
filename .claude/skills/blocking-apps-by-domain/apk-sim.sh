@@ -2,12 +2,12 @@
 # Run an Android package under an emulator and print the hosts it contacts.
 #
 #   apk-sim.sh <android.package.name>
-#   apk-sim.sh -l <file.apk>            # already have the file
+#   apk-sim.sh -l <file.apk> <android.package.name>   # already have the file
 #   apk-sim.sh -t 240 -d 10.10.0.16 <pkg>
 #
-# Needs adb, tshark, a JDK, curl and file:
+# Needs adb, tshark, a JDK, curl, file and unzip:
 #   nix shell nixpkgs#android-tools nixpkgs#wireshark-cli nixpkgs#jdk17_headless \
-#     nixpkgs#curl nixpkgs#file
+#     nixpkgs#curl nixpkgs#file nixpkgs#unzip
 #
 # Where apk-domains.sh answers "what hostnames are in the package", this
 # answers "what did the app actually dial" — which survives obfuscation,
@@ -216,11 +216,13 @@ install_apk() {
 # So: run pidof first. A non-empty answer is unambiguous — the app is
 # alive, full stop, no emulator check needed. Only an empty-or-failed
 # answer needs disambiguating, and it's disambiguated after the fact:
-#   - qemu itself gone (`pgrep qemu`, comm-only, no `-f` — `pgrep -f
-#     qemu-system` matches its own command line, which mentions
-#     "qemu-system", and falsely reports a live process) -> the emulator
-#     crashed, full stop; it does not matter whether that happened before,
-#     during or after the pidof call, the run is void either way.
+#   - qemu itself gone (`kill -0 "$emu_pid"` against the exact pid this
+#     script started and tracked, rather than `pgrep qemu` — which would
+#     also match any unrelated qemu guest on the host, including this
+#     repo's own serow-vm or any other libvirt guest, and falsely report a
+#     live process) -> the emulator crashed, full stop; it does not matter
+#     whether that happened before, during or after the pidof call, the
+#     run is void either way.
 #   - qemu present but `adb get-state` won't say "device" -> adb itself is
 #     wedged talking to a still-running qemu; genuinely indeterminate,
 #     not app death and not a crash, so neither is claimed.
@@ -254,7 +256,7 @@ check_alive() {
 	# nothing about $pkg — it's exactly what a dead or wedged emulator
 	# would also produce — so find out which situation this actually is
 	# before saying anything about the app.
-	if ! pgrep --quiet qemu; then
+	if [ -z "$emu_pid" ] || ! kill -0 "$emu_pid" 2>/dev/null; then
 		echo >&2
 		echo "ERROR: the emulator process is gone (crashed, or was killed outside" >&2
 		echo "       this script). This run is void — it is a host-side failure," >&2
@@ -347,7 +349,7 @@ ensure_avd() {
 	mkdir -p "$avd_home"
 	if [ ! -d "$avd_home/$avd_name.avd" ]; then
 		avdmanager="$(find "$sdk/cmdline-tools" -name avdmanager -type f | head -1)"
-		echo no | "$avdmanager" create avd -n "$avd_name" -k "$image" -d pixel_6 --force
+		echo no | "$avdmanager" create avd -n "$avd_name" -k "$image" -d pixel_6 --force >&2
 		cat >>"$avd_home/$avd_name.avd/config.ini" <<-EOF
 			hw.gpu.mode=swiftshader_indirect
 			hw.ramSize=3072
@@ -359,11 +361,80 @@ ensure_avd() {
 	boot_emulator -no-snapshot-load
 	sleep 20 # let first-boot background work settle before snapshotting
 	adb -s "$serial" shell input keyevent 82 || true
-	adb -s "$serial" emu avd snapshot save default_boot
+	adb -s "$serial" emu avd snapshot save default_boot >&2
 	stop_emulator
 }
 
 capture_flags=(-snapshot default_boot -no-snapshot-save -read-only)
+
+usage() {
+	echo "usage: apk-sim.sh [-t seconds] [-d resolver] <android.package.name>" >&2
+	echo "       apk-sim.sh [-t seconds] [-d resolver] -l <file.apk> <android.package.name>" >&2
+}
+
+# Parse and validate argv before any provisioning: ensure_sdk can cold-build a
+# multi-GB Android SDK and ensure_avd can cold-boot the AVD for several
+# minutes, so a usage typo must fail here, fast, not after either of those.
+# An unrecognised flag or an extra positional is a hard error rather than a
+# silently-dropped argument — `apk-sim.sh com.foo -t 240` used to run a
+# 120s window with no warning because the old parser stopped at the first
+# positional and never looked at the rest of argv.
+spike=0
+if [ "${1:-}" = "--spike" ]; then
+	spike=1
+	shift
+fi
+
+window=120
+resolver="10.20.0.1"
+local_file=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+	-l)
+		local_file="${2:?usage: apk-sim.sh -l <file.apk> <android.package.name>}"
+		shift 2
+		;;
+	-t)
+		window="${2:?usage: apk-sim.sh -t <seconds>}"
+		shift 2
+		;;
+	-d)
+		resolver="${2:?usage: apk-sim.sh -d <resolver>}"
+		shift 2
+		;;
+	-*)
+		echo "ERROR: unrecognised flag: $1" >&2
+		usage
+		exit 2
+		;;
+	*) break ;;
+	esac
+done
+
+# pkg is always an explicit positional now, never derived from -l's
+# filename: apk-domains.sh only ever uses $pkg as a cache-directory label,
+# but here it is load-bearing (pidof, resolve-activity, monkey -p), so
+# `basename some.apk .apk` silently driving a package called "some" is not
+# an acceptable failure mode — see the -l handling around install_apk below
+# for the belt-and-braces check against what actually got installed.
+pkg=""
+if [ "$spike" -eq 0 ]; then
+	if [ -n "$local_file" ]; then
+		pkg="${1:?usage: apk-sim.sh -l <file.apk> <android.package.name>}"
+	else
+		pkg="${1:?usage: apk-sim.sh <android.package.name>}"
+	fi
+	shift
+	if [ "$#" -gt 0 ]; then
+		echo "ERROR: unexpected extra argument(s): $*" >&2
+		usage
+		exit 2
+	fi
+elif [ "$#" -gt 0 ]; then
+	echo "ERROR: unexpected extra argument(s): $*" >&2
+	usage
+	exit 2
+fi
 
 ensure_sdk
 ensure_avd
@@ -382,7 +453,7 @@ ensure_avd
 # the restored hardware. What does work is capturing inside the guest with
 # `tcpdump -i any`, which sees every interface's traffic regardless of how
 # the emulator backend ships it to the host.
-if [ "${1:-}" = "--spike" ]; then
+if [ "$spike" -eq 1 ]; then
 	rm -f "$cache/spike.pcap"
 	boot_emulator "${capture_flags[@]}"
 	start_capture
@@ -393,32 +464,6 @@ if [ "${1:-}" = "--spike" ]; then
 	stop_emulator
 	echo "wrote $cache/spike.pcap ($(stat -c %s "$cache/spike.pcap" 2>/dev/null || echo 0) bytes)" >&2
 	exit 0
-fi
-
-window=120
-resolver="10.20.0.1"
-local_file=""
-while [ $# -gt 0 ]; do
-	case "$1" in
-	-l)
-		local_file="${2:?usage: apk-sim.sh -l <file.apk>}"
-		shift 2
-		;;
-	-t)
-		window="${2:?usage: apk-sim.sh -t <seconds>}"
-		shift 2
-		;;
-	-d)
-		resolver="${2:?usage: apk-sim.sh -d <resolver>}"
-		shift 2
-		;;
-	*) break ;;
-	esac
-done
-if [ -n "$local_file" ]; then
-	pkg="$(basename "$local_file" .apk)"
-else
-	pkg="${1:?usage: apk-sim.sh <android.package.name>}"
 fi
 
 # Same cache and same mirror as apk-domains.sh, so running both tools on one
@@ -536,6 +581,21 @@ fi
 # lands on stdout) off of this script's stdout, and classifies ABI failures
 # instead of letting them surface as a bare adb error.
 if ! install_apk; then
+	exit 1
+fi
+
+# Belt-and-braces on top of $pkg always being an explicit argument now
+# (never derived from -l's filename, see argv parsing above): confirm the
+# thing actually installed is $pkg before driving it with pidof,
+# resolve-activity or monkey. Without this, a wrong package name for -l
+# would resolve-activity to the system ResolverActivity (or fail outright),
+# never actually launch the app, and check_alive would report "probable
+# emulator detection" for a package that was never started — a plausible-
+# looking empty run instead of a loud, obvious error.
+if ! adb -s "$serial" shell pm list packages "$pkg" | tr -d '\r' | grep -qxF "package:$pkg"; then
+	echo "ERROR: $pkg is not among installed packages after install — refusing to drive a" >&2
+	echo "       package that isn't actually there. Name the real package explicitly:" >&2
+	echo "       apk-sim.sh -l <file.apk> <android.package.name>." >&2
 	exit 1
 fi
 

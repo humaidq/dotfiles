@@ -32,7 +32,7 @@ block wildcards.** Never block from a web search alone.
    domains, run it:**
    ```bash
    nix shell nixpkgs#android-tools nixpkgs#wireshark-cli nixpkgs#jdk17_headless \
-     nixpkgs#curl nixpkgs#file
+     nixpkgs#curl nixpkgs#file nixpkgs#unzip
    ./apk-sim.sh com.olamet.mobile | tee -a /tmp/cands.txt
    ```
    Boots an emulator, drives the app with a seeded monkey, and reports what it
