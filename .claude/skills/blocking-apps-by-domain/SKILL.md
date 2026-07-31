@@ -28,7 +28,32 @@ block wildcards.** Never block from a web search alone.
    ```
    Output is candidates, not answers — string tables leak plenty of junk.
 
-3. **Verify against the live resolver** (needs to run on the LAN, or use
+3. **If the package yields little, or is packed, PAIR-wrapped, or rotates
+   domains, run it:**
+   ```bash
+   nix shell nixpkgs#android-tools nixpkgs#wireshark-cli nixpkgs#jdk17_headless \
+     nixpkgs#curl nixpkgs#file
+   ./apk-sim.sh com.olamet.mobile | tee -a /tmp/cands.txt
+   ```
+   Boots an emulator, drives the app with a seeded monkey, and reports what it
+   actually dialled during that run — bare hostnames on stdout for the same
+   candidate file, an annotated table on stderr tagging each host `SNI` (a TLS
+   connection opened — the strongest signal there is), `DNS` (looked up,
+   never connected), `HTTP` (a cleartext Host header), or `IP` (connected to
+   an address no DNS answer mentioned — a hardcoded resolver; see "Missing an
+   HTTPDNS bypass" below). A host the app was observed dialling is stronger
+   evidence than a string in a dex. The two tools are complementary — take
+   the union.
+
+   This is a fallback, not a replacement for step 2 — it needs an emulator
+   boot and several minutes per run, against seconds for static extraction.
+   Reach for it once the dex comes back thin, not as the default first move.
+   Defaults to a 120s window (`-t`) and the router itself as resolver (`-d
+   10.20.0.1`), not a clean upstream, so a blocked primary forces the app to
+   fail over instead of just working; `-l <file.apk>` skips the download if
+   you already have the package.
+
+4. **Verify against the live resolver** (needs to run on the LAN, or use
    `-s 10.10.0.16` over Nebula):
    ```bash
    ./check-domains.sh < /tmp/cands.txt
@@ -37,12 +62,12 @@ block wildcards.** Never block from a web search alone.
    the domain is malicious, not a reason to skip it. Keep `NXDOMAIN` entries if
    they are clearly the operator's; these outfits rotate.
 
-4. **Add wildcards** to `modules/router/custom-blocklist.txt`, grouped under a
+5. **Add wildcards** to `modules/router/custom-blocklist.txt`, grouped under a
    comment naming the package. `*.example.com` blocks the apex *and* every
    subdomain (blocky normalises it to a trie prefix), so one line per registered
    domain is enough.
 
-5. **Rebuild and confirm:** `sudo nixos-rebuild switch --flake .#bongo` on
+6. **Rebuild and confirm:** `sudo nixos-rebuild switch --flake .#bongo` on
    bongo, then re-run `check-domains.sh` over the added names, plus a few hosts
    that must keep working.
 
@@ -170,8 +195,14 @@ hosts the dex lost — that is where Chato's AppsFlyer vanity host
 **store listing's privacy-policy URL** names the operator's domain: JoyChat's
 `joyme.chat` came from there, with live `api.` and `ws.` hosts confirming it.
 
+Better than either: run the app. `apk-sim.sh` boots it under an emulator with
+packet capture and reports what it actually contacted, which is unaffected by
+packing, obfuscation or runtime-assembled URLs. It is the first thing to reach
+for when the dex comes back empty.
+
 Say plainly in the write-up that such an entry is brand-only, and note that the
-query log is the way to catch what it missed.
+query log and a runtime capture (`apk-sim.sh`) are both ways to catch what it
+missed.
 
 ## The noise filter hides failover infrastructure
 
@@ -240,6 +271,47 @@ generally want a signed parameter set and answer `{"code":400}` otherwise.
 Blocking the zone disables the mechanism regardless, so do not sink time into
 it.
 
+## What the runtime capture does not see
+
+`apk-sim.sh` stops at the login wall. These apps demand a phone number and an
+OTP, and nothing automates that. What it captures is the splash, the config
+fetch, the API handshake and any rotation traffic — the layer the blocklist
+targets — but **not** post-login media CDNs or RTC backends. Those still need
+the string table or the query log.
+
+Further limits, all of which belong in the write-up whenever a finding came
+from a run:
+
+- **Some apps detect the emulator** and exit. The script warns when the
+  process dies early rather than returning a silent empty list, but a warned
+  run's host list is incomplete by definition. A genuine emulator crash
+  (qemu itself dying — reproducible on `com.duckduckgo.mobile.android` under
+  monkey fuzzing) is a different failure again; the script tells the two
+  apart, but either one voids the run. Retry it; do not interpret it.
+- **A run is one path through the UI.** The monkey is seeded, so it is
+  reproducible, not exhaustive.
+- **Confirm the blocklist is actually enforced on the router before drawing
+  any conclusion from a run.** `apk-sim.sh` defaults to the router itself as
+  resolver precisely so a blocked primary forces the app to fail over and
+  expose its rotation service or CDN mirrors. Run against `com.olamet.mobile`
+  and `com.live.soulchill`: both rediscovered their known zones cleanly via
+  `SNI`, but neither `tools.hulekeji.com` nor a CloudFront mirror ever
+  appeared, because every relevant `custom-blocklist.txt` entry still
+  resolved live on `10.20.0.1` — the entries existed in the file, but bongo
+  had not been rebuilt since they were added. An unenforced blocklist
+  silently removes the failover signal and leaves a run indistinguishable
+  from "this app has no fallback." The failover mechanism is designed and
+  plausible; it is not yet proven, and it cannot be until it is run against a
+  router actually enforcing the file.
+- **The packed-app case — the tool's original justification — remains
+  unproven, not disproven.** See "Trusting a packed APK" below for what
+  actually happened when it was pointed at Chamet and MateMet. (Chatta, used
+  above as the walkthrough example, is not packed — correct that assumption
+  if you carry it forward.)
+
+Say plainly which tool produced which entry. Best coverage is the union of
+`apk-domains.sh` and `apk-sim.sh`, and neither alone is the whole story.
+
 ## Common mistakes
 
 - **Blocking a legitimate same-name site.** `com.boloji.live`'s reverse-DNS
@@ -259,7 +331,11 @@ it.
 - **Trusting a packed APK.** If `apk-domains.sh` warns about a tiny dex (Chamet
   and MateMet both ship ~74 KiB stubs, with `libplt-base.so` and
   `libNetHTProtect.so` alongside), the code is encrypted — the manifest and
-  resources are stripped too. Use brand domains and watch blocky's query log.
+  resources are stripped too. `apk-sim.sh` was built as the answer to exactly
+  this case, but pointed at these same two packages (twice each) it found
+  nothing either: both detect the emulator and exit before making a call of
+  their own. Use brand domains and watch blocky's query log; a runtime
+  capture is not (yet) a way past this specific app family.
 - **Mistaking a package name for a host.** Reverse-DNS package names survive
   extraction: `sg.bigo.live` and `video.like` are Android packages, not
   hostnames. They are left in the output deliberately rather than filtered,
@@ -272,6 +348,9 @@ it.
   SDKs often hardcode the resolver IP, in which case only an nftables rule
   stops them. Grep the *raw strings*, not the candidates — Baidu's
   `httpdns.baidubce.com` is filtered out as SDK noise before you ever see it.
+  `apk-sim.sh` detects this case directly: its `IP` tag lists every address the
+  app connected to that no DNS answer in the capture mentioned, which is
+  exactly the signature of a hardcoded resolver.
 - **Blocking source code that looks like a host.** Several TLDs collide with
   ordinary code. `.xyz` is a GLSL swizzle, so Unreal and Unity shaders in
   `assets/` yield `data.customdata0.xyz` out of
