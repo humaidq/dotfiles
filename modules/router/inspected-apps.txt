@@ -1,0 +1,174 @@
+# Apps inspected for custom-blocklist.txt
+#
+# A record of every app whose backend was investigated, what came out of it,
+# and — where nothing did — why. This file is documentation only; blocky reads
+# custom-blocklist.txt and custom-whitelist.txt by explicit path and never
+# looks here.
+#
+# Method, unless noted otherwise: fetch the package from APKPure, run
+# .claude/skills/blocking-apps-by-domain/apk-domains.sh over it, verify every
+# candidate against the router's resolver, then block the operator's zones as
+# wildcards. Third-party SDK infrastructure (Agora, RongCloud, NetEase Yunxin,
+# AppLovin, ironSource, Adjust, AppsFlyer, payment and ID-verification
+# vendors) is deliberately left alone, since it is shared with unrelated apps.
+#
+# STATUS KEY
+#   FULL     backend extracted from the package and verified
+#   PARTIAL  package resisted extraction; some hosts recovered another way
+#   BRAND    no usable extraction; blocked on operator/brand domains only
+#   DNS      never unpacked; blocked on brand domains verified in DNS
+#
+# A BRAND or DNS entry is the weakest kind: it covers what the app advertises,
+# not necessarily what it calls. If one of those apps still works, the blocky
+# query log is the way to find what was missed.
+
+
+## FULL — backend extracted from the package
+
+video.like                    Likee (BIGO/Joyy). 43 dex. Yielded the unbranded
+                              bnxz/mqdngd/qsablc pool, cubetv.sg, da7akni.net,
+                              pinpincart.com and nine CloudFront API fallbacks
+                              confirmed BIGO's by their bigotraceresponse header.
+sg.bigo.live                  BIGO Live. Source of the original unbranded
+                              fallback pool (inslive.xyz, linhty.xyz, wertn.top,
+                              wqehjyz.com, xiyuudi.com, fhsg.club,
+                              sharemasala.com, sgmbocast.com).
+com.hkjustar.gemgala          Gemgala (Justar HK). Unpacked 73 MiB dex. Revealed
+                              the operator's <brand>.net / i<brand>.com /
+                              x<brand>.com / inlandcha.com convention, which in
+                              turn resolved MateMet's previously unknown
+                              backends. Also uses Baidu HTTPDNS.
+com.live.soulchill            SoulChill (SpaceCape = Hello Group/Momo overseas).
+                              Ships a hardcoded CloudFront failover map pairing
+                              every host with a mirror.
+com.olamet.mobile             Olamet. Bundles com.hule.DynamicDomainManager and
+com.olametlite.mobile         calls tools.hulekeji.com:30561/domain/get for
+                              replacement domains when blocked, so the rotation
+                              service is blocked ahead of the brand zones.
+com.scorp.who                 Who (Media Republic / HYPERCHAT). One certificate
+com.scorp.wholite             on mobile-f.livechat-internal.com covers five
+                              sibling brands, mapping the whole operation.
+com.love.vone                 Vone. Ships com.baitu.video and com.qingshu520.chat
+                              classes — the same operator as Poppo Live.
+com.thankyo.hwgame            StreamKar (Tipping Points, on Melot's stack).
+                              kktv1/2/5/7/8/9 are an interchangeable pool.
+com.litatom.app               Litmatch (CONSTRUCT TECHNOLOGY).
+in.mohalla.sharechat          ShareChat, incl. the Moj and Vibely properties.
+com.soulla.android            4Party / Opa Live (YOU JOIN TECHNOLOGY).
+com.client.goparty            Vava.chat.
+com.pita.oyem                 MeYo (MeYo Studio).
+com.live.bling.android        Bling (JHong Technology).
+com.starlink.crushlive        Crush Live. Seven interchangeable backends with
+                              identical activity./api./game./h5. host layouts.
+com.yakii.videocall.live      BoloJi family — six packages sharing one rotating
+com.boloji.live               pool (leadercc.com, quantum-nexus.net, and the
+com.theboloji.videocall       akisinn/dewrain/vaicore hosts).
+com.boloji.videocall.chatting
+com.bolojilite.videocall.chat
+org.harshmeet.room.lite
+com.metaztech.chatta          Chatta and Seeta (Metaz Technology). Seeta also
+com.mztech.seeta              calls the BoloJi pool.
+com.ahchat.app                Achat (Raabta Technology). Runs on the same
+                              akisinn/dewrain/vaicore pool as BoloJi.
+com.voicemaker.android        SUGO, on Mico World infrastructure.
+com.somatch.android           SoMatch / SoMatch Lite. Ship no branded domain at
+com.somatchlite.android       all — they run entirely on micoplatform/micoworld.
+IndiaMasterApp
+com.voicechat.live.group      YoHo Studio. Another Mico World app.
+com.gogolive                  GOGO Live (Global Live Network). Three API names
+                              on one origin; resolves via Tencent HTTPDNS
+                              (intl.httpdns.gold), which is blocked separately.
+
+
+## PARTIAL — package resisted extraction, hosts recovered another way
+
+com.litnow.live               Goonite, still branded LitNow internally. Wrapped
+                              in Google's PAIR integrity protection
+                              (com.pairip.application.App), but litnowc.com
+                              leaked anyway and carries a *.litnowc.com cert.
+com.chato.amigo               Chato. 37 MB dex containing only SDK strings — the
+                              API base is fetched or assembled at runtime. The
+                              AppsFlyer vanity host chato.go.link came out of
+                              the binary manifest; the rest is brand domains.
+com.chat.joychat              JoyChat. Dex yields no hosts at all. joyme.chat
+                              came from the store listing's privacy-policy URL;
+                              live api. and ws. hosts under it confirm it.
+com.live.kiko                 Kiko (INPULSE TECHNOLOGY). PAIR-wrapped. inpulse.fun
+                              came from the store listing, and probing it found
+                              the live api. and ws. hosts, so the real backend is
+                              covered rather than just a marketing site.
+com.baitu.qingshu             Poppo Live. No mirror would serve the package at
+                              all; backends came from poppo.com's own JS bundles
+                              instead. Endpoints only the app calls would not
+                              appear there, so coverage is weaker.
+
+
+## BRAND — no usable extraction
+
+com.waig.nalo                 ZaffaLive. PAIR-wrapped
+                              (com.pairip.application.App); nothing recoverable.
+                              zaffalive.com only.
+com.toki.android              Toki (SpreadFun). A Unity app with a 96 KiB dex.
+                              tokiapp.net only, though its rpc./sso. hosts are
+                              live.
+com.hkfuliao.chamet           Chamet. Packed — a ~74 KiB stub dex alongside
+                              libplt-base.so and libNetHTProtect.so, with the
+                              manifest and resources stripped.
+com.oversea.matemet           MateMet (Justar HK). Packed the same way as Chamet.
+                              Superseded: Gemgala later exposed the operator's
+                              i<brand>.com convention, and api./h5./m.
+                              .imatemet.com are all live under *.imatemet.com.
+
+
+## DNS — blocked on brand domains, never unpacked
+
+Tango, Azar (Hyperconnect), OmeTV, YouNow, YY (Joyy), Monkey, Holla, CamSurf,
+Shagle, CooMeet, Joingy, Uhmegle, ChatHub, and the adjacent random-video-chat
+sites listed under "Others in the same category". All verified to resolve
+before being added.
+
+TikTok live is handled differently again — not an app inspection but regex
+entries anchored on the webcast/pull-/push- prefixes, so the rest of the app
+keeps working.
+
+Sibling brands blocked by domain without inspecting their own packages, because
+a package already analysed named them: PapaLive (via GOGO Live), Vilaa (via
+Olamet), Falla (via 4Party), and rabbitvideochat / sohbetiko / pinkvideochat /
+salsavideochat / karamelchat (all via the Who certificate).
+
+
+## NOT PURSUED
+
+com.xv.joychat                A different operator's app that shares the JoyChat
+com.xv.joychat.lite           name. com.chat.joychat was the one requested;
+com.xv.joychat.india          these were identified but not inspected.
+com.meyoo.yoo                 "Meyoo", a different app from MeYo (com.pita.oyem).
+com.tokilive.app              Other apps named Toki, by other developers.
+banter.toki.android
+com.devbro.vava               "video chat:vava", distinct from com.client.goparty.
+
+
+## DOMAINS FOUND IN PACKAGES BUT DELIBERATELY NOT BLOCKED
+#
+# Recorded so they are not re-added later by mistake.
+
+boloji.com                    An unrelated Indian literary magazine.
+gemgala.com                   Parked, domain-for-sale page.
+litshow.com                   Parked at HugeDomains (in the Litmatch package).
+chato.chat                    Parked at atom.com (in the Chato package).
+serveroute.com                Parked at atom.com (in the Who package).
+countryname.com               Parked at HugeDomains (in the Who package).
+litnow.com                    AWS parking address, answers nothing (Goonite).
+kiko.live                     An unrelated WordPress site.
+kikolive.com                  A different "Kiko Live" product, unconnected to
+                              com.live.kiko.
+Indian netbanking hosts       icicibank, hdfcbank, axisbank, kotak, yesbank,
+                              onlinesbi and arcot 3-D Secure hosts appear in the
+                              ShareChat package as payment redirect targets.
+                              Blocking them would break banking house-wide.
+d1hszqsefh09id.cloudfront.net In the Vava package, but could not be attributed
+                              to the operator rather than its bundled Agora and
+                              NetEase SDKs.
+isprog.com                    In the Who package and already blocked upstream;
+                              left there because it is unclear whether it is the
+                              operator's or a shared analytics vendor.
