@@ -57,11 +57,13 @@
 # LBS, and it is the reason the hostname entries alone were never going to be
 # enough.
 #
-# The 43.166.128.0/18 addresses are deliberately NOT listed: that is Tencent
-# Cloud (AS132203, Aceville PTE SG), a shared range where blocking a prefix
-# would take unrelated tenants with it, and individual addresses there rotate.
 # 83.229.96.0/24 is what the capture actually proved; the rest of the AS is
 # included because a backup-LBS pool is only useful to block wholesale.
+#
+# The two Tencent Cloud addresses from the same capture are listed at the end,
+# as addresses and never as a prefix: 43.166.128.0/18 is AS132203 (Aceville
+# PTE SG), shared infrastructure where blocking the range would take unrelated
+# tenants with it.
 #
 # Corroborates the NETSTAR group above, incidentally: AS36131 also holds RADB
 # route objects for 169.136.68-73/128/130/132 and 202.63.47-48, so those BIGO
@@ -96,3 +98,18 @@
 199.30.240.0/24
 199.30.242.0/24
 199.30.243.0/24
+
+# The imo run's two Tencent Cloud SG addresses (AS132203, Aceville PTE). Both
+# carried ~3.2 kB over ~91s on ports 943/1943/9443 with no TLS ClientHello and
+# no DNS answer naming them, so this is backend transport rather than the
+# HTTPDNS lookups the earlier capture showed on 43.166.247.111 and
+# 170.106.51.222. After the AS36131 block above went live these were the only
+# path imo still had that answered, which is why they are here despite the
+# weaker evidence.
+#
+# Addresses, not the /18 — see above. Being on a shared cloud, they are the
+# entries here most likely to go stale: a single capture is all that supports
+# them, and the operator can move to a new instance at will. If imo starts
+# working again, re-capture rather than assume this list still holds.
+43.166.152.147
+43.166.171.91
