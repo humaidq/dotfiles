@@ -18,6 +18,7 @@
     (import ./disk.nix)
   ];
   networking.hostName = "bongo";
+  networking.enableIPv6 = false;
 
   services.openssh = {
     enable = true;

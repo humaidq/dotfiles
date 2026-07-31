@@ -13,6 +13,9 @@
 *.dubai.com
 *.tips.gg
 
+# Ads
+*.current.us
+
 # Other search engines (no safe search)
 # *.ask.com
 # *.brave.com

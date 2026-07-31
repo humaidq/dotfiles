@@ -23,7 +23,7 @@ in
 
           ifname ${cfg.ppp}
 
-          +ipv6
+          ${lib.optionalString config.networking.enableIPv6 "+ipv6"}
           defaultroute
 
           persist

@@ -141,8 +141,11 @@ in
     boot.kernel.sysctl = {
       "net.core.default_qdisc" = lib.mkForce "cake";
 
-      # Forwarding IPv4/6
+      # Forwarding IPv4
       "net.ipv4.ip_forward" = 1;
+    }
+    // lib.optionalAttrs config.networking.enableIPv6 {
+      # Forwarding IPv6
       "net.ipv6.conf.all.forwarding" = 1;
 
       "net.ipv6.conf.all.accept_redirects" = 0;
@@ -165,6 +168,8 @@ in
           networkConfig = {
             DHCP = "no";
             LinkLocalAddressing = "no";
+          }
+          // lib.optionalAttrs config.networking.enableIPv6 {
             IPv6AcceptRA = false;
           };
         };
@@ -174,11 +179,15 @@ in
           linkConfig.RequiredForOnline = "routable";
           networkConfig = {
             DHCP = "no";
-            IPv6AcceptRA = false;
             ConfigureWithoutCarrier = true;
+          }
+          // lib.optionalAttrs config.networking.enableIPv6 {
+            IPv6AcceptRA = false;
             DHCPPrefixDelegation = true;
             IPv6SendRA = true;
           };
+        }
+        // lib.optionalAttrs config.networking.enableIPv6 {
           dhcpPrefixDelegationConfig = {
             UplinkInterface = cfg.ppp;
             SubnetId = 0;
@@ -201,11 +210,15 @@ in
           matchConfig.Name = cfg.ppp;
           linkConfig.RequiredForOnline = "no";
           networkConfig = {
+            KeepConfiguration = "yes";
+          }
+          // lib.optionalAttrs config.networking.enableIPv6 {
             DHCP = "ipv6";
             IPv6AcceptRA = true;
-            KeepConfiguration = "yes";
             IPv6PrivacyExtensions = false;
           };
+        }
+        // lib.optionalAttrs config.networking.enableIPv6 {
           dhcpV6Config = {
             WithoutRA = "solicit";
             UseDNS = false;
