@@ -34,10 +34,9 @@
 # Local annoyances
 customerpulse.gov.ae
 # Gov web chat
-*. nicecxone.com
-*. novelvox.net
-*. tafseelmoe.novelvox.net
-*. arabot.io
+*.nicecxone.com
+*.novelvox.net
+*.arabot.io
 # Gov tts accessibility services
 *.readspeaker.com
 *.mindrocketsapis.com
