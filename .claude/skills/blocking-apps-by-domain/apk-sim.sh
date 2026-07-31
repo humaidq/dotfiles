@@ -125,6 +125,38 @@ ensure_avd() {
 	stop_emulator
 }
 
+capture_flags=(-snapshot default_boot -no-snapshot-save -read-only)
+
 ensure_sdk
 ensure_avd
-echo "AVD ready" >&2
+
+# Spike: boot with capture on and let the platform generate its own traffic.
+# A google_apis image performs captive-portal checks and Play Services sync on
+# boot, so no app is needed to prove the capture path works.
+#
+# Host-side `-tcpdump` was proven NOT to work here and is deliberately not
+# used: this AVD build routes Wi-Fi traffic through a "netsim" localhost RPC
+# channel ("Successfully initialized netsim WiFi" in emulator.log) instead of
+# the classic slirp/eth0 path that -tcpdump taps, so a passive 60s capture
+# only ever picks up mDNS noise. Adding `-feature -Wifi` does not fix it
+# either — on a `-snapshot default_boot` restore, wlan0 was already attached
+# when the golden snapshot was saved, so the override can't remove it from
+# the restored hardware. What does work is capturing inside the guest with
+# `tcpdump -i any`, which sees every interface's traffic regardless of how
+# the emulator backend ships it to the host.
+if [ "${1:-}" = "--spike" ]; then
+	rm -f "$cache/spike.pcap"
+	boot_emulator "${capture_flags[@]}"
+	adb -s "$serial" root
+	adb -s "$serial" wait-for-device
+	adb -s "$serial" shell "tcpdump -i any -s 0 -w /data/local/tmp/cap.pcap" &
+	tcpdump_pid=$!
+	sleep 60
+	adb -s "$serial" shell pkill -INT tcpdump || true
+	sleep 2
+	kill "$tcpdump_pid" 2>/dev/null || true
+	adb -s "$serial" pull /data/local/tmp/cap.pcap "$cache/spike.pcap"
+	stop_emulator
+	echo "wrote $cache/spike.pcap ($(stat -c %s "$cache/spike.pcap" 2>/dev/null || echo 0) bytes)" >&2
+	exit 0
+fi
