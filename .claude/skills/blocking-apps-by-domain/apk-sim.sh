@@ -152,6 +152,103 @@ finish_capture() {
 	fi
 }
 
+# Wraps `install-multiple` so an ABI mismatch is classified instead of
+# surfacing as a bare adb failure. Reads $install_apks (built by the caller's
+# ABI-filter, below) and $pkg.
+#
+# Capture is already running by the time this is called (start_capture runs
+# right after boot, before install, so nothing at first launch is missed).
+# On failure this deliberately does NOT call stop_emulator itself — cap_dest
+# is still set, so the plain `exit 1` at the call site routes through the
+# EXIT trap's cleanup, which salvages the in-flight capture before it tears
+# the emulator down. Calling stop_emulator here first would kill the guest
+# out from under that salvage. org.wikipedia (an armeabi-v7a-only native
+# split against this AVD's x86_64/arm64-v8a image) is the reproducer for
+# INSTALL_FAILED_MISSING_SPLIT; NO_MATCHING_ABIS is handled as its own arm
+# rather than folded into the same message, because it is a different
+# string from a different adb/image combination — same practical meaning
+# for the app (it cannot run here), but not the same failure, so the
+# write-up should say which one actually happened.
+install_apk() {
+	local out
+	if out="$(adb -s "$serial" install-multiple -r -g "${install_apks[@]}" 2>&1)"; then
+		echo "$out" >&2
+		return 0
+	fi
+	echo "$out" >&2
+	case "$out" in
+	*INSTALL_FAILED_MISSING_SPLIT*)
+		echo "ERROR: $pkg's split APK set is missing a library this image needs" >&2
+		echo "       (INSTALL_FAILED_MISSING_SPLIT). The mirror likely served an" >&2
+		echo "       armeabi-v7a-only native split, and this image is x86_64/arm64-v8a." >&2
+		echo "       This is an ABI mismatch, not a finding about $pkg — say so." >&2
+		;;
+	*NO_MATCHING_ABIS*)
+		echo "ERROR: $pkg ships no native library for any ABI this image supports" >&2
+		echo "       (NO_MATCHING_ABIS). This is an ABI mismatch, not a finding" >&2
+		echo "       about $pkg — say so." >&2
+		;;
+	*) echo "ERROR: installing $pkg failed." >&2 ;;
+	esac
+	return 1
+}
+
+# An app that vanishes seconds after launch has almost certainly detected the
+# emulator — its domain list is incomplete and must be presented as such, not
+# as a clean result. But the emulator itself can die independently (confirmed
+# via coredumpctl: monkey-fuzzing com.duckduckgo.mobile.android SIGSEGVs qemu
+# at roughly 48s), and once it has, every adb call below fails too — a naive
+# "is $pkg's process gone" check cannot tell "the app detected the emulator"
+# apart from "the emulator crashed and adb is now just failing on everything,
+# including its own pidof". Blaming the app for a host-side crash sends
+# whoever reads the write-up hunting for anti-emulator code that isn't there.
+#
+# So the emulator's own liveness is checked first, and it is checked in a way
+# that cannot hang even if adb itself is wedged: `ps -eo comm` system-wide,
+# not adb, and not `pgrep -f qemu-system` — pgrep -f matches against the full
+# command line, and qemu's own invocation mentions "qemu-system", so -f
+# matches the pattern against itself and reports a live process even when
+# none is running. `ps -eo comm | grep qemu` doesn't have that problem.
+#
+# That ps check only proves the emulator was alive at the instant it ran —
+# qemu can still die a moment later, mid-function, and it is not just a
+# theoretical race: reproducing this exact path against
+# com.duckduckgo.mobile.android caught qemu dying between the ps check above
+# and the forensic `adb logcat` below, and that logcat call hung for good
+# (confirmed — it was still blocked, unbounded, after the whole script had
+# been force-killed around it). So every adb call past the ps check is
+# wrapped in `timeout`, the same convention cleanup() already uses for its
+# salvage attempts, rather than trusting adb to fail fast on its own.
+#
+# Returns 0 if both are alive. Returns 1 if the emulator is alive but $pkg's
+# process is gone (probable emulator detection — caller still prints hosts).
+# Returns 2 if the emulator itself is gone (the run is void, not a finding
+# about $pkg at all — caller must not print hosts).
+check_alive() {
+	# shellcheck disable=SC2009 # pgrep -f is the usual fix, but it matches its
+	# own command line here (see the comment above) — that's the bug, not this.
+	if ! ps -eo comm | grep -q qemu; then
+		echo >&2
+		echo "ERROR: the emulator process is gone (crashed, or was killed outside" >&2
+		echo "       this script). This run is void — it is a host-side failure," >&2
+		echo "       not a finding about $pkg. Retry the capture; do not trust" >&2
+		echo "       anything captured so far as a description of $pkg's behavior." >&2
+		echo >&2
+		return 2
+	fi
+	if [ -n "$(timeout 5 adb -s "$serial" shell pidof "$pkg" 2>/dev/null | tr -d '\r')" ]; then
+		return 0
+	fi
+	echo >&2
+	echo "WARNING: $pkg is no longer running." >&2
+	timeout 5 adb -s "$serial" logcat -d -t 200 2>/dev/null |
+		grep -iE "FATAL EXCEPTION|emulator|rooted|$pkg.*died" | tail -5 >&2 || true
+	echo "         Probable emulator detection. Treat the hosts below as" >&2
+	echo "         incomplete and unreliable, and say so in the write-up." >&2
+	echo >&2
+	return 1
+}
+
 # Guarantee the emulator never outlives the script. Under set -e, a wait_boot
 # timeout or a failed snapshot save aborts the script before the explicit
 # stop_emulator call in ensure_avd runs, which would otherwise orphan
@@ -372,9 +469,12 @@ if [ "${#install_apks[@]}" -gt 1 ]; then
 	install_apks=("${filtered[@]}")
 fi
 # -g grants runtime permissions up front so no dialog blocks the launch.
-# >&2: adb prints its own "Success" line on stdout, which would otherwise
-# land in the middle of the hostname list this script promises to produce.
-adb -s "$serial" install-multiple -r -g "${install_apks[@]}" >&2
+# install_apk keeps adb's own output (including its "Success" line, which
+# lands on stdout) off of this script's stdout, and classifies ABI failures
+# instead of letting them surface as a bare adb error.
+if ! install_apk; then
+	exit 1
+fi
 
 activity="$(adb -s "$serial" shell cmd package resolve-activity --brief "$pkg" |
 	tr -d '\r' | tail -1)"
@@ -386,6 +486,18 @@ adb -s "$serial" shell am start -n "$activity" >&2
 # --pct-syskeys 0 stops it pressing Home and wandering out of the app.
 adb -s "$serial" shell monkey -p "$pkg" --pct-syskeys 0 --throttle 200 \
 	--ignore-crashes --ignore-timeouts -s 42 300 >/dev/null 2>&1 || true
+
+# check_alive's warning (return 1) qualifies the result but must not
+# suppress it — whatever hosts got captured before $pkg died are still
+# printed below, with the caveat already on stderr. Its emulator-crash
+# case (return 2) is different in kind: the run is void, so this exits
+# before any hosts are printed at all. exit here (not stop_emulator+exit)
+# so the EXIT trap's cleanup salvages the in-flight capture first.
+alive_rc=0
+check_alive || alive_rc=$?
+if [ "$alive_rc" -eq 2 ]; then
+	exit 1
+fi
 
 # Total capture time is $window measured from start_capture, not $window
 # tacked on after the monkey run — sleep only whatever is left of it.
