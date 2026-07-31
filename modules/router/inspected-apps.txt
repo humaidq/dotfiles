@@ -123,6 +123,25 @@ com.imo.android.imoim         imo. 25 dex / 82 MiB, and the only app inspected s
                               gateway (fgw/fgwlbs), room, party and logproxy hosts
                               actually block.
 
+                              Re-run on 2026-07-31, the first time against a
+                              bongo actually rebuilt with these entries. The DNS
+                              side is now proven to work and proven to be
+                              insufficient: all fifteen hostnames answered
+                              0.0.0.0 and none was ever connected to, the
+                              8.8.8.8 escape was refused, and the app then held
+                              a 184s session on 83.229.96.64:443 plus ~91s each
+                              on 43.166.152.147 / 43.166.171.91 (ports 943, 1943
+                              and 9443), none of them named in any DNS answer in
+                              the capture and none carrying a TLS ClientHello.
+                              That is IBackupLbsConfig working as designed — the
+                              failover that was previously only inferred. The
+                              response was to block all 27 prefixes announced by
+                              AS36131 (IMO - PageBites), imo's own single-tenant
+                              AS, in custom-ip-blocklist.txt; the Tencent Cloud
+                              addresses are left alone as shared infrastructure.
+                              Note this takes imo the messenger down with imo
+                              Live, since both share the transport.
+
 
 ## PARTIAL — package resisted extraction, hosts recovered another way
 

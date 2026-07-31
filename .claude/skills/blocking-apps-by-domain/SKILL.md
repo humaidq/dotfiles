@@ -300,9 +300,18 @@ from a run:
   resolved live on `10.20.0.1` — the entries existed in the file, but bongo
   had not been rebuilt since they were added. An unenforced blocklist
   silently removes the failover signal and leaves a run indistinguishable
-  from "this app has no fallback." The failover mechanism is designed and
-  plausible; it is not yet proven, and it cannot be until it is run against a
-  router actually enforcing the file.
+  from "this app has no fallback."
+- **Failover is real, and DNS blocking alone does not stop it.** Confirmed on
+  `com.imo.android.imoim` in the first run against a properly rebuilt bongo:
+  all fifteen of its hostnames answered `0.0.0.0` and none was ever connected
+  to, yet the app held a 184s session on `83.229.96.64:443` and ~91s each on
+  two Tencent Cloud addresses, over a non-TLS protocol, against IPs named in
+  no DNS answer in the capture. That is `sg.bigo.overwall`'s
+  `IBackupLbsConfig`. When a run's table shows every hostname as `DNS` with no
+  `SNI` but the `IP` section is populated, the blocklist is working and the
+  app is winning anyway — go to `custom-ip-blocklist.txt`, and prefer the
+  operator's own AS (imo announces 27 prefixes from AS36131, PageBites) over
+  individual addresses on shared clouds, which rotate.
 - **The packed-app case — the tool's original justification — remains
   unproven, not disproven.** See "Trusting a packed APK" below for what
   actually happened when it was pointed at Chamet and MateMet. (Chatta, used

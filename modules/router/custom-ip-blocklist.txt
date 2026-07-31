@@ -38,3 +38,61 @@
 # its own, so these rest entirely on having been dialled during the run.
 128.14.88.122
 23.236.121.250
+
+# imo (com.imo.android.imoim): every prefix announced by AS36131, "IMO -
+# PageBites, Inc." — imo's own single-tenant AS, so unlike the Tencent and
+# Chinese-carrier addresses above these are the operator's own network and
+# carry no third-party collateral.
+#
+# Why an AS and not more hostnames: an apk-sim.sh run on 2026-07-31, the first
+# against a bongo that had actually been rebuilt with the custom-blocklist.txt
+# entries, showed the DNS layer working perfectly and imo reaching its backend
+# regardless. All fifteen of its hostnames answered 0.0.0.0 and not one of them
+# was ever connected to, its DNS-over-TCP escape to 8.8.8.8 was refused by the
+# router, and it then dialled hardcoded addresses that appear in no DNS answer
+# in the capture: 83.229.96.64:443 held a session for 184s (19 kB two-way), and
+# 43.166.152.147 / 43.166.171.91 held ~91s each on ports 943/1943/9443. No TLS
+# ClientHello on any of them — a proprietary protocol, matching the socks./
+# tunnel. names it could no longer resolve. That is sg.bigo.overwall's backup
+# LBS, and it is the reason the hostname entries alone were never going to be
+# enough.
+#
+# The 43.166.128.0/18 addresses are deliberately NOT listed: that is Tencent
+# Cloud (AS132203, Aceville PTE SG), a shared range where blocking a prefix
+# would take unrelated tenants with it, and individual addresses there rotate.
+# 83.229.96.0/24 is what the capture actually proved; the rest of the AS is
+# included because a backup-LBS pool is only useful to block wholesale.
+#
+# Corroborates the NETSTAR group above, incidentally: AS36131 also holds RADB
+# route objects for 169.136.68-73/128/130/132 and 202.63.47-48, so those BIGO
+# addresses and imo's estate are one operator. Only currently-announced
+# prefixes are listed here — the RADB-only ones (103.208.252.0/22,
+# 45.249.44.0/22, 185.155.136.0/22, 63.141.60.0/24 and the two /48s) are
+# registered but not routed, and are worth re-checking if imo starts working.
+5.150.156.0/24
+5.150.157.0/24
+5.150.158.0/24
+5.150.159.0/24
+38.90.96.0/24
+69.57.173.0/24
+83.229.88.0/24
+83.229.89.0/24
+83.229.90.0/24
+83.229.91.0/24
+83.229.96.0/24
+83.229.97.0/24
+83.229.98.0/24
+83.229.99.0/24
+104.36.224.0/24
+164.90.99.0/24
+164.90.100.0/24
+164.90.118.0/24
+164.90.119.0/24
+164.90.120.0/24
+169.136.141.0/24
+185.22.42.0/24
+192.12.31.0/24
+198.51.96.0/24
+199.30.240.0/24
+199.30.242.0/24
+199.30.243.0/24
