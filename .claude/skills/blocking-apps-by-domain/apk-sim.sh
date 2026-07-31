@@ -42,5 +42,67 @@ ensure_sdk() {
 	nix build --impure -f "$cache/sdk.nix" androidsdk -o "$cache/sdk"
 }
 
+avd_home="$cache/avd"
+avd_name="apk-sim"
+image="system-images;android-34;google_apis;x86_64"
+serial="emulator-5556"
+emu_pid=""
+
+export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
+
+wait_boot() {
+	adb -s "$serial" wait-for-device
+	for _ in $(seq 1 180); do
+		if [ "$(adb -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
+			return 0
+		fi
+		sleep 1
+	done
+	echo "ERROR: emulator did not finish booting within 180s" >&2
+	return 1
+}
+
+# Always -s emulator-5556: a phone plugged into this workstation would
+# otherwise be a valid adb target, and this script installs and drives apps.
+boot_emulator() {
+	"$sdk/emulator/emulator" -avd "$avd_name" -port 5556 \
+		-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect \
+		"$@" >"$cache/emulator.log" 2>&1 &
+	emu_pid=$!
+	wait_boot
+}
+
+stop_emulator() {
+	[ -n "$emu_pid" ] || return 0
+	adb -s "$serial" emu kill >/dev/null 2>&1 || true
+	wait "$emu_pid" 2>/dev/null || true
+	emu_pid=""
+}
+
+# One cold boot, once. Every later run restores this snapshot instead, which
+# takes seconds and guarantees no residue from the previously tested app.
+ensure_avd() {
+	local avdmanager
+	[ -d "$avd_home/$avd_name.avd/snapshots/default_boot" ] && return 0
+	mkdir -p "$avd_home"
+	if [ ! -d "$avd_home/$avd_name.avd" ]; then
+		avdmanager="$(find "$sdk/cmdline-tools" -name avdmanager -type f | head -1)"
+		echo no | "$avdmanager" create avd -n "$avd_name" -k "$image" -d pixel_6 --force
+		cat >>"$avd_home/$avd_name.avd/config.ini" <<-EOF
+			hw.gpu.mode=swiftshader_indirect
+			hw.ramSize=3072
+			hw.keyboard=yes
+			disk.dataPartition.size=6G
+		EOF
+	fi
+	echo "cold boot to write the golden snapshot — this takes a few minutes ..." >&2
+	boot_emulator -no-snapshot-load
+	sleep 20 # let first-boot background work settle before snapshotting
+	adb -s "$serial" shell input keyevent 82 || true
+	adb -s "$serial" emu avd snapshot save default_boot
+	stop_emulator
+}
+
 ensure_sdk
-echo "SDK ready at $sdk" >&2
+ensure_avd
+echo "AVD ready" >&2
