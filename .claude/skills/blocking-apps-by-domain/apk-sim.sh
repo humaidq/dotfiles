@@ -204,30 +204,42 @@ install_apk() {
 # whoever reads the write-up hunting for anti-emulator code that isn't there.
 #
 # So the emulator's own liveness is checked first, and it is checked in a way
-# that cannot hang even if adb itself is wedged: `ps -eo comm` system-wide,
-# not adb, and not `pgrep -f qemu-system` — pgrep -f matches against the full
-# command line, and qemu's own invocation mentions "qemu-system", so -f
-# matches the pattern against itself and reports a live process even when
-# none is running. `ps -eo comm | grep qemu` doesn't have that problem.
+# that cannot hang even if adb itself is wedged: `pgrep qemu` (comm-only, no
+# `-f`), not adb — and not `pgrep -f qemu-system` either, which matches
+# against the *full command line*, and qemu's own invocation mentions
+# "qemu-system", so -f matches the pattern against itself and reports a live
+# process even when none is running. Plain `pgrep qemu` only looks at the
+# process name, so it can't self-match.
 #
-# That ps check only proves the emulator was alive at the instant it ran —
-# qemu can still die a moment later, mid-function, and it is not just a
-# theoretical race: reproducing this exact path against
-# com.duckduckgo.mobile.android caught qemu dying between the ps check above
-# and the forensic `adb logcat` below, and that logcat call hung for good
-# (confirmed — it was still blocked, unbounded, after the whole script had
-# been force-killed around it). So every adb call past the ps check is
-# wrapped in `timeout`, the same convention cleanup() already uses for its
-# salvage attempts, rather than trusting adb to fail fast on its own.
+# That first check only proves qemu was alive at the instant it ran — it can
+# still die a moment later, and a pidof call racing that death must not be
+# read as evidence about the app. adb's own exit status can't be trusted to
+# tell "pidof ran and found nothing" apart from "adb couldn't reach the
+# device at all": both come back as pidof exiting non-zero with empty
+# stdout, because toybox/busybox pidof prints no distinguishing stderr for
+# "not found" either. So `adb get-state` — a call whose entire job is
+# reporting transport health, not app state — is checked first. Only once
+# it reports "device" is pidof's answer trusted as positive evidence about
+# $pkg specifically. If get-state doesn't say "device", qemu is rechecked
+# once more (it may have died in the interim) before falling back to a
+# fourth, explicit "indeterminate" outcome — adb wedged, qemu still present,
+# no honest verdict about the app is possible, so none is given.
 #
-# Returns 0 if both are alive. Returns 1 if the emulator is alive but $pkg's
-# process is gone (probable emulator detection — caller still prints hosts).
-# Returns 2 if the emulator itself is gone (the run is void, not a finding
-# about $pkg at all — caller must not print hosts).
+# Every adb call here is `timeout`-bounded, the same convention cleanup()
+# already uses for its own salvage attempts: reproducing this path once
+# (before get-state was added, back when app-death was the fallback for any
+# adb failure) caught qemu dying between the initial pgrep and the forensic
+# `adb logcat` below, and that logcat call hung for good — still blocked,
+# unbounded, after the whole script had already been force-killed around it.
+#
+# Returns 0 if both are alive. Returns 1 if the emulator is alive, adb
+# confirms it, and $pkg's process is gone (probable emulator detection —
+# caller still prints hosts). Returns 2 if the emulator itself is gone (the
+# run is void, not a finding about $pkg — caller must not print hosts).
+# Returns 3 if adb cannot get a straight answer out of a qemu that is still
+# there (indeterminate — also void, also no hosts).
 check_alive() {
-	# shellcheck disable=SC2009 # pgrep -f is the usual fix, but it matches its
-	# own command line here (see the comment above) — that's the bug, not this.
-	if ! ps -eo comm | grep -q qemu; then
+	if ! pgrep --quiet qemu; then
 		echo >&2
 		echo "ERROR: the emulator process is gone (crashed, or was killed outside" >&2
 		echo "       this script). This run is void — it is a host-side failure," >&2
@@ -236,6 +248,29 @@ check_alive() {
 		echo >&2
 		return 2
 	fi
+
+	local state
+	state="$(timeout 5 adb -s "$serial" get-state 2>/dev/null | tr -d '\r')"
+	if [ "$state" != "device" ]; then
+		if ! pgrep --quiet qemu; then
+			echo >&2
+			echo "ERROR: the emulator process is gone (crashed, or was killed" >&2
+			echo "       outside this script — it was still there a moment ago, but" >&2
+			echo "       isn't now). This run is void — not a finding about $pkg." >&2
+			echo "       Retry the capture." >&2
+			echo >&2
+			return 2
+		fi
+		echo >&2
+		echo "ERROR: adb cannot get a straight answer from the emulator" >&2
+		echo "       (get-state reported '${state:-nothing}'), but the qemu process" >&2
+		echo "       is still running. This is INDETERMINATE — neither a confirmed" >&2
+		echo "       app death nor a confirmed emulator crash. Do not report" >&2
+		echo "       anything below as a finding about $pkg; retry the capture." >&2
+		echo >&2
+		return 3
+	fi
+
 	if [ -n "$(timeout 5 adb -s "$serial" shell pidof "$pkg" 2>/dev/null | tr -d '\r')" ]; then
 		return 0
 	fi
@@ -490,14 +525,15 @@ adb -s "$serial" shell monkey -p "$pkg" --pct-syskeys 0 --throttle 200 \
 # check_alive's warning (return 1) qualifies the result but must not
 # suppress it — whatever hosts got captured before $pkg died are still
 # printed below, with the caveat already on stderr. Its emulator-crash
-# case (return 2) is different in kind: the run is void, so this exits
-# before any hosts are printed at all. exit here (not stop_emulator+exit)
-# so the EXIT trap's cleanup salvages the in-flight capture first.
+# (return 2) and indeterminate (return 3) cases are different in kind: the
+# run is void either way, so this exits before any hosts are printed at
+# all. exit here (not stop_emulator+exit) so the EXIT trap's cleanup
+# salvages the in-flight capture first.
 alive_rc=0
 check_alive || alive_rc=$?
-if [ "$alive_rc" -eq 2 ]; then
-	exit 1
-fi
+case "$alive_rc" in
+2 | 3) exit 1 ;;
+esac
 
 # Total capture time is $window measured from start_capture, not $window
 # tacked on after the monkey run — sleep only whatever is left of it.
