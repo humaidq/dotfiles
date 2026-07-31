@@ -27,12 +27,15 @@ let
   # Feeds processed by the update service. Each entry maps a pair of nftables
   # sets to its source URLs and a minimum-size sanity guard that rejects
   # obviously broken / truncated downloads.
+  #
+  # custom-ip-blocklist.txt is deliberately NOT a feed here: it is a static file
+  # in the store, so it wants a different trigger entirely. See local_block4/6
+  # and nft-blocklists-local below.
   feeds = [
     {
       set4 = "remote_block4";
       set6 = "remote_block6";
       urls = ipBlocklistUrls;
-      files = [ ./custom-ip-blocklist.txt ];
       minEntries = 1000;
     }
     {
@@ -42,6 +45,66 @@ let
       minEntries = 100;
     }
   ];
+
+  # The local blocklist is converted to nftables elements at build time rather
+  # than at runtime like the feeds above, which buys two things. A malformed
+  # line fails `nixos-rebuild` instead of being silently skipped the way the
+  # runtime parser's `except ValueError: continue` skips it, and applying the
+  # result needs no network, so these entries land even when every feed
+  # download has failed.
+  localBlocklistGen = pkgs.writeText "gen-local-blocklist.py" ''
+    import ipaddress
+    import pathlib
+    import sys
+
+    src, dst, table, set4, set6 = sys.argv[1:6]
+
+    allow = set(filter(None, """${lib.concatStringsSep "\n" (allow4 ++ allow6)}""".splitlines()))
+
+    v4 = []
+    v6 = []
+    seen = set()
+
+    for lineno, line in enumerate(pathlib.Path(src).read_text().splitlines(), 1):
+        s = line.split("#", 1)[0].strip()
+        if not s:
+            continue
+        try:
+            net = ipaddress.ip_network(s, strict=False)
+        except ValueError as exc:
+            # Loud, unlike the feed parser: this file is ours, so a line that is
+            # not an address is a typo that would otherwise block nothing and
+            # say nothing.
+            raise SystemExit(f"{src}:{lineno}: not an IP address or CIDR: {s!r} ({exc})")
+
+        elem = str(net)
+        if elem in allow or elem in seen:
+            continue
+        seen.add(elem)
+        (v4 if net.version == 4 else v6).append(elem)
+
+    with pathlib.Path(dst).open("w") as f:
+        for name, elems in ((set4, v4), (set6, v6)):
+            f.write(f"flush set inet {table} {name}\n")
+            if elems:
+                f.write(f"add element inet {table} {name} {{\n")
+                for i, elem in enumerate(elems):
+                    comma = "," if i + 1 < len(elems) else ""
+                    f.write(f"  {elem}{comma}\n")
+                f.write("}\n")
+
+    print(f"local blocklist: {len(v4)} IPv4, {len(v6)} IPv6", file=sys.stderr)
+  '';
+
+  localBlocklist =
+    pkgs.runCommand "nft-local-blocklist.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-ip-blocklist.txt} "$out" \
+          router-blocklists local_block4 local_block6
+      '';
 in
 {
 
@@ -71,12 +134,26 @@ in
           flags interval
         }
 
+        # Populated from custom-ip-blocklist.txt by nft-blocklists-local, which
+        # runs during `nixos-rebuild switch` rather than on the feed timer.
+        set local_block4 {
+          type ipv4_addr
+          flags interval
+        }
+
+        set local_block6 {
+          type ipv6_addr
+          flags interval
+        }
+
         chain forward_blocklists {
           type filter hook forward priority -10; policy accept;
 
           # Blocks LAN clients from reaching listed IPs
           ip daddr @remote_block4 drop comment "block forwarded IPv4 destinations"
           ip6 daddr @remote_block6 drop comment "block forwarded IPv6 destinations"
+          ip daddr @local_block4 drop comment "block forwarded IPv4 destinations (local list)"
+          ip6 daddr @local_block6 drop comment "block forwarded IPv6 destinations (local list)"
         }
 
         chain forward_doh {
@@ -97,6 +174,8 @@ in
           # Blocks the router itself from reaching listed IPs
           ip daddr @remote_block4 drop comment "block router IPv4 destinations"
           ip6 daddr @remote_block6 drop comment "block router IPv6 destinations"
+          ip daddr @local_block4 drop comment "block router IPv4 destinations (local list)"
+          ip6 daddr @local_block6 drop comment "block router IPv6 destinations (local list)"
         }
 
         # drop traffic from listed IPs:
@@ -104,6 +183,8 @@ in
           type filter hook input priority -10; policy accept;
           ip saddr @remote_block4 drop
           ip6 saddr @remote_block6 drop
+          ip saddr @local_block4 drop
+          ip6 saddr @local_block6 drop
         }
       '';
     };
@@ -130,6 +211,43 @@ in
         if [ -s "$STATE_DIRECTORY/ip-blocklists.nft" ]; then
           nft -f "$STATE_DIRECTORY/ip-blocklists.nft"
         fi
+      '';
+    };
+
+    # Applies custom-ip-blocklist.txt during `nixos-rebuild switch`, so a change
+    # to that file takes effect with the rebuild instead of whenever the feed
+    # timer next happens to fire (up to 12 minutes later, and only if a download
+    # succeeds).
+    #
+    # The trigger is the store path of ${localBlocklist} embedded in the script
+    # below: edit the txt and that path changes, which changes this unit, which
+    # makes switch-to-configuration restart it. No restartTriggers needed — and
+    # note that restartTriggers alone would not have worked here, because
+    # switch-to-configuration only considers *active* units for restart, and a
+    # plain oneshot is inactive the moment it exits. RemainAfterExit is what
+    # keeps it active and therefore restartable. It is safe here precisely
+    # because nothing else starts this unit: on the feed service it would be a
+    # bug, since systemd treats `start` on an already-active oneshot as a no-op
+    # and the timer would silently stop refreshing.
+    systemd.services.nft-blocklists-local = {
+      description = "Apply local nftables IP blocklist";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "nftables.service" ];
+      wants = [ "nftables.service" ];
+      # nftables.service recreates the table with empty sets when it restarts,
+      # which would silently drop these entries until the next rebuild.
+      partOf = [ "nftables.service" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+
+      path = [ pkgs.nftables ];
+
+      script = ''
+        set -euo pipefail
+        nft -f ${localBlocklist}
       '';
     };
 
