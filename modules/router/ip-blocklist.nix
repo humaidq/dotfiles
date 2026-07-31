@@ -32,6 +32,7 @@ let
       set4 = "remote_block4";
       set6 = "remote_block6";
       urls = ipBlocklistUrls;
+      files = [ ./custom-ip-blocklist.txt ];
       minEntries = 1000;
     }
     {
@@ -183,9 +184,15 @@ in
               echo "nft-blocklists-update: feed download failed, skipping: ${url}" >&2
             fi
           '') feed.urls}
+          ${lib.concatMapStringsSep "\n" (file: ''
+            cat "${file}" >> "$feedtxt"
+            printf '\n' >> "$feedtxt"
+            ok=$((ok + 1))
+            feedok=$((feedok + 1))
+          '') (feed.files or [ ])}
 
-          # Only rebuild this feed's sets if at least one of its URLs
-          # downloaded; otherwise leave the sets at their cached values.
+          # Only rebuild this feed's sets if at least one source was loaded;
+          # otherwise leave the sets at their cached values.
           if [ "$feedok" -gt 0 ]; then
 
           python3 - "$feedtxt" "$tmpnft" "${feed.set4}" "${feed.set6}" "${toString feed.minEntries}" <<'PY'

@@ -1,0 +1,40 @@
+# VPNs
+38.123.110.196
+148.153.50.179
+148.153.67.208
+
+# BIGO Live (sg.bigo.live) IP-level fallback, from an apk-sim.sh capture. Every
+# address below was connected to during that run while no DNS answer in the
+# capture mentioned it, and none of them appear anywhere in the package — not
+# the dex, not the native libs, not the resources. That is the sg.bigo.overwall
+# module (IBackupLbsConfig / IIpPort) doing what it is built to do, and it is
+# the one path no blocklist entry can reach, which is why these are here rather
+# than in custom-blocklist.txt.
+#
+# Caveat worth keeping in mind: these came from a single run. Unlike the
+# package-derived hostnames there is no evidence they are stable, so if BIGO
+# Live starts working again this list is the first thing to re-capture rather
+# than to trust.
+
+# Registered to NETSTAR (SG) PTE. LTD., which is the registrant behind the
+# 169.136.0.0/16 already documented as BIGO's in custom-blocklist.txt. Five
+# addresses, one holder — the strongest of the three groups here.
+169.136.94.251
+164.90.64.227
+164.90.64.23
+164.90.67.58
+202.168.102.122
+202.63.48.6
+
+# Chinese ISP allocations (CHINANET Guangdong / Jiangsu, China Unicom
+# Guangdong). Almost certainly BIGO edge servers, but these are broad carrier
+# ranges, so the evidence is the capture alone rather than the registrant.
+113.113.87.61
+58.211.16.61
+122.13.174.189
+
+# Zenlayer, a bare-metal/CDN host. Weakest of the three: a single address there
+# is normally dedicated to one customer, but the registrant proves nothing on
+# its own, so these rest entirely on having been dialled during the run.
+128.14.88.122
+23.236.121.250
