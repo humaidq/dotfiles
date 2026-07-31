@@ -115,6 +115,11 @@
         "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/fake.txt"
         # DynDNS sites
         "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/dyndns.txt"
+        # Piracy. Previously carried in allowlists.general, where its ~38k
+        # entries beat every denylist unconditionally — that is what made
+        # *.imoim.app in custom-blocklist.txt a silent no-op, since the list
+        # covers it and imo's gateway and LBS hosts live in that zone.
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/anti.piracy.txt"
       ];
 
       steven = [
@@ -198,7 +203,6 @@
         "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
         "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
         "https://blocklistproject.github.io/Lists/torrent.txt"
-        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/anti.piracy.txt"
         "${./custom-whitelist.txt}"
       ];
     };
