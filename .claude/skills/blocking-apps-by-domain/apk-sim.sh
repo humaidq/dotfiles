@@ -487,11 +487,10 @@ cap_dest="$cap"
 SECONDS=0
 
 echo "installing $pkg ..." >&2
-# This AVD's x86_64 google_apis image has no ARM native-bridge, so an ABI
-# split it cannot execute (e.g. config.armeabi_v7a.apk) must be dropped
-# rather than handed to install-multiple, which would otherwise reject the
-# whole set as mismatched. Density/locale splits carry no ABI in the name
-# and pass through untouched.
+# An ABI split this image's abilist does not list (e.g. config.armeabi_v7a.apk
+# on a pure x86 target) must be dropped rather than handed to
+# install-multiple, which would otherwise reject the whole set as mismatched.
+# Density/locale splits carry no ABI in the name and pass through untouched.
 if [ "${#install_apks[@]}" -gt 1 ]; then
 	abilist="$(adb -s "$serial" shell getprop ro.product.cpu.abilist | tr -d '\r')"
 	filtered=()
@@ -499,6 +498,21 @@ if [ "${#install_apks[@]}" -gt 1 ]; then
 		case "$(basename "$f")" in
 		config.arm64_v8a.apk | config.armeabi_v7a.apk | config.armeabi.apk | config.mips*.apk | config.x86.apk | config.x86_64.apk)
 			abi="$(basename "$f" .apk | sed 's/^config\.//')"
+			# apkpure/bundletool spell these two ABIs with an underscore
+			# in the split filename, but ro.product.cpu.abilist reports
+			# them with the hyphen Android itself uses. Left untranslated,
+			# grep -qF never matches and both splits are dropped
+			# unconditionally — even on this AVD's google_apis x86_64
+			# image, whose abilist does include arm64-v8a (ARM
+			# translation is present here), so config.arm64_v8a.apk
+			# should be kept. Confirmed by com.olamet.mobile failing
+			# with INSTALL_FAILED_MISSING_SPLIT: its only native-code
+			# split was arm64_v8a, silently filtered out by this
+			# mismatch, leaving no native library for any ABI at all.
+			case "$abi" in
+			arm64_v8a) abi="arm64-v8a" ;;
+			armeabi_v7a) abi="armeabi-v7a" ;;
+			esac
 			grep -qF "$abi" <<<"$abilist" || continue
 			;;
 		esac
