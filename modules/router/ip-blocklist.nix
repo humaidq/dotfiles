@@ -77,11 +77,20 @@ let
             # say nothing.
             raise SystemExit(f"{src}:{lineno}: not an IP address or CIDR: {s!r} ({exc})")
 
-        elem = str(net)
-        if elem in allow or elem in seen:
+        if str(net) in allow or net in seen:
             continue
-        seen.add(elem)
-        (v4 if net.version == 4 else v6).append(elem)
+        seen.add(net)
+        (v4 if net.version == 4 else v6).append(net)
+
+    # nftables interval sets reject overlapping elements ("conflicting
+    # intervals specified") unless the set is declared auto-merge, so a
+    # broad entry added next to a narrower one already in the file would
+    # otherwise fail the whole `nft -f` at runtime. Collapsing here keeps
+    # the txt free to list whatever is clearest — 169.136.141.0/24 from an
+    # AS listing and the wider NETSTAR range that contains it, say — and
+    # merges adjacent prefixes into the shortest equivalent set as a bonus.
+    v4 = [str(n) for n in ipaddress.collapse_addresses(v4)]
+    v6 = [str(n) for n in ipaddress.collapse_addresses(v6)]
 
     with pathlib.Path(dst).open("w") as f:
         for name, elems in ((set4, v4), (set6, v6)):

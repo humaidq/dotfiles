@@ -113,3 +113,39 @@
 # working again, re-capture rather than assume this list still holds.
 43.166.152.147
 43.166.171.91
+
+# Third imo run, with everything above enforced. The AS36131 block held
+# perfectly — 16 addresses dialled across 83.229.88.x and 83.229.96.x, not one
+# answered — and the app kept working anyway, from a fallback pool much larger
+# than the first capture suggested. These are the four that answered.
+#
+# NETSTAR (SG) PTE. LTD., inetnum 169.136.140.0 - 169.136.162.225, AS10122.
+# Same registrant as the BIGO addresses at the top of this file, so this is the
+# one group here with a real owner behind it rather than a rented instance, and
+# it is blocked as the whole registered range rather than as the single address
+# that answered (169.136.160.158, on ports 375/4937/17953/46216). The range
+# overlaps 169.136.141.0/24 from the AS36131 list above; the generator collapses
+# that, so both can stay for the sake of documenting where each came from.
+169.136.140.0/22
+169.136.144.0/20
+169.136.160.0/23
+169.136.162.0/25
+169.136.162.128/26
+169.136.162.192/27
+169.136.162.224/31
+
+# The rented half of the pool, and the weakest entries in this file by some
+# margin. 43.166.211.162 is Tencent again but in 43.166.192.0/19, a different
+# prefix from the /18 above, and 43.166.247.111 is the address an earlier
+# capture had recorded as HTTPDNS — it is carrying the 1943/2943 tunnel here.
+# 47.245.168.156 is Alibaba Cloud (AS45102, 47.245.128.0/17) and held the
+# largest session of the run, 21 kB over 61s on port 5223.
+#
+# Blocking these as /32s is knowingly whack-a-mole: three runs have now produced
+# four distinct Tencent addresses, and nothing stops the operator renting more.
+# The prefixes that would actually settle it are general-purpose cloud — a /17
+# and two /19-/18s hosting large numbers of unrelated services — so the
+# collateral was judged worse than the leak. Expect to re-capture.
+43.166.211.162
+43.166.247.111
+47.245.168.156
