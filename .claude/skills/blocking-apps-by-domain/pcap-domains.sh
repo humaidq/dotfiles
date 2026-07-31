@@ -40,13 +40,15 @@ http="$(fields 'http.request' 'http.host')"
 addrs() {
 	tshark -r "$cap" -Y "$1" -T fields -e "$2" 2>/dev/null |
 		tr ',' '\n' | tr -d '\r' | grep . |
-		grep -vE '^(10\.0\.2\.|127\.|169\.254\.|22[4-9]\.|23[0-9]\.|255\.|0\.0\.0\.0$|fe80:|ff0)' |
+		grep -vE '^(10\.0\.2\.|127\.|169\.254\.|22[4-9]\.|23[0-9]\.|255\.|0\.0\.0\.0$|fe80:|ff[0-9a-f]{2}:)' |
 		sort -u || true
 }
 dialled="$(
 	{
 		addrs 'tcp.flags.syn==1 && tcp.flags.ack==0' 'ip.dst'
+		addrs 'tcp.flags.syn==1 && tcp.flags.ack==0' 'ipv6.dst'
 		addrs 'udp.dstport==443' 'ip.dst'
+		addrs 'udp.dstport==443' 'ipv6.dst'
 	} | sort -u
 )"
 resolved="$(
