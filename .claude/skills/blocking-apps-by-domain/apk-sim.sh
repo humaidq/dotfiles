@@ -112,11 +112,20 @@ start_capture() {
 
 # Signals tcpdump to stop and flush, waits (bounded) for it to actually exit
 # on the device so the pcap trailer isn't truncated, then pulls the file.
+#
+# If tcpdump doesn't exit gracefully within the bound, it is force-killed so
+# this can't hang forever — but a forced kill can truncate the pcap trailer,
+# and a truncated capture silently yields a *short* domain list that looks
+# just like "this app doesn't contact much" instead of "the capture was cut
+# short". That distinction matters too much to lose quietly, so the pull
+# still happens (a truncated capture beats none), but the timeout branch is
+# loud about it on stderr instead of pretending the capture is trustworthy.
 finish_capture() {
-	local dest="$1" waited=0
+	local dest="$1" waited=0 graceful=1
 	adb -s "$serial" shell pkill -INT tcpdump >/dev/null 2>&1 || true
 	while adb -s "$serial" shell 'pgrep tcpdump >/dev/null 2>&1'; do
 		if [ "$waited" -ge 10 ]; then
+			graceful=0
 			adb -s "$serial" shell pkill -KILL tcpdump >/dev/null 2>&1 || true
 			break
 		fi
@@ -124,6 +133,16 @@ finish_capture() {
 		waited=$((waited + 1))
 	done
 	adb -s "$serial" pull /data/local/tmp/cap.pcap "$dest"
+	if [ "$graceful" -eq 0 ]; then
+		echo "WARNING: tcpdump did not exit within ${waited}s of SIGINT and was force-killed (SIGKILL)." >&2
+		echo "WARNING: $dest may have a truncated pcap trailer as a result — this is NOT a clean capture." >&2
+		echo "WARNING: any host list derived from $dest may be INCOMPLETE. A short list here can mean" >&2
+		echo "WARNING: 'the capture got cut off', not 'this app contacts few domains' — do not trust it" >&2
+		echo "WARNING: as a block/allow signal without re-running the capture." >&2
+	fi
+	if [ ! -s "$dest" ]; then
+		echo "ERROR: $dest is missing or empty after pull — the capture did not just truncate, it failed entirely." >&2
+	fi
 	if [ -n "$capture_pid" ]; then
 		kill "$capture_pid" 2>/dev/null || true
 		wait "$capture_pid" 2>/dev/null || true
