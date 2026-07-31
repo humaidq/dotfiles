@@ -502,6 +502,19 @@ chato.go.link
 *.jhongent.com
 *.ucash.mobi
 *.welive.mobi
+# Kiko - Friends & Video Chat (com.live.kiko, INPULSE TECHNOLOGY). PAIR-wrapped
+# like ZaffaLive, so the dex yields nothing; inpulse.fun is the operator domain
+# from the store listing, and probing it found the live api. and ws. hosts, so
+# this covers the real backend rather than just a marketing site.
+# NOT blocked: kiko.live is an unrelated WordPress site, and kikolive.com is a
+# different "Kiko Live" streaming product with no link to this package.
+*.inpulse.fun
+# Goonite (com.litnow.live), still branded LitNow internally. Also PAIR-wrapped,
+# but litnowc.com leaked anyway — lu./rise./shu./unity. are live under it and it
+# carries a *.litnowc.com wildcard cert. litnow.com, without the c, sits on an
+# AWS parking address and answers nothing, so it is left out.
+*.litnowc.com
+*.goonite.com
 # Others in the same category
 *.monkey.app
 *.monkey.cool
