@@ -49,6 +49,7 @@ image="system-images;android-34;google_apis;x86_64"
 serial="emulator-5556"
 emu_pid=""
 capture_pid=""
+cap_dest=""
 
 export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
 
@@ -158,12 +159,42 @@ finish_capture() {
 # no-op once emu_pid is already cleared, so running it again here on the
 # ordinary success path is harmless.
 #
-# A mid-capture abort is handled the same way: cleanup only sends capture_pid
-# a signal and moves on — it never waits on it, so a tcpdump that is never
-# going to exit (e.g. the guest already died) can't hang the trap. Killing
-# the emulator next tears down the guest process anyway.
+# cap_dest names where the in-flight capture belongs. Callers set it right
+# after start_capture succeeds and clear it right after their own explicit
+# finish_capture call returns, so it is non-empty for exactly the window
+# where a capture is running but not yet finished. Anything that aborts in
+# that window — install-multiple rejecting a bad split set, `am start`
+# failing, an adb hiccup, all real, one of which (org.wikipedia's
+# INSTALL_FAILED_MISSING_SPLIT) actually happened during Task 5 testing —
+# used to tear the emulator down with the guest's only copy of the capture
+# still on it. cleanup now salvages it first. This gap predates Task 5
+# (cleanup itself is from Task 2); it only became consequential once install
+# and launch — real failure-prone steps — started running inside the window.
+#
+# The salvage is bounded at every single adb call, not just the loop as a
+# whole: cleanup may be racing a wedged emulator or a transport that is
+# already gone, and it must fail loudly and quickly rather than hang the
+# abort path. A failed salvage does not fail cleanup — stop_emulator still
+# has to run, and the script still has to exit with whatever status caused
+# the abort, not whatever the salvage attempt returned.
 cleanup() {
 	local status=$?
+	if [ -n "$cap_dest" ]; then
+		echo "WARNING: aborting with a capture still running — attempting to salvage it to $cap_dest ..." >&2
+		timeout 5 adb -s "$serial" shell pkill -INT tcpdump >/dev/null 2>&1 || true
+		local waited=0
+		while timeout 3 adb -s "$serial" shell 'pgrep tcpdump >/dev/null 2>&1' 2>/dev/null; do
+			[ "$waited" -ge 5 ] && break
+			sleep 1
+			waited=$((waited + 1))
+		done
+		if timeout 20 adb -s "$serial" pull /data/local/tmp/cap.pcap "$cap_dest" >&2 2>&1 && [ -s "$cap_dest" ]; then
+			echo "Salvaged a partial capture to $cap_dest." >&2
+		else
+			echo "ERROR: could not salvage a capture to $cap_dest — the pull failed or produced nothing." >&2
+		fi
+		cap_dest=""
+	fi
 	if [ -n "$capture_pid" ]; then
 		kill "$capture_pid" 2>/dev/null || true
 		capture_pid=""
@@ -220,8 +251,10 @@ if [ "${1:-}" = "--spike" ]; then
 	rm -f "$cache/spike.pcap"
 	boot_emulator "${capture_flags[@]}"
 	start_capture
+	cap_dest="$cache/spike.pcap"
 	sleep 60
 	finish_capture "$cache/spike.pcap"
+	cap_dest=""
 	stop_emulator
 	echo "wrote $cache/spike.pcap ($(stat -c %s "$cache/spike.pcap" 2>/dev/null || echo 0) bytes)" >&2
 	exit 0
@@ -315,6 +348,7 @@ boot_emulator "${capture_flags[@]}" -dns-server "$resolver"
 # missed. SECONDS is reset here so the window below is measured from the
 # start of capture, not from the end of the monkey run.
 start_capture
+cap_dest="$cap"
 SECONDS=0
 
 echo "installing $pkg ..." >&2
@@ -364,6 +398,7 @@ else
 fi
 
 finish_capture "$cap"
+cap_dest=""
 stop_emulator
 
 "$(dirname "$0")/pcap-domains.sh" "$cap"
