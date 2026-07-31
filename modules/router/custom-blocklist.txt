@@ -54,12 +54,100 @@ ask.u.ae
 *.topmip.top
 *.topnip.top
 *.topkip.top
+*.lovetk.top
+*.tipkip.top
+*.toolking.top
 *.tkppi.top
 *.tkiccp.top
 *.tkbiy.top
 *.tkbby.top
 *.bigo.sg
 logproxy.imoim.app
+*.rpttechnologies.org
+
+# IMO messaging and live streaming (com.imo.android.imoim). Shares BIGO/Joyy
+# infrastructure throughout — 25 dex, and the package bundles sg.bigo.overwall,
+# an anti-blocking module with IDomainFronting, IGFWProbeConfig, IBackupLbsConfig
+# and IDomainReplaceConfig. Treat every entry below as one of several
+# interchangeable paths to the same backend, not as independent services.
+#
+# *.imoim.app carries fgw/fgwlbs (the gateway and LBS), room, party and
+# logproxy. It used to be a silent no-op here: hagezi's anti.piracy list covers
+# *.imoim.app and was configured as an allowlist, which beats every denylist.
+# That list is now a denylist in blocky-common.nix, so the entry below bites.
+*.imolive.tv
+*.xztbxz.com
+*.jchhxj.com
+*.muosepicel.com
+*.pipopay.com
+*.cubetvfun.com
+*.opswarpy.com
+*.cb7lvj2ab.link
+*.ousaqb.tech
+*.securiumsolutions.com
+*.imoim.net
+*.imo.im
+*.imoim.app
+*.imolive2.com
+*.letsmessagenow.com
+*.buzocq.com
+*.masala.sh
+# imo's own static CDN, and half of its HTTPDNS layer: http-dns.imostatic.com
+# and http-dns.imoim.net are both named in the native libs (libgonet.so,
+# libproxy.so). The app resolves over HTTPS through these to get raw IPs, which
+# is how it sidesteps the resolver entirely — the runtime capture showed it
+# connecting to Tencent Cloud SG addresses (43.166.247.111, 170.106.51.222)
+# that appear in no DNS answer and in no string table. Blocking the HTTPDNS
+# hostnames is what closes that path; the addresses themselves are not fixed.
+*.imostatic.com
+# singbox.sg shares 143.14.159.228 with http-dns.imostatic.com on a direct A
+# record, and musicdream.club answers in 83.229.99.0/24 alongside imo.im — both
+# real evidence rather than a shared CDN POP. sdonlyn.net sits in 169.136.79.0/24,
+# the BIGO range already documented for sgmbocast.com below.
+*.singbox.sg
+*.musicdream.club
+*.sdonlyn.net
+# atb-im-conf and atb-im-stats, the imo-flavoured twins of the atb-lk-* pair on
+# bnxz.net/mqdngd.com/qsablc.com already blocked below for Likee.
+*.gvxrnq.com
+*.hluxir.com
+# Unbranded failover pool. Every one answers 404 from openresty/1.25.3.2 behind
+# CloudFront — byte-identical to the distributions listed further down, which is
+# what ties them to imo rather than to a bundled SDK.
+*.strcloudam.com
+*.streamzon.net
+*.upcallessgp.net
+*.bellcallslem.com
+*.fireplacetear.com
+*.fireplacetail.com
+# Seen only in the runtime capture, never in the string table. Both already
+# answer 0.0.0.0 from an upstream list; listed here so the block does not depend
+# on that list keeping them. The gdl./bstream. prefixes match imo's gdl.imostatic.com
+# and BIGO's bstream.sgmbocast.com.
+*.news-cdn.site
+*.kzhi.tech
+# Sibling of bigodate.xyz (blocked below); NXDOMAIN now, blocked pre-emptively.
+*.bigodate.com
+# aws./gce. prefixes, already caught upstream as malicious.
+*.userlogsanalytics.com
+# imo DNS and log-proxy mirrors parked on shared clouds. Anchored on the imodns/
+# lp2 prefixes rather than the zone, so the rest of Azure, Cloud Run and Fastly
+# keeps working. Both families are regional and the region is the only part that
+# varies, so a regex covers mirrors that have not been observed yet: the capture
+# showed dns-fra/dns-sgp/dns-sjc.imo.im, and lp2 (matching logproxy.imoim.app)
+# already ships fra/sgp/sjc with -ez/-as Cloud Run suffixes.
+/^imodns(?:-[a-z0-9-]+)?\.(?:[a-z0-9-]+\.)*(?:azureedge\.net|azurewebsites\.net|azurefd\.net|run\.app|musiclike\.top)$/
+/^lp2[a-z]{2,4}-[a-z0-9]+-[a-z]{2}\.a\.run\.app$/
+# The 19 CloudFront API fallbacks. Eight answer 405 with an
+# access-control-allow-headers list of bigo-appid/bigo-uid/bigo-device-id/
+# bigo-host/bigo-uri/bigo-hash, which is conclusive. Nine more return the same
+# openresty/1.25.3.2 404 as the unbranded pool above. The last two
+# (d31u03sr7ou25d, d37tp9szxrigiu) errored at the CloudFront edge without
+# reaching an origin, so they rest on the package alone. Distribution
+# IDs belong to one AWS account, so these are precise — never wildcard
+# cloudfront.net, which the app's own fronting allowlist matches as
+# ^d[a-z0-9]+[.]cloudfront[.]net$ and would take arbitrary third parties with it.
+/^(?:d1d65riqum5ov|d1d7mk5slijq0u|d1k080mgg40341|d1o2a1dvy4ydfc|d1slfh9t7sjvlh|d2oplsxlk1d0so|d2wav5q10bfeht|d2xplh6bc39kz7|d31u03sr7ou25d|d35h7ub5u34xbi|d37tp9szxrigiu|d3a16m42psihkg|d3goy0vsfptofy|d3ivuap2ibxkc3|d3obboq1me5ipu|d3q500pql0crpy|d87xtzssols3u|dghwmknqfbc2v|dhfhtyg1h2goz)\.cloudfront\.net$/
 
 # TikTok live streaming. Anchored on the webcast/pull-/push- prefixes so the
 # rest of the app keeps working: the same CDN zones also serve thumbnails
@@ -72,6 +160,22 @@ live.tiktok.com
 /^(?:pull|push)-[^.]+\.(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokrow-cdn\.com|ttlivecdn\.com)$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:wsdvs\.com|worldfcdn2?\.com)$/
+
+# TikTok commerce and affiliate services
+*.pipopay.eu
+*.pipopayment.com
+*.pipopayment.eu
+*.pipopayment.us
+*.tiktokshop.com
+*.tiktokglobalshop.com
+*.tiktokglobalshop.us
+*.tiktokglobalshopv.us
+*.shop.tiktok.com
+*.seller-us.tiktok.com
+*.affiliate-us.tiktok.com
+*.tiktokforbusinessoutbound.com
+*.tiktokcreativeone.com
+*.soundon.global
 
 # Live streaming & random video chat
 # BIGO Technology (Joyy): BIGO Live, Likee, HelloYo. *.bigo.sg is above.
@@ -104,6 +208,14 @@ live.tiktok.com
 *.funkie.chat
 *.ppx520.com
 *.weihuitel.com
+# Seen only in a runtime capture of sg.bigo.live (apk-sim.sh), never in the
+# package — not in the dex, the native libs or the resources — so it is fetched
+# at runtime rather than shipped. The evidence is circumstantial and weaker than
+# the entries above it: conf. on an unbranded zone is the operator's habit
+# (conf.letsmessagenow.com, atb-im-conf.gvxrnq.com, gray-conf.imolive.tv), and an
+# upstream list already flags it. It could not be fingerprinted by origin, since
+# it was already answering 0.0.0.0 and so nothing ever connected.
+*.piojm.tech
 # More of the same pool, from the video.like (Likee) package — 43 dex, so it
 # carries far more infrastructure than sg.bigo.live did. BIGO owns
 # 169.136.0.0/16, and lbs.bnxz.net, imo.bigobuzz.tv and helloktv-esx.520hello.com
@@ -140,6 +252,7 @@ live.tiktok.com
 # bigo-appid, bigo-uid, bigo-signature, and the known-good https-api.like.video
 # returns an identical openresty 405. Exact distribution hostnames only —
 # never wildcard cloudfront.net.
+d10bdznw5yzeff.cloudfront.net
 d10ceo5x75lwxk.cloudfront.net
 d17i393rrrkjz4.cloudfront.net
 d1lhhhvlywiky7.cloudfront.net
@@ -525,6 +638,24 @@ chato.go.link
 *.joingy.com
 *.uhmegle.com
 *.chathub.cam
+
+# Hustle
+*.indeed.com
+*.bayt.com
+*.naukrigulf.com
+*.upwork.com
+*.fiverr.com
+*.freelancer.com
+*.peopleperhour.com
+*.dubaiofw.com
+*.dubaiofw.community
+*.internations.org
+*.expatriates.com
+*.locanto.ae
+*.classifieds.gulfnews.com
+*.classifiedsuae.ae
+*.classifiedadsuae.com
+*.dubaifreeclassified.com
 
 # Chat
 *.chat-avenue.com

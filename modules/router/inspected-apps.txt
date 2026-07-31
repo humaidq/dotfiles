@@ -33,6 +33,20 @@ sg.bigo.live                  BIGO Live. Source of the original unbranded
                               fallback pool (inslive.xyz, linhty.xyz, wertn.top,
                               wqehjyz.com, xiyuudi.com, fhsg.club,
                               sharemasala.com, sgmbocast.com).
+
+                              Re-examined later with apk-sim.sh. The capture added
+                              exactly one host the package does not contain,
+                              conf.piojm.tech, and confirmed the rest. Its more
+                              useful result was negative: the app connected to
+                              eleven addresses that appear in no DNS answer and
+                              nowhere in the package, three of them in BIGO's own
+                              169.136.0.0/16 and 164.90.64.0/24. That is the same
+                              IP-level fallback com.imo.android.imoim shows, and
+                              both ship sg.bigo.overwall, which is where it comes
+                              from. No blocklist entry can reach it — only an
+                              nftables rule can, and these addresses came from a
+                              single run, so unlike the package-derived hosts
+                              there is no evidence yet that they are stable.
 com.hkjustar.gemgala          Gemgala (Justar HK). Unpacked 73 MiB dex. Revealed
                               the operator's <brand>.net / i<brand>.com /
                               x<brand>.com / inlandcha.com convention, which in
@@ -78,6 +92,36 @@ com.voicechat.live.group      YoHo Studio. Another Mico World app.
 com.gogolive                  GOGO Live (Global Live Network). Three API names
                               on one origin; resolves via Tencent HTTPDNS
                               (intl.httpdns.gold), which is blocked separately.
+com.imo.android.imoim         imo. 25 dex / 82 MiB, and the only app inspected so
+                              far that ships a purpose-built anti-blocking module:
+                              sg.bigo.overwall, with IDomainFronting,
+                              IGFWProbeConfig, IBackupLbsConfig and
+                              IDomainReplaceConfig. Static extraction and a
+                              runtime capture (apk-sim.sh) were both used; each
+                              found hosts the other missed, so the block is the
+                              union. Runtime-only: bstream.kzhi.tech and
+                              gdl.news-cdn.site. Static-only: imostatic.com (which
+                              carries http-dns.imostatic.com, named in the native
+                              libs), 19 CloudFront distributions, and the imodns/
+                              lp2 mirror families on Azure, Fastly and Cloud Run.
+                              The capture also showed it connecting to Tencent
+                              Cloud SG addresses present in no DNS answer and no
+                              string table — HTTPDNS returning raw IPs. Its
+                              hardcoded 8.8.8.8 is already handled by the router's
+                              LAN-to-WAN port 53 drop.
+
+                              Two caveats worth carrying forward. First, the
+                              fronting allowlist inside the package matches
+                              www.google.com, *.fbcdn.net, *.whatsapp.net,
+                              m.media-amazon.com, cdninstagram, gstatic and
+                              ^d[a-z0-9]+[.]cloudfront[.]net$ — third-party hosts
+                              that cannot be blocked, so DNS blocking has a real
+                              ceiling here. Second, *.imoim.app had been a silent
+                              no-op since it was added: hagezi's anti.piracy list
+                              covers it and was configured as an allowlist. That
+                              list is now a denylist, which is what makes the
+                              gateway (fgw/fgwlbs), room, party and logproxy hosts
+                              actually block.
 
 
 ## PARTIAL — package resisted extraction, hosts recovered another way
