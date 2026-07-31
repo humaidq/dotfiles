@@ -47,6 +47,7 @@ avd_name="apk-sim"
 image="system-images;android-34;google_apis;x86_64"
 serial="emulator-5556"
 emu_pid=""
+capture_pid=""
 
 export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
 
@@ -88,14 +89,65 @@ stop_emulator() {
 	emu_pid=""
 }
 
+# Guest-side capture. Host-side `-tcpdump` cannot see this AVD's outbound
+# traffic (see the note above capture_flags), so capture instead runs inside
+# the guest and is pulled off before anything stops the emulator. Task 5
+# calls these two functions rather than re-deriving the adb sequence.
+#
+#   start_capture                    # begin capturing, after boot_emulator
+#   finish_capture <destination-path> # stop, and pull the pcap to this path
+#
+# start_capture leaves the local `adb shell tcpdump ...` client's pid in
+# capture_pid so cleanup can reap it if the script aborts mid-capture.
+start_capture() {
+	if ! adb -s "$serial" root >/dev/null; then
+		echo "ERROR: adb root failed — guest tcpdump needs root (Play Store images can't grant this)" >&2
+		return 1
+	fi
+	adb -s "$serial" wait-for-device
+	adb -s "$serial" shell "rm -f /data/local/tmp/cap.pcap"
+	adb -s "$serial" shell "tcpdump -i any -s 0 -w /data/local/tmp/cap.pcap" &
+	capture_pid=$!
+}
+
+# Signals tcpdump to stop and flush, waits (bounded) for it to actually exit
+# on the device so the pcap trailer isn't truncated, then pulls the file.
+finish_capture() {
+	local dest="$1" waited=0
+	adb -s "$serial" shell pkill -INT tcpdump >/dev/null 2>&1 || true
+	while adb -s "$serial" shell 'pgrep tcpdump >/dev/null 2>&1'; do
+		if [ "$waited" -ge 10 ]; then
+			adb -s "$serial" shell pkill -KILL tcpdump >/dev/null 2>&1 || true
+			break
+		fi
+		sleep 1
+		waited=$((waited + 1))
+	done
+	adb -s "$serial" pull /data/local/tmp/cap.pcap "$dest"
+	if [ -n "$capture_pid" ]; then
+		kill "$capture_pid" 2>/dev/null || true
+		wait "$capture_pid" 2>/dev/null || true
+		capture_pid=""
+	fi
+}
+
 # Guarantee the emulator never outlives the script. Under set -e, a wait_boot
 # timeout or a failed snapshot save aborts the script before the explicit
 # stop_emulator call in ensure_avd runs, which would otherwise orphan
 # qemu-system holding port 5556 and break the next run. stop_emulator is a
 # no-op once emu_pid is already cleared, so running it again here on the
 # ordinary success path is harmless.
+#
+# A mid-capture abort is handled the same way: cleanup only sends capture_pid
+# a signal and moves on — it never waits on it, so a tcpdump that is never
+# going to exit (e.g. the guest already died) can't hang the trap. Killing
+# the emulator next tears down the guest process anyway.
 cleanup() {
 	local status=$?
+	if [ -n "$capture_pid" ]; then
+		kill "$capture_pid" 2>/dev/null || true
+		capture_pid=""
+	fi
 	stop_emulator
 	exit "$status"
 }
@@ -147,15 +199,9 @@ ensure_avd
 if [ "${1:-}" = "--spike" ]; then
 	rm -f "$cache/spike.pcap"
 	boot_emulator "${capture_flags[@]}"
-	adb -s "$serial" root
-	adb -s "$serial" wait-for-device
-	adb -s "$serial" shell "tcpdump -i any -s 0 -w /data/local/tmp/cap.pcap" &
-	tcpdump_pid=$!
+	start_capture
 	sleep 60
-	adb -s "$serial" shell pkill -INT tcpdump || true
-	sleep 2
-	kill "$tcpdump_pid" 2>/dev/null || true
-	adb -s "$serial" pull /data/local/tmp/cap.pcap "$cache/spike.pcap"
+	finish_capture "$cache/spike.pcap"
 	stop_emulator
 	echo "wrote $cache/spike.pcap ($(stat -c %s "$cache/spike.pcap" 2>/dev/null || echo 0) bytes)" >&2
 	exit 0
