@@ -1112,3 +1112,16 @@
 # it is a GCLB address, and GCLB frontends do get reassigned between Google
 # Cloud customers, so this is worth rechecking if something unrelated breaks.
 34.102.162.219
+
+# Bright VPN exit node, caught mid-session on 2026-08-01. 79.127.164.50 carried
+# 100% of one phone's traffic — 43.8 MB in the 5m18s between 15:08:48 and
+# 15:14:06 — over UDP 4500, which is IPsec NAT-T. Nothing else on that device
+# talked to anything else for the duration, which is the whole tunnel
+# signature: one peer, every kind of traffic at once, no DNS.
+#
+# The address was never resolved through blocky by any client, so the app
+# carries it hardcoded; blocking brightvpn.com by name closes the control
+# plane but not this. The /24 is CDNEXT Brussels and no hostname has ever
+# resolved into it in four months of logs, so the whole block goes rather than
+# the single address — exit nodes rotate within a provider's range.
+79.127.164.0/24

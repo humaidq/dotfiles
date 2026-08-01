@@ -39,7 +39,9 @@ ph18-18ph18.firebaseapp.com
 *.8846148.com
 *.3354797.com
 *.brightvpn.com
+brightvpn.com
 *.freevpnplanet.com
+freevpnplanet.com
 fh-118116076e9a4c2a96a99fbb70bea2a0.ecs.us-west-2.on.aws
 
 # Ads
