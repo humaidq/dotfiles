@@ -4,9 +4,9 @@ import analyse
 
 FLOWS = "\n".join([
     # ts  ethsrc ethdst ipsrc ipdst proto tcpsp tcpdp udpsp udpdp len sni
-    "1.0\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t10.0.0.5\t192.0.2.10\t6\t51000\t443\t\t\t500\texample.com",
-    "1.1\tff:ff:ff:ff:ff:ff\taa:bb:cc:dd:ee:01\t192.0.2.10\t10.0.0.5\t6\t443\t51000\t\t\t200\t",
-    "1.2\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t10.0.0.5\t192.0.2.20\t17\t\t\t51001\t4500\t300\t",
+    "1.0\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.10\t6\t51000\t443\t\t\t500\texample.com",
+    "1.1\tff:ff:ff:ff:ff:ff\taa:bb:cc:dd:ee:01\t192.0.2.10\t198.51.100.5\t6\t443\t51000\t\t\t200\t",
+    "1.2\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.20\t17\t\t\t51001\t4500\t300\t",
 ])
 
 
