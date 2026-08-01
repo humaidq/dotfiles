@@ -44,9 +44,11 @@
     sopsFile = ../../secrets/bongo.yaml;
     owner = "dnsmasq";
     group = "dnsmasq";
-    mode = "0400";
+    mode = "0440";
     reloadUnits = [ "dnsmasq.service" ];
   };
+
+  users.users.${config.sifr.username}.extraGroups = [ "dnsmasq" ];
 
   sifr = {
     autoupgrade.enable = true;

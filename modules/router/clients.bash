@@ -2,6 +2,7 @@
 set -euo pipefail
 
 LEASE_FILE="${LEASE_FILE:-/var/lib/dnsmasq/dnsmasq.leases}"
+HOSTS_FILE="${HOSTS_FILE:-}"
 
 if ! command -v ip >/dev/null 2>&1; then
   echo "error: 'ip' command not found" >&2
@@ -14,21 +15,57 @@ fi
 
 tmp_leases="$(mktemp)"
 tmp_neigh="$(mktemp)"
-trap 'rm -f "$tmp_leases" "$tmp_neigh"' EXIT
+tmp_hosts="$(mktemp)"
+trap 'rm -f "$tmp_leases" "$tmp_neigh" "$tmp_hosts"' EXIT
+
+# Read dnsmasq reservations into: MAC -> IP, hostname. Reservation names take
+# precedence over hostnames supplied by clients in their DHCP requests.
+if [[ -n "$HOSTS_FILE" && -r "$HOSTS_FILE" ]]; then
+  awk -F ',' '
+    /^[[:space:]]*(#|$)/ { next }
+    NF >= 3 {
+      mac  = tolower($1)
+      ip   = $2
+      host = $3
+
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", mac)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", ip)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", host)
+
+      if (mac ~ /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/ && ip != "" && host != "") {
+        print mac "\t" ip "\t" host
+      }
+    }
+  ' "$HOSTS_FILE" >"$tmp_hosts"
+else
+  : >"$tmp_hosts"
+fi
 
 # Read dnsmasq leases into: IP -> hostname, MAC
 if [[ -f "$LEASE_FILE" ]]; then
-  awk '
-    NF >= 4 {
-      expiry = $1
-      mac    = $2
-      ip     = $3
-      host   = $4
+  awk -F '\t' '
+    ARGIND == 1 {
+      reserved_by_mac[$1] = $3
+      reserved_by_ip[$2] = $3
+      next
+    }
+    ARGIND == 2 {
+      field_count = split($0, fields, /[[:space:]]+/)
+      if (field_count < 4) next
+      mac  = tolower(fields[2])
+      ip   = fields[3]
+      host = fields[4]
 
-      if (host == "*") host = "-"
+      if (mac in reserved_by_mac) {
+        host = reserved_by_mac[mac]
+      } else if (ip in reserved_by_ip) {
+        host = reserved_by_ip[ip]
+      } else if (host == "*") {
+        host = "-"
+      }
       print ip "\t" host "\t" mac
     }
-  ' "$LEASE_FILE" | sort -u >"$tmp_leases"
+  ' "$tmp_hosts" "$LEASE_FILE" | sort -u >"$tmp_leases"
 else
   : >"$tmp_leases"
 fi

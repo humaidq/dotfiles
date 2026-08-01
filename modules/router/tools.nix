@@ -14,7 +14,11 @@ let
       gawk
       iproute2
     ];
-    text = builtins.readFile ./clients.bash;
+    text =
+      lib.optionalString (cfg.dhcp.hostsFile != null) ''
+        export HOSTS_FILE=${lib.escapeShellArg cfg.dhcp.hostsFile}
+      ''
+      + builtins.readFile ./clients.bash;
   };
 in
 {
