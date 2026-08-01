@@ -7,19 +7,10 @@
 let
   cfg = config.sifr.personal.netwatch;
 
-  # doCheck = false: these scripts keep their own `#!/usr/bin/env python3`
-  # shebang (unlike other writePython3Bin callers in this repo) so they stay
-  # directly runnable during development; writePython3Bin prepends its own
-  # interpreter line, which pushes that shebang to line 2 and makes flake8's
-  # build-time check fail with E265 on every one of them. The programs are
-  # already covered by their own test_*.py suites, so the lint gate is
-  # redundant here.
-  analyse = pkgs.writers.writePython3Bin "analyse" { doCheck = false; } (
-    builtins.readFile ./analyse.py
-  );
-  store = pkgs.writers.writePython3Bin "store" { doCheck = false; } (builtins.readFile ./store.py);
-  report = pkgs.writers.writePython3Bin "report" { doCheck = false; } (builtins.readFile ./report.py);
-  seed = pkgs.writers.writePython3Bin "seed" { doCheck = false; } (builtins.readFile ./seed.py);
+  analyse = pkgs.writers.writePython3Bin "analyse" { } (builtins.readFile ./analyse.py);
+  store = pkgs.writers.writePython3Bin "store" { } (builtins.readFile ./store.py);
+  report = pkgs.writers.writePython3Bin "report" { } (builtins.readFile ./report.py);
+  seed = pkgs.writers.writePython3Bin "seed" { } (builtins.readFile ./seed.py);
 
   netwatch = pkgs.writeShellApplication {
     name = "netwatch";

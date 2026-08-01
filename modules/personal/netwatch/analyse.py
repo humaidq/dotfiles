@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Deterministic analysis of a capture window.
 
 Pure by construction: reads files, writes JSON, performs no network access.
@@ -6,6 +5,9 @@ Every check here is a threshold or a set membership. Nothing in this file
 decides what a service is — see the design doc on why classification is
 deliberately out of scope.
 """
+
+import json
+import sys
 
 FLOW_COLUMNS = 12
 
@@ -157,7 +159,8 @@ def read_baselines(text):
         parts = line.split("\t")
         if len(parts) < 2:
             continue
-        scopes.setdefault(parts[0].strip().lower(), set()).add(parts[1].strip())
+        scope = parts[0].strip().lower()
+        scopes.setdefault(scope, set()).add(parts[1].strip())
     return scopes
 
 
@@ -198,9 +201,6 @@ def novelty(queries, mac, baselines):
     }
 
 
-import json
-import sys
-
 TOP_PEER_SHARE = 0.70
 VPN_PORTS = {500, 4500, 1194, 51820}
 TUNNEL_PROTOS = {"47", "50", "51"}
@@ -238,7 +238,10 @@ def check_shape(peers, total):
         volume = peer["bytes_out"] + peer["bytes_in"]
         if peer.get("explained"):
             continue
-        if volume < UNEXPLAINED_MIN_BYTES and volume / total < UNEXPLAINED_MIN_SHARE:
+        if (
+            volume < UNEXPLAINED_MIN_BYTES
+            and volume / total < UNEXPLAINED_MIN_SHARE
+        ):
             continue
         observations.append({
             "check": "unexplained_peer",
@@ -267,7 +270,9 @@ def build(flows_text, dnsmap_text, queries_text, devices, baselines, run_ts):
             observations.append({
                 "check": "new_domain_network",
                 "severity": 1,
-                "detail": "first time anything here resolved {}".format(domain),
+                "detail": "first time anything here resolved {}".format(
+                    domain
+                ),
             })
         for domain in fresh["new_for_device"]:
             if domain in fresh["new_for_network"]:

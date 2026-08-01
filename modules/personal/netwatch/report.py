@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Render one run's observations as text.
 
 Written to be read by something else — a person, or a model handed the day's

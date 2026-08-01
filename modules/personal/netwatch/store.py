@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Durable observation store.
 
 A per-run report cannot answer whether something has been happening for weeks.

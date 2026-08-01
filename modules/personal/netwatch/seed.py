@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build the DNS indexes and domain baseline from resolver history.
 
 Both the correlation and the novelty check are worthless without history, and
@@ -90,7 +89,9 @@ def build_indexes(lines, leases_text):
             dnsmap.append("{}\t{}".format(*pair))
         mac = clients.get(row["client"])
         if mac:
-            dnsq.append("{}\t{}\t{}".format(mac, row["domain"], row["verdict"]))
+            dnsq.append(
+                "{}\t{}\t{}".format(mac, row["domain"], row["verdict"])
+            )
         if row["verdict"] in ("RESOLVED", "CACHED"):
             for scope in ("net", mac):
                 if not scope:
@@ -106,18 +107,28 @@ def build_indexes(lines, leases_text):
 
 def main(argv):
     if len(argv) != 5:
-        sys.stderr.write("usage: seed LEASES DNSMAP_OUT DNSQ_OUT BASELINE_TSV_OUT\n"
-                         "resolver log is read from stdin\n")
+        sys.stderr.write(
+            "usage: seed LEASES DNSMAP_OUT DNSQ_OUT BASELINE_TSV_OUT\n"
+            "resolver log is read from stdin\n"
+        )
         return 2
     with open(argv[1]) as handle:
         leases = handle.read()
-    dnsmap, dnsq, baseline = build_indexes(sys.stdin.read().split("\n"), leases)
-    for path, data in ((argv[2], dnsmap), (argv[3], dnsq), (argv[4], baseline)):
+    dnsmap, dnsq, baseline = build_indexes(
+        sys.stdin.read().split("\n"), leases
+    )
+    outputs = ((argv[2], dnsmap), (argv[3], dnsq), (argv[4], baseline))
+    for path, data in outputs:
         with open(path, "w") as handle:
             handle.write(data)
             handle.write("\n")
-    sys.stderr.write("seeded {} mappings, {} queries, {} domains\n".format(
-        dnsmap.count("\n") + 1, dnsq.count("\n") + 1, baseline.count("\n") + 1))
+    sys.stderr.write(
+        "seeded {} mappings, {} queries, {} domains\n".format(
+            dnsmap.count("\n") + 1,
+            dnsq.count("\n") + 1,
+            baseline.count("\n") + 1,
+        )
+    )
     return 0
 
 
