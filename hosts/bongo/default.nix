@@ -53,6 +53,17 @@
 
   # Packet captures are a routine debugging step here, so don't prompt for a
   # password. Both paths are listed since sudo matches whatever PATH resolved.
+  #
+  # nft is here for the same reason one step later: when a capture turns up a
+  # tunnel, the useful next move is a drop rule that takes effect now rather
+  # than at the next deploy, and waiting on a rebuild is how the session gets
+  # away. Rules added this way belong in their own table so a rebuild flushes
+  # them; anything worth keeping goes in custom-ip-blocklist.txt instead.
+  #
+  # Note this is effectively root: nft can rewrite the whole ruleset, including
+  # the blocklists. It is granted because the alternative is entering a
+  # password on a machine whose whole job is to be unattended, not because the
+  # command is safe in isolation.
   security.sudo-rs.extraRules = [
     {
       users = [ config.sifr.username ];
@@ -63,6 +74,14 @@
         }
         {
           command = "${pkgs.tcpdump}/bin/tcpdump";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/nft";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.nftables}/bin/nft";
           options = [ "NOPASSWD" ];
         }
       ];
