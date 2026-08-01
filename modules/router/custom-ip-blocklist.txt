@@ -161,6 +161,35 @@
 43.166.247.111
 47.245.168.156
 
+# Fourth imo run, 2026-08-01, with everything above enforced. The blocked layers
+# both held: all fifteen hostnames answered 0.0.0.0 and none was dialled by
+# name, the 8.8.8.8 DNS-over-TCP escape was refused again, and the app walked 41
+# addresses of its hardcoded dex pool across 83.229.88/96, 164.90.100 and
+# 169.136.118/160 on ports 443/5223/5228 and 375/4937/17953/46216 without one of
+# them answering. It got a session anyway, from three addresses that are in
+# neither the dex nor any DNS answer in the capture.
+#
+# 8.211.19.35 is the same mechanism as 47.245.168.156 above, one AS over: Alibaba
+# Cloud SG, AS45102, this time in 8.211.0.0/17 rather than 47.245.128.0/17. It
+# took the largest session of the run — 24 kB on port 5228 over 29s, and a
+# non-TLS protocol on 443 when probed directly, so not a generic web tenant. It
+# is the LBS: the app spent 150s failing against the dead pool, handshook here at
+# t=173s, and 29s later opened tunnels to two Tencent addresses it had never
+# dialled before.
+#
+# Those two carried 30-byte heartbeats every ~10s on ports 2943/9443 until the
+# capture ended. Neither appears in the dex, so they were handed out at runtime
+# by the address above rather than shipped in the package.
+#
+# Round four of the same whack-a-mole, and worth stating plainly: the runs have
+# now produced six distinct Tencent addresses and two distinct Alibaba ones, on
+# four different cloud prefixes, with zero overlap between any two runs. These
+# /32s are recorded because they are cheap and the attribution is good, not
+# because they are expected to hold.
+8.211.19.35
+43.166.175.23
+43.166.211.142
+
 # Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
 # layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
 # socks.live.bigo.sg, setting.bigo.sg, hotroom-live.bigo.sg,
