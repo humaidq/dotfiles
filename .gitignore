@@ -7,3 +7,11 @@ router-web
 CLAUDE.md
 .claude/*
 !.claude/skills/
+
+# Network monitoring output. Contains household activity — which device talked
+# to what, when, and how much — so it must never reach this repository, which
+# is public. Reports and pcaps both live here.
+#
+# Ignored by pattern rather than by being outside the tree, so note that a
+# `git add -f` would still stage it. Nothing in here is ever worth committing.
+/netwatch/
