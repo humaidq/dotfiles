@@ -25,6 +25,7 @@ d3qvtqqyw2p8t4.cloudfront.net
 *.kp
 
 # Other junk sites
+*.2jlmmm.com
 *.dubai.com
 *.tips.gg
 
