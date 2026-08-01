@@ -4,6 +4,29 @@
 148.153.67.208
 148.153.234.111
 
+# A full-device tunnel, caught 2026-08-01 in a netwatch window. Different
+# operator from the four above, which are all AS63199: this is AS394381
+# (L7-CONNECT - L7 Connect, US) in 154.51.185.0/24.
+#
+# It took 97.1% of the device's bytes — 90.9 MB of a 93.6 MB window, with only
+# 4450 bytes going anywhere else at all, and the peer count collapsing from 112
+# the window before to 19. That is not an app with a dominant peer, it is the
+# whole device routed through one address.
+#
+# Every frame was UDP on port 2311, 73 MB down against 17 MB up, with 53106
+# packets at over 1400 bytes and 3116 IP fragments — bulk transfer at MTU,
+# which a voice or video call does not produce. No DNS has ever resolved into
+# 154.51.185.0/24, there was no TLS and so no SNI, and no certificate could be
+# retrieved, so there is no name anywhere to attribute it by. Deliberately not
+# confused with the allowed VoIP relays, which resolve normally under their own
+# domains and sit in entirely different ranges.
+#
+# A /32 rather than the /24: the /24 has no reverse DNS on the address or its
+# neighbours and nothing has ever resolved into it, which is suggestive of a
+# single tenant but is three lookups rather than proof. Expect the operator to
+# move — a tunnel endpoint is the easiest thing in this file to replace.
+154.51.185.190
+
 # BIGO Live (sg.bigo.live) IP-level fallback, from an apk-sim.sh capture. Every
 # address below was connected to during that run while no DNS answer in the
 # capture mentioned it. That is the sg.bigo.overwall module (IBackupLbsConfig /
@@ -336,6 +359,109 @@
 # rented host as the three Zenlayer addresses above, so the only thing keeping
 # it out is this group's rule of blocking on an answer rather than on a SYN.
 # Re-check these first if BIGO Live starts working.
+
+# Eighth imo run, 2026-08-01. The first run in which nothing carried a session.
+#
+# All sixteen hostnames answered 0.0.0.0 and not one was connected to by name.
+# The hardcoded pool got its usual walk — 26 addresses across 83.229.88/96,
+# 164.90.100 and 169.136.118/160 — and every one of them got 4 to 20 SYNs over
+# 80 to 150s with nothing back. 47.245.163.28 and 8.211.45.119 are the first
+# confirmations that 47.245.160.0/19 and 8.211.0.0/18 hold. There was no UDP to
+# any operator address at all, so the media path never opened.
+#
+# The tunnel layer failed again and this time not because of us: the two port
+# 943 attempts, 43.130.111.192 (a third Tencent prefix, 43.130.64.0/18) and
+# 43.166.154.48, got one SYN each and no answer, and from the LAN both refuse
+# :443 instantly while hanging on :943. They are reachable and simply dead, so
+# neither is blocked here — a stale pool is not evidence of a prefix worth
+# taking.
+#
+# The app stopped dialling entirely at t=114s and spent the last minute of the
+# capture silent, which is what a client does once it has exhausted its pool.
+#
+# One address answered. 45.132.216.241 took two TLS 1.3 connections at t=91s
+# carrying ~24 kB in a burst — one stream 19 kB up, the other 9 kB down, the
+# shape of a telemetry upload and a config pull — then two short exchanges and
+# nothing for the final 41s, connections left open and idle. It is not a session
+# backend: every LBS port (5223, 5228, 375, 4937, 17953, 46216) was dialled in
+# the same window and none answered.
+#
+# Attribution is conclusive rather than inferred, the same way 5.181.130.23 was:
+# the SNI is stream.downstext.com, and the origin presents CN=*.imo.im issued by
+# GlobalSign behind openresty/1.25.3.2. imo re-homed that host off the blocked
+# 5.181.130.23 and onto AS22427 (GNET INC.), which is the rented tier already
+# handled below as /32s in shared /24s — so a /32 here too, not 45.132.216.0/24.
+45.132.216.241
+
+# Ninth imo run, 2026-08-01. The first run in which a session actually carried.
+#
+# 81.199.29.246 held two TLS connections on 443 for the whole 202s window and
+# moved 257 kB between them. They split by direction rather than sharing one
+# duplex stream: the first took 155 kB down against 10 kB up, the second 83 kB
+# up against 8 kB down, a receive and a send channel run in parallel. Traffic
+# was small Application Data exchanges roughly every 7s with TCP keep-alives
+# filling the gaps, which is a chat and signalling channel holding open, not a
+# call — there was no UDP to any operator address, so no media path opened.
+#
+# Both connections predated the capture, so the window caught no handshake and
+# no SNI, and the resolver log does not explain the address. Attribution comes
+# from the origin instead and is conclusive on its own: it serves CN=*.imo.im
+# with a SAN of exactly *.imo.im and imo.im and nothing else, issued by
+# GlobalSign AlphaSSL. Same test that settled 5.181.130.23 and 45.132.216.241.
+#
+# Origin AS is AS395374 (CYSA-MAIN - Cyber Sainik, US) in 81.199.29.0/24 — a
+# third rented provider, not either operator AS, so a /32 in a shared /24 as
+# the rest of that tier gets, not 81.199.29.0/24.
+81.199.29.246
+
+# Dialled in this run but never answered, so again NOT blocked: 43.130.71.117
+# on ports 9443 and 1943, and 170.106.37.183 on 943 and 2943, took nine SYNs
+# each at t=145s and t=167s and returned nothing at all. 43.130.71 sits inside
+# the 43.130.64.0/18 the eighth run declined to take, and this is the second
+# consecutive run in which that prefix was dialled and stayed silent — still a
+# stale pool, and a stale pool is still not evidence of a prefix worth taking.
+# Note the app kept probing this tunnel layer even while the session above was
+# already carrying, so the probing is not a sign the layer is needed.
+
+# ---------------------------------------------------------------------------
+# Alibaba Cloud HTTPDNS, from Chatta (com.metaztech.chatta), 2026-08-01
+# ---------------------------------------------------------------------------
+#
+# The one class of bypass no custom-blocklist.txt entry can reach: an SDK that
+# hardcodes its resolver's address and never asks blocky anything. The
+# /(^|\.)[a-z0-9-]*httpdns[a-z0-9-]*\./ regex in that file covers every HTTPDNS
+# vendor by name; these are the same service reached without a name.
+#
+# An apk-sim.sh run caught it in cleartext on port 80, which is as direct as
+# evidence gets — the query names are Chatta's own backend, and the answers are
+# what let the app reach it while every zone it knew was answering 0.0.0.0:
+#
+#   http://161.117.200.122/v2/d?id=934772&dn=api.connect-social-live.com&q=4,6
+#   http://8.211.143.56/v2/d?id=934772&dn=cf-res.connect-social-live.com&q=4,6
+#
+# Alibaba's HTTPDNS wire format, account id 934772, SDK android_2.6.7. Both
+# answered. The remaining five completed a TCP handshake on port 80 in the same
+# second and carried no payload — the rest of the pool the SDK rotates through,
+# blocked on the strength of being in that pool rather than on having answered,
+# because leaving them is leaving the bypass open.
+#
+# All seven are AS45102 (Alibaba US/SG), general-purpose shared cloud, so /32s
+# and never the prefixes — 47.56.0.0/16 alone would take an enormous amount of
+# unrelated hosting with it.
+#
+# Collateral, stated plainly: any other app on the network using Alibaba
+# HTTPDNS loses it and falls back to system DNS, which is blocky. That is the
+# intent — an app resolving around the router is the thing being stopped, not a
+# side effect — but it is a wider blast radius than a per-operator entry, and
+# it is the first place to look if an unrelated Chinese-SDK app starts
+# misbehaving rather than simply being blocked.
+161.117.200.122
+8.211.143.56
+47.56.119.115
+47.56.234.194
+47.74.222.190
+8.215.23.170
+147.139.200.10
 
 # ---------------------------------------------------------------------------
 # BIGO/imo, the whole estate, resolved rather than captured (2026-08-01)

@@ -400,6 +400,18 @@ dqsj71pqtgpha.cloudfront.net
 # Seeta also calls leadercc.com and quantum-nexus.net above, which the BoloJi
 # apps use too. The 520yidui/yidui.me/tie520/playlink hosts are the shared
 # live-streaming and mini-game backend.
+#
+# connect-social-live.com is where Chatta actually went once the zones below
+# stopped resolving: an apk-sim.sh run on 2026-08-01 saw api./h5. and cf-res.
+# behind Cloudflare pull 450 kB and 2.8 MB, with sc-data. on an Alibaba origin
+# presenting CN=*.connect-social-live.com. api.live-social-chat.com and
+# api.we-chat-social.com were looked up in the same run and never connected to,
+# so the failover is what this line closes.
+# Ten hosts in the dex — api. h5. data. sc-data. cf-res. cf-img. cf-gifts.
+# cf-messages. cf-members-res. and the apex — so the apex is listed alongside
+# the wildcard rather than relying on it covering both.
+connect-social-live.com
+*.connect-social-live.com
 *.metaztech.com
 *.live-social-chat.com
 *.we-chat-social.com
@@ -1519,3 +1531,21 @@ chato.go.link
 # regexes above anchor on the TLD, so these need naming individually.
 aaajili.firebaseapp.com
 jlmmm-6f65f.firebaseapp.com
+
+# Every HTTPDNS resolver, by name. These SDKs resolve over HTTP or HTTPS to a
+# vendor endpoint, which bypasses blocky exactly as a DoH endpoint does, and
+# every app family in this file that has one uses it to find the backends the
+# entries above are meant to close: GOGO Live through Tencent's httpdns.gold,
+# Gemgala through Baidu's httpdns.baidubce.com, SoulChill through Momo's
+# httpdns.immomo.com. Those three stay listed individually above, with the
+# evidence that found them; this generalises them to any vendor.
+#
+# The label is the giveaway and is safe to match on: a host with "httpdns" in
+# a label is an HTTPDNS resolver, there being no legitimate use of the name.
+# Matching the label rather than the zone catches both spellings in use —
+# httpdns.<vendor>.com and intl.httpdns.<tld> — and any vendor not yet seen.
+#
+# What this cannot reach is an SDK that hardcodes the resolver's IP, which is
+# the common case: Chatta calls Alibaba's HTTPDNS at 161.117.200.122 and
+# 8.211.143.56 with no name involved. Those belong in custom-ip-blocklist.txt.
+/(^|\.)[a-z0-9-]*httpdns[a-z0-9-]*\.[a-z0-9.-]+$/
