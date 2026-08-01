@@ -454,6 +454,31 @@
 # the answer, per this file's rule, but re-check it rather than trust it.
 46.183.24.168
 
+# Twelfth imo run, 2026-08-01, the first with everything above deployed rather
+# than held in a hand-added nft element. The deployed entries did hold: the two
+# addresses still dialled took 14 packets each and returned nothing, and the
+# other three were not tried at all.
+#
+# It re-homed by one address. 46.183.24.169 carried 250 kB on port 6593 with no
+# TLS ClientHello and the same CN=*.bigbigbig.club certificate as .168, from the
+# same AS142146 and the same announced prefix, inside the hour.
+#
+# 46.183.24.0/24 was considered and declined. The argument for it is that the
+# /24 is the whole of AS142146's announcement rather than a slice of a shared
+# cloud, so it is not the same bet as taking an Alibaba or Cyber Sainik prefix,
+# and two addresses in it now serve the same certificate. It was left at /32s
+# anyway. If a third address in this /24 turns up, take the prefix — at that
+# point the collateral argument has lost to the evidence.
+46.183.24.169
+
+# Same run. 8.209.113.52 carried 227 kB on port 443 with no TLS ClientHello,
+# and `openssl s_client` against that port returns no certificate at all, which
+# is the signature 47.245.142.42 has: a proprietary protocol using 443 as a
+# number. AS45102 again, but a fourth prefix — 8.209.96.0/19, after
+# 47.245.128.0/18, 47.245.160.0/19 and 8.211.0.0/18. A /32 for the usual
+# reason, that the prefix is general-purpose cloud.
+8.209.113.52
+
 # ---------------------------------------------------------------------------
 # Alibaba Cloud HTTPDNS, from Chatta (com.metaztech.chatta), 2026-08-01
 # ---------------------------------------------------------------------------
