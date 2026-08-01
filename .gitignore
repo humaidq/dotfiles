@@ -15,3 +15,6 @@ CLAUDE.md
 # Ignored by pattern rather than by being outside the tree, so note that a
 # `git add -f` would still stage it. Nothing in here is ever worth committing.
 /netwatch/
+
+# Python bytecode, produced by running the netwatch test suite in place.
+__pycache__/

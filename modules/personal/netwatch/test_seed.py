@@ -34,9 +34,14 @@ class TestParseLine(unittest.TestCase):
 
 
 class TestBuildIndexes(unittest.TestCase):
+    def _pairs(self, dnsmap):
+        """Drop the last-seen timestamp column."""
+        return sorted("\t".join(l.split("\t")[:2])
+                      for l in dnsmap.split("\n") if l)
+
     def test_dnsmap_has_one_row_per_answer(self):
         dnsmap, _, _ = seed.build_indexes(LOG.split("\n"), LEASES)
-        rows = sorted(l for l in dnsmap.split("\n") if l)
+        rows = self._pairs(dnsmap)
         self.assertIn("example.com\t192.0.2.10", rows)
         self.assertIn("two.example\t192.0.2.31", rows)
 
@@ -76,11 +81,16 @@ class TestUnion(unittest.TestCase):
     that first taught it has since aged out.
     """
 
+    def _pairs(self, dnsmap):
+        """Drop the last-seen timestamp column."""
+        return ["\t".join(l.split("\t")[:2])
+                for l in dnsmap.split("\n") if l]
+
     def test_dnsmap_keeps_an_address_missing_from_the_current_log(self):
         dnsmap, _, _ = seed.build_indexes(
             LOG.split("\n"), LEASES,
             existing_dnsmap="old.example\t198.51.100.200\n")
-        rows = [l for l in dnsmap.split("\n") if l]
+        rows = self._pairs(dnsmap)
         self.assertIn("old.example\t198.51.100.200", rows)
         # and still contains what this run itself resolved
         self.assertIn("example.com\t192.0.2.10", rows)
@@ -89,7 +99,7 @@ class TestUnion(unittest.TestCase):
         dnsmap, _, _ = seed.build_indexes(
             LOG.split("\n"), LEASES,
             existing_dnsmap="example.com\t192.0.2.10\n")
-        rows = [l for l in dnsmap.split("\n") if l]
+        rows = self._pairs(dnsmap)
         self.assertEqual(rows.count("example.com\t192.0.2.10"), 1)
 
     def test_baseline_keeps_a_domain_missing_from_the_current_log(self):
@@ -107,6 +117,65 @@ class TestUnion(unittest.TestCase):
             LOG.split("\n"), LEASES, existing_baseline="net\texample.com\n")
         rows = [l for l in baseline.split("\n") if l]
         self.assertEqual(rows.count("net\texample.com"), 1)
+
+
+class TestDnsmapExpiry(unittest.TestCase):
+    NOW = 1_800_000_000
+    OLD = NOW - 200 * 86400
+    RECENT = NOW - 10 * 86400
+
+    def test_drops_a_mapping_older_than_the_retention(self):
+        dnsmap, _, _ = seed.build_indexes(
+            [], LEASES,
+            existing_dnsmap="stale.example\t192.0.2.90\t{}\n".format(self.OLD),
+            now_ts=self.NOW)
+        self.assertNotIn("stale.example", dnsmap)
+
+    def test_keeps_a_mapping_inside_the_retention(self):
+        dnsmap, _, _ = seed.build_indexes(
+            [], LEASES,
+            existing_dnsmap="live.example\t192.0.2.91\t{}\n".format(
+                self.RECENT),
+            now_ts=self.NOW)
+        self.assertIn("live.example", dnsmap)
+
+    def test_a_row_without_a_timestamp_is_kept_not_discarded(self):
+        dnsmap, _, _ = seed.build_indexes(
+            [], LEASES,
+            existing_dnsmap="legacy.example\t192.0.2.92\n",
+            now_ts=self.NOW)
+        self.assertIn("legacy.example\t192.0.2.92\t{}".format(self.NOW),
+                      dnsmap)
+
+    def test_a_reassigned_address_resolves_to_its_current_owner(self):
+        # Retained row first, freshly seen row after; analyse.read_dnsmap
+        # takes the last, so the new owner wins.
+        log = ['INFO queryLog: query resolved answer=A (192.0.2.10) '
+               'client_ip=198.51.100.5 question_name=new.example. '
+               'response_type=RESOLVED']
+        dnsmap, _, _ = seed.build_indexes(
+            log, LEASES,
+            existing_dnsmap="old.example\t192.0.2.10\t{}\n".format(
+                self.RECENT),
+            now_ts=self.NOW)
+        rows = [l for l in dnsmap.split("\n") if l]
+        self.assertLess(rows.index("old.example\t192.0.2.10\t{}".format(
+            self.RECENT)),
+            rows.index("new.example\t192.0.2.10\t{}".format(self.NOW)))
+
+
+class TestAtomicWrite(unittest.TestCase):
+    def test_replaces_the_file_only_once_fully_written(self):
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "f.tsv")
+            with open(path, "w") as handle:
+                handle.write("original\n")
+            seed._write_atomic(path, "replacement")
+            with open(path) as handle:
+                self.assertEqual(handle.read(), "replacement\n")
+            self.assertFalse(os.path.exists(path + ".tmp"))
 
 
 if __name__ == "__main__":

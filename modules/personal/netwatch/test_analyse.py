@@ -243,8 +243,8 @@ class TestBuild(unittest.TestCase):
             analyse.read_baselines(BASELINES), 1754000000)
         device = result["devices"][0]
         checks = {o["check"]: o for o in device["observations"]}
-        self.assertIn("ipv6_not_analysed", checks)
-        self.assertIn("2", checks["ipv6_not_analysed"]["detail"])
+        self.assertIn("non_ipv4_not_analysed", checks)
+        self.assertIn("2", checks["non_ipv4_not_analysed"]["detail"])
 
     def test_does_not_flag_ipv6_when_every_flow_is_addressed(self):
         result = analyse.build(
@@ -252,7 +252,7 @@ class TestBuild(unittest.TestCase):
             {"aa:bb:cc:dd:ee:01": "phone-a"},
             analyse.read_baselines(BASELINES), 1754000000)
         checks = [o["check"] for o in result["devices"][0]["observations"]]
-        self.assertNotIn("ipv6_not_analysed", checks)
+        self.assertNotIn("non_ipv4_not_analysed", checks)
 
 
 if __name__ == "__main__":

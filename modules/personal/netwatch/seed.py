@@ -5,8 +5,10 @@ there is already months of it. Importing once means the tool is useful on its
 first run rather than after a month of accumulation.
 """
 
+import os
 import re
 import sys
+import time
 
 CLIENT_RE = re.compile(r"client_ip=(\S+)")
 QUESTION_RE = re.compile(r"question_name=(\S+)")
@@ -61,6 +63,49 @@ def _client_index(leases_text):
     return index
 
 
+DNSMAP_KEEP_DAYS = 90
+
+
+def _read_dnsmap_rows(text):
+    """Parse dnsmap rows into (domain, address, last_seen_ts).
+
+    A row without a timestamp predates that column; treat it as seen now so a
+    format upgrade does not silently discard the whole accumulated file.
+    """
+    rows = []
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        try:
+            ts = int(parts[2])
+        except (IndexError, ValueError):
+            ts = None
+        rows.append((parts[0].strip(), parts[1].strip(), ts))
+    return rows
+
+
+def _write_atomic(path, data):
+    """Write via a temp file and rename.
+
+    These files are now the only copy of accumulated history — they are no
+    longer regenerable from the journal, which is windowed. A truncating write
+    interrupted by a crash or a full disk would reset the baseline, and that
+    reappears as a burst of fabricated novelty findings: exactly the signal
+    this tool exists to produce, and so the one that must never be an artefact
+    of its own failure.
+    """
+    tmp = path + ".tmp"
+    with open(tmp, "w") as handle:
+        handle.write(data)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, path)
+
+
 def _read_pairs(text):
     """Parse tab-separated two-column lines into an ordered list of pairs."""
     pairs = []
@@ -75,7 +120,8 @@ def _read_pairs(text):
 
 
 def build_indexes(
-    lines, leases_text, existing_dnsmap="", existing_baseline=""
+    lines, leases_text, existing_dnsmap="", existing_baseline="",
+    now_ts=0, keep_days=DNSMAP_KEEP_DAYS
 ):
     """Return (dnsmap_tsv, dnsq_tsv, baseline_tsv).
 
@@ -90,14 +136,22 @@ def build_indexes(
     make long-known domains look newly resolved.
     """
     clients = _client_index(leases_text)
+    # Retained rows are emitted before freshly seen ones, and the reader takes
+    # the last row for an address. A reassigned address therefore resolves to
+    # whatever owns it now, and stale entries age out rather than pinning an
+    # address to its first-ever owner forever.
+    cutoff = now_ts - keep_days * 86400 if now_ts else 0
     dnsmap = []
     seen_pairs = set()
-    for domain, answer in _read_pairs(existing_dnsmap):
+    for domain, answer, ts in _read_dnsmap_rows(existing_dnsmap):
         pair = (domain, answer)
         if pair in seen_pairs:
             continue
+        stamp = now_ts if ts is None else ts
+        if cutoff and stamp < cutoff:
+            continue
         seen_pairs.add(pair)
-        dnsmap.append("{}\t{}".format(*pair))
+        dnsmap.append("{}\t{}\t{}".format(domain, answer, stamp))
 
     dnsq = []
     baseline = []
@@ -120,7 +174,8 @@ def build_indexes(
             if pair in seen_pairs:
                 continue
             seen_pairs.add(pair)
-            dnsmap.append("{}\t{}".format(*pair))
+            dnsmap.append("{}\t{}\t{}".format(
+                row["domain"], answer, now_ts))
         mac = clients.get(row["client"])
         if mac:
             dnsq.append(
@@ -165,13 +220,11 @@ def main(argv):
     existing_baseline = _read_if_present(existing_baseline_path)
     dnsmap, dnsq, baseline = build_indexes(
         sys.stdin.read().split("\n"), leases,
-        existing_dnsmap, existing_baseline,
+        existing_dnsmap, existing_baseline, int(time.time()),
     )
     outputs = ((argv[2], dnsmap), (argv[3], dnsq), (argv[4], baseline))
     for path, data in outputs:
-        with open(path, "w") as handle:
-            handle.write(data)
-            handle.write("\n")
+        _write_atomic(path, data)
     sys.stderr.write(
         "seeded {} mappings, {} queries, {} domains\n".format(
             dnsmap.count("\n") + 1,

@@ -15,6 +15,15 @@ NETWATCH_IFACE="${NETWATCH_IFACE:-enp2s0}"
 NETWATCH_SECS="${NETWATCH_SECS:-300}"
 NETWATCH_KEEP_PCAP_DAYS="${NETWATCH_KEEP_PCAP_DAYS:-3}"
 NETWATCH_KEEP_ROWS_DAYS="${NETWATCH_KEEP_ROWS_DAYS:-120}"
+# How far back to read the resolver log each run. Windowed because the whole
+# journal is hundreds of thousands of lines and grows without bound, and
+# re-reading it dominated the runtime of a run whose capture was two minutes.
+#
+# Windowing is only safe because the importer unions into dnsmap.tsv and
+# baseline.tsv rather than rebuilding them: history accumulates in those files,
+# so a short window costs nothing. Widen it for a first run on a fresh install,
+# where those files are empty and the window is all the history there is.
+NETWATCH_JOURNAL_SINCE="${NETWATCH_JOURNAL_SINCE:-2 days ago}"
 
 devices="$NETWATCH_DIR/devices.conf"
 reports="$NETWATCH_DIR/reports"
@@ -30,8 +39,11 @@ skip() {
 	printf 'netwatch: %s\n' "$1" >&2
 	printf '{"run_ts":%s,"captured":false,"skip_reason":"%s","devices":[]}\n' \
 		"$run_ts" "$1" > "$NETWATCH_DIR/observations.json"
+	# || true: the report is the whole point of this path. errexit would
+	# abort here on a store failure and lose it, which is worse than losing
+	# the row.
 	store "$db" "$NETWATCH_DIR/observations.json" \
-		"$(( run_ts - NETWATCH_KEEP_ROWS_DAYS * 86400 ))"
+		"$(( run_ts - NETWATCH_KEEP_ROWS_DAYS * 86400 ))" || true
 	report "$NETWATCH_DIR/observations.json" "$report_file"
 	exit 1
 }
@@ -63,8 +75,29 @@ while read -r mac _rest || [[ -n "${mac:-}" ]]; do
 done < "$devices"
 [[ -n "$filter" ]] || skip "devices.conf lists no MACs"
 
-remote_pcap="/tmp/netwatch-$run_ts.pcap"
+# NOT /tmp. tcpdump runs as root, so the capture is root-owned, and /tmp is
+# sticky — which means only root may unlink it and the cleanup below silently
+# fails with "Operation not permitted", leaving a full-payload capture of other
+# people's traffic on an always-on router, one per run.
+#
+# Unlinking depends on write permission to the *directory*, not ownership of
+# the file, so a directory owned by the login user holds a root-owned capture
+# that the login user can still delete. $HOME is resolved in a separate call
+# rather than written as ~, because the paths below are single-quoted for the
+# remote shell and a tilde inside single quotes is a literal.
+remote_home="$(ssh "$NETWATCH_HOST" 'printf %s "$HOME"')" \
+	|| skip "could not resolve remote home"
+remote_dir="$remote_home/.cache/netwatch"
+ssh "$NETWATCH_HOST" 'mkdir -p '\'"$remote_dir"\'' && chmod 700 '\'"$remote_dir"\' \
+	|| skip "could not create remote capture directory"
+
+remote_pcap="$remote_dir/netwatch-$run_ts.pcap"
 local_pcap="$pcaps/$run_ts.pcap"
+
+# Sweep anything an interrupted earlier run stranded here. Bounded by the same
+# retention as the local captures.
+ssh "$NETWATCH_HOST" 'find '\'"$remote_dir"\'' -name "netwatch-*.pcap" -mtime +'\'"$NETWATCH_KEEP_PCAP_DAYS"\'' -delete' \
+	>/dev/null 2>&1 || true
 
 # -s 0 because a truncated capture loses the ClientHello, and a capture cannot
 # be re-run retroactively. -G/-W so tcpdump exits by itself: sudo is scoped to
@@ -80,8 +113,8 @@ ssh "$NETWATCH_HOST" \
 	'sudo -n tcpdump -i '\'"$NETWATCH_IFACE"\'' -s 0 -G '\'"$NETWATCH_SECS"\'' -W 1 -w '\'"$remote_pcap"\'' '\'"($filter) and not port 53"\' \
 	>/dev/null 2>&1 || skip "capture failed"
 
-# The router is always-on and /tmp is not this script's to leave a
-# full-payload capture sitting in, whether or not the fetch succeeded.
+# The router is always-on and this script has no business leaving a
+# full-payload capture on it, whether or not the fetch succeeded.
 rm_remote_pcap() {
 	ssh "$NETWATCH_HOST" 'rm -f '\'"$remote_pcap"\' || true
 }
@@ -105,7 +138,7 @@ scp -q "$NETWATCH_HOST:/var/lib/dnsmasq/dnsmasq.leases" \
 # not vanish from the baseline (and reappear as a fabricated "first time ever
 # seen" novelty finding) just because its query line rotated out of the
 # journal.
-ssh "$NETWATCH_HOST" 'journalctl -u blocky --no-pager' 2>/dev/null \
+ssh "$NETWATCH_HOST" 'journalctl -u blocky --no-pager --since '\'"$NETWATCH_JOURNAL_SINCE"\' 2>/dev/null \
 	| seed "$NETWATCH_DIR/leases" \
 		"$NETWATCH_DIR/dnsmap.tsv" \
 		"$NETWATCH_DIR/dnsq.tsv" \

@@ -14,8 +14,8 @@ TOP_PEERS_SHOWN = 8
 
 
 def _stamp(ts):
-    return datetime.datetime.utcfromtimestamp(ts).strftime(
-        "%Y-%m-%d %H:%M:%SZ")
+    return datetime.datetime.fromtimestamp(
+        ts, datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
 
 
 def render(observations):

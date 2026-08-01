@@ -136,6 +136,13 @@ def read_dnsmap(text):
     window. The resolver caches for hours and prefetches, so an address in use
     now may have been resolved long before the window opened; correlating
     against the window alone reports ordinary CDN peers as unexplained.
+
+    A third column, if present, is the unix time the pair was last seen. It is
+    written by the importer and ignored here.
+
+    Last row wins, not first: the importer appends freshly seen pairs after the
+    retained ones, so an address that has been reassigned resolves to whatever
+    owns it now rather than to whatever held it first.
     """
     mapping = {}
     for line in text.split("\n"):
@@ -144,7 +151,7 @@ def read_dnsmap(text):
         parts = line.split("\t")
         if len(parts) < 2:
             continue
-        mapping.setdefault(parts[1].strip(), parts[0].strip())
+        mapping[parts[1].strip()] = parts[0].strip()
     return mapping
 
 
@@ -288,10 +295,13 @@ def build(flows_text, dnsmap_text, queries_text, devices, baselines, run_ts):
         unaddressed = count_unaddressed(flows, mac)
         if unaddressed:
             observations.append({
-                "check": "ipv6_not_analysed",
-                "severity": 1,
-                "detail": "{} flows carried no IPv4 address and were not"
-                          " analysed".format(unaddressed),
+                "check": "non_ipv4_not_analysed",
+                "severity": 0,
+                "detail": "{} frames carried no IPv4 address and were not"
+                          " analysed; this counts IPv6 and also ARP and"
+                          " other non-IP frames, so it is a coverage note"
+                          " rather than evidence of IPv6 use".format(
+                              unaddressed),
             })
         fresh = novelty(queries, mac, baselines)
         for domain in fresh["new_for_network"]:
