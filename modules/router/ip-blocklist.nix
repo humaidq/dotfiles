@@ -168,13 +168,19 @@ in
         chain forward_doh {
           type filter hook forward priority -10; policy accept;
 
-          # Block LAN clients from tunnelling DNS over HTTPS to known DoH
-          # endpoints. Scoped to LAN->WAN on 443 (TCP and UDP/QUIC) so the
-          # router's own DoT upstream is untouched.
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 443 ip daddr @doh_block4 drop comment "Block LAN DoH bypass (IPv4)"
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 443 ip6 daddr @doh_block6 drop comment "Block LAN DoH bypass (IPv6)"
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 ip daddr @doh_block4 drop comment "Block LAN DoH over QUIC (IPv4)"
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 ip6 daddr @doh_block6 drop comment "Block LAN DoH over QUIC (IPv6)"
+          # Block LAN clients from reaching known DoH endpoints at all — every
+          # port and protocol, not just 443. The narrower 443-only form this
+          # replaces bought nothing: a DoH provider that shares an address with
+          # general hosting serves that hosting over 443 too, so the collateral
+          # was already being paid, while the leak of DoH on a non-standard
+          # port stayed open.
+          #
+          # Still scoped LAN->WAN. The router itself is deliberately absent
+          # from this chain and from output_blocklists, because blocky's own
+          # upstream is a DoT endpoint that appears on this list — dropping it
+          # from the output path would take out DNS for the whole house.
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @doh_block4 drop comment "Block LAN DoH bypass (IPv4)"
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @doh_block6 drop comment "Block LAN DoH bypass (IPv6)"
         }
 
         chain output_blocklists {
