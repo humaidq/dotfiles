@@ -457,3 +457,46 @@
 # addresses above, one /24 over from the 31.58.69.x newlbs pool.
 31.58.84.2
 31.58.84.4
+
+# The remainder of sg.bigo.live's pool, after a full re-scan of all 12057 files
+# in the package — 31 dex, 77 native libs, resources and assets, ASCII and
+# UTF-16. That found no addresses the dex had not already given up: 48 public
+# addresses, all told, so the dex really is the whole of it.
+#
+# Twelve of those were still unblocked, and they are what the overwall module
+# is for — one rented address each in a spread of small Asian IDCs and Chinese
+# carriers, so that at least one survives any given country's filtering:
+#
+#   AS135391 Aofei Data (HK)        103.65.36.46 is YINGDA-SG, 103.211.231.57 HK
+#   AS135377 UCloud (HK/RU)         45.255.134.20 is registered in Moscow
+#   AS142002 Scloud (SG)            139.5.108.116, SCLOUD-HK
+#   AOFEI-AMS, unannounced          45.255.132.49/.67 — registered, not routed
+#   AS9808/AS56046 China Mobile     117.174.132.41, 223.111.253.190
+#   AS4837 China Unicom             119.188.50.136, 60.9.3.222
+#   AS4134 CHINANET                 183.60.214.9
+#   AS58461 CT HangZhou IDC         36.25.251.62
+#
+# Three of these (36.25.251.62, 60.9.3.222, 223.111.253.190) are the addresses
+# an earlier section left out under the rule "block on an answer, not on a SYN".
+# That rule is superseded for this group: being a standalone string in BIGO's
+# own dex is far better attribution than whether one emulator run got a reply,
+# and a /32 in a carrier range costs one host rather than a prefix.
+#
+# The junk filter that matters here: X.509 OIDs match the dotted-quad regex.
+# 2.5.29.17, 2.5.29.19, 2.5.4.3 and 1.3.132.0 all appear in the package and are
+# not addresses. They are distinguishable because a real pool entry is a
+# *standalone* dex string while an OID only ever turns up as a substring —
+# `strings … | grep -cxF` separates them cleanly. 3.1.1.9 is standalone but
+# lands in AWS 3.0.0.0/15 and is a version string, so it is excluded too.
+36.25.251.62
+45.255.132.49
+45.255.132.67
+45.255.134.20
+60.9.3.222
+103.65.36.46
+103.211.231.57
+117.174.132.41
+119.188.50.136
+139.5.108.116
+183.60.214.9
+223.111.253.190
