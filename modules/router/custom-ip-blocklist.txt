@@ -500,3 +500,74 @@
 139.5.108.116
 183.60.214.9
 223.111.253.190
+
+# ---------------------------------------------------------------------------
+# The same full scan over com.imo.android.imoim (2026-08-01)
+# ---------------------------------------------------------------------------
+#
+# 9740 files, 26 dex, 165 native libs, ASCII and UTF-16: 240 public addresses,
+# of which 179 are standalone strings rather than substrings. imo's package is
+# far noisier than BIGO's, and the noise is dangerous — it embeds Quad9,
+# OpenDNS, AdGuard, Cloudflare, Google, Level3, Comodo, Comcast, Charter,
+# CleanBrowsing, Norton/Vercara, CZ.NIC, DNS.SB, SWITCH and Quickline. Blocking
+# any of that would break DNS for the house to no benefit.
+#
+# What separates them is not the address but the *file*. Every public resolver
+# lives in a native library — libcronet.so (Chromium's networking stack, which
+# ships an upstream DoH provider table) and libimostream.so. Every operator
+# address lives in the dex. The test is one grep:
+#
+#   grep -rlaF <ip> x | grep -q '\.dex$'     # imo's own; .so means Chromium's
+#
+# Note the -a: without it grep silently skips binaries and reports nothing,
+# which is the same class of vacuous negative as the CORRECTION at the top.
+#
+# That split puts 39 addresses in the libraries (untouched, correctly) and 139
+# in the dex. Of the dex set, all 31 AS10122, all 17 AS21859, all 10 AS36131
+# and both AS22427 addresses were already covered — the AS blocks and the BIGO
+# work between them had already caught imo's entire named backend. What was
+# left is below.
+
+# Chinese carrier and provincial IDC addresses, from the dex rather than the
+# Cronet tables, so they are imo's pool and not a resolver list. Probing them
+# does not discriminate — a provincial ISP resolver is source-filtered and
+# times out from outside its own network exactly as a backend does — so the
+# file location is the whole of the evidence, and it is good evidence.
+42.56.95.167
+42.81.4.50
+42.81.14.17
+36.155.160.58
+36.155.161.85
+58.217.207.157
+58.217.207.239
+58.221.37.68
+58.255.174.39
+116.132.138.56
+116.132.138.103
+182.132.32.44
+211.95.159.165
+218.60.98.52
+218.91.170.177
+222.28.155.90
+# UCloud HK, the same provider as BIGO's 45.255.134.20 above.
+157.119.233.34
+157.119.233.59
+# 164.90.124.237 is NETSTAR registered space (inetnum 164.90.122.0 -
+# 164.90.127.255) that AS10122 does not currently announce, so the
+# announced-prefix block above missed it. Closing the two /24s of that inetnum
+# that were not already covered.
+164.90.123.0/24
+164.90.124.0/24
+
+# Observed and deliberately NOT blocked: 55 AWS addresses in eu-west-1/2,
+# eu-central-1 and eu-north-1, hardcoded in the dex alongside everything above,
+# so they are imo's European fleet rather than third-party infrastructure.
+#
+# They are left out on staleness rather than on attribution, which is a weaker
+# reason than this file usually accepts, so it is worth stating: EC2 addresses
+# recycle in bulk, 55 of them would be 55 chances to block a stranger in six
+# months, and none of the four sampled (18.130.109.24, 3.65.157.110,
+# 52.56.222.70, 35.176.105.107) answers on 80 or 443 today, so there is no
+# evidence they are even live. If imo survives everything above, this is the
+# group to revisit — the addresses are in the dex and can be re-read at any
+# time.
