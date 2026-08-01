@@ -135,5 +135,65 @@ class TestNovelty(unittest.TestCase):
         self.assertEqual(self._run()["top_resolved"][0], ("example.com", 2))
 
 
+TUNNEL_FLOWS = "\n".join([
+    "1.0\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.99\t17\t\t\t51000\t4500\t9000\t",
+    "1.1\tff:ff:ff:ff:ff:ff\taa:bb:cc:dd:ee:01\t192.0.2.99\t198.51.100.5\t17\t\t\t4500\t51000\t900\t",
+    "1.2\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.10\t6\t51001\t443\t\t\t100\t",
+])
+
+
+class TestCheckShape(unittest.TestCase):
+    def _peers(self, text, mac="aa:bb:cc:dd:ee:01"):
+        peers, total = analyse.aggregate_peers(analyse.parse_flows(text), mac)
+        analyse.annotate_peers(peers, analyse.read_dnsmap(DNSMAP))
+        return peers, total
+
+    def test_flags_dominant_top_peer(self):
+        peers, total = self._peers(TUNNEL_FLOWS)
+        names = [o["check"] for o in analyse.check_shape(peers, total)]
+        self.assertIn("top_peer_share", names)
+
+    def test_does_not_flag_a_balanced_spread(self):
+        peers, total = self._peers(FLOWS)
+        names = [o["check"] for o in analyse.check_shape(peers, total)]
+        self.assertNotIn("top_peer_share", names)
+
+    def test_flags_ipsec_ports(self):
+        peers, total = self._peers(TUNNEL_FLOWS)
+        names = [o["check"] for o in analyse.check_shape(peers, total)]
+        self.assertIn("vpn_port", names)
+
+    def test_flags_unexplained_high_volume_peer(self):
+        peers, total = self._peers(TUNNEL_FLOWS)
+        names = [o["check"] for o in analyse.check_shape(peers, total)]
+        self.assertIn("unexplained_peer", names)
+
+    def test_empty_capture_produces_no_observations(self):
+        self.assertEqual(analyse.check_shape([], 0), [])
+
+
+class TestBuild(unittest.TestCase):
+    def test_builds_one_entry_per_device_sorted_by_severity(self):
+        result = analyse.build(
+            TUNNEL_FLOWS, DNSMAP, QUERIES,
+            {"aa:bb:cc:dd:ee:01": "phone-a"},
+            analyse.read_baselines(BASELINES), 1754000000)
+        self.assertTrue(result["captured"])
+        self.assertEqual(result["run_ts"], 1754000000)
+        self.assertEqual(len(result["devices"]), 1)
+        device = result["devices"][0]
+        self.assertEqual(device["label"], "phone-a")
+        severities = [o["severity"] for o in device["observations"]]
+        self.assertEqual(severities, sorted(severities, reverse=True))
+
+    def test_device_with_no_traffic_still_appears(self):
+        result = analyse.build(
+            "", DNSMAP, QUERIES,
+            {"aa:bb:cc:dd:ee:01": "phone-a"},
+            analyse.read_baselines(BASELINES), 1754000000)
+        self.assertEqual(result["devices"][0]["total_bytes"], 0)
+        self.assertEqual(result["devices"][0]["peers"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
