@@ -47,6 +47,22 @@ sg.bigo.live                  BIGO Live. Source of the original unbranded
                               nftables rule can, and these addresses came from a
                               single run, so unlike the package-derived hosts
                               there is no evidence yet that they are stable.
+
+                              Third look, once those eleven addresses were live
+                              in custom-ip-blocklist.txt: every hostname still
+                              answered 0.0.0.0 and every blocked address still
+                              refused, and the app worked regardless. It widened
+                              to 23 hardcoded addresses, six of which answered,
+                              with 164.90.64.59:54953 carrying the real backend
+                              session. Answered by dropping the per-address
+                              approach entirely: 264 hostnames from this
+                              package, video.like and com.imo.android.imoim
+                              were resolved through 8.8.8.8 from bongo, and the
+                              397 addresses that came back put the whole estate
+                              in two operator ASes — AS36131 (PageBites, imo,
+                              already blocked) and AS10122 (NETSTAR, BIGO) —
+                              plus 57 rented addresses spread over seven small
+                              hosting ASes. AS10122 is now blocked in full.
 com.hkjustar.gemgala          Gemgala (Justar HK). Unpacked 73 MiB dex. Revealed
                               the operator's <brand>.net / i<brand>.com /
                               x<brand>.com / inlandcha.com convention, which in

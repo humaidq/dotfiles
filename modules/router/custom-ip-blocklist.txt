@@ -149,3 +149,226 @@
 43.166.211.162
 43.166.247.111
 47.245.168.156
+
+# Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
+# layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
+# socks.live.bigo.sg, setting.bigo.sg, hotroom-live.bigo.sg,
+# https-api.bigolive.tv, atb-stats-api.bigolive.tv, bstream.sgmbocast.com,
+# conf.piojm.tech) answered 0.0.0.0 and not one was ever connected to — and the
+# ten single addresses from the first run all held: each got three SYNs over 82s
+# and nothing back. The app worked anyway. It dialled 23 hardcoded addresses and
+# six answered, the same overwall fallback widening that imo showed.
+#
+# The one that mattered is 164.90.64.59:54953, which carried seven TCP sessions
+# (up to 106 kB, 25-49s each) plus five UDP flows across the whole 180s window —
+# that is the live backend, not a probe. 164.90.64.254, 169.136.119.254,
+# 169.136.92.254 and 202.63.51.8 answered short exchanges on port 80 with no
+# HTTP in them, so they are LBS probes over the same proprietary transport.
+#
+# All five sit inside AS10122, blocked wholesale in the next section, so no
+# per-address entry is needed for them.
+
+# Zenlayer, so a /24 would be shared hosting rather than BIGO's — /32 only, on
+# the strength of having answered during the run. Its sibling 128.14.88.122 from
+# the first run is above and still holding.
+128.14.18.126
+
+# Dialled in this run but never answered, so deliberately NOT blocked: the
+# China Mobile/Unicom/CHINANET addresses 223.111.253.190, 60.9.3.222 and
+# 36.25.251.62 (broad carrier ranges, no registrant evidence) and
+# 104.166.188.62 (RIPE 104.166.128.0/18). Re-check these first if BIGO Live
+# starts working.
+
+# ---------------------------------------------------------------------------
+# BIGO/imo, the whole estate, resolved rather than captured (2026-08-01)
+# ---------------------------------------------------------------------------
+#
+# Everything above came from what a runtime capture happened to dial. This
+# section comes from the other direction: 264 concrete hostnames pulled out of
+# the sg.bigo.live, video.like and com.imo.android.imoim packages and their
+# captures, then resolved six times through 8.8.8.8 from bongo itself (the LAN
+# cannot reach an off-router resolver, which is the point) to enumerate the
+# rotating A-record pools. 397 distinct addresses, mapped to origin AS.
+#
+# Two of the resulting ASes belong to the operators outright:
+#
+#   AS36131  IMO - PageBites, Inc.        already blocked in full, above
+#   AS10122  NETSTAR-AS-AP, NETSTAR (SG) PTE. LTD.
+#
+# AS10122 is the registrant already documented at the top of this file as the
+# holder of 169.136.0.0/16 and of the BIGO addresses the first capture dialled,
+# and the hostnames landing in it are exclusively BIGO/Likee/imo — bfs.bigo.sg,
+# lbs.live.bigo.sg, newlbs.live.bigo.sg, fgw/fgwlbs.imoim.app, conf.piojm.tech,
+# bstream.sgmbocast.com, helloktv-esx.520hello.com and so on. It is single
+# tenant in the same way AS36131 is, so it gets the same treatment: every
+# currently-announced prefix, collapsed from the 225 RIPEstat lists to 70. This
+# supersedes the hand-picked NETSTAR inetnums that used to be listed above —
+# they were all inside it.
+45.124.252.0/24
+45.249.44.0/22
+78.138.49.0/24
+103.139.72.0/23
+103.166.232.0/23
+103.208.252.0/24
+164.90.64.0/21
+164.90.72.0/24
+164.90.74.0/23
+164.90.76.0/22
+164.90.80.0/20
+164.90.96.0/24
+164.90.98.0/24
+164.90.102.0/23
+164.90.105.0/24
+164.90.106.0/23
+164.90.108.0/24
+164.90.112.0/22
+164.90.116.0/23
+164.90.121.0/24
+164.90.122.0/24
+164.90.125.0/24
+164.90.126.0/23
+169.136.66.0/24
+169.136.73.0/24
+169.136.74.0/23
+169.136.76.0/22
+169.136.80.0/23
+169.136.82.0/24
+169.136.84.0/22
+169.136.88.0/21
+169.136.96.0/21
+169.136.104.0/22
+169.136.108.0/24
+169.136.111.0/24
+169.136.112.0/21
+169.136.120.0/23
+169.136.123.0/24
+169.136.124.0/22
+169.136.128.0/24
+169.136.131.0/24
+169.136.134.0/24
+169.136.136.0/22
+169.136.140.0/24
+169.136.142.0/23
+169.136.148.0/22
+169.136.152.0/23
+169.136.155.0/24
+169.136.156.0/22
+169.136.160.0/23
+169.136.163.0/24
+169.136.164.0/22
+169.136.168.0/21
+169.136.176.0/20
+185.155.137.0/24
+185.155.139.0/24
+202.63.32.0/21
+202.63.41.0/24
+202.63.42.0/23
+202.63.45.0/24
+202.63.46.0/24
+202.63.48.0/20
+202.168.96.0/23
+202.168.99.0/24
+202.168.100.0/23
+202.168.103.0/24
+202.168.104.0/22
+202.168.108.0/23
+202.168.111.0/24
+202.168.112.0/20
+
+# The rented half of the estate. Seven small hosting ASes — four of them
+# WiredISP shells (AS393942, AS21840, AS135402, AS137235), plus GNET INC.
+# (AS22427), CloudIP LLC (AS31715), FLAMEHOSTING (AS137517), Meteverse
+# (AS54994), AS4593 and AS21769 — each carrying a handful of addresses that
+# mirror the same service groups across every provider: newlbs/lbs, the esx/gdl
+# static tier, http-dns.imostatic.com, logproxy.imoim.app, ban.imo.im. That
+# mirroring across unrelated providers is the evidence: no third-party hostname
+# resolves to any of these, and six rounds of resolution never grew the pools
+# past what is listed, so they are dedicated addresses in shared /24s rather
+# than dedicated /24s. Hence /32s — a /24 here would be somebody else's tenant.
+#
+# These are the entries most likely to rot; re-resolve rather than trust them.
+#
+# AS393942 (WiredISP) — newlbs/lbs.live.bigo.sg, the bigo.sg esx/gdl tier,
+# fs.calldev.bigo.sg, the imoim.app/imostatic.com tier, ban.imo.im, and the
+# like.video static and api tiers.
+31.58.69.2
+31.58.69.3
+31.58.69.4
+31.58.69.5
+31.58.69.6
+31.58.69.7
+31.58.69.8
+31.58.69.9
+31.58.69.10
+31.58.69.11
+143.20.91.42
+143.20.91.127
+143.20.91.198
+167.148.163.139
+167.148.163.162
+167.148.163.212
+194.60.89.38
+194.60.89.53
+# AS31715 (CloudIP LLC) — the same bigo.sg esx/gdl tier, https-api.bigolive.tv
+# and hotroom, and the like.video/likee.video static and api tiers.
+143.20.83.131
+148.135.152.31
+167.148.199.8
+167.148.199.20
+167.148.199.181
+# AS22427 (GNET INC.) — the imoim.net/imostatic.com tier including
+# http-dns.imostatic.com, the likee static tier, and five more newlbs addresses.
+82.22.195.12
+82.22.195.122
+155.117.247.69
+155.117.247.236
+185.213.242.242
+185.213.242.243
+185.213.242.244
+185.213.242.245
+185.213.242.246
+# AS137235 (WiredISP) — the bigo.sg esx/gdl tier, lbs.like.video, likee static.
+31.56.23.8
+151.243.15.2
+151.243.15.3
+151.243.15.4
+151.243.15.5
+151.243.15.6
+162.141.114.40
+162.141.114.149
+# AS137517 (FLAMEHOSTING) — the imoim/imostatic tier and ban.imo.im.
+185.93.35.145
+185.93.35.254
+194.4.52.119
+206.206.83.151
+# AS135402 (WiredISP) — the imoim/imostatic tier. 143.14.159.228 is the address
+# already documented above as shared between http-dns.imostatic.com and
+# singbox.sg on direct A records.
+143.14.159.144
+143.14.159.215
+143.14.159.228
+# AS21840 (WiredISP) — the bigo.sg esx/gdl tier, hotroom, up.ousaqb.tech.
+82.26.160.163
+167.148.196.76
+167.148.196.133
+# AS54994 (Meteverse) — bstream-ws.muosepicel.com only.
+14.0.34.24
+146.103.94.46
+146.103.94.64
+# AS4593 — api.likee.video, mobile.likee.com, pay/uc/down.like.video. The ASN
+# is registered to an unrelated industrial firm, which is normal for leased
+# space; the /24 serves nothing but Likee, so the addresses stand on their own.
+48.45.197.17
+48.45.197.58
+48.45.197.70
+# AS21769 — ban.imo.im.
+185.194.228.3
+
+# Deliberately NOT blocked from the same resolution sweep, because the
+# addresses are shared infrastructure and the collateral would land on
+# unrelated sites: AS13335 Cloudflare (the atb-im-*/atb-lk-* conf and stats
+# hosts on gvxrnq.com, hluxir.com, mqdngd.com and qsablc.com all front through
+# it), AS16509 Amazon/CloudFront (the unbranded strcloudam/bellcallslem pool
+# and gdl.bigodate.xyz), AS134963 and AS45102 Alibaba Cloud (170.33.12.0/24,
+# which is what the *.bigo.live wildcard answers with), and AS21859 Zenlayer.
+# The DNS entries in custom-blocklist.txt are what covers those paths.
