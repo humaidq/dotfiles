@@ -9,6 +9,8 @@ let
   ipBlocklistUrls = [
     "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/ips/tif.txt"
     "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt"
+    "https://az0-vpnip-public.oooninja.com/ip.txt"
+    "https://raw.githubusercontent.com/X4BNet/lists_vpn/refs/heads/main/output/vpn/ipv4.txt"
   ];
 
   # Known DoH (DNS-over-HTTPS) endpoint IPs. All forwarded LAN->WAN traffic to
@@ -477,6 +479,16 @@ in
           # Sanity guard: refuse obviously broken / truncated downloads
           if len(v4) + len(v6) < min_entries:
               raise SystemExit(f"refusing suspiciously small blocklist for {set4}/{set6}")
+
+          # Interval sets reject overlapping elements. VPN feeds contain CIDRs
+          # which can cover individual addresses or narrower prefixes from the
+          # other feeds, so collapse each family before generating nft syntax.
+          v4 = [str(net) for net in ipaddress.collapse_addresses(
+              ipaddress.ip_network(value) for value in v4
+          )]
+          v6 = [str(net) for net in ipaddress.collapse_addresses(
+              ipaddress.ip_network(value) for value in v6
+          )]
 
           with dst.open("a") as f:
               f.write(f"flush set inet router-blocklists {set4}\n")

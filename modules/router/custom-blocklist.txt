@@ -8,6 +8,11 @@
 *.aliveness.cc
 *.topcenter.one
 *.topstudio.one
+*.1clickvpn.com
+*.urban-vpn.com
+*.papam.download
+*.protonvpn.com
+*.protonvpn.net
 d1zmavshn1ll3z.cloudfront.net
 d3ae4tlgqlgide.cloudfront.net
 d3gnlijgh4zcei.cloudfront.net
@@ -28,6 +33,9 @@ d3qvtqqyw2p8t4.cloudfront.net
 *.kp
 
 # Other junk sites
+*.mcafee.com
+*.dramaboxdb.com
+*.dramabox.com
 *.1jlmmm.com
 *.2jlmmm.com
 *.3jlmmm.com
@@ -46,6 +54,8 @@ ph18-18ph18.firebaseapp.com
 fh-118116076e9a4c2a96a99fbb70bea2a0.ecs.us-west-2.on.aws
 
 # Ads
+serverg.apxor.com
+*.demdex.net
 *.current.us
 
 # Other search engines (no safe search)

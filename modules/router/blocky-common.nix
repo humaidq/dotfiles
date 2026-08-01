@@ -98,6 +98,7 @@
         "ut1"
         "custom"
         "doh"
+        "vpn"
       ];
     };
     denylists = {
@@ -196,6 +197,10 @@
       # DNS-over-HTTPS resolver by name and tunnel past the router's resolver.
       doh = [
         "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh.txt"
+      ];
+
+      vpn = [
+        "https://az0-vpnip-public.oooninja.com/adguard.txt"
       ];
     };
     allowlists = {
