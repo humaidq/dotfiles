@@ -252,6 +252,31 @@
 # neighbour.
 5.181.130.23
 
+# And the Tencent /19 the tunnel layer keeps returning to. Four distinct
+# addresses across three separate runs have now landed inside 43.166.224.0/19:
+#
+#   43.166.247.111  round 3, recorded as HTTPDNS, then carrying 1943/2943
+#   43.166.250.133  round 5, tunnels on 943/2943/9443
+#   43.166.232.254  round 6, tunnels on 1943/2943
+#   43.166.247.66   round 6, tunnel on 943
+#
+# Same reasoning that justified 8.211.0.0/18 one run earlier, and on more
+# evidence: that prefix was argued from two observations in two runs, this one
+# has four in three. The generator collapses the individual /32s above into it.
+#
+# The tunnel layer is the cheaper half of imo's estate to replace — the LBS hands
+# these out at runtime — so this is expected to age faster than the LBS entries,
+# and 43.166.128.0/18 and 43.166.192.0/19 still hold observed addresses that are
+# deliberately left as /32s. If a fifth Tencent prefix shows up, the question
+# stops being which /19 and becomes whether to take AS132203 wholesale, which is
+# a much larger call than this one.
+#
+# Collateral, stated plainly: 8192 addresses of general-purpose Tencent Cloud
+# Singapore, half the size of the Alibaba /18 above and the same kind of
+# multi-tenant space. Second entry to suspect, after 8.211.0.0/18, if something
+# unrelated stops working.
+43.166.224.0/19
+
 # Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
 # layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
 # socks.live.bigo.sg, setting.bigo.sg, hotroom-live.bigo.sg,
