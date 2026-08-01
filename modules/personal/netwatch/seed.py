@@ -61,19 +61,53 @@ def _client_index(leases_text):
     return index
 
 
-def build_indexes(lines, leases_text):
+def _read_pairs(text):
+    """Parse tab-separated two-column lines into an ordered list of pairs."""
+    pairs = []
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        pairs.append((parts[0].strip(), parts[1].strip()))
+    return pairs
+
+
+def build_indexes(
+    lines, leases_text, existing_dnsmap="", existing_baseline=""
+):
     """Return (dnsmap_tsv, dnsq_tsv, baseline_tsv).
 
     The baseline is scope-tagged: a "net" row means the network has resolved
     the domain before, a MAC row means that device has. The two answer
     different questions and both are cheap to record.
+
+    dnsmap and baseline are unions, not snapshots: existing_dnsmap and
+    existing_baseline seed the output so a domain already known stays known
+    even after it rotates out of the journal this call reads from stdin.
+    Without this, a run that only sees a shrinking window of history would
+    make long-known domains look newly resolved.
     """
     clients = _client_index(leases_text)
     dnsmap = []
     seen_pairs = set()
+    for domain, answer in _read_pairs(existing_dnsmap):
+        pair = (domain, answer)
+        if pair in seen_pairs:
+            continue
+        seen_pairs.add(pair)
+        dnsmap.append("{}\t{}".format(*pair))
+
     dnsq = []
     baseline = []
     baseline_seen = set()
+    for scope, domain in _read_pairs(existing_baseline):
+        key = (scope, domain)
+        if key in baseline_seen:
+            continue
+        baseline_seen.add(key)
+        baseline.append("{}\t{}".format(*key))
 
     for line in lines:
         row = parse_line(line)
@@ -105,17 +139,33 @@ def build_indexes(lines, leases_text):
     return "\n".join(dnsmap), "\n".join(dnsq), "\n".join(baseline)
 
 
+def _read_if_present(path):
+    try:
+        with open(path) as handle:
+            return handle.read()
+    except FileNotFoundError:
+        return ""
+
+
 def main(argv):
-    if len(argv) != 5:
+    if len(argv) not in (5, 6):
         sys.stderr.write(
-            "usage: seed LEASES DNSMAP_OUT DNSQ_OUT BASELINE_TSV_OUT\n"
+            "usage: seed LEASES DNSMAP_OUT DNSQ_OUT BASELINE_TSV_OUT"
+            " [EXISTING_BASELINE]\n"
             "resolver log is read from stdin\n"
+            "DNSMAP_OUT and EXISTING_BASELINE (or BASELINE_TSV_OUT if"
+            " EXISTING_BASELINE is omitted) are read before being"
+            " overwritten, so their prior contents are unioned in\n"
         )
         return 2
     with open(argv[1]) as handle:
         leases = handle.read()
+    existing_dnsmap = _read_if_present(argv[2])
+    existing_baseline_path = argv[5] if len(argv) == 6 else argv[4]
+    existing_baseline = _read_if_present(existing_baseline_path)
     dnsmap, dnsq, baseline = build_indexes(
-        sys.stdin.read().split("\n"), leases
+        sys.stdin.read().split("\n"), leases,
+        existing_dnsmap, existing_baseline,
     )
     outputs = ((argv[2], dnsmap), (argv[3], dnsq), (argv[4], baseline))
     for path, data in outputs:

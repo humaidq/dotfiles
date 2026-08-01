@@ -105,6 +105,26 @@ def aggregate_peers(flows, mac):
     return ordered, total
 
 
+def count_unaddressed(flows, mac):
+    """Count this device's flows that carried no IPv4 address.
+
+    tshark's ip.src/ip.dst fields are IPv4-only, so an IPv6 flow leaves both
+    blank. aggregate_peers then drops it via its own "if not ip" check, and
+    a device using an IPv6 tunnel silently reads as idle. This does not
+    analyse that traffic — it only counts it, so the report can say the gap
+    out loud instead of reporting "0 bytes across 0 peers" as if nothing had
+    been captured at all.
+    """
+    mac = mac.lower()
+    count = 0
+    for flow in flows:
+        if flow["eth_src"] != mac and flow["eth_dst"] != mac:
+            continue
+        if not flow["ip_src"] and not flow["ip_dst"]:
+            count += 1
+    return count
+
+
 BLOCKED_VERDICTS = {"BLOCKED"}
 RESOLVED_VERDICTS = {"RESOLVED", "CACHED"}
 
@@ -216,7 +236,7 @@ def check_shape(peers, total):
 
     top = peers[0]
     share = (top["bytes_out"] + top["bytes_in"]) / total
-    if share > TOP_PEER_SHARE:
+    if share >= TOP_PEER_SHARE:
         observations.append({
             "check": "top_peer_share",
             "severity": 2,
@@ -265,6 +285,14 @@ def build(flows_text, dnsmap_text, queries_text, devices, baselines, run_ts):
         peers, total = aggregate_peers(flows, mac)
         annotate_peers(peers, dnsmap)
         observations = check_shape(peers, total)
+        unaddressed = count_unaddressed(flows, mac)
+        if unaddressed:
+            observations.append({
+                "check": "ipv6_not_analysed",
+                "severity": 1,
+                "detail": "{} flows carried no IPv4 address and were not"
+                          " analysed".format(unaddressed),
+            })
         fresh = novelty(queries, mac, baselines)
         for domain in fresh["new_for_network"]:
             observations.append({

@@ -68,5 +68,46 @@ class TestBuildIndexes(unittest.TestCase):
         self.assertNotIn("bad.example", baseline)
 
 
+class TestUnion(unittest.TestCase):
+    """seed accumulates history rather than replacing it.
+
+    journald rotates, so a run that only sees today's log entries must not
+    forget a domain it learned about weeks ago just because the log line
+    that first taught it has since aged out.
+    """
+
+    def test_dnsmap_keeps_an_address_missing_from_the_current_log(self):
+        dnsmap, _, _ = seed.build_indexes(
+            LOG.split("\n"), LEASES,
+            existing_dnsmap="old.example\t198.51.100.200\n")
+        rows = [l for l in dnsmap.split("\n") if l]
+        self.assertIn("old.example\t198.51.100.200", rows)
+        # and still contains what this run itself resolved
+        self.assertIn("example.com\t192.0.2.10", rows)
+
+    def test_dnsmap_does_not_duplicate_a_pair_seen_both_times(self):
+        dnsmap, _, _ = seed.build_indexes(
+            LOG.split("\n"), LEASES,
+            existing_dnsmap="example.com\t192.0.2.10\n")
+        rows = [l for l in dnsmap.split("\n") if l]
+        self.assertEqual(rows.count("example.com\t192.0.2.10"), 1)
+
+    def test_baseline_keeps_a_domain_missing_from_the_current_log(self):
+        existing = "net\told.example\naa:bb:cc:dd:ee:01\told.example\n"
+        _, _, baseline = seed.build_indexes(
+            LOG.split("\n"), LEASES, existing_baseline=existing)
+        rows = [l for l in baseline.split("\n") if l]
+        self.assertIn("net\told.example", rows)
+        self.assertIn("aa:bb:cc:dd:ee:01\told.example", rows)
+        # and still contains what this run itself resolved
+        self.assertIn("net\texample.com", rows)
+
+    def test_baseline_does_not_duplicate_a_domain_seen_both_times(self):
+        _, _, baseline = seed.build_indexes(
+            LOG.split("\n"), LEASES, existing_baseline="net\texample.com\n")
+        rows = [l for l in baseline.split("\n") if l]
+        self.assertEqual(rows.count("net\texample.com"), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,9 +4,9 @@ import analyse
 
 FLOWS = "\n".join([
     # ts  ethsrc ethdst ipsrc ipdst proto tcpsp tcpdp udpsp udpdp len sni
-    "1.0\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.10\t6\t51000\t443\t\t\t500\texample.com",
+    "1.0\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.10\t6\t51000\t443\t\t\t400\texample.com",
     "1.1\tff:ff:ff:ff:ff:ff\taa:bb:cc:dd:ee:01\t192.0.2.10\t198.51.100.5\t6\t443\t51000\t\t\t200\t",
-    "1.2\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.20\t17\t\t\t51001\t4500\t300\t",
+    "1.2\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.20\t17\t\t\t51001\t4500\t400\t",
 ])
 
 
@@ -36,7 +36,7 @@ class TestAggregatePeers(unittest.TestCase):
         self.assertEqual(total, 1000)
         top = peers[0]
         self.assertEqual(top["ip"], "192.0.2.10")
-        self.assertEqual(top["bytes_out"], 500)
+        self.assertEqual(top["bytes_out"], 400)
         self.assertEqual(top["bytes_in"], 200)
         self.assertEqual(top["packets"], 2)
 
@@ -153,10 +153,27 @@ class TestCheckShape(unittest.TestCase):
         names = [o["check"] for o in analyse.check_shape(peers, total)]
         self.assertIn("top_peer_share", names)
 
-    def test_does_not_flag_a_balanced_spread(self):
+    def test_does_not_flag_a_peer_below_the_dominance_threshold(self):
+        # FLOWS splits 600/400: below TOP_PEER_SHARE, unlike a 70/30 split,
+        # which is not a "balanced spread" and should already flag (see the
+        # boundary test below).
         peers, total = self._peers(FLOWS)
         names = [o["check"] for o in analyse.check_shape(peers, total)]
         self.assertNotIn("top_peer_share", names)
+
+    def test_flags_a_peer_at_exactly_the_threshold_share(self):
+        # The check exists to catch a dominant peer, so a peer holding
+        # exactly TOP_PEER_SHARE (70%) must flag, not just anything above it.
+        peers = [
+            {"ip": "192.0.2.10", "port": 443, "proto": "tcp",
+             "bytes_out": 700, "bytes_in": 0, "packets": 1, "sni": "",
+             "explained": True},
+            {"ip": "192.0.2.20", "port": 443, "proto": "tcp",
+             "bytes_out": 300, "bytes_in": 0, "packets": 1, "sni": "",
+             "explained": True},
+        ]
+        names = [o["check"] for o in analyse.check_shape(peers, 1000)]
+        self.assertIn("top_peer_share", names)
 
     def test_flags_ipsec_ports(self):
         peers, total = self._peers(TUNNEL_FLOWS)
@@ -170,6 +187,31 @@ class TestCheckShape(unittest.TestCase):
 
     def test_empty_capture_produces_no_observations(self):
         self.assertEqual(analyse.check_shape([], 0), [])
+
+
+IPV6_FLOWS = "\n".join([
+    "1.0\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t\t\t\t\t\t\t\t150\t",
+    "1.1\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t\t\t\t\t\t\t\t250\t",
+    "1.2\taa:bb:cc:dd:ee:01\tff:ff:ff:ff:ff:ff\t198.51.100.5\t192.0.2.10"
+    "\t6\t51000\t443\t\t\t400\texample.com",
+])
+
+
+class TestCountUnaddressed(unittest.TestCase):
+    def test_counts_flows_with_no_ipv4_address(self):
+        flows = analyse.parse_flows(IPV6_FLOWS)
+        self.assertEqual(
+            analyse.count_unaddressed(flows, "aa:bb:cc:dd:ee:01"), 2)
+
+    def test_ignores_flows_for_other_devices(self):
+        flows = analyse.parse_flows(IPV6_FLOWS)
+        self.assertEqual(
+            analyse.count_unaddressed(flows, "aa:bb:cc:dd:ee:99"), 0)
+
+    def test_zero_when_every_flow_has_an_address(self):
+        flows = analyse.parse_flows(FLOWS)
+        self.assertEqual(
+            analyse.count_unaddressed(flows, "aa:bb:cc:dd:ee:01"), 0)
 
 
 class TestBuild(unittest.TestCase):
@@ -193,6 +235,24 @@ class TestBuild(unittest.TestCase):
             analyse.read_baselines(BASELINES), 1754000000)
         self.assertEqual(result["devices"][0]["total_bytes"], 0)
         self.assertEqual(result["devices"][0]["peers"], [])
+
+    def test_flags_ipv6_traffic_it_cannot_analyse(self):
+        result = analyse.build(
+            IPV6_FLOWS, DNSMAP, QUERIES,
+            {"aa:bb:cc:dd:ee:01": "phone-a"},
+            analyse.read_baselines(BASELINES), 1754000000)
+        device = result["devices"][0]
+        checks = {o["check"]: o for o in device["observations"]}
+        self.assertIn("ipv6_not_analysed", checks)
+        self.assertIn("2", checks["ipv6_not_analysed"]["detail"])
+
+    def test_does_not_flag_ipv6_when_every_flow_is_addressed(self):
+        result = analyse.build(
+            FLOWS, DNSMAP, QUERIES,
+            {"aa:bb:cc:dd:ee:01": "phone-a"},
+            analyse.read_baselines(BASELINES), 1754000000)
+        checks = [o["check"] for o in result["devices"][0]["observations"]]
+        self.assertNotIn("ipv6_not_analysed", checks)
 
 
 if __name__ == "__main__":
