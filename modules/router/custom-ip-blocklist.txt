@@ -423,6 +423,37 @@
 # Note the app kept probing this tunnel layer even while the session above was
 # already carrying, so the probing is not a sign the layer is needed.
 
+# Tenth and eleventh imo runs, 2026-08-01. The app went silent for a window —
+# no dials at all, the state the eighth run described as an exhausted pool —
+# then came back on two hosts that had never appeared before, both of which
+# answered. Neither was covered by anything already in this file.
+#
+# 47.245.142.42 is the conclusive one, and it is a re-homed LBS. It took 431 kB
+# over 28s on port 5228 and a further 83 kB over 183s on port 443, and carried
+# no TLS ClientHello on either. `openssl s_client` to its 443 returns no
+# certificate at all, so that port is 443 in name only and the protocol is
+# proprietary — the same signature the earlier runs recorded. 5228 is already
+# listed above as one of the LBS ports, and AS45102 is where the LBS was found
+# before on 47.245.168.156:5223. It sits in 47.245.128.0/18, immediately
+# outside the 47.245.160.0/19 that the eighth run confirmed holds, which is the
+# whole reason it was reachable.
+47.245.142.42
+
+# 46.183.24.168 is the weaker of the two and is recorded as such. The
+# certificate settles the host but not the operator: SAN is exactly
+# *.bigbigbig.club and bigbigbig.club, issued by GlobalSign AlphaSSL, so this
+# is bigbigbig.club's own host — but that bigbigbig.club is BIGO is inference
+# from the name, not the standard the *.imo.im hosts were taken on.
+#
+# What supports it: the name has never resolved on this network, so the app
+# reached the address directly out of a hardcoded pool rather than by lookup,
+# which is the overwall pattern; the registrant is SANDHILL SOLUTION PTE. LTD.
+# (AS142146, SG), and both operators are Singaporean; port 45953 is high and
+# arbitrary like the 375/4937/17953/46216 set above; and it answered with
+# 252 kB in the same window and on the same device as the LBS above. Blocked on
+# the answer, per this file's rule, but re-check it rather than trust it.
+46.183.24.168
+
 # ---------------------------------------------------------------------------
 # Alibaba Cloud HTTPDNS, from Chatta (com.metaztech.chatta), 2026-08-01
 # ---------------------------------------------------------------------------

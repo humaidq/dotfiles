@@ -151,6 +151,17 @@ ask.u.ae
 *.singbox.sg
 *.musicdream.club
 *.sdonlyn.net
+# bigbigbig.club, another .club in the estate like musicdream.club above. Found
+# from the IP side rather than from a package: 46.183.24.168:45953 answered a
+# capture with 252 kB and presents a certificate whose SAN is exactly
+# *.bigbigbig.club and bigbigbig.club, GlobalSign AlphaSSL, the same CA product
+# as the *.imo.im hosts. The name has never resolved on this network — the app
+# carries the address — so the domain entry closes a path nothing has used yet
+# rather than one already in evidence. Attribution to BIGO is inference from
+# the name plus the Singaporean registrant, weaker than the imo.im hosts; the
+# address is blocked alongside it in custom-ip-blocklist.txt.
+bigbigbig.club
+*.bigbigbig.club
 # atb-im-conf and atb-im-stats, the imo-flavoured twins of the atb-lk-* pair on
 # bnxz.net/mqdngd.com/qsablc.com already blocked below for Likee.
 *.gvxrnq.com
@@ -335,12 +346,50 @@ dqsj71pqtgpha.cloudfront.net
 # YouNow
 *.younow.com
 # Chamet (com.hkfuliao.chamet)
+#
+# The zones below the first group came from resolution rather than the package,
+# which stays unreadable: 1 dex, 72 KiB of bytecode, and two emulator runs plus
+# a re-analysis of the second capture that between them recorded not one host
+# and not one hardcoded address — the app exits before dialling anything. What
+# the package did yield is com.oversea.chat and com.oversea.videochat class
+# names in resources.arsc, putting Chamet in the Justar family with MateMet and
+# Gemgala, whose <brand>.net / i<brand>.com convention is what suggested where
+# to look.
+#
+# ichamet.net is the one that matters: api.ichamet.net answers 200 with
+# server: istio-envoy over an encrypted body, on its own tenant NLB instance
+# (nlb-3k565h4xk6l7t7upuf) with a cert for *.ichamet.net. A working API
+# endpoint, and the operator simply registered the .net of a zone already
+# blocked here. The apex is listed alongside the wildcard for the reason given
+# at connect-social-live.com above.
+#
+# ichamet.live 301s to ichamet.com behind its own cert, and chametapp.com is
+# the marketing site (WordPress, cert *.chametapp.com). mchamet.com is the
+# weakest entry of the four and is included on the strength of the name and of
+# sitting in AS45102 with the rest of the estate — 443 times out from here, so
+# there is no certificate behind it.
+#
+# Deliberately NOT blocked, all three of which resolve: chamet.app is a
+# Squarespace 301 to the affiliate video.tvwebapp.com, chamet.vip is parked
+# (title "chamet.vip", Server: DPS, on the AWS Global Accelerator parking
+# addresses) and chamet.io would not complete a fetch and is most likely a
+# squatter. chamet.net, xchamet.*, nchamet.live and chametapp.net have no
+# records at all.
+#
+# Name-level only, and knowingly so: an app that cannot be captured cannot be
+# checked for an HTTPDNS or hardcoded-IP path the way Chatta and imo were, so
+# the query log is the way to catch whatever this misses.
 *.chamet.com
 *.chametlive.com
 *.ichamet.com
 *.chametw.com
 *.nchamet.com
 *.hkfuliao.com
+ichamet.net
+*.ichamet.net
+*.ichamet.live
+*.chametapp.com
+*.mchamet.com
 # Crush Live (com.starlink.crushlive, Starlink Network Technology)
 *.crushfun.live
 *.crushfun.com
