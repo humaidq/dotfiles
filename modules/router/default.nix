@@ -340,10 +340,25 @@ in
               oifname "${cfg.ppp}" udp dport { 69, 137, 138 } drop comment "Drop forwarded insecure UDP services to WAN"
 
               # Keep LAN clients on the router's resolver while allowing the router itself upstream access.
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 53 drop comment "Block LAN DNS bypass to WAN"
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 53 drop comment "Block LAN DNS bypass to WAN"
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 853 drop comment "Block LAN DoT bypass to WAN"
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 853 drop comment "Block LAN DoT bypass to WAN"
+              #
+              # Logged and counted the same way as the blocklist chains in
+              # ip-blocklist.nix, under the nft-block-dns prefix. These rules
+              # predate that logging and were silent, which meant a client
+              # quietly retrying DNS or DoT past the resolver looked identical
+              # to a client that had given up — the one case where you most
+              # want to know which. Grafana needs nothing extra: nft log goes
+              # to the kernel ring buffer, journald picks it up, alloy ships
+              # the journal.
+              #
+              # Sampled, and the limit sits on its own rule rather than on the
+              # verdict — sharing them would let packets over the rate escape
+              # the drop as well as the log. Counters on the verdicts carry the
+              # exact volume.
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport { 53, 853 } limit rate 60/minute burst 20 packets log prefix "nft-block-dns " comment "sample DNS/DoT bypass drops"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 53 counter drop comment "Block LAN DNS bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 53 counter drop comment "Block LAN DNS bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 853 counter drop comment "Block LAN DoT bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 853 counter drop comment "Block LAN DoT bypass to WAN"
             }
           '';
         };
