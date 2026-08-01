@@ -37,3 +37,9 @@ archive.ph
 *.archive.ph
 archive.vn
 *.archive.vn
+
+# APK mirror, used by the blocking-apps-by-domain skill to pull packages for
+# static extraction and emulator runs. An upstream list started blocking it,
+# which broke apk-sim.sh's download step.
+apkpure.com
+*.apkpure.com

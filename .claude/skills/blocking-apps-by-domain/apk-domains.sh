@@ -90,13 +90,19 @@ javapkg='^(com|org|net|io|de|nl|dk|br|ch|jp|uk|fr|it|es|ru|cn|in|us|me|co|tv|app
 # Shared SDK, CDN, CA and analytics infrastructure. Blocking these breaks
 # unrelated apps, so they are never candidates.
 # Shared with pcap-domains.sh: one list, two consumers.
-noise="$(cat "$(dirname "$0")/noise-zones.txt")"
-# Build artefacts and resource identifiers that survive the Java-package filter.
-noise="$noise"'|\.pb\.cc$|gnu\.gold|materialcomponents|materialcalendar|shapeappearance|textappearance|exostyledcontrols|widget\.material'
+# Anchored to a label boundary: the list is an alternation of brand substrings,
+# and unanchored it matches them mid-label. live.com matched
+# connect-social-live.com, which silently dropped Chatta's real backend from
+# the candidates — the failure this filter is least able to afford, since a
+# dropped host is never seen again.
+noise="(^|\.)($(cat "$(dirname "$0")/noise-zones.txt"))"
+# Build artefacts and resource identifiers that survive the Java-package
+# filter. Deliberately not label-anchored — these match inside a token.
+artefacts='\.pb\.cc$|gnu\.gold|materialcomponents|materialcalendar|shapeappearance|textappearance|exostyledcontrols|widget\.material'
 
 find "$tree" \( -name 'classes*.dex' -o -name 'resources.arsc' -o -path '*/assets/*' \
 	-o -path '*/res/raw/*' -o -name '*.so' -o -name '*.json' -o -name '*.js' \) -type f -print0 |
 	xargs -0 -r strings -n 8 2>/dev/null |
 	grep -oiE '(https?://)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+\.(com|net|org|live|tv|app|io|me|cc|xyz|top|club|vip|link|site|online|info|co|us|sg|hk|in|cn|video|chat|fun|pro|world|space|shop|store|life|icu|art|mobi|one|win|asia|gold|today)\b' |
 	sed -E 's#^https?://##' | tr '[:upper:]' '[:lower:]' | sort -u |
-	grep -viE "$javapkg" | grep -viE "$noise"
+	grep -viE "$javapkg" | grep -viE "$noise" | grep -viE "$artefacts"

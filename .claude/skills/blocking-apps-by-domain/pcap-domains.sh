@@ -20,7 +20,11 @@
 set -euo pipefail
 
 cap="${1:?usage: pcap-domains.sh <capture.pcap>}"
-noise="$(cat "$(dirname "$0")/noise-zones.txt")"
+# The list is an alternation of brand substrings, so it must only match at a
+# label boundary. Unanchored, live.com matched connect-social-live.com and
+# tagged Chatta's live backend as Microsoft — the operator's own zone,
+# presented to the reader as somebody else's noise.
+noise="(^|\.)($(cat "$(dirname "$0")/noise-zones.txt"))"
 
 # tshark emits comma-separated values when a packet carries several; split
 # them, drop reverse-lookup and link-local chatter, and normalise case.
