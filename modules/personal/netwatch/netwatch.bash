@@ -91,6 +91,9 @@ store "$db" "$NETWATCH_DIR/observations.json" \
 	"$(( run_ts - NETWATCH_KEEP_ROWS_DAYS * 86400 ))"
 report "$NETWATCH_DIR/observations.json" "$report_file"
 
+# Best-effort: a probe failure must never cost the run its report.
+certcheck "$NETWATCH_DIR/observations.json" "$report_file" || true
+
 # The new baseline becomes the comparison point only after this run has been
 # analysed against the old one, or nothing would ever look new.
 mv -f "$NETWATCH_DIR/baseline.tsv.new" "$NETWATCH_DIR/baseline.tsv"

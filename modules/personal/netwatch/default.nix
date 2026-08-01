@@ -11,11 +11,13 @@ let
   store = pkgs.writers.writePython3Bin "store" { } (builtins.readFile ./store.py);
   report = pkgs.writers.writePython3Bin "report" { } (builtins.readFile ./report.py);
   seed = pkgs.writers.writePython3Bin "seed" { } (builtins.readFile ./seed.py);
+  certcheck = pkgs.writers.writePython3Bin "certcheck" { } (builtins.readFile ./certcheck.py);
 
   netwatch = pkgs.writeShellApplication {
     name = "netwatch";
     runtimeInputs = [
       analyse
+      certcheck
       report
       seed
       store
@@ -24,6 +26,7 @@ let
       coreutils
       findutils
       openssh
+      openssl
       wireshark-cli
     ]);
     text = builtins.readFile ./netwatch.bash;
