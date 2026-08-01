@@ -56,7 +56,12 @@ class TestRender(unittest.TestCase):
 
     def test_marks_unexplained_peers(self):
         text = report.render(OBS)
-        line = [l for l in text.splitlines() if "192.0.2.99" in l][0]
+        peer = OBS["devices"][0]["peers"][0]
+        # Select the peer *row* by its distinctive ip:port/proto shape, not a
+        # bare address substring — an observation's detail text can also
+        # legitimately mention the same address without being that row.
+        needle = "{}:{}/{}".format(peer["ip"], peer["port"], peer["proto"])
+        line = [l for l in text.splitlines() if needle in l][0]
         self.assertIn("no-dns", line)
 
     def test_counts_blocked_answers_without_listing_them(self):

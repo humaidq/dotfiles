@@ -41,6 +41,12 @@ def render(observations):
         lines.append("   blocked answers: {}".format(
             novelty.get("blocked_count", 0)))
 
+        if device["observations"]:
+            lines.append("   observations:")
+            for obs in device["observations"]:
+                lines.append("     [{}] {}: {}".format(
+                    obs["severity"], obs["check"], obs["detail"]))
+
         if device["peers"]:
             lines.append("   top peers:")
             for peer in device["peers"][:TOP_PEERS_SHOWN]:
@@ -51,12 +57,6 @@ def render(observations):
                 lines.append("     {:>9} {:>6.1f}%  {}:{}/{} {}{}".format(
                     volume, share, peer["ip"], peer["port"],
                     peer["proto"], name, tag))
-
-        if device["observations"]:
-            lines.append("   observations:")
-            for obs in device["observations"]:
-                lines.append("     [{}] {}: {}".format(
-                    obs["severity"], obs["check"], obs["detail"]))
 
     lines.append("")
     return "\n".join(lines)
