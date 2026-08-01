@@ -63,6 +63,15 @@ sg.bigo.live                  BIGO Live. Source of the original unbranded
                               already blocked) and AS10122 (NETSTAR, BIGO) —
                               plus 57 rented addresses spread over seven small
                               hosting ASes. AS10122 is now blocked in full.
+
+                              The earlier note above that the IP-level fallback
+                              "appears nowhere in the package" was wrong: 22 of
+                              those 23 addresses are plain ASCII in classes.dex,
+                              contiguous in the string table, and the dex holds
+                              the whole pool rather than the subset one run
+                              dialled. The bad conclusion came from searching an
+                              apk-sim.sh work dir, which never extracts. Read
+                              the pool statically instead of capturing it.
 com.hkjustar.gemgala          Gemgala (Justar HK). Unpacked 73 MiB dex. Revealed
                               the operator's <brand>.net / i<brand>.com /
                               x<brand>.com / inlandcha.com convention, which in

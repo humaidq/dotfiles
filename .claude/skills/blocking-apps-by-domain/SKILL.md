@@ -76,6 +76,51 @@ block wildcards.** Never block from a web search alone.
    minutes for zero signal. This overrides the general instruction in
    `CLAUDE.md` to run it before pushing. The rebuild on bongo is the check.
 
+## The hardcoded fallback pool is usually in the dex — grep for IPs, not names
+
+The `sg.bigo.overwall` backup LBS is the one layer no `custom-blocklist.txt`
+entry can reach, and the natural assumption is that it must therefore be hidden.
+It is not. In `sg.bigo.live`, 22 of the 23 addresses a runtime capture recorded
+are plain ASCII in `classes.dex`, in **one contiguous run of the string table**
+— the table is sorted, so every dotted quad lands together and the whole pool
+reads off in one grep:
+
+```bash
+find x -name '*.dex' -print0 | xargs -0 strings -n 7 |
+  grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' | sort -u
+```
+
+This is strictly better than capturing. A run dials whatever subset its path
+through the app needed; the dex holds the entire list. BIGO's 23 captured
+addresses turned out to be part of a 48-address pool, and reading it gave 26
+more that no capture had seen. Only the address that carried the *real* session
+was absent — that one is handed out by the LBS at runtime.
+
+Two traps produced the opposite, wrong conclusion the first time:
+
+- **An `apk-sim.sh` work directory contains no extracted tree.** It holds
+  `app.apk`, `bundle/` and the pcap, nothing else. A `find … -name '*.dex'`
+  there matches nothing, so a search "of the package" silently searches an empty
+  set. The two tools share `$TMPDIR/apk-domains/<pkg>/`; only `apk-domains.sh`
+  populates `x/`.
+- **`app.apk` is often an Android bundle.** Unzipping it yields inner split
+  APKs and *no dex at all*. `apk-domains.sh` unzips the inner APKs already; a
+  manual `unzip app.apk` does not.
+
+If a search comes back empty, confirm it searched something before believing
+it: `find x -name '*.dex' | wc -l`.
+
+Triage the resulting addresses the same way as hostnames — most are not
+backends:
+
+| Category | What it looks like |
+|---|---|
+| Public resolvers | imo embeds Quad9, OpenDNS, CleanBrowsing, AdGuard, Norton, Comcast, Level3, Google, Cloudflare — its `NetworkDiagnosticTool` probe set. Blocking any of it is self-harm. |
+| Shared cloud | AWS eu-west/eu-central, Google Cloud — excluded on the usual rule |
+| Parsing junk | X.509 OIDs (`2.5.29.37`, `1.3.6.1`) and version strings (`3.6.0.0`) match the dotted-quad regex |
+| **Operator AS** | the real target — map every address to its origin AS first |
+| **Rented hosting** | Zenlayer, GNET and similar; being written into the operator's own binary is the strongest attribution there is, so /32s are justified even on shared hosting |
+
 ## Resolving real addresses: keep one ssh socket to bongo
 
 `check-domains.sh` tells you whether blocky answers `0.0.0.0`. It cannot tell

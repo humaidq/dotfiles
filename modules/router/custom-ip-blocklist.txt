@@ -5,16 +5,27 @@
 
 # BIGO Live (sg.bigo.live) IP-level fallback, from an apk-sim.sh capture. Every
 # address below was connected to during that run while no DNS answer in the
-# capture mentioned it, and none of them appear anywhere in the package — not
-# the dex, not the native libs, not the resources. That is the sg.bigo.overwall
-# module (IBackupLbsConfig / IIpPort) doing what it is built to do, and it is
-# the one path no blocklist entry can reach, which is why these are here rather
-# than in custom-blocklist.txt.
+# capture mentioned it. That is the sg.bigo.overwall module (IBackupLbsConfig /
+# IIpPort) doing what it is built to do, and it is the one path no
+# custom-blocklist.txt entry can reach, which is why these are here.
 #
-# Caveat worth keeping in mind: these came from a single run. Unlike the
-# package-derived hostnames there is no evidence they are stable, so if BIGO
-# Live starts working again this list is the first thing to re-capture rather
-# than to trust.
+# CORRECTION, 2026-08-01: this section used to claim these addresses "appear
+# nowhere in the package — not the dex, not the native libs, not the
+# resources". That is false. 22 of the 23 are plain ASCII in classes.dex, in
+# one contiguous run of the string table. Only 164.90.64.59 — the one that
+# carried the real session — is absent, so that one really is handed out at
+# runtime.
+#
+# The negative result came from searching an apk-sim.sh work directory, which
+# holds only app.apk and the pcap and never extracts anything; a `find -name
+# '*.dex'` there matches nothing, so the search was vacuous rather than
+# conclusive. app.apk is also an Android bundle, so it needs its inner split
+# APKs unzipped before any dex exists at all. apk-domains.sh does both steps —
+# the mistake was checking by hand in the wrong tree.
+#
+# The practical consequence is in the "hardcoded pool" section at the end of
+# this file: the dex holds the whole fallback list, not just the subset one run
+# happened to dial, so it can be read off rather than captured.
 
 # Registered to NETSTAR (SG) PTE. LTD., which is the registrant behind the
 # 169.136.0.0/16 already documented as BIGO's in custom-blocklist.txt. Five
@@ -176,8 +187,10 @@
 # Dialled in this run but never answered, so deliberately NOT blocked: the
 # China Mobile/Unicom/CHINANET addresses 223.111.253.190, 60.9.3.222 and
 # 36.25.251.62 (broad carrier ranges, no registrant evidence) and
-# 104.166.188.62 (RIPE 104.166.128.0/18). Re-check these first if BIGO Live
-# starts working.
+# 104.166.188.62, which is AS21859 Zenlayer in 104.166.188.0/23 — the same
+# rented host as the three Zenlayer addresses above, so the only thing keeping
+# it out is this group's rule of blocking on an answer rather than on a SYN.
+# Re-check these first if BIGO Live starts working.
 
 # ---------------------------------------------------------------------------
 # BIGO/imo, the whole estate, resolved rather than captured (2026-08-01)
@@ -369,6 +382,78 @@
 # unrelated sites: AS13335 Cloudflare (the atb-im-*/atb-lk-* conf and stats
 # hosts on gvxrnq.com, hluxir.com, mqdngd.com and qsablc.com all front through
 # it), AS16509 Amazon/CloudFront (the unbranded strcloudam/bellcallslem pool
-# and gdl.bigodate.xyz), AS134963 and AS45102 Alibaba Cloud (170.33.12.0/24,
-# which is what the *.bigo.live wildcard answers with), and AS21859 Zenlayer.
-# The DNS entries in custom-blocklist.txt are what covers those paths.
+# and gdl.bigodate.xyz), and AS134963 / AS45102 Alibaba Cloud — including
+# 98.98.238.183-190, which answers for mesh-game.jieyou.shop and is the CDN POP
+# the skill file warns about by name. The DNS entries in custom-blocklist.txt
+# are what covers those paths.
+
+# ---------------------------------------------------------------------------
+# The hardcoded pool, read out of the packages (2026-08-01)
+# ---------------------------------------------------------------------------
+#
+# See the CORRECTION at the top of this file: the fallback addresses are in the
+# dex after all, once the app bundle's inner split APKs are extracted. Reading
+# them statically beats capturing them, because the dex holds the entire pool
+# rather than the subset a single run dialled — 48 public addresses in
+# sg.bigo.live, and a further set in com.imo.android.imoim, sitting in one
+# contiguous stretch of the string table.
+#
+# Most of that pool needed no action, which is the useful validation: all 46
+# AS10122 addresses and all 10 AS36131 addresses named in the two packages were
+# already covered by the two AS blocks above. Blocking the ASes rather than the
+# addresses was the right call, and this is the evidence for it.
+#
+# Triage of the rest. The imo package also embeds a long list of public
+# resolvers — Quad9, OpenDNS, CleanBrowsing, AdGuard, Norton, Comcast, Level3,
+# Google, Cloudflare — which is its NetworkDiagnosticTool probe set, not
+# backend infrastructure; blocking any of it would be self-harm. The AWS and
+# Google Cloud addresses are shared cloud and excluded on the usual rule. What
+# is left is Zenlayer and GNET, where the operator rents.
+#
+# AS21859 Zenlayer. Attribution here is as strong as it gets — these are
+# written into BIGO's and imo's own binaries — so they go in as /32s despite
+# Zenlayer being shared hosting. 45.124.253/254/255 are the neighbours of
+# 45.124.252.89, which is AS10122 and already covered; the operator evidently
+# rents on both sides of that boundary.
+45.124.253.20
+45.124.254.67
+45.124.255.20
+98.96.205.5
+98.96.205.6
+98.96.205.7
+98.96.205.8
+98.96.205.9
+98.96.205.15
+98.96.205.16
+98.96.215.5
+98.96.215.6
+98.96.215.7
+98.96.215.8
+98.96.215.15
+98.96.215.16
+98.96.215.17
+104.166.188.62
+128.1.80.7
+128.1.80.118
+169.197.100.124
+172.96.115.5
+199.91.72.21
+199.91.73.47
+199.91.73.175
+199.91.74.5
+# The same Zenlayer rental seen from the DNS side rather than the dex:
+# lbs.live.bigo.sg answers with these eight, which bracket 128.14.18.126 and
+# 128.14.88.122 — both already blocked from the captures. Adjacent addresses
+# serving the LBS, so the earlier blanket "AS21859 excluded" was too broad.
+128.14.18.122
+128.14.18.123
+128.14.18.124
+128.14.18.125
+128.14.88.123
+128.14.88.124
+128.14.88.125
+128.14.88.126
+# AS22427 GNET, from the imo package. Same AS as the rented BIGO fronting
+# addresses above, one /24 over from the 31.58.69.x newlbs pool.
+31.58.84.2
+31.58.84.4
