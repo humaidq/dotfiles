@@ -42,9 +42,7 @@ ph18-18ph18.firebaseapp.com
 *.8846148.com
 *.3354797.com
 *.brightvpn.com
-brightvpn.com
 *.freevpnplanet.com
-freevpnplanet.com
 fh-118116076e9a4c2a96a99fbb70bea2a0.ecs.us-west-2.on.aws
 
 # Ads
@@ -99,7 +97,6 @@ ask.u.ae
 *.tkbiy.top
 *.tkbby.top
 *.bigo.sg
-logproxy.imoim.app
 *.rpttechnologies.org
 
 # IMO messaging and live streaming (com.imo.android.imoim). Shares BIGO/Joyy
@@ -1486,40 +1483,29 @@ chato.go.link
 # Bare rather than *.domain: blocky's wildcard form does not match the apex,
 # so a *.example.com entry leaves example.com itself reachable. A bare entry
 # covers the apex and every subdomain, which is what is wanted here.
-southasiabp.online
-jdbcdn.net
-jdb199.info
-jdbs-gaming.com
-pgsoft-br.com
-sp-slots1.com
-service-win.com
-spiritapis.com
-heibao.bet
-botion.com
-htmlapp.net
-wpofs.com
-ossphs.com
-phapply.com
-phzzz1.com
-wj2tg.com
-usdtbet66.com
-4wxr8wvf.com
-3lgnublc9f0y.com
-read-contribution-winner.com
-smartsoft-studio.pages.dev
+*.southasiabp.online
+*.jdbcdn.net
+*.jdb199.info
+*.jdbs-gaming.com
+*.pgsoft-br.com
+*.sp-slots1.com
+*.service-win.com
+*.spiritapis.com
+*.heibao.bet
+*.botion.com
+*.htmlapp.net
+*.wpofs.com
+*.ossphs.com
+*.phapply.com
+*.phzzz1.com
+*.wj2tg.com
+*.usdtbet66.com
+*.4wxr8wvf.com
+*.3lgnublc9f0y.com
+*.read-contribution-winner.com
+*.smartsoft-studio.pages.dev
 
 # Firebase-hosted front ends. The zone cannot be taken wholesale and the
 # regexes above anchor on the TLD, so these need naming individually.
 aaajili.firebaseapp.com
 jlmmm-6f65f.firebaseapp.com
-
-# Telemetry endpoints that the upstream lists carry only intermittently, so
-# they leak whenever a refresh drops them. Pinning them here rather than
-# relying on a feed is the whole point of this file.
-#
-# rpt.rpttechnologies.org is a reporting host rather than anything an app needs
-# to function, and it is common to several unrelated apps, which makes it an
-# SDK endpoint rather than one vendor's backend. It sits behind Cloudflare on
-# addresses that host nothing else, so it has to go by name and there is no
-# collateral in either direction. The app it belongs to is unidentified.
-rpttechnologies.org
