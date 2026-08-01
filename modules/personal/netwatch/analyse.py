@@ -101,3 +101,98 @@ def aggregate_peers(flows, mac):
                      key=lambda p: p["bytes_out"] + p["bytes_in"],
                      reverse=True)
     return ordered, total
+
+
+BLOCKED_VERDICTS = {"BLOCKED"}
+RESOLVED_VERDICTS = {"RESOLVED", "CACHED"}
+
+
+def read_dnsmap(text):
+    """Return {address: domain} from the full resolver history.
+
+    The map must be built from all available history rather than the capture
+    window. The resolver caches for hours and prefetches, so an address in use
+    now may have been resolved long before the window opened; correlating
+    against the window alone reports ordinary CDN peers as unexplained.
+    """
+    mapping = {}
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        mapping.setdefault(parts[1].strip(), parts[0].strip())
+    return mapping
+
+
+def read_queries(text):
+    """Return [(mac, domain, verdict)] from the resolver query log."""
+    rows = []
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        rows.append((parts[0].strip().lower(),
+                     parts[1].strip(), parts[2].strip()))
+    return rows
+
+
+def annotate_peers(peers, dnsmap):
+    """Add resolved_name and explained to each peer, in place."""
+    for peer in peers:
+        name = dnsmap.get(peer["ip"], "")
+        peer["resolved_name"] = name
+        peer["explained"] = bool(name)
+
+
+def read_baselines(text):
+    """Return {scope: {domain}}. Scope is "net" or a device MAC."""
+    scopes = {}
+    for line in text.split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        scopes.setdefault(parts[0].strip().lower(), set()).add(parts[1].strip())
+    return scopes
+
+
+def novelty(queries, mac, baselines):
+    """Domains new to this device and to the network, plus verdict counts.
+
+    Novelty is the deterministic stand-in for rotation. An operator moving to a
+    fresh registrable domain produces a first-seen entry without anyone having
+    to know what the operator is.
+
+    The two scopes answer different questions. Network-new means nothing here
+    has ever resolved it. Device-new means this device started reaching
+    something the household already used, which is the weaker but still useful
+    signal.
+    """
+    mac = mac.lower()
+    device_seen = baselines.get(mac, set())
+    network_seen = baselines.get("net", set())
+    counts = {}
+    blocked = 0
+    mine = []
+    for row_mac, domain, verdict in queries:
+        if row_mac != mac:
+            continue
+        if verdict in BLOCKED_VERDICTS:
+            blocked += 1
+            continue
+        if verdict not in RESOLVED_VERDICTS:
+            continue
+        counts[domain] = counts.get(domain, 0) + 1
+        if domain not in mine:
+            mine.append(domain)
+    return {
+        "new_for_device": [d for d in mine if d not in device_seen],
+        "new_for_network": [d for d in mine if d not in network_seen],
+        "top_resolved": sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])),
+        "blocked_count": blocked,
+    }
