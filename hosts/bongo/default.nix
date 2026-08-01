@@ -54,11 +54,11 @@
   # Packet captures are a routine debugging step here, so don't prompt for a
   # password. Both paths are listed since sudo matches whatever PATH resolved.
   #
-  # nft is here for the same reason one step later: when a capture turns up a
-  # tunnel, the useful next move is a drop rule that takes effect now rather
-  # than at the next deploy, and waiting on a rebuild is how the session gets
-  # away. Rules added this way belong in their own table so a rebuild flushes
-  # them; anything worth keeping goes in custom-ip-blocklist.txt instead.
+  # nft is here for the same reason one step later: once something unwanted is
+  # identified, the useful next move is a drop rule that takes effect now
+  # rather than at the next deploy. Rules added that way belong in their own
+  # table so a rebuild flushes them; anything worth keeping goes in
+  # custom-ip-blocklist.txt instead.
   #
   # Note this is effectively root: nft can rewrite the whole ruleset, including
   # the blocklists. It is granted because the alternative is entering a

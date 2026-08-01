@@ -18,6 +18,37 @@ by a DNS lookup that matches the destination. A tunnelled phone sends
 essentially everything to one address, for hours, with no DNS lookups that
 explain it. That contrast is the whole detection.
 
+## Findings are about a person — check where you are writing them
+
+Everything this skill produces is a record of what someone in the house did:
+which apps they opened, when, for how long, and how much. **Before committing
+anything derived from it, establish whether the repository is public.** Ask if
+it is not obvious. A dotfiles repo usually is.
+
+Blocklist comments and commit messages are the two places this leaks, and the
+second is worse: messages are easy to write without thinking, they are the
+first thing a repository browser shows, and removing one means rewriting
+history and force-pushing — which does not reliably erase anything already
+fetched, forked, or cached.
+
+Keep a blocklist entry to what a reader needs in order to maintain it:
+
+| Write this | Not this |
+|---|---|
+| What the domain or address belongs to | Which device asked for it |
+| Why the pattern is shaped the way it is | How many queries were seen, and when |
+| What collateral was ruled out, and how confident that is | That it came from a resolver log or a capture |
+| That an entry is a guess, when it is | Timestamps, byte counts, session durations |
+
+"An IPsec tunnel terminates here and the app hardcodes the address" is the
+maintainable fact. "Carried 100% of one phone's traffic, 43.8 MB between
+15:08:48 and 15:14:06" is surveillance detail about a named person, and it
+belongs in the conversation with whoever asked for the monitoring — not in
+version control.
+
+The same applies to the person's name or device hostname. Neither is ever
+needed to justify a blocklist entry.
+
 ## Prerequisites
 
 Packet capture and conntrack both need root on the router. Confirm before
@@ -117,7 +148,7 @@ once, and the device makes few or no other outbound connections while it is up.
 ### 4. Confirm no DNS explains the top peer
 
 ```bash
-ssh <router> 'journalctl -u blocky --since "2 hours ago" --no-pager' \
+ssh <router> 'journalctl -u <resolver> --since "2 hours ago" --no-pager' \
   | grep "client_ip=<client-ip> " | grep -F '<top-peer-ip>'
 ```
 

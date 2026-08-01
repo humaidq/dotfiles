@@ -44,23 +44,20 @@
 2943
 9443
 
-# IPsec. Same reasoning as the block above, one layer up: the endpoint moved
-# and the transport did not. Bright VPN was caught mid-session on 2026-08-01
-# carrying 100% of one phone's traffic — 43.8 MB in 5m18s — to 79.127.164.50
-# over UDP 4500, on an address the app had hardcoded and blocky had therefore
-# never seen. Blocking brightvpn.com closes the control plane and blocking the
-# CDNEXT /24 closes that one exit, but the next provider is a new /24 and the
-# round after that is another one. 500 and 4500 are what every IKEv2 client
-# has to use, so this closes the category.
+# IPsec. Same reasoning as the block above, one layer up: the endpoint moves
+# and the transport does not. Bright VPN reaches its exit node over UDP 4500 on
+# a hardcoded address, so the name-based entry closes its control plane and the
+# CDNEXT /24 in custom-ip-blocklist.txt closes that one exit — but the next
+# provider is a different /24, and the round after that another. 500 and 4500
+# are what every IKEv2 client must use, so this closes the category instead.
 #
-# Free at the time of writing: no device on this LAN has ever sent to either
-# port. Zero hits across the packet captures and zero nft drops on 500 or 4500
-# in the whole journal, which goes back to 30 March.
+# Free to take here: nothing on this LAN uses IPsec, so there is no working
+# traffic to weigh against it.
 #
 # The cost, if it ever lands, is a real corporate VPN from home — IKEv2 is what
 # a phone or a Mac uses for a work profile, and it will fail with no useful
 # error. This file is the first place to look. L2TP's 1701 is deliberately not
 # here: it rides inside ESP and never appears on the wire on its own, so it
-# would block nothing that 500 and 4500 do not already cover.
+# would block nothing 500 and 4500 do not already cover.
 500
 4500

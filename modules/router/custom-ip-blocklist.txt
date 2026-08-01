@@ -826,36 +826,28 @@
 38.123.110.218
 38.123.110.219
 
-# TikTok Live, IP-level. Normal TikTok stays working; only the live pull/push
+# TikTok Live, IP-level. Normal TikTok keeps working; only the live pull/push
 # CDN is blocked.
 #
-# Derived from bongo's own blocky query log (4 months, ~4 August 2026 back to
-# 30 March), not from a package or a vendor list. Every A record blocky ever
-# returned was mapped to the hostname that asked for it, and an address is
-# listed here only if every hostname that ever resolved to it matched
-# `pull-*` or `push-rtmp-*` — TikTok's live pull and broadcast CDN. Any
-# address that also served something else was dropped, which is what kept
+# An address belongs here only if every hostname known to resolve to it is a
+# `pull-*` or `push-rtmp-*` one — TikTok's live pull and broadcast CDN. Any
+# address also serving something else was dropped, which is what keeps
 # consumer.huawei.com, g.lazcdn.com, gcp-img.slatic.net, quickcep.com,
-# statics.moonshot.cn and the WeChat/QQ voipfinder hosts out of the list.
-# 0.0.0.0 answers were excluded too — blockType is zeroIp, so a blocked name
-# resolves there and would otherwise have looked like a shared tenant.
+# statics.moonshot.cn and the WeChat/QQ voipfinder hosts off this list.
 #
-# Two tiers. The /24s each had four or more distinct live-only addresses
-# observed and no other tenant, so the whole block is treated as live-
-# dedicated. The bare addresses had fewer observations, so only the address
-# itself is blocked.
+# Two tiers. The /24s each hold several distinct live-only addresses and no
+# other known tenant, so the whole block is treated as live-dedicated. The bare
+# addresses sit in ranges that are shared, so only the address goes.
 #
-# LIMITATION, and it is the important one: "no other tenant" here means none
-# was observed, not that none exists. A /24 seen twice is on this list because
-# the log is thin for it, not because it is proven dedicated. Expect false
-# positives in the sparse entries, and expect the list to go stale — 367
-# distinct live-only addresses across 100 /24s turned up in four months, so
-# this pool rotates faster than any hand-maintained list tracks.
+# LIMITATION, and it is the important one: "no other tenant" means none is
+# known, not that none exists. The sparse entries are the weak ones. Expect the
+# list to go stale too — this CDN pool spans hundreds of addresses across
+# roughly a hundred /24s and rotates faster than a hand-maintained list tracks.
 #
-# This section is therefore the backstop, not the mechanism. The DNS entries
-# in custom-blocklist.txt cover the whole pool by name and cost nothing to
-# maintain; these addresses only matter if the app starts dialling IPs
-# directly the way BIGO's overwall module does above.
+# So this section is the backstop, not the mechanism. The DNS entries in
+# custom-blocklist.txt cover the whole pool by name for free; these addresses
+# only matter if the app starts dialling IPs directly the way BIGO's overwall
+# module does above.
 43.168.94.0/24
 43.168.95.0/24
 43.175.146.0/24
@@ -958,17 +950,16 @@
 207.211.211.212
 
 # TikTok Live, second pass: addresses that are themselves live-only but sit in
-# a /24 that is shared, so the block above could not cover them. Same
-# derivation and same every-hostname-was-pull-or-push test as that section —
-# only the aggregation differs. 154.94.77.140 (39 live hostnames, nothing
-# else) and 149.104.103.49 (19) are the clearest cases: both live-dedicated,
-# both in /24s that also carry consumer.huawei.com, g.lazcdn.com and the
-# WeChat voipfinder hosts, which is why only the single addresses appear.
+# a shared /24, so the tiering above could not reach them. Same every-hostname-
+# is-pull-or-push test, different aggregation. 154.94.77.140 and 149.104.103.49
+# are the clearest cases — both serve live hostnames exclusively, both sit in
+# /24s that also carry consumer.huawei.com, g.lazcdn.com and the WeChat
+# voipfinder hosts, so only the single addresses can go.
 #
-# Evidence is uneven here. 27 of these were seen serving five or more distinct
-# live hostnames; the rest were seen once or twice, which is enough to show
-# what they served but not enough to prove they serve nothing else. Treat a
-# single-sighting entry as a guess that happened to be cheap.
+# Confidence is uneven. A minority are well attested across many live
+# hostnames; the rest rest on one or two sightings, enough to show what they
+# served but not to prove they serve nothing else. Treat those as cheap
+# guesses rather than established facts.
 23.207.202.69
 23.207.202.78
 37.19.208.6
@@ -1102,26 +1093,25 @@
 172.236.223.38
 
 # AppLovin, reached by hardcoded IP after the DNS block. ms.applovin.com,
-# ms4.applovin.com, ms4.applvn.com and the prod/stage mediate-events hosts all
-# answer BLOCKED at blocky, and the SDK connects to this address anyway —
-# 769 KB in a 20-minute capture on one phone, which is the ad blocker being
-# walked past rather than leaking.
+# ms4.applovin.com, ms4.applvn.com and the prod/stage mediate-events hosts are
+# all blocked by name, and the SDK connects to this address regardless — the ad
+# blocker being walked past rather than leaking, which is what makes an IP
+# entry necessary at all.
 #
-# Every hostname ever seen resolving here was an applovin.com/applvn.com one,
-# so the address is theirs rather than a shared Google Cloud front. That said
-# it is a GCLB address, and GCLB frontends do get reassigned between Google
-# Cloud customers, so this is worth rechecking if something unrelated breaks.
+# Every hostname known to resolve here is an applovin.com/applvn.com one, so
+# the address is theirs rather than a shared Google Cloud front. It is still a
+# GCLB address though, and GCLB frontends get reassigned between Google Cloud
+# customers, so recheck this if something unrelated breaks.
 34.102.162.219
 
-# Bright VPN exit node, caught mid-session on 2026-08-01. 79.127.164.50 carried
-# 100% of one phone's traffic — 43.8 MB in the 5m18s between 15:08:48 and
-# 15:14:06 — over UDP 4500, which is IPsec NAT-T. Nothing else on that device
-# talked to anything else for the duration, which is the whole tunnel
-# signature: one peer, every kind of traffic at once, no DNS.
+# Bright VPN exit node. 79.127.164.50 terminates an IPsec tunnel on UDP 4500,
+# and the app carries the address hardcoded rather than resolving it, so
+# blocking brightvpn.com by name closes the control plane but not the tunnel
+# itself.
 #
-# The address was never resolved through blocky by any client, so the app
-# carries it hardcoded; blocking brightvpn.com by name closes the control
-# plane but not this. The /24 is CDNEXT Brussels and no hostname has ever
-# resolved into it in four months of logs, so the whole block goes rather than
-# the single address — exit nodes rotate within a provider's range.
+# The /24 is CDNEXT Brussels and carries no known legitimate hostname, so the
+# whole block goes rather than the single address — exit nodes rotate within a
+# provider's range. The ports in custom-port-blocklist.txt are the durable
+# form of this; the range is here for the case where a client finds a
+# transport those do not cover.
 79.127.164.0/24
