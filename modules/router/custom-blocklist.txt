@@ -1,5 +1,8 @@
 # VPNs
+*.topvpn.cc
 d1zmavshn1ll3z.cloudfront.net
+d3gnlijgh4zcei.cloudfront.net
+d3qvtqqyw2p8t4.cloudfront.net
 
 # Improper TLDs
 *.bar

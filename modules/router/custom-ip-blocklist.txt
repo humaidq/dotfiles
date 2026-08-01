@@ -277,6 +277,35 @@
 # unrelated stops working.
 43.166.224.0/19
 
+# Seventh imo run, 2026-08-01. The most degraded run so far, and the first with
+# no working tunnel at all.
+#
+# Everything blocked held and most of it was not even retried: no attempt on
+# 8.211.0.0/18, none on 43.166.224.0/19, none on 5.181.130.23, and
+# stream.downstext.com never appeared as SNI. The hardcoded pool got its usual
+# walk across 83.229/164.90.100/169.136 and answered nothing. Of 24 addresses
+# dialled, only two were outside this file.
+#
+# The tunnel layer failed outright. 43.166.173.17:943 got a SYN, a SYN-ACK, and
+# then a RST from the app itself 0.48s later — one attempt, no payload. Every
+# previous run finished with three concurrent tunnels heartbeating to the end of
+# the capture, so starving it of usable addresses is working.
+#
+# What still worked is the LBS: 47.245.167.228 took 23 kB on port 5228 over 91s
+# plus smaller sessions on 443 and 5223. That is the second time 47.245.128.0/17
+# has hosted the LBS — round three used 47.245.168.156, one /24 over — so this
+# blocks 47.245.160.0/19, the tightest prefix covering both observations. 8192
+# addresses, the same size as the Tencent /19 above and a quarter of the /17.
+#
+# Weaker attribution than 5.181.130.23 deliberately noted: this address serves
+# nothing reachable on 443, so there is no certificate or openresty banner behind
+# it. The evidence is the captured session in the LBS role and nothing else.
+#
+# 43.166.173.17 is in 43.166.128.0/18 and is left as part of that range's /32
+# treatment rather than escalated — it could not hold a session, so there is no
+# case yet for a third Tencent prefix.
+47.245.160.0/19
+
 # Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
 # layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
 # socks.live.bigo.sg, setting.bigo.sg, hotroom-live.bigo.sg,
