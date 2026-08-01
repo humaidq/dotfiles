@@ -2,6 +2,7 @@
   self,
   inputs,
   config,
+  pkgs,
   ...
 }:
 {
@@ -49,6 +50,24 @@
   };
 
   users.users.${config.sifr.username}.extraGroups = [ "dnsmasq" ];
+
+  # Packet captures are a routine debugging step here, so don't prompt for a
+  # password. Both paths are listed since sudo matches whatever PATH resolved.
+  security.sudo-rs.extraRules = [
+    {
+      users = [ config.sifr.username ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/tcpdump";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.tcpdump}/bin/tcpdump";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   sifr = {
     autoupgrade.enable = true;
