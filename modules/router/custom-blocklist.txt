@@ -1,6 +1,15 @@
 # VPNs
+# Top VPN (com.unlimited.unblock.free.accelerator.top) — control plane is
+# api.topvpn.cc with failover aliases api.topcenter.one / api.topstudio.one
+# (identical A-records) and api.aliveness.cc for the proxy link, plus four
+# CloudFront fronting distributions. Confirmed by static + Frida analysis of
+# vpn.apk v8.31.22.3 on 2026-08-01; exit-node /32s are in custom-ip-blocklist.txt.
 *.topvpn.cc
+*.aliveness.cc
+*.topcenter.one
+*.topstudio.one
 d1zmavshn1ll3z.cloudfront.net
+d3ae4tlgqlgide.cloudfront.net
 d3gnlijgh4zcei.cloudfront.net
 d3qvtqqyw2p8t4.cloudfront.net
 
