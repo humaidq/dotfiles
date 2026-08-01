@@ -825,3 +825,278 @@
 38.123.110.217
 38.123.110.218
 38.123.110.219
+
+# TikTok Live, IP-level. Normal TikTok stays working; only the live pull/push
+# CDN is blocked.
+#
+# Derived from bongo's own blocky query log (4 months, ~4 August 2026 back to
+# 30 March), not from a package or a vendor list. Every A record blocky ever
+# returned was mapped to the hostname that asked for it, and an address is
+# listed here only if every hostname that ever resolved to it matched
+# `pull-*` or `push-rtmp-*` — TikTok's live pull and broadcast CDN. Any
+# address that also served something else was dropped, which is what kept
+# consumer.huawei.com, g.lazcdn.com, gcp-img.slatic.net, quickcep.com,
+# statics.moonshot.cn and the WeChat/QQ voipfinder hosts out of the list.
+# 0.0.0.0 answers were excluded too — blockType is zeroIp, so a blocked name
+# resolves there and would otherwise have looked like a shared tenant.
+#
+# Two tiers. The /24s each had four or more distinct live-only addresses
+# observed and no other tenant, so the whole block is treated as live-
+# dedicated. The bare addresses had fewer observations, so only the address
+# itself is blocked.
+#
+# LIMITATION, and it is the important one: "no other tenant" here means none
+# was observed, not that none exists. A /24 seen twice is on this list because
+# the log is thin for it, not because it is proven dedicated. Expect false
+# positives in the sparse entries, and expect the list to go stale — 367
+# distinct live-only addresses across 100 /24s turned up in four months, so
+# this pool rotates faster than any hand-maintained list tracks.
+#
+# This section is therefore the backstop, not the mechanism. The DNS entries
+# in custom-blocklist.txt cover the whole pool by name and cost nothing to
+# maintain; these addresses only matter if the app starts dialling IPs
+# directly the way BIGO's overwall module does above.
+43.168.94.0/24
+43.168.95.0/24
+43.175.146.0/24
+45.196.20.0/24
+45.197.65.0/24
+45.197.87.0/24
+98.96.192.0/24
+138.113.27.0/24
+138.113.152.0/24
+138.113.178.0/24
+138.113.219.0/24
+138.113.248.0/24
+149.104.64.0/24
+152.233.24.0/24
+152.233.26.0/24
+154.93.65.0/24
+156.227.199.0/24
+157.185.129.0/24
+157.185.147.0/24
+157.185.172.0/24
+180.240.134.0/24
+192.254.88.0/24
+193.118.38.0/24
+217.198.191.0/24
+23.90.158.131
+23.90.158.238
+38.60.138.14
+43.132.65.241
+43.132.65.242
+43.132.65.243
+43.152.27.93
+43.152.43.241
+43.168.74.241
+43.168.74.242
+43.168.74.243
+43.168.101.241
+43.168.101.242
+43.168.101.243
+43.168.105.241
+43.168.105.242
+43.168.105.244
+43.168.141.241
+43.168.141.242
+43.168.141.243
+45.200.109.244
+45.200.109.245
+58.251.60.34
+58.251.60.35
+61.176.202.126
+79.127.196.134
+79.127.196.135
+79.127.231.82
+79.127.231.85
+89.222.113.38
+89.222.113.39
+89.222.113.40
+95.85.65.34
+98.98.250.236
+98.98.254.102
+98.98.254.107
+109.61.80.137
+109.61.80.140
+115.127.225.46
+116.169.183.207
+124.95.136.133
+128.14.102.206
+138.113.8.127
+138.113.8.129
+138.113.112.148
+138.113.117.114
+138.113.246.42
+138.113.249.33
+138.113.249.34
+138.199.14.19
+138.199.14.30
+140.150.1.46
+143.42.210.189
+143.42.220.190
+143.42.220.191
+148.153.241.45
+148.153.241.49
+151.242.231.122
+151.242.231.123
+151.242.249.67
+151.242.249.68
+151.242.249.69
+153.43.69.232
+153.43.69.233
+154.94.76.25
+154.94.76.26
+157.185.144.18
+157.185.144.73
+157.185.144.74
+168.235.193.23
+168.235.193.53
+172.233.251.157
+172.234.52.136
+172.234.52.137
+207.211.209.217
+207.211.211.212
+
+# TikTok Live, second pass: addresses that are themselves live-only but sit in
+# a /24 that is shared, so the block above could not cover them. Same
+# derivation and same every-hostname-was-pull-or-push test as that section —
+# only the aggregation differs. 154.94.77.140 (39 live hostnames, nothing
+# else) and 149.104.103.49 (19) are the clearest cases: both live-dedicated,
+# both in /24s that also carry consumer.huawei.com, g.lazcdn.com and the
+# WeChat voipfinder hosts, which is why only the single addresses appear.
+#
+# Evidence is uneven here. 27 of these were seen serving five or more distinct
+# live hostnames; the rest were seen once or twice, which is enough to show
+# what they served but not enough to prove they serve nothing else. Treat a
+# single-sighting entry as a guess that happened to be cheap.
+23.207.202.69
+23.207.202.78
+37.19.208.6
+37.19.208.8
+37.19.208.14
+37.19.208.15
+37.19.208.23
+38.54.123.60
+38.54.123.62
+38.54.123.63
+38.54.123.66
+38.54.123.68
+43.152.18.92
+43.152.18.95
+43.152.18.101
+43.152.18.104
+43.152.18.117
+43.152.18.133
+43.152.18.171
+43.152.18.176
+43.152.18.178
+43.152.18.189
+43.152.18.219
+43.152.18.220
+43.152.28.231
+43.152.28.232
+43.152.29.231
+43.152.29.232
+43.152.32.168
+43.152.32.169
+43.152.32.170
+43.152.32.171
+43.152.42.202
+43.152.42.203
+43.152.42.204
+43.152.186.232
+43.152.186.241
+43.168.55.241
+43.168.100.241
+43.168.100.242
+43.168.100.243
+43.168.100.244
+43.174.6.241
+43.174.6.242
+43.174.104.241
+43.174.104.242
+43.174.144.241
+43.174.144.242
+43.174.144.243
+43.174.144.244
+43.174.145.241
+43.174.145.242
+43.174.145.243
+43.174.153.55
+43.174.153.57
+43.174.153.146
+43.175.25.55
+43.175.25.99
+43.175.151.241
+43.175.151.243
+43.175.151.244
+43.175.152.241
+43.175.152.242
+43.175.152.243
+71.18.92.240
+71.18.92.241
+71.18.92.242
+71.18.92.253
+71.18.92.254
+71.18.92.255
+71.18.255.173
+79.127.213.226
+79.127.213.229
+84.17.61.17
+84.17.61.18
+84.17.61.102
+84.17.61.105
+89.187.163.236
+118.193.91.144
+118.193.91.145
+118.193.91.146
+118.193.91.147
+118.193.91.148
+118.193.91.149
+118.193.91.150
+118.193.91.151
+138.113.110.36
+138.113.110.37
+138.113.110.108
+138.113.110.110
+138.113.110.111
+138.113.110.198
+138.113.110.199
+138.113.114.148
+138.113.114.149
+138.113.114.195
+146.103.94.48
+146.103.94.49
+146.103.94.50
+146.103.94.51
+146.103.94.52
+146.103.94.53
+146.103.94.54
+146.103.94.55
+146.103.94.56
+146.103.94.57
+148.153.240.80
+148.153.240.83
+148.153.240.86
+149.104.103.49
+149.104.103.53
+149.104.103.84
+149.104.103.87
+149.104.103.90
+149.104.103.93
+149.104.103.94
+149.104.103.95
+154.94.77.140
+154.94.77.148
+154.94.77.152
+154.94.77.156
+154.94.77.162
+154.94.77.164
+154.94.77.176
+154.94.77.184
+157.185.128.23
+157.185.128.114
+157.185.128.115
+157.185.128.116
+157.185.128.180
+172.236.223.38
