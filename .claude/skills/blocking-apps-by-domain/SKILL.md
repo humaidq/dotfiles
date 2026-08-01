@@ -76,6 +76,76 @@ block wildcards.** Never block from a web search alone.
    minutes for zero signal. This overrides the general instruction in
    `CLAUDE.md` to run it before pushing. The rebuild on bongo is the check.
 
+## Resolving real addresses: keep one ssh socket to bongo
+
+`check-domains.sh` tells you whether blocky answers `0.0.0.0`. It cannot tell
+you what a name *really* resolves to, and no host on the LAN can: the router
+drops forwarded port 53, DoT on 853 and every known DoH endpoint, which is the
+whole point. `dig @8.8.8.8` from a workstation just times out.
+
+Run the digs on bongo instead — the router's own output path reaches upstream
+fine. Open **one** ControlMaster socket and reuse it; every fresh `ssh` needs a
+touch on the hardware key, and the socket makes the rest free:
+
+```bash
+SOCK=/tmp/claude-1000/bongo.sock            # short path — see below
+ssh -M -S "$SOCK" -o ControlPersist=8h -fN bongo
+ssh -S "$SOCK" bongo 'dig +short @8.8.8.8 newlbs.live.bigo.sg'
+```
+
+Things that will bite:
+
+- **Keep the socket path short.** A Unix socket path has a ~100 char limit, and
+  the session scratchpad directory blows past it (`unix_listener: path ... too
+  long`). `/tmp/claude-1000/` is fine.
+- **bongo's login shell is zsh and it has no `python3` and no `nc`.** Bash-isms
+  fail there — `/dev/tcp/host/43` is a bash feature zsh does not implement, so
+  the usual whois-over-TCP trick dies. Push a script with `ssh ... 'cat > /tmp/x'`
+  and drive it with `xargs -P`, or use `curl`, which is present.
+- **`sudo` on bongo wants a password.** `nft list set` and `nixos-rebuild` are
+  the user's job; ask rather than trying to work around it.
+- **Verify enforcement from the LAN instead**, which needs no sudo: a plain TCP
+  connect to a listed address should hang while a control host connects.
+  `timeout 6 bash -c 'cat </dev/null >/dev/tcp/169.136.94.251/443'`. Do not use
+  `1.1.1.1` as the control — it is a DoH endpoint and is blocked on 443.
+
+### What this is for: mapping the estate instead of chasing addresses
+
+Resolution is the counterpart to a runtime capture. A capture shows the handful
+of addresses one run happened to dial; resolving every hostname you know shows
+the whole pool, and grouping *that* by origin AS is what turns a pile of /32s
+into a single decision.
+
+Feed it the concrete hostnames — grep the dex trees for names under the zones
+already in `custom-blocklist.txt`, and add the DNS query names from any pcap you
+have (`tshark -r capture.pcap -Y 'dns.flags.response==0' -T fields -e
+dns.qry.name`). Resolve **several times**: these names are round-robined over
+rotating subsets, and one pass understates the pool badly — BIGO's `newlbs`
+went from 2 addresses to 10 across six rounds.
+
+Map each address to its origin AS with Cymru's DNS interface, which needs only
+`dig` and so works over the socket:
+
+```bash
+dig +short @8.8.8.8 "$(echo 1.2.3.4 | awk -F. '{print $4"."$3"."$2"."$1}').origin.asn.cymru.com" TXT
+dig +short @8.8.8.8 AS10122.asn.cymru.com TXT      # name the AS
+```
+
+Then pull the operator AS's announced prefixes and collapse them:
+
+```bash
+curl -sS "https://stat.ripe.net/data/announced-prefixes/data.json?resource=AS10122"
+```
+
+The decision rule is the same one the rest of this file uses, just applied at
+the AS level. An AS whose every hostname is the operator's — AS36131 for imo,
+AS10122 (NETSTAR) for BIGO — is single-tenant, so block all of it. Cloudflare,
+CloudFront, Alibaba and Zenlayer answers are shared and stay unblocked no matter
+how many operator names point at them. In between sit small hosting ASes where
+the operator rents: check whether the pool grows across rounds, and if a /24
+yields only a handful of addresses that never change, block those as /32s rather
+than taking the /24 — it is somebody else's tenant too.
+
 ## Triage: what not to block
 
 Most hosts in an APK belong to somebody else. Blocking them breaks unrelated
