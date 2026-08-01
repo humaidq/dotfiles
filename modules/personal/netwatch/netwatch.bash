@@ -56,10 +56,13 @@ local_pcap="$pcaps/$run_ts.pcap"
 # Variables are deliberately expanded client-side (shellcheck SC2029): the
 # surrounding single quotes are literal characters meant for the remote
 # shell, protecting the interpolated values as one token each once there.
+# Kept on one physical line, deliberately: a backslash-newline used to wrap
+# this would land inside one of those single-quoted segments, where single
+# quotes suppress line-continuation and the literal backslash+newline would
+# ride along into the capture filter sent to the router.
 ssh "$NETWATCH_HOST" \
-	'sudo -n tcpdump -i '\'"$NETWATCH_IFACE"\'' -s 0 -G '\'"$NETWATCH_SECS"\'' -W 1 \
-	 -w '\'"$remote_pcap"\'' '\'"($filter) and not port 53"\' >/dev/null 2>&1 \
-	|| skip "capture failed"
+	'sudo -n tcpdump -i '\'"$NETWATCH_IFACE"\'' -s 0 -G '\'"$NETWATCH_SECS"\'' -W 1 -w '\'"$remote_pcap"\'' '\'"($filter) and not port 53"\' \
+	>/dev/null 2>&1 || skip "capture failed"
 
 scp -q "$NETWATCH_HOST:$remote_pcap" "$local_pcap" || skip "fetch failed"
 ssh "$NETWATCH_HOST" 'rm -f '\'"$remote_pcap"\' || true
