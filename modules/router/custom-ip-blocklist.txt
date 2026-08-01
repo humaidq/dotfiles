@@ -190,6 +190,44 @@
 43.166.175.23
 43.166.211.142
 
+# Fifth imo run, 2026-08-01, immediately after the three above went live. Same
+# shape, two new addresses, and one genuinely new fact.
+#
+# 8.211.45.119 is the LBS again — 22 kB on port 5228 over 94s plus two smaller
+# sessions on 5223 — and it is in 8.211.0.0/18, the same /18 as 8.211.19.35
+# blocked one run earlier. That is the first time any two runs have landed in the
+# same prefix, and it puts the LBS rotation inside a single Alibaba Cloud SG /18
+# for two runs running. 43.166.250.133 took the tunnels on 943/2943/9443, in
+# 43.166.224.0/19 — a third distinct Tencent /19, so the tunnel layer is still
+# spread wide.
+#
+# The app also found the LBS much faster: t=43s here against t=173s last run, and
+# it only bothered with 12 addresses of the hardcoded pool before giving up on
+# it. The pool walk is becoming vestigial; the LBS is the whole mechanism.
+#
+# Running tally over five runs: seven distinct Tencent addresses across three
+# prefixes, three Alibaba ones across two. No two runs have ever repeated a /32.
+8.211.45.119
+43.166.250.133
+
+# And the prefix behind the LBS. 8.211.0.0/18 is Alibaba Cloud Singapore
+# (AS45102) and is the first target in this file justified by a repeat rather
+# than by a single observation: two consecutive runs put imo's LBS inside it,
+# at 8.211.19.35 and 8.211.45.119.
+#
+# It is blocked at the LBS layer deliberately. The tunnel addresses are handed
+# out by the LBS at runtime, so cutting the LBS stops them being issued at all,
+# where blocking tunnels one at a time has failed five runs running. It is also
+# the narrower target: three Tencent /19s carry the tunnels against one Alibaba
+# /18 here.
+#
+# This is general-purpose shared cloud and the widest non-single-tenant entry in
+# the file — ~16k addresses, unlike the AS36131 and NETSTAR ranges above, which
+# are the operator's own. Nothing else in the house is expected to talk to
+# Alibaba Cloud SG, but that is an assumption rather than a measurement, so this
+# is the first entry to suspect if something unrelated breaks.
+8.211.0.0/18
+
 # Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
 # layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
 # socks.live.bigo.sg, setting.bigo.sg, hotroom-live.bigo.sg,
