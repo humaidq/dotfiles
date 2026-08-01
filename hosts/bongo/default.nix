@@ -45,6 +45,7 @@
     owner = "dnsmasq";
     group = "dnsmasq";
     mode = "0400";
+    reloadUnits = [ "dnsmasq.service" ];
   };
 
   sifr = {
