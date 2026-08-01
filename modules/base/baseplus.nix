@@ -26,6 +26,7 @@ in
       lm_sensors
       netcat
       nmap
+      openssl
       optipng
       ouch
       poppler-utils
@@ -37,6 +38,7 @@ in
       strace
       traceroute
       ufetch
+      whois
       yt-dlp
     ];
 
