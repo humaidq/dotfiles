@@ -92,6 +92,7 @@
       dns.enable = true;
       research.enable = true;
       securityResearch.enable = true;
+      netwatch.enable = true;
       work.enable = true;
       university.enable = true;
       tailscale.enable = true;

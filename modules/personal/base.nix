@@ -18,6 +18,7 @@ in
     ./dns.nix
     ./focus-mode
     ./moshi.nix
+    ./netwatch
     ./networking
     ./o11y
     ./receipt.nix

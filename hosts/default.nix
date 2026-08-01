@@ -128,6 +128,11 @@
       };
 
       packages.x86_64-linux = {
+        # Exposed so it can be run ad hoc with `nix run .#netwatch` without a
+        # rebuild. Same derivation the module installs.
+        netwatch = import ../modules/personal/netwatch/package.nix {
+          pkgs = import inputs.nixpkgs { system = "x86_64-linux"; };
+        };
         installer = self.nixosConfigurations.x86-installer.config.system.build.isoImage;
         serow-vm = self.nixosConfigurations.serow-vm.config.system.build.vm;
         rpi4-bootstrap = self.nixosConfigurations.rpi4-bootstrap.config.system.build.sdImage;
