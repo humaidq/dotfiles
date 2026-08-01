@@ -62,12 +62,24 @@ Re-check the address at the end of a long capture — DHCP may have moved it.
 
 ### 2. Capture the client's egress
 
-Run it detached on the router so the session can drop without killing it:
+**Capture full payload on the first pass.** A capture costs however long the
+person actually uses the device, and it cannot be re-run retroactively — if the
+snaplen was truncated, the SNI that would have named the endpoint is gone and
+the whole window has to be repeated. Take everything the first time:
 
 ```bash
-ssh <router> 'sudo nohup tcpdump -i <lan-iface> -nn -q -w /tmp/client.pcap \
-  host <client-ip> and not port 53 >/dev/null 2>&1 &'
+ssh <router> 'nohup sudo -n tcpdump -i <lan-iface> -nn -s 0 -G 1800 -W 1 \
+  -w /tmp/client.pcap host <client-ip> and not port 53 >/dev/null 2>&1 &'
 ```
+
+`-s 0` keeps the TLS ClientHello intact, so byte ranking (step 3), SNI
+extraction and protocol checks all come out of this one file. Never start with
+a small snaplen meaning to "get SNI later" — later is a second capture and a
+second wait.
+
+`-G 1800 -W 1` makes tcpdump exit by itself after 30 minutes, which matters
+because a NOPASSWD rule scoped to tcpdump cannot `sudo pkill` the root process
+it started. `nohup ... &` detaches it so the SSH session can drop.
 
 An hour of ordinary phone use is enough to see the shape; a tunnel shows up in
 minutes of active use. Exclude port 53 so DNS chatter does not distort the byte
@@ -150,6 +162,31 @@ whois <cert-subject-domain> | grep -i creation        # when was the name regist
 Also check who owns the address (`whois <ip>`). A hosting provider —
 DigitalOcean, Hetzner, Vultr, OVH, Contabo — carrying the bulk of a phone's
 traffic is not a CDN. A phone has no reason to talk to a rented VPS.
+
+### 5a. Attribute the endpoint before blocking it
+
+A forged cert on a rented VPS is suggestive, not sufficient. Ordinary apps do
+serve hand-made certificates — pinned clients do not need a public CA, so a
+copied issuer string and an absurd validity can mean a lazy vendor rather than
+a tunnel. VoIP backends look especially tunnel-shaped: relay and allocation
+servers on cheap hosting, reached by hardcoded IP, carrying steady traffic.
+
+The cheap decisive test is **a device you control that is known to run the
+app**. Ask which clients ever queried the domain:
+
+```bash
+journalctl -u <resolver> --no-pager | grep -E "question_name=[a-z0-9.-]*<domain>" \
+  | grep -oP "client_names=\K[^ ]+" | sort | uniq -c | sort -rn
+```
+
+If your own phone — which you know has the legitimate app and no tunnel — is in
+that list, the domain belongs to the app. If only the device under suspicion
+ever asks for it, that is the red flag. One query settles what certificate
+forensics only hints at.
+
+Do this before writing any block. Blocking a VoIP provider's relay fleet breaks
+calling for everyone in the house, and the failure looks nothing like a
+blocklist problem.
 
 ### 6. Clean up
 

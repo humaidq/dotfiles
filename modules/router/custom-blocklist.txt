@@ -25,9 +25,22 @@ d3qvtqqyw2p8t4.cloudfront.net
 *.kp
 
 # Other junk sites
+*.1jlmmm.com
 *.2jlmmm.com
+*.3jlmmm.com
+*.jlmmm.com
 *.dubai.com
 *.tips.gg
+*.phzzzwave.com
+phzzz260718.firebaseapp.com
+ph18-18ph18.firebaseapp.com
+*.8069483.com
+*.6821673.com
+*.8846148.com
+*.3354797.com
+*.brightvpn.com
+*.freevpnplanet.com
+fh-118116076e9a4c2a96a99fbb70bea2a0.ecs.us-west-2.on.aws
 
 # Ads
 *.current.us

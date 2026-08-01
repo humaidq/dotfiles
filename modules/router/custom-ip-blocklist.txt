@@ -1100,3 +1100,15 @@
 157.185.128.116
 157.185.128.180
 172.236.223.38
+
+# AppLovin, reached by hardcoded IP after the DNS block. ms.applovin.com,
+# ms4.applovin.com, ms4.applvn.com and the prod/stage mediate-events hosts all
+# answer BLOCKED at blocky, and the SDK connects to this address anyway —
+# 769 KB in a 20-minute capture on one phone, which is the ad blocker being
+# walked past rather than leaking.
+#
+# Every hostname ever seen resolving here was an applovin.com/applvn.com one,
+# so the address is theirs rather than a shared Google Cloud front. That said
+# it is a GCLB address, and GCLB frontends do get reassigned between Google
+# Cloud customers, so this is worth rechecking if something unrelated breaks.
+34.102.162.219
