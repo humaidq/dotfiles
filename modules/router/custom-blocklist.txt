@@ -1,3 +1,6 @@
+# VPNs
+d1zmavshn1ll3z.cloudfront.net
+
 # Improper TLDs
 *.bar
 *.dating

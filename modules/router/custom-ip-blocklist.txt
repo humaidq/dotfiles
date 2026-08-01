@@ -2,6 +2,7 @@
 38.123.110.196
 148.153.50.179
 148.153.67.208
+148.153.234.111
 
 # BIGO Live (sg.bigo.live) IP-level fallback, from an apk-sim.sh capture. Every
 # address below was connected to during that run while no DNS answer in the
@@ -661,3 +662,37 @@
 # evidence they are even live. If imo survives everything above, this is the
 # group to revisit — the addresses are in the dex and can be re-read at any
 # time.
+
+# The "Wired ISP" cluster — observed, deliberately NOT blocked, recorded because
+# it predicts where imo goes next.
+#
+# A re-resolution sweep on 2026-08-01 took 180 concrete imo/BIGO/Likee hostnames
+# out of the dex and .so files of all three packages, resolved each three times
+# from bongo, and checked all 350 resulting addresses against this file. 319 were
+# already covered. Of the rest, 17 were RFC1918 leaking into public DNS and 9
+# were Cloudflare, CloudFront or AWS, all correctly excluded.
+#
+# One was a trap worth naming: sg.bigo.live is a CNAME to overdue.aliyun.com,
+# Alibaba's suspended-account parking record, resolving to 170.33.12.185.
+# Blocking it would catch every overdue Alibaba tenant and nothing of BIGO's.
+#
+# The remaining four are the interesting ones. activity.bigo.tv, uc.bigo.tv,
+# ta.bigolive.tv and real-verify.bigolive.tv round-robin over 31.56.23.214,
+# 143.20.83.30, 143.20.91.60 and 167.148.196.65 on direct A records with no
+# CNAME, so this is not a shared CDN POP. Their four ASes are AS137235, AS31715,
+# AS393942 and AS21840 — and three of those are registered to "Wired ISP Inc.",
+# the same name as AS135402, which hosts 5.181.130.23, the LBS blocked above
+# under a CN=*.imo.im certificate. AS135402 also announces 143.14.159.0/24,
+# holding the 143.14.159.228 that singbox.sg and http-dns.imostatic.com share in
+# custom-blocklist.txt. This hosting group has been in imo's supply chain the
+# whole time.
+#
+# Not blocked because the evidence is DNS-only: all four ping, none answers on 80
+# or on 443 even with the right SNI, and no capture has ever dialled one. The
+# five ASes announce 196 scattered /24s between them, which is a reseller
+# footprint rather than a single-tenant operator AS like AS36131, so the
+# collateral would be real and the justification would not be.
+#
+# Revisit the moment a run actually dials one of these — at that point the
+# address has traffic behind it and the /24 becomes arguable on the same grounds
+# as 5.181.130.23.
