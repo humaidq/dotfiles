@@ -1,0 +1,45 @@
+# Destination ports dropped for LAN -> WAN traffic, TCP and UDP.
+#
+# One port per line, decimal, comments with #. A line that is not a valid port
+# fails `nixos-rebuild` rather than being skipped silently — same contract as
+# custom-ip-blocklist.txt.
+#
+# This is the blunt instrument, and it exists because address blocking lost.
+# Eight apk-sim.sh runs against com.imo.android.imoim went like this: the DNS
+# layer was closed after round three and stayed closed, its hardcoded dex pool
+# was closed by the AS36131 and NETSTAR ranges and stayed closed, and every
+# round after that imo simply rented a new address. Three distinct Alibaba
+# prefixes and five distinct Tencent prefixes across eight runs, no /32 ever
+# repeated, and no sign of convergence — AS45102 and AS132203 between them hold
+# millions of addresses, and blocking either wholesale would take a large part
+# of two public clouds with it.
+#
+# The ports did not move. Across all eight runs the tunnel layer has only ever
+# used the four below, so this closes the transport instead of chasing the
+# endpoint. Round seven is the evidence it bites: the one run where the tunnels
+# failed to establish, imo was visibly degraded while its LBS still worked.
+#
+# Scoped to the forward path (LAN -> WAN) only, like the DoH rules and unlike
+# the IP sets, which also cover the router's own output. Nothing on the router
+# should be reaching these, but there is no reason to risk it for no gain.
+#
+# Deliberately NOT here: 5223 and 5228, which imo's LBS uses and which carried
+# the largest session of most runs. 5228 is Google FCM and 5223 is the XMPP-
+# over-TLS port Apple push uses; blocking either would break notifications for
+# every phone in the house. The LBS therefore stays reachable, and that is a
+# known and accepted hole.
+
+# imo / sg.bigo.overwall tunnel transport. No TLS ClientHello on any of these in
+# any capture — a proprietary protocol on non-standard ports, which is what
+# makes them safe to take. Seen carrying live sessions with ~30-byte heartbeats
+# every 10s in rounds four, five, six and eight, and refused mid-handshake in
+# round seven.
+#
+# 943 also happens to be OpenVPN Access Server's admin port and 9443 is a
+# common alternative-HTTPS convention (Portainer, various admin panels and
+# enterprise VPN consoles). Neither is used outbound from this LAN today. If a
+# service ever needs one, this file is the first place to look.
+943
+1943
+2943
+9443

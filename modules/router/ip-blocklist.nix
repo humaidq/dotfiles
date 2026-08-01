@@ -117,6 +117,55 @@ let
         python3 ${localBlocklistGen} ${./custom-ip-blocklist.txt} "$out" \
           router-blocklists local_block4 local_block6
       '';
+
+  # Same build-time-not-runtime treatment as the local IP list above, for the
+  # same two reasons: a typo fails the rebuild instead of silently blocking
+  # nothing, and applying it needs no network.
+  portBlocklistGen = pkgs.writeText "gen-port-blocklist.py" ''
+    import pathlib
+    import sys
+
+    src, dst, table, setname = sys.argv[1:5]
+
+    ports = []
+    seen = set()
+
+    for lineno, line in enumerate(pathlib.Path(src).read_text().splitlines(), 1):
+        s = line.split("#", 1)[0].strip()
+        if not s:
+            continue
+        try:
+            port = int(s)
+        except ValueError:
+            raise SystemExit(f"{src}:{lineno}: not a port number: {s!r}")
+        if not 1 <= port <= 65535:
+            raise SystemExit(f"{src}:{lineno}: port out of range: {port}")
+        if port in seen:
+            continue
+        seen.add(port)
+        ports.append(port)
+
+    with pathlib.Path(dst).open("w") as f:
+        f.write(f"flush set inet {table} {setname}\n")
+        if ports:
+            f.write(f"add element inet {table} {setname} {{\n")
+            for i, port in enumerate(sorted(ports)):
+                comma = "," if i + 1 < len(ports) else ""
+                f.write(f"  {port}{comma}\n")
+            f.write("}\n")
+
+    print(f"port blocklist: {len(ports)} ports", file=sys.stderr)
+  '';
+
+  portBlocklist =
+    pkgs.runCommand "nft-port-blocklist.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${portBlocklistGen} ${./custom-port-blocklist.txt} "$out" \
+          router-blocklists blocked_ports
+      '';
 in
 {
 
@@ -156,6 +205,14 @@ in
         set local_block6 {
           type ipv6_addr
           flags interval
+        }
+
+        # Populated from custom-port-blocklist.txt by nft-blocklists-local.
+        # Plain set rather than an interval one: the entries are discrete ports,
+        # and a range has never been needed. Adding `flags interval` later is a
+        # one-line change if that stops being true.
+        set blocked_ports {
+          type inet_service
         }
 
         chain forward_blocklists {
@@ -209,6 +266,28 @@ in
           iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @doh_block6 counter drop comment "Block LAN DoH bypass (IPv6)"
         }
 
+        chain forward_ports {
+          type filter hook forward priority -10; policy accept;
+
+          # Drop LAN -> WAN traffic to the ports in custom-port-blocklist.txt,
+          # TCP and UDP alike. See that file for why this exists: imo rotates
+          # its addresses faster than they can be blocked but has never changed
+          # the ports its tunnel transport uses.
+          #
+          # Both protocols even though every capture showed TCP only. These are
+          # non-standard ports carrying a proprietary protocol, so there is no
+          # cost to covering the UDP form of the same trick, and an app that
+          # already fails over between addresses, ports and DNS mechanisms is
+          # not one to leave the option open for.
+          #
+          # Logged and dropped as separate rules for the reason given in
+          # forward_blocklists — a limit on the verdict rule would let packets
+          # over the rate through. Prefix is nft-block-port so it stays
+          # separable from the other three in LogQL.
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @blocked_ports limit rate 60/minute burst 20 packets log prefix "nft-block-port " comment "sample blocked-port drops"
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @blocked_ports counter drop comment "block LAN->WAN tunnel ports"
+        }
+
         chain output_blocklists {
           type filter hook output priority -10; policy accept;
 
@@ -255,14 +334,15 @@ in
       '';
     };
 
-    # Applies custom-ip-blocklist.txt during `nixos-rebuild switch`, so a change
-    # to that file takes effect with the rebuild instead of whenever the feed
-    # timer next happens to fire (up to 12 minutes later, and only if a download
-    # succeeds).
+    # Applies custom-ip-blocklist.txt and custom-port-blocklist.txt during
+    # `nixos-rebuild switch`, so a change to either takes effect with the rebuild
+    # instead of whenever the feed timer next happens to fire (up to 12 minutes
+    # later, and only if a download succeeds).
     #
-    # The trigger is the store path of ${localBlocklist} embedded in the script
-    # below: edit the txt and that path changes, which changes this unit, which
-    # makes switch-to-configuration restart it. No restartTriggers needed — and
+    # The trigger is the store paths of ${localBlocklist} and ${portBlocklist}
+    # embedded in the script below: edit either txt and that path changes, which
+    # changes this unit, which makes switch-to-configuration restart it. No
+    # restartTriggers needed — and
     # note that restartTriggers alone would not have worked here, because
     # switch-to-configuration only considers *active* units for restart, and a
     # plain oneshot is inactive the moment it exits. RemainAfterExit is what
@@ -271,7 +351,7 @@ in
     # bug, since systemd treats `start` on an already-active oneshot as a no-op
     # and the timer would silently stop refreshing.
     systemd.services.nft-blocklists-local = {
-      description = "Apply local nftables IP blocklist";
+      description = "Apply local nftables IP and port blocklists";
       wantedBy = [ "multi-user.target" ];
       after = [ "nftables.service" ];
       wants = [ "nftables.service" ];
@@ -289,6 +369,7 @@ in
       script = ''
         set -euo pipefail
         nft -f ${localBlocklist}
+        nft -f ${portBlocklist}
       '';
     };
 
