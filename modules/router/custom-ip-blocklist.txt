@@ -228,6 +228,29 @@
 # is the first entry to suspect if something unrelated breaks.
 8.211.0.0/18
 
+# Sixth imo run, 2026-08-01. The /18 above worked: the app tried its Alibaba LBS
+# twice — 8.211.45.119 on 5223 and 8.211.19.238 on 5228, the latter an address
+# never seen before and caught by the prefix without a new entry — and got
+# nothing from either. That is the first time a prefix has pre-empted a rotation
+# rather than chased it.
+#
+# It then reached a different LBS entirely, and this one is not on a cloud.
+# 5.181.130.23:443 took two sessions of 28 kB and 13 kB, both held for the whole
+# 181s remainder of the capture — the largest of any run — and the Tencent
+# tunnels came up 26s later, the same LBS-then-tunnel shape as every round
+# before.
+#
+# Attribution here is not an inference for once. The app sent SNI for
+# stream.downstext.com, and the origin presents a certificate for CN=*.imo.im
+# behind openresty/1.25.3.2, matching the unbranded failover pool already in
+# custom-blocklist.txt. It is imo's own host.
+#
+# A /32 and not 5.181.130.0/24 (AS135402, geolocating AE): of seven addresses
+# probed across the /24 only .23 answered at all, so the range is mostly dark and
+# there is no evidence it is single-tenant. Revisit if a later run finds a
+# neighbour.
+5.181.130.23
+
 # Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
 # layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
 # socks.live.bigo.sg, setting.bigo.sg, hotroom-live.bigo.sg,

@@ -123,6 +123,18 @@ logproxy.imoim.app
 *.bellcallslem.com
 *.fireplacetear.com
 *.fireplacetail.com
+# Same pool, found in the sixth apk-sim.sh run and the only non-noise SNI in it.
+# stream.downstext.com is the strongest-attributed name in this whole group: its
+# origin at 5.181.130.23 answers the same openresty/1.25.3.2 404 and presents a
+# certificate for CN=*.imo.im, so this is imo's own fleet rather than an
+# inference from a fingerprint. The name is Cloudflare-fronted (104.18.8/9.111),
+# which is why the address and not the CDN is blocked alongside it.
+#
+# Note the entry is not what stopped the observed connection: the app never
+# queried this name, it dialled the origin address directly and carried the
+# hostname only in SNI. This closes the resolving path; custom-ip-blocklist.txt
+# closes the one actually seen.
+*.downstext.com
 # Seen only in the runtime capture, never in the string table. Both already
 # answer 0.0.0.0 from an upstream list; listed here so the block does not depend
 # on that list keeping them. The gdl./bstream. prefixes match imo's gdl.imostatic.com
