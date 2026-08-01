@@ -11,10 +11,13 @@ let
     "https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt"
   ];
 
-  # Known DoH (DNS-over-HTTPS) endpoint IPs. Forwarded LAN->WAN traffic to these
-  # on port 443 is dropped so clients cannot tunnel DNS past the router's
-  # resolver and blocklists. The router itself is unaffected: it reaches its
-  # upstream over DoT (853) from the output path, never forwarded and never 443.
+  # Known DoH (DNS-over-HTTPS) endpoint IPs. All forwarded LAN->WAN traffic to
+  # these is dropped, on every port, so clients cannot tunnel DNS past the
+  # router's resolver and blocklists. The router itself is unaffected because
+  # the sets are used only in the forward hook — which matters more than it
+  # looks: blocky's upstream family.cloudflare-dns.com is 1.1.1.3 / 1.0.0.3,
+  # both on this list, so applying it to the output path would break the
+  # router's own resolution.
   dohBlocklistUrls = [
     "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/ips/doh.txt"
   ];
@@ -158,11 +161,29 @@ in
         chain forward_blocklists {
           type filter hook forward priority -10; policy accept;
 
+          # Log before dropping so blocked destinations are visible in Grafana
+          # the way blocky's response_reason=BLOCKED lines already are. nft log
+          # writes to the kernel ring buffer, journald picks it up, and alloy
+          # ships the whole journal, so these arrive under {nodename="bongo"}
+          # with no extra plumbing.
+          #
+          # The log and the drop are separate rules on purpose. Putting a limit
+          # on the same rule as the verdict would mean packets *over* the rate
+          # no longer match, and so would not be dropped either — the limit has
+          # to gate only the logging. The rate is per rule and deliberately
+          # low: a blocked app retries hard, so this is a sample of what is
+          # being stopped, not an audit log. Counters are the thing to read for
+          # volume (`nft list chain inet router-blocklists forward_blocklists`).
+          ip daddr @remote_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-feed " comment "sample feed drops"
+          ip6 daddr @remote_block6 limit rate 60/minute burst 20 packets log prefix "nft-block-feed " comment "sample feed drops"
+          ip daddr @local_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-local " comment "sample local-list drops"
+          ip6 daddr @local_block6 limit rate 60/minute burst 20 packets log prefix "nft-block-local " comment "sample local-list drops"
+
           # Blocks LAN clients from reaching listed IPs
-          ip daddr @remote_block4 drop comment "block forwarded IPv4 destinations"
-          ip6 daddr @remote_block6 drop comment "block forwarded IPv6 destinations"
-          ip daddr @local_block4 drop comment "block forwarded IPv4 destinations (local list)"
-          ip6 daddr @local_block6 drop comment "block forwarded IPv6 destinations (local list)"
+          ip daddr @remote_block4 counter drop comment "block forwarded IPv4 destinations"
+          ip6 daddr @remote_block6 counter drop comment "block forwarded IPv6 destinations"
+          ip daddr @local_block4 counter drop comment "block forwarded IPv4 destinations (local list)"
+          ip6 daddr @local_block6 counter drop comment "block forwarded IPv6 destinations (local list)"
         }
 
         chain forward_doh {
@@ -179,8 +200,13 @@ in
           # from this chain and from output_blocklists, because blocky's own
           # upstream is a DoT endpoint that appears on this list — dropping it
           # from the output path would take out DNS for the whole house.
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @doh_block4 drop comment "Block LAN DoH bypass (IPv4)"
-          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @doh_block6 drop comment "Block LAN DoH bypass (IPv6)"
+          #
+          # Logged the same way as forward_blocklists — see the note there on
+          # why the limit sits on its own rule rather than on the verdict.
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @doh_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-doh " comment "sample DoH drops"
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @doh_block6 limit rate 60/minute burst 20 packets log prefix "nft-block-doh " comment "sample DoH drops"
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @doh_block4 counter drop comment "Block LAN DoH bypass (IPv4)"
+          iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @doh_block6 counter drop comment "Block LAN DoH bypass (IPv6)"
         }
 
         chain output_blocklists {
