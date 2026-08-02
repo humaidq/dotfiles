@@ -33,6 +33,7 @@ d3qvtqqyw2p8t4.cloudfront.net
 *.kp
 
 # Other junk sites
+*.onlinejobs.ph
 *.mcafee.com
 *.dramaboxdb.com
 *.dramabox.com
@@ -245,6 +246,12 @@ live.tiktok.com
 *.soundon.global
 
 # Live streaming & random video chat
+# Runtime control and advertising domains observed immediately before an
+# unbranded peer-to-peer video session.
+*.streambzhi.com
+*.purradspple.com
+*.texadlist.com
+
 # BIGO Technology (Joyy): BIGO Live, Likee, HelloYo. *.bigo.sg is above.
 *.bigo.tv
 *.bigolive.tv
