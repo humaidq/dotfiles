@@ -78,3 +78,12 @@ apkpure.com
 # devdan group was added to clientGroupsBlock — so enabling that group would
 # have started blocking it. Remove this line if the block is wanted.
 *.muslim.com
+
+# gs-loc.apple.com is Apple's WiFi positioning service: a device sends the
+# access points it can see and gets a location back. Blocking it degrades Maps,
+# weather and Find My on every Apple device here, and it carries no advertising
+# — it is on the extras group by association with location lookups generally.
+#
+# It was the sixth most-queried blocked name over four months at 9312 lookups,
+# which is a device retrying rather than a device giving up.
+gs-loc.apple.com

@@ -225,9 +225,22 @@ bigbigbig.club
 live.tiktok.com
 /^webcast[^.]*\.(?:[^.]+\.)*tiktok\.com$/
 /^webcast[^.]*\.tiktokv\.(?:com|eu|us|jp)$/
-/^(?:pull|push)-[^.]+\.(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokrow-cdn\.com|ttlivecdn\.com)$/
+/^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokrow-cdn\.com|ttlivecdn\.com|qlivecdn\.com)$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:wsdvs\.com|worldfcdn2?\.com)$/
+
+# The first pattern above previously anchored at $ immediately after the CDN
+# zone, so it matched pull-flv-l11-sg01.tiktokcdn.com but not
+# pull-flv-f11-sg01.tiktokcdn.com.qlivecdn.com, where tiktokcdn.com is a middle
+# label. The client sends the blocked short name as SNI over the long one, so
+# the two are the same endpoint reached by a different route. Allowing
+# intermediate labels closes it, matching the form line 226 already uses.
+#
+# A second route on its own zone. The name resolves through a Rocket CDN GSLB
+# rather than a ByteDance one, which is why no tiktokcdn/ttlivecdn pattern
+# reaches it. Listed as an exact host: rocket-cdn3.com is a general-purpose CDN
+# and must not be wildcarded.
+hcdnl.pulltiktok.ovc.gslb.rocket-cdn3.com
 
 # TikTok commerce and affiliate services
 *.pipopay.eu
@@ -1821,9 +1834,29 @@ jlmmm-6f65f.firebaseapp.com
 *.u0f5h8rd.com
 *.v2m6q7be.com
 
+# A second account, 3o9b*, minting the same eight-character shape. Found by
+# walking the EdgeOne CNAME chain over the query history rather than by
+# guessing labels: every front here answers as <id>.<domain>.eo.dnse4.com with
+# an opaque twelve-character id, where EdgeOne's legitimate customers on this
+# network — hikvision, wechat, qq.com, xiaohongshu, shein — front with their
+# own hostname in the chain instead. The id is the tie, not the address.
+*.a8z1p4rl.com
+*.k2q8v1zn.com
+*.p5z8t1qk.com
+*.r7y4m6cx.com
+*.t3m9x7wb.com
+*.x9qv7k2m.com
+
 # Punycode front ends for the same estate, on the 3rqt* prefix.
 *.xn--gzraaa.com
 *.xn--k7yv36alscmtf.com
+
+# Further punycode, on the 3oyt* and 3o1n* prefixes.
+*.xn--zxplwebn-kd0mv53gx27az34a.com
+*.xn--zxplwelm-sh7qj661ad2q79e.com
+*.xn--zxplwexz-sh7qz361av4q79e.com
+*.xn--6nqujo5mat29cv75c3ggcxaq8ytypfs4blz0b1sdh9s7ljga.com
+*.xn--klqucvpo3jotbnxb6p14a36u5jhd9gl5g1xs6c596of6u9n5cbp9ah2p.com
 
 # Captcha and static-asset layer. Wildcarded rather than listed by host: the
 # apex is NXDOMAIN today but the subdomains are live, which is the shape of a
@@ -1832,19 +1865,44 @@ jlmmm-6f65f.firebaseapp.com
 *.netshunt.com
 
 # Websocket and asset backends, each on its own all-numeric domain carrying
-# socket.* and images.* hosts. Same form as the numeric entries earlier in
-# this file, which this extends.
-*.123923898.com
-*.1813698.com
-*.1890095.com
-*.3830292.com
-*.5015011.com
-*.5329340.com
-*.630038949.com
-*.6392042.com
-*.7521673.com
-*.7675515.com
-*.8324324.com
+# socket.* and images.* hosts.
+#
+# Listed individually until a sweep of four months of query history found 74 of
+# them against the eleven named here, so the shape is matched instead. The
+# census across all 74: 24 socket.*, 12 images.*, 6 www, 3 mgs.*, 2 launch.*,
+# 2 api.* and one qatar-eportal.* — no host that is not this pattern, and the
+# ones that still answer front on the same EdgeOne accounts as the domains
+# above.
+#
+# Six digits is the floor deliberately. Real all-numeric .com domains are short
+# — 163.com, 4399.com — and none of four or five digits appears anywhere in
+# this network's history, so the rule cannot reach them. Replaces the eleven
+# explicit lines and covers the next one without another sweep.
+/(^|\.)[0-9]{6,}\.com$/
+
+# Brand-run front pools on the same EdgeOne accounts, each a family the earlier
+# jili and jlmmm regexes do not reach because the label carries a different
+# string. Matched on the family stem where the operator has already shown it
+# increments — sss77a through sss77f plus sss77app on 3mhg*, and three TLDs of
+# plus222 on 3rqt* — so the next member is covered before it is minted.
+/(^|\.)sss77[a-z0-9]*\.[a-z]{2,}$/
+/(^|\.)plus222\.[a-z]{2,}$/
+/(^|\.)jljl9[a-z0-9]*\.[a-z]{2,}$/
+
+# Keyboard-mash front ends on 3rkq*/3rks*. Listed rather than matched: the
+# labels are deliberate noise with no stem to anchor on, and any pattern loose
+# enough to describe them would take real domains with it.
+*.ghogkgiooj0.com
+*.gkgkkoolo0ool.com
+*.hgkgoojl-hofof.com
+*.jho7lho-hililg.com
+*.jhoolhohlhoolgo.com
+*.li1iuliy090-o0of-010ioo.com
+
+# Single-domain accounts in the same estate, one EdgeOne id each.
+*.dsfewj81ca.com
+*.phvvv1.com
+*.win96c.cc
 
 # Firebase and AWS front ends. Exact hostnames only — firebaseapp.com and
 # on.aws are shared infrastructure and must never be wildcarded, the same rule
