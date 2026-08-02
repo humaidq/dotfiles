@@ -130,6 +130,19 @@ ask.u.ae
 *.cb7lvj2ab.link
 *.ousaqb.tech
 *.voxazone.club
+# The weakest entry in this group, and deliberately marked as such. Seen exactly
+# once, as fuzysa.zkruner.com in an apk-sim run on 2026-04-03 09:46, in the same
+# second as apiact./front-perf./static-web.imoim.net, lbs.imolive2.com and
+# 00bf5722ca.voxazone.club. It is NXDOMAIN now.
+#
+# The registrar/nameserver test that would have confirmed it fails: the rest of
+# this group registers through Alibaba Cloud or Amazon and answers from AWS,
+# Cloudflare, DNSPod or AliDNS, whereas zkruner.com was registered 2025-11-12
+# through Gname and answers from share-dns.net. That is a different setup, so
+# only the co-occurrence supports it. Blocked anyway because a dead domain that
+# these outfits rotate through costs nothing to hold; drop it without hesitation
+# if it ever needs justifying.
+*.zkruner.com
 *.securiumsolutions.com
 *.imoim.net
 *.imo.im
@@ -207,7 +220,7 @@ bigbigbig.club
 # already ships fra/sgp/sjc with -ez/-as Cloud Run suffixes.
 /^imodns(?:-[a-z0-9-]+)?\.(?:[a-z0-9-]+\.)*(?:azureedge\.net|azurewebsites\.net|azurefd\.net|run\.app|musiclike\.top)$/
 /^lp2[a-z]{2,4}-[a-z0-9]+-[a-z]{2}\.a\.run\.app$/
-# The 19 CloudFront API fallbacks. Eight answer 405 with an
+# The 26 CloudFront API fallbacks. Eight answer 405 with an
 # access-control-allow-headers list of bigo-appid/bigo-uid/bigo-device-id/
 # bigo-host/bigo-uri/bigo-hash, which is conclusive. Nine more return the same
 # openresty/1.25.3.2 404 as the unbranded pool above. The last two
@@ -216,7 +229,47 @@ bigbigbig.club
 # IDs belong to one AWS account, so these are precise — never wildcard
 # cloudfront.net, which the app's own fronting allowlist matches as
 # ^d[a-z0-9]+[.]cloudfront[.]net$ and would take arbitrary third parties with it.
-/^(?:d1d65riqum5ov|d1d7mk5slijq0u|d1k080mgg40341|d1o2a1dvy4ydfc|d1slfh9t7sjvlh|d2oplsxlk1d0so|d2wav5q10bfeht|d2xplh6bc39kz7|d31u03sr7ou25d|d35h7ub5u34xbi|d37tp9szxrigiu|d3a16m42psihkg|d3goy0vsfptofy|d3ivuap2ibxkc3|d3obboq1me5ipu|d3q500pql0crpy|d87xtzssols3u|dghwmknqfbc2v|dhfhtyg1h2goz)\.cloudfront\.net$/
+#
+# d12yfzfinm82vx, d2p5f2vo26del7 and dsikbx6m2wko3 were added later, from the
+# query log rather than a package — a client resolved five distributions in one
+# two-second burst alongside front-perf.imoim.net, which was answering 0.0.0.0
+# by then. All three return the openresty/1.25.3.2 404 with a "Not Found" body,
+# matching the unbranded pool exactly.
+#
+# d2a2jrhh2ri1hj, d1p2f0ksgcgivh and do8rcgamey0x4 do not carry the openresty
+# fingerprint. They are here because the app dialled them: all three appear in
+# apk-sim.sh runs, within a second or two of the full imo hostname set
+# (apiact./front-perf./static-web./support-json.imoim.net, lbs.imolive2.com,
+# static-imo.sdonlyn.net), across four separate runs on 2 and 3 April, 13 May
+# and 6 June. In a sim run the queries come from the app, so this is direct
+# attribution and not an inference from timing.
+#
+# The obvious confound is the emulator itself, and it does not hold: 1,450
+# distinct minutes in the query log carry Play-Store/Samsung boot markers, and
+# these distributions appear in five of them. Emulator infrastructure would be
+# in all 1,450.
+#
+# d2a2jrhh2ri1hj serves byte-identical output to d1p2f0ksgcgivh — an HTML shell
+# linking /favicon-plain.ico under an unversioned openresty — so those two are
+# one operator.
+#
+# Do not try to reproduce any of this from the household query log by
+# co-occurrence alone. Nearly every imo lookup in it comes from these sim runs
+# rather than from a device, and on the one handset that does reach imo, 86% of
+# its CloudFront lookups sit within 15s of an imo lookup purely because imo
+# queries continuously.
+#
+# dphulio5g51jf is the one genuinely weak entry: a Kong gateway answering
+# {"message":"no Route matched with those values"} under plain nginx, seen only
+# in the 2 August burst, which also carried jnw2od-*.appsflyersdk.com. A bundled
+# SDK may own it. It is blocked because a distribution ID belongs to one AWS
+# account, so being wrong costs that one distribution's owner rather than a
+# shared zone — but if an unrelated app breaks, pull this one first.
+#
+# Client attribution in the query log was only fixed on 2026-07-30 22:35;
+# everything before that logged as 127.0.0.1, so no pre-fix row can be tied to
+# a device at all — only to a run.
+/^(?:d12yfzfinm82vx|d1d65riqum5ov|d1d7mk5slijq0u|d1k080mgg40341|d1o2a1dvy4ydfc|d1p2f0ksgcgivh|d1slfh9t7sjvlh|d2a2jrhh2ri1hj|d2oplsxlk1d0so|d2p5f2vo26del7|d2wav5q10bfeht|d2xplh6bc39kz7|d31u03sr7ou25d|d35h7ub5u34xbi|d37tp9szxrigiu|d3a16m42psihkg|d3goy0vsfptofy|d3ivuap2ibxkc3|d3obboq1me5ipu|d3q500pql0crpy|d87xtzssols3u|dghwmknqfbc2v|dhfhtyg1h2goz|do8rcgamey0x4|dphulio5g51jf|dsikbx6m2wko3)\.cloudfront\.net$/
 
 # TikTok live streaming. Anchored on the webcast/pull-/push- prefixes so the
 # rest of the app keeps working: the same CDN zones also serve thumbnails
@@ -2019,3 +2072,22 @@ b11v5ewz9l.execute-api.us-east-1.amazonaws.com
 omo7ibn4c1.execute-api.ap-south-1.amazonaws.com
 d-x6wmx0p3dl.execute-api.ap-south-1.amazonaws.com
 d-misvr2e9b5.execute-api.us-east-1.amazonaws.com
+
+# Found in the router query log rather than in any package, and connected to
+# for real — the capture carries it as a TLS SNI, not just a lookup. Two
+# clients query it; it answered LIVE while every upstream list missed it.
+#
+# Not the same operator as *.userlogsanalytics.com above, despite the name.
+# That one is an aws./gce.-prefixed pair whose apex does not resolve; this is a
+# bare apex on Route 53 nameservers with no such prefixes and a dedicated Google
+# Trust Services certificate naming only itself, so there is no shared cert, no
+# shared prefix layout and no shared infrastructure between them. It is listed
+# on its own evidence and the name similarity is not part of it.
+#
+# Registered 2019 through Amazon Registrar behind whoisproxy, which is why the
+# NRD slices never covered it — it is old, not new. Serves nginx/1.27.3 403 to
+# an anonymous request, so there is no content to misattribute.
+#
+# The apex resolves to Google's shared 216.239.32-38.21 forwarding addresses,
+# which also answer for go.dev among others. Block the name; never the address.
+*.logsanalytics.net
