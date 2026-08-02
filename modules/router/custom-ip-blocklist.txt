@@ -1346,21 +1346,53 @@
 # which is the app's core API, config and search. 146.75.66.73 is Fastly and
 # also serves v19-cla.tiktokcdn.com and the p19-* image CDN.
 #
-# All /32. 43.152.18.0/24 carries 133 unrelated names and 149.104.103.0/24
-# carries Huawei and Lazada hosts, so neither range can go. 43.168.27.0/24 and
-# 43.174.182.0/24 showed nothing but live names, but across three and two
-# observed addresses, which is short of proof by the standard applied
-# elsewhere in this file. The four 43.x addresses all answer for one identical
-# 25-name pool, so the operator is rotating inside these ranges: recheck
-# whether those two have earned a /24 once more addresses have been seen.
+# 43.152.18.0/24 carries 133 unrelated names and 149.104.103.0/24 carries
+# Huawei, Lazada and Chery hosts, so those two ranges can only be taken one
+# address at a time. 43.168.27.0/24 and 43.174.182.0/24 answer for nothing but
+# the live pool and go as ranges — see the rotation note below.
 #
-# 156.225.107.121 also serves cdn.alsgp0.fds.api.mi-img.com, so Xiaomi clients
-# may lose CDN imagery. Accepted deliberately rather than overlooked.
+# LIVE VIDEO EDGES — the pull-flv/pull-cmaf streams themselves.
 43.152.18.204
-43.168.27.241
-43.168.27.243
-43.174.182.241
+43.168.27.0/24
+43.174.182.0/24
 149.104.103.52
+149.104.103.55
+154.85.66.52
 156.225.107.121
+156.225.107.122
+
+# LIVE COMMENTS, GIFTING AND PAYMENTS — the webcast channel, kept separate
+# from the video edges above because it is a different layer with a different
+# effect. These carry webcast19-normal-iquic-alisg.tiktokv.com, which is the
+# socket the live chat, the gift rail and the coin purchases ride on rather
+# than the picture. With them blocked a stream may still play, but no comment
+# appears, nothing can be sent and nothing can be bought — which is the part
+# that was actually wanted. Confirmed working: after these went in, an edge
+# here took 156630 bytes outbound and returned 0, and the comment pane stopped
+# loading while video continued.
+#
+# Neither address has ever resolved through this network's DNS. They are
+# reached by IP only, so there is no name to block and no name to attribute
+# them by later — that is why they are recorded here rather than in
+# custom-blocklist.txt.
 167.82.86.73
 199.232.234.73
+
+# Rotation, measured. A second capture taken after the first eight addresses
+# went live showed the operator moving to the address next door in the same
+# range: .121 became .122, .52 became .55, and .242 was taken up between the
+# already-blocked .241 and .243. A new range, 154.85.66.0/24, appeared at the
+# same time. Live video bytes did not fall, they rose, because the client
+# spends the window retrying — reported from the device as streams that
+# connect, stall, and auto-skip.
+#
+# That is what moved 43.168.27.0/24 and 43.174.182.0/24 from single addresses
+# to ranges: every address ever seen in either answers only for the identical
+# 25-name pull-flv-{c,f,l,o,w}11 pool, so there is no tenant to catch out.
+# 156.225.107.0/24 and 154.85.66.0/24 rotate the same way but are held at /32,
+# because each also answers for cdn.alsgp0.fds.api.mi-img.com or
+# uxlive-sptlive.v.spbycdn.com. Neither name has ever been queried or
+# connected to here, so the collateral is theoretical rather than observed —
+# but Xiaomi hardware is on this network and an unused name today is not an
+# unused name forever. Take those ranges only if the rotation continues and
+# the imagery is worth losing.
