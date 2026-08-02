@@ -1321,3 +1321,46 @@
 # form of this; the range is here for the case where a client finds a
 # transport those do not cover.
 79.127.164.0/24
+
+# TikTok live pull and webcast edges, reached by IP after the name block. The
+# pull-/push- and webcast* patterns in custom-blocklist.txt answer 0.0.0.0 for
+# every name below and the client connects regardless: a capture of live
+# playback carried 43439 frames without a single DNS query in it — no port 53,
+# no 853, and no DoH provider among the 56 names it presented as SNI — while
+# offering pull-flv-f9-sg01.tiktokcdn.com, pull-flv-l11-sg01.tiktokcdn.com and
+# webcast19-normal-iquic-alisg.tiktokv.com to addresses the resolver would
+# never have handed out. The app carries its own edge list and refreshes it
+# over api16-* and tnc0-normal-alisg.tiktokv.com, which stay reachable so that
+# blocking live does not take the rest of the app with it.
+#
+# Picked by what has actually carried live bytes, not by volume. The heaviest
+# peer in that capture was sf16-teko.tiktokcdn.com at 79% and is deliberately
+# absent: its bytes arrive in 40-50 MB bursts separated by idle gaps, which is
+# feed prefetch, where the live stream is a flat ~1 Mbps on the pull-flv pair
+# beginning only when the stream was opened. Its address also answers for
+# iosapps.itunes.apple.com, init.gc.apple.com, res.cdn.office.net and
+# store.akamai.steamstatic.com, so it could not be taken at /32 anyway.
+#
+# Two edges that did carry webcast bytes are left out on the same principle.
+# 71.18.223.0 also serves api32-, gecko32-, search32- and libra32-normal-alisg,
+# which is the app's core API, config and search. 146.75.66.73 is Fastly and
+# also serves v19-cla.tiktokcdn.com and the p19-* image CDN.
+#
+# All /32. 43.152.18.0/24 carries 133 unrelated names and 149.104.103.0/24
+# carries Huawei and Lazada hosts, so neither range can go. 43.168.27.0/24 and
+# 43.174.182.0/24 showed nothing but live names, but across three and two
+# observed addresses, which is short of proof by the standard applied
+# elsewhere in this file. The four 43.x addresses all answer for one identical
+# 25-name pool, so the operator is rotating inside these ranges: recheck
+# whether those two have earned a /24 once more addresses have been seen.
+#
+# 156.225.107.121 also serves cdn.alsgp0.fds.api.mi-img.com, so Xiaomi clients
+# may lose CDN imagery. Accepted deliberately rather than overlooked.
+43.152.18.204
+43.168.27.241
+43.168.27.243
+43.174.182.241
+149.104.103.52
+156.225.107.121
+167.82.86.73
+199.232.234.73
