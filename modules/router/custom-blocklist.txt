@@ -1784,6 +1784,76 @@ jlmmm-6f65f.firebaseapp.com
 # it is what will be noticed first if someone reports something broken.
 *.lifegram.cc
 
+# A later sweep of the query history against the operator already covered
+# above by the jili and jlmmm regexes. Those two caught most of what turned up
+# — every jili*/jlmmm* front end resolved 0.0.0.0 already — so what follows is
+# only the part they do not reach: front ends whose label carries no brand
+# string at all, and the backends behind them.
+#
+# One operator, established from the EdgeOne CNAME chain rather than from
+# addresses. Each name below fronts as <id>.<domain>.eo.dnse4.com or
+# .eo.dnse5.com, and the ids share an account prefix — the same 3ng3* seen on
+# the jili mirrors, 3sny* on the random-label group, 3rqt* on the punycode
+# pair. The origins those land on (43.152.18.169, 43.152.32.139) are shared
+# EdgeOne edge and would prove nothing on their own; the prefix is the tie.
+
+# Random-label front ends. Deliberately listed rather than matched on shape:
+# the label is eight alphanumerics, and any rule general enough to catch these
+# also catches whatsapp.com, facebook.com, linkedin.com, emirates.com and
+# gulfnews.com, all of which are in ordinary use on this network. Expect the
+# list to go stale — the operator mints new labels, and only a fresh pass over
+# the query history will find them.
+*.1hkw9c4z.com
+*.3qv9t1mx.com
+*.6jz1p9ka.com
+*.9ny4g0sl.com
+*.a5r8x3jd.com
+*.b4w7n2yc.com
+*.k7c2z6wp.com
+*.r8x3m0qv.com
+*.u0f5h8rd.com
+*.v2m6q7be.com
+
+# Punycode front ends for the same estate, on the 3rqt* prefix.
+*.xn--gzraaa.com
+*.xn--k7yv36alscmtf.com
+
+# Captcha and static-asset layer. Wildcarded rather than listed by host: the
+# apex is NXDOMAIN today but the subdomains are live, which is the shape of a
+# zone the operator adds to. Not a shared anti-bot vendor of the hCaptcha kind
+# — its static origin answers with Tencent COS headers, matching the estate.
+*.netshunt.com
+
+# Websocket and asset backends, each on its own all-numeric domain carrying
+# socket.* and images.* hosts. Same form as the numeric entries earlier in
+# this file, which this extends.
+*.123923898.com
+*.1813698.com
+*.1890095.com
+*.3830292.com
+*.5015011.com
+*.5329340.com
+*.630038949.com
+*.6392042.com
+*.7521673.com
+*.7675515.com
+*.8324324.com
+
+# Firebase and AWS front ends. Exact hostnames only — firebaseapp.com and
+# on.aws are shared infrastructure and must never be wildcarded, the same rule
+# the execute-api block below follows.
+#
+# Three hosts seen alongside these are deliberately absent because nothing
+# attributes them to this operator: loyalty-app-master.firebaseapp.com and the
+# two lambda-url.eu-central-1.on.aws hosts, which do not share the
+# <prefix>-<32hex>.ecs form of the rest.
+plus2tlbf5-260604.firebaseapp.com
+5z-2b6b7616f94640c2840d1841e1ac24c3.ecs.us-east-1.on.aws
+dv-c3e594c6d429469e90b54478358619c3.ecs.us-east-1.on.aws
+m6-211026f8a25b42c08fc190458268b30e.ecs.us-east-2.on.aws
+md-eecad2978f7a43f5b7838c919258e6de.ecs.us-east-2.on.aws
+v5-b75ccb2b73c54aa4a5098ab7f8533696.ecs.us-east-2.on.aws
+
 # ---------------------------------------------------------------------------
 # VPN and resolver-bypass endpoints found in the query history. The pattern
 # across all of them is the same: the brand domain is caught and the API host

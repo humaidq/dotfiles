@@ -64,3 +64,17 @@ apkpure.com
 # plane and log endpoints. ts.net, which MagicDNS uses, is not on the list and
 # so needs nothing here.
 *.tailscale.com
+
+# False positives on the porn/NSFW lists, all confirmed by fetching them:
+# xeiaso.net is a software engineering blog, almarai.com a Saudi dairy
+# company, wahed.com a sharia-compliant investment app. None was blocked at
+# the time of writing — these are here so a list refresh cannot take them out.
+*.xeiaso.net
+*.almarai.com
+*.wahed.com
+
+# muslim.com redirects to muslim.co, a prayer-times and community app. It is
+# on developerdan's dating-services list, which was doing nothing until the
+# devdan group was added to clientGroupsBlock — so enabling that group would
+# have started blocking it. Remove this line if the block is wanted.
+*.muslim.com

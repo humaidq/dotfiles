@@ -117,15 +117,20 @@
     };
     blockType = "zeroIp";
     clientGroupsBlock = {
+      # Every group defined under denylists belongs here. A group that is
+      # defined and not listed is downloaded and then never consulted, which is
+      # what had happened to devdan — its two lists had never blocked anything.
       default = [
         "general"
         "steven"
+        "devdan"
         "extras"
         "ips"
         "ut1"
         "custom"
         "doh"
         "vpn"
+        "nrd"
       ];
     };
     denylists = {
@@ -243,6 +248,38 @@
 
       vpn = [
         "https://az0-vpnip-public.oooninja.com/adguard.txt"
+      ];
+
+      # Newly registered domains, first three weeks of life. The throwaway
+      # front pools in custom-blocklist.txt are the argument for this: those
+      # estates burn and re-register domains faster than any list names them
+      # individually, and age is the one property the rotation cannot fake.
+      #
+      # Days 1-21 only. The 28-22 and 35-29 slices are deliberately left out —
+      # by four weeks a domain is as likely to be someone's new small site as
+      # an operator's next front, and the hit rate does not justify the false
+      # positives.
+      #
+      # Checked before enabling: of the 26,054 names this network has resolved
+      # in four months, these three lists catch 20, and most of those are junk
+      # already blocked by name here (phzzz1.com, wpofs.com, the wjpeso pair).
+      # covid.gov, recipetables.com and codex-resets.com are the genuine false
+      # positives, and were accepted knowingly.
+      #
+      # They need no allowlist entry: the three slices cover days 1-7, 8-14 and
+      # 15-21, so a domain leaves the last of them 21 days after it was
+      # registered and unblocks itself. Every false positive here is therefore
+      # temporary, which is the property that makes an age-based list cheap to
+      # run — anything still blocked after three weeks is blocked by one of the
+      # other groups, not this one.
+      #
+      # Note the size — about 7.7 million names across the three, which is an
+      # order of magnitude more than everything else here combined, and shows
+      # up as blocky's resident memory.
+      nrd = [
+        "https://raw.githubusercontent.com/hagezi/nrd/main/adblock/nrd7.txt"
+        "https://raw.githubusercontent.com/hagezi/nrd/main/adblock/nrd14-8.txt"
+        "https://raw.githubusercontent.com/hagezi/nrd/main/adblock/nrd21-15.txt"
       ];
     };
     allowlists = {
