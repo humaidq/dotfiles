@@ -43,3 +43,24 @@ archive.vn
 # which broke apk-sim.sh's download step.
 apkpure.com
 *.apkpure.com
+
+# Distro and FOSS torrents. hagezi's anti-piracy list carries these alongside
+# the piracy trackers, and they were previously exempt only as a side effect of
+# blocklistproject's torrent.txt sitting in allowlists.general. That entry was a
+# denylist in an allowlist slot and has been removed, so the ones worth keeping
+# are named here instead.
+*.torrent.ubuntu.com
+*.torrent.fedoraproject.org
+*.tracker.kali.org
+*.fosstorrents.com
+*.linuxtracker.org
+
+# Tailscale. The doh group imports hagezi's doh-vpn-proxy-bypass list, which
+# carries tailscale.com, so the mesh would otherwise go down with everything
+# else that list closed. Kept as a deliberate exception rather than by
+# narrowing the list.
+#
+# The zone covers the DERP relays (derpN.tailscale.com) as well as the control
+# plane and log endpoints. ts.net, which MagicDNS uses, is not on the list and
+# so needs nothing here.
+*.tailscale.com

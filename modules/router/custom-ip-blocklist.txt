@@ -4,6 +4,28 @@
 148.153.67.208
 148.153.234.111
 
+# Same operator as the three 148.153 addresses above — all four are AS63199
+# (CDS Global Cloud), and this one is what every host under lifegram.cc CNAMEs
+# to. The zone is blocked by name in custom-blocklist.txt; this is the belt to
+# that pair of braces, since a zone whose whole purpose is minting new names
+# for other people's backends can mint one this list has never seen.
+#
+# A /32 and not the /23: CDS is a general-purpose cloud, so the neighbours are
+# other people's tenants.
+148.153.116.134
+
+# dns4all's resolver, blocked by name as *.dns4all.eu. The address is worth
+# having as well because a DoQ client that has the IP cached does not need the
+# name again, and DoQ on UDP 853/8853 is not covered by the forwarded-53 rules.
+# AS210004 announces only this /24 and it serves nothing but the resolver, so
+# there is no collateral in the address itself.
+194.0.5.3
+
+# proxy.dlmate.cc. Single-name certificate, no other hostname known to resolve
+# here. A /32 only — 162.55.0.0/16 is Hetzner, so the range is full of
+# unrelated tenants.
+162.55.0.240
+
 # A full-device tunnel, caught 2026-08-01 in a netwatch window. Different
 # operator from the four above, which are all AS63199: this is AS394381
 # (L7-CONNECT - L7 Connect, US) in 154.51.185.0/24.

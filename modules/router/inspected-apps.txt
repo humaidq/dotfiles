@@ -199,9 +199,21 @@ com.waig.nalo                 ZaffaLive. PAIR-wrapped
 com.toki.android              Toki (SpreadFun). A Unity app with a 96 KiB dex.
                               tokiapp.net only, though its rpc./sso. hosts are
                               live.
-com.hkfuliao.chamet           Chamet. Packed — a ~74 KiB stub dex alongside
-                              libplt-base.so and libNetHTProtect.so, with the
-                              manifest and resources stripped.
+com.hkfuliao.chamet           Chamet. Packed — a ~72 KiB stub dex alongside
+                              libplt-base.so and libNetHTProtect.so. The
+                              manifest and resources.arsc are NOT stripped in
+                              this build, correcting an earlier note here, but
+                              they hold only resource identifiers and the
+                              com.oversea.chat / com.oversea.videochat class
+                              names that put it in the Justar family with
+                              MateMet and Gemgala. Two emulator runs and a
+                              re-analysis of the second capture recorded no
+                              host and no hardcoded address at all — it detects
+                              the emulator and exits. The estate was mapped by
+                              resolving the Justar <brand>.net / i<brand>.com
+                              convention instead, which found ichamet.net live
+                              (api. answers on its own tenant NLB), plus
+                              ichamet.live, chametapp.com and mchamet.com.
 com.oversea.matemet           MateMet (Justar HK). Packed the same way as Chamet.
                               Superseded: Gemgala later exposed the operator's
                               i<brand>.com convention, and api./h5./m.

@@ -19,6 +19,33 @@
       ];
     }
   ];
+  # archive.today and its mirrors are all one service, and the default upstream
+  # refuses to resolve any of them: 1.1.1.3 answers 0.0.0.0, and so does
+  # 1.1.1.2, so this is Cloudflare's classification rather than the family
+  # filter specifically. The names are already in custom-whitelist.txt and
+  # blocky is not blocking them — it reports response_type=RESOLVED and passes
+  # the upstream's 0.0.0.0 straight through — so no blocklist change can fix
+  # it. Send just these zones to a resolver that answers them instead.
+  #
+  # Quad9 rather than 1.1.1.1, which returns an empty answer for these: the
+  # archive.today operator has long declined to serve Cloudflare's resolvers.
+  # Bootstrapping is fine, as the existing bootstrap entry resolves
+  # dns.quad9.net.
+  conditional = {
+    mapping =
+      let
+        unfiltered = "tcp-tls:dns.quad9.net";
+      in
+      {
+        "archive.today" = unfiltered;
+        "archive.fo" = unfiltered;
+        "archive.is" = unfiltered;
+        "archive.li" = unfiltered;
+        "archive.md" = unfiltered;
+        "archive.ph" = unfiltered;
+        "archive.vn" = unfiltered;
+      };
+  };
   caching = {
     minTime = "6h";
     maxTime = "24h";
@@ -195,8 +222,23 @@
 
       # Block DoH provider hostnames so clients cannot bootstrap a
       # DNS-over-HTTPS resolver by name and tunnel past the router's resolver.
+      #
+      # doh-vpn-proxy-bypass rather than plain doh: the narrow list holds only
+      # resolver hostnames, and every bypass endpoint that actually turned up
+      # in the query history sits one layer out from that — a VPN's API host, a
+      # control plane on API Gateway, a proxy on rented hosting. Measured
+      # against the 157 such names still resolving here, doh.txt caught none of
+      # them and this list catches 139.
+      #
+      # It is safe to widen to because it names hosts rather than zones where
+      # the zone is shared: vpn-api.proton.me and not proton.me, which would
+      # take Mail and Drive with it; the individual API Gateway hostnames and
+      # not execute-api.*.amazonaws.com; mask.icloud.com and not icloud.com.
+      #
+      # It does carry tailscale.com, so the mesh goes down with it. That is the
+      # one thing here worth a deliberate decision rather than a default.
       doh = [
-        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh.txt"
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/doh-vpn-proxy-bypass.txt"
       ];
 
       vpn = [
@@ -204,10 +246,19 @@
       ];
     };
     allowlists = {
+      # Only genuine allowlists belong here. A denylist parked in this slot is
+      # silently inverted into 2,600-odd permanent exemptions that beat every
+      # denylist, which is what blocklistproject's torrent.txt was doing until
+      # it was removed: it held the whole public tracker estate plus names like
+      # finbytes.org that hagezi's anti-piracy list was already trying to
+      # block. Same mistake anti.piracy itself was making — see the note on it
+      # under denylists.general.
+      #
+      # Removing it does block the distro torrents that list also carries, so
+      # those are named in custom-whitelist.txt.
       general = [
         "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
         "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
-        "https://blocklistproject.github.io/Lists/torrent.txt"
         "${./custom-whitelist.txt}"
       ];
     };

@@ -132,6 +132,7 @@
             perSystem =
               {
                 config,
+                lib,
                 system,
                 pkgs,
                 ...
@@ -145,6 +146,7 @@
                     };
                   };
                 };
+                checks = import ./tests { inherit lib pkgs; };
                 devShells.default = pkgs.mkShell { inputsFrom = [ config.flake-root.devShell ]; };
                 treefmt.config = {
                   package = pkgs.treefmt;

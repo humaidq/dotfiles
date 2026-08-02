@@ -1551,9 +1551,10 @@ chato.go.link
 /(^|\.)[a-z0-9-]*jlmmm[a-z0-9-]*\.[a-z]{2,}$/
 /(^|\.)fortureslot[0-9]*\.[a-z]{2,}$/
 
-# Bare rather than *.domain: blocky's wildcard form does not match the apex,
-# so a *.example.com entry leaves example.com itself reachable. A bare entry
-# covers the apex and every subdomain, which is what is wanted here.
+# One *.domain entry per registrable domain. The wildcard form does match the
+# apex — checked against the live resolver, where heibao.bet, southasiabp.online
+# and pgsoft-br.com all answer 0.0.0.0 with only the *.domain lines below
+# present — so a second bare entry would be redundant.
 *.southasiabp.online
 *.jdbcdn.net
 *.jdb199.info
@@ -1598,3 +1599,264 @@ jlmmm-6f65f.firebaseapp.com
 # the common case: Chatta calls Alibaba's HTTPDNS at 161.117.200.122 and
 # 8.211.143.56 with no name involved. Those belong in custom-ip-blocklist.txt.
 /(^|\.)[a-z0-9-]*httpdns[a-z0-9-]*\.[a-z0-9.-]+$/
+
+# ---------------------------------------------------------------------------
+# Online casino operators found in the resolver's own query history, not in an
+# APK. Every name below resolved without being blocked; hagezi's gambling list
+# does not carry any of them. Grouped by operator, because the TLS certificate
+# is what established the grouping: these outfits put every brand they run on
+# one certificate, so a single SAN list names the whole estate and the numbered
+# or random-letter front domains stop looking unrelated.
+#
+# *.example.com covers the apex as well as every subdomain — verified against
+# the live resolver on existing entries here — so one line per registrable
+# domain is enough.
+
+# JA5. One certificate spans ja5.com, ja5game, ja5gaming, ja5phgame, ja5kwai,
+# ja5tiktok, aceja5 and appja5 — the last two being social-referral front ends,
+# not Kwai or TikTok properties — so match the label instead of listing them.
+#
+# The surrounding [a-z]* rather than [a-z0-9-]* is deliberate: allowing digits
+# next to the label pulls in wja520.cc, tja510.com and raja567casino.com, which
+# are unrelated. Restricted to letters, the only matches in Tranco's top 1M are
+# ja5gaming.com, ja5game.com and aceja5.com — all this operator's.
+/(^|\.)[a-z]*ja5[a-z]*\.[a-z]{2,}$/
+
+# The "wbslot" platform, one shell company per front domain. Each front carries
+# its own certificate, which is what makes them look like separate operators
+# until the host naming is compared: every one of them serves the same
+# wbslot-platform / wbgame / wbwebapi / wbslot-fd(-na) set, plus uat- staging
+# copies. That layout is the durable part, so match it regardless of zone and
+# new fronts are covered on the day they appear. No hit anywhere in Tranco's
+# top 1M; it found fortureslot9 and jackpotpulse888 before either was seen here.
+/^(?:uat-)?wb(?:game|webapi|slot-platform|slot-fd(?:-na)?)\./
+
+# The fronts themselves still need listing, because they also serve history,
+# history-api, language-api, promote and fish hosts that the prefix above does
+# not cover. The hyphenated ones are handled by the throwaway-pool regex below.
+*.cmz56k3w.com
+*.prospernest888.com
+*.richcraze168.com
+*.royalflush888.com
+*.affluhub888.com
+*.quickgaming-asia.com
+*.jackpotpulse888.com
+*.jlfafafa1.com
+*.jlfafafa2.com
+*.jlfafafa3.com
+
+# Casino content supplier reselling under ten brands from one certificate,
+# which already includes pgsoft-br.com and jdbs-gaming.com further up this
+# file. pragamticplay.com is a deliberate misspelling of the real Pragmatic
+# Play; jiligames-play.com is already covered by the jili regex above.
+*.evoplay-game.com
+*.bgamings-network.com
+*.bgaming-network.com
+*.pragamticplay.com
+*.bng-game.com
+*.759-gaming.com
+*.fc6666.net
+*.tada-gamings.com
+
+# Gulf-targeted group, seven zones on one certificate. The naming is the
+# attribution: q8spin for Kuwait, aebet789 and aegame789 for the UAE.
+*.hazz777.com
+*.hasa777.com
+*.yalla77.com
+*.saryalla.com
+*.q8spin.com
+*.aebet789.com
+*.aegame789.com
+
+# Smaller groups, each established the same way.
+*.bwgame365.com
+*.iiibw.com
+*.topbwgame.com
+*.bw-games-customer.com
+*.velkigames365.cc
+*.liveamuse247.net
+/(^|\.)rjg[0-9]{3}\.[a-z]{2,}$/
+
+# Single-operator zones with no sibling brands on the certificate.
+*.ybgaming777.net
+*.megawin777.top
+*.cb777l.com
+*.lucky365.cc
+*.kaga88.com
+*.amigogaming.cloud
+*.rx-888.com
+*.ae-693-game.com
+*.711phpslot.com
+*.km88-slot.com
+*.epubgame.com
+*.swggame.com
+*.inout.games
+*.queenmakergames.co
+*.fcgame.net
+*.fungamecdn.com
+*.xgamecdn.com
+*.qrphnow.com
+
+# The throwaway front pool: four single alphanumerics separated by hyphens,
+# always .com, each serving a game.*, game-logo.*, api2.*, upload.* or m-b.*
+# host. Twenty-one were reachable from here; Tranco's top 1M holds 222 more,
+# ranked as high as 13.5k, and a sample of 22 of those was dead in every case —
+# a pool that is burned and re-registered continuously. Nothing legitimate
+# registers a name of this shape, and no non-casino match turned up in a
+# 1,026,054-name corpus, so match the shape rather than chasing the list.
+/(^|\.)[a-z0-9]-[a-z0-9]-[a-z0-9]-[a-z0-9]\.com$/
+
+# The all-numeric fronts from the same estate stay listed individually. The
+# obvious regex — seven or more digits then .com — is not safe: it also matches
+# legitimate Chinese sites named after a dialling code, 0510118114.com and
+# 0555528.com among 349 in Tranco's top 1M, and there is no shape that
+# separates those from these.
+*.483939992.com
+*.283949993.com
+
+# ggslot rotates the TLD and keeps the label, in the same way jili does, so
+# match the label. Not a word that occurs in a legitimate domain.
+/(^|\.)ggslot[a-z0-9-]*\.[a-z]{2,}$/
+
+# Piracy sites that resolved unblocked. thepiratebay, therarbg, bt4g,
+# torrentdownload and torrentsnipe were in the history too but upstream lists
+# have since caught them, so they are deliberately not repeated here.
+#
+# Both y2mate zones rotate a numbered subdomain on every request
+# (en1 -> en2, v21 -> v25), which is why the zone rather than the host is
+# listed. isohunt.lol answers 410 today; it is the operator's and they rotate,
+# so it stays. finbytes.org is on hagezi's anti-piracy list already and was
+# reachable only because that list was being overridden — see the allowlist
+# change in blocky-common.nix.
+*.isohunt.lol
+*.finbytes.org
+*.rarbg.me
+*.y2mate.is
+*.www-y2mate.com
+
+# Cracked-software distribution.
+*.everycrack.com
+
+# More of the same casino estate, surfaced by correlating what preceded each
+# session in the resolver history rather than by matching a name. Same two
+# naming schemes as the block above — random hyphenated letters and bare
+# digit strings — reached through host prefixes the earlier sweep did not
+# cover (upload., api2., m-b., static-b., socket., images.).
+#
+# dxv9oqtz.com and kd6ro1qo.com are the redirector layer: both CNAME to
+# zhu-<digits> hosts under two further zones, which are listed here too.
+#
+# x-3-n-v.com is on hagezi's threat-intel feed and was noted as unattributed
+# when it first turned up; this is what it belongs to.
+# The hyphenated zones here — 3-o-t-o, m-9-l-j, h-f-a-4, n-t-v-w, b-i-0-b,
+# n-5-p-e, l-m-3-n, t-u-7-v and x-3-n-v — are all covered by the throwaway-pool
+# regex above and are not repeated.
+*.dxv9oqtz.com
+*.kd6ro1qo.com
+*.33089393.com
+*.5554287.com
+*.9730865.com
+*.384894992.com
+*.2490439.com
+*.3932719.com
+*.4230320.com
+
+# lifegram.cc re-homes other people's hostnames under its own zone, which is
+# the same problem the imodns regex above exists for, arrived at from the
+# opposite direction. The encoding is dots-to-hyphens, so the real name is
+# recoverable from the label, and both of the ones seen here decode to hosts
+# that exist:
+#
+#   txcdn-file-m-mvbox-cn.lifegram.cc   -> txcdn-file-m.mvbox.cn
+#   vvmusic-stat-ubeibei-cn.lifegram.cc -> vvmusic-stat.ubeibei.cn
+#
+# Every host under the zone — music, upgrade, game, isp.live, tgins, bug.c —
+# CNAMEs to cname_api.lifegram.cc and lands on one address, 148.153.116.134,
+# in AS63199 (CDS Global Cloud), a Chinese cloud operator. Nothing answered on
+# any of eleven common ports, so the relay is source-filtered or on a port of
+# its own. That makes it a commercial acceleration relay rather than a consumer
+# VPN, but the effect on filtering is the same and is why it is listed: a
+# backend reached through it arrives under a name no list will carry, and the
+# zone can mint another on demand.
+#
+# Blocking it takes the app riding on it offline too — some Chinese karaoke or
+# music client, on the mvbox.cn and ubeibei.cn evidence. That is intended, but
+# it is what will be noticed first if someone reports something broken.
+*.lifegram.cc
+
+# ---------------------------------------------------------------------------
+# VPN and resolver-bypass endpoints found in the query history. The pattern
+# across all of them is the same: the brand domain is caught and the API host
+# the client actually needs is not, so blocking the first without the second
+# stops nothing.
+#
+# The doh group in blocky-common.nix has since been widened from hagezi's doh
+# list to doh-vpn-proxy-bypass, which now covers most of what follows. These
+# stay anyway, deliberately: each was evidenced here, an upstream list can drop
+# an entry between refreshes, and the ones marked below are in no upstream list
+# at all.
+
+# nordvpn.com is on the upstream list; api.nordvpn.com is not, and the client
+# only needs the API.
+*.nordvpn.com
+
+# protonvpn.com and account.protonvpn.com are blocked upstream. vpn-api.proton.me
+# is the same gap, and it carried the traffic — 104 active days from 2026-04-19.
+#
+# The host alone, never *.proton.me: Mail, Drive, Calendar and account recovery
+# all live in that zone and blocking it would take them out too.
+vpn-api.proton.me
+
+# NextDNS is a DoH resolver, so a client pointed at it stops using blocky
+# entirely. dns.nextdns.io is caught by the doh list, but the rest of the
+# service is not, and the setup path runs through link-ip and the test zone
+# rather than through dns.
+*.nextdns.io
+
+# dns4all publishes DoH, DoT and DoQ on one certificate. DoQ is the one that
+# matters here: it is not in hagezi's doh list and rides UDP 853/8853, which
+# the forwarded-53 rules do not touch.
+*.dns4all.eu
+
+# Bare proxies on rented hosting, each with a single-name certificate. In no
+# upstream list, so these three carry themselves.
+*.dlmate.cc
+*.csidetm.com
+
+# Outline is a VPN client with a self-hosted server, so there is no endpoint
+# list to block — only the distribution point. Also in no upstream list.
+*.outline.app
+
+# VPN control planes fronted on AWS API Gateway. Present on 119 of the 125
+# days in the record, so this is the most persistent of the lot even though the
+# daily volume is small.
+#
+# Only one of the twenty-one — tb2hgc4485 — is on hagezi's
+# doh-vpn-proxy-bypass list. The other twenty were found here by pattern and
+# appear in no upstream list, so this block is doing the work itself rather
+# than duplicating one.
+#
+# Listed as exact hostnames. The API ID is per-account, which makes each line
+# precise; the execute-api zone itself is shared AWS infrastructure and must
+# never be wildcarded.
+ft4ey1rupj.execute-api.us-east-1.amazonaws.com
+tb2hgc4485.execute-api.us-east-1.amazonaws.com
+o84pey3p61.execute-api.us-east-1.amazonaws.com
+te8z8m1yu9.execute-api.eu-west-1.amazonaws.com
+d-1mkmben89k.execute-api.ap-south-1.amazonaws.com
+nnxojbfxl1.execute-api.eu-west-1.amazonaws.com
+mk2r2rmj21.execute-api.us-east-1.amazonaws.com
+z9f5u8qp77.execute-api.ap-southeast-1.amazonaws.com
+80cz5lxeeb.execute-api.us-east-2.amazonaws.com
+sfx68qj9ne.execute-api.eu-west-1.amazonaws.com
+lo1cs2i70l.execute-api.eu-north-1.amazonaws.com
+9fo5hfzleb.execute-api.eu-west-1.amazonaws.com
+00lpc7tdyj.execute-api.us-east-2.amazonaws.com
+zpv26py91e.execute-api.us-east-1.amazonaws.com
+y9yrsygcg6.execute-api.us-east-1.amazonaws.com
+nnvzct8vg7.execute-api.eu-west-1.amazonaws.com
+b11v5ewz9l.execute-api.us-east-1.amazonaws.com
+2b7l724dff.execute-api.eu-central-1.amazonaws.com
+omo7ibn4c1.execute-api.ap-south-1.amazonaws.com
+d-x6wmx0p3dl.execute-api.ap-south-1.amazonaws.com
+d-misvr2e9b5.execute-api.us-east-1.amazonaws.com
