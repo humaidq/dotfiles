@@ -129,6 +129,7 @@ ask.u.ae
 *.opswarpy.com
 *.cb7lvj2ab.link
 *.ousaqb.tech
+*.voxazone.club
 *.securiumsolutions.com
 *.imoim.net
 *.imo.im

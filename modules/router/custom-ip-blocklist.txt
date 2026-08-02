@@ -1426,3 +1426,140 @@
 71.18.93.0/24
 71.18.134.0/24
 139.177.247.0/24
+
+# imo / sg.bigo.overwall tunnel endpoints, harvested from the router's own
+# nft-block-port drops rather than from a capture. Three days of
+# `journalctl -k -g nft-block-port` on bongo held 7917 lines, of which 7786
+# were the four tunnel ports, and they name 63 distinct destinations across two
+# LAN hosts. Origin AS on every one of them: 62 in AS132203 (Tencent Cloud SG)
+# and 45.132.216.241 in AS22427 (GNET INC), both already established above as
+# imo/BIGO rented space. No third party appeared in the sample at all, which is
+# what justifies taking the whole set rather than triaging it.
+#
+# BELT AND BRACES, NOT THE CONTROL. custom-port-blocklist.txt already drops
+# 943/1943/2943/9443 on the forward path and that is what actually stops this —
+# every address here was observed being dropped by that rule, so none of them
+# has ever completed a handshake. The argument in that file still stands: no
+# /32 has ever repeated across rounds and imo rents a new address each time, so
+# these will rot. The reason to carry them anyway is that a rotting redundant
+# entry costs nothing, where a rotting primary control costs everything; if the
+# port rule ever has to come off for a legitimate service, this list is what is
+# left standing.
+#
+# Read as a SAMPLE, not as the pool. The log rule is rate-limited to 60/minute
+# with a burst of 20, so these are the drops that fit under the limit — the
+# real set of addresses dialled is larger, and any future count taken from this
+# file understates it.
+#
+# 43.130.0.0/16 is new territory: no earlier round put a tunnel endpoint there,
+# and it contributes 12 of the 46 additions below. Left as /32s like the rest —
+# the addresses spread across 43.130.64.0/18 and 43.130.128.0/18, and taking
+# either prefix would mean 16k addresses of general-purpose Tencent Cloud for a
+# layer that is already closed by port.
+43.130.71.117
+43.130.74.180
+43.130.91.145
+43.130.100.18
+43.130.100.80
+43.130.102.162
+43.130.107.91
+43.130.111.63
+43.130.111.192
+43.130.132.162
+43.130.147.189
+43.130.174.174
+43.166.132.94
+43.166.132.251
+43.166.133.248
+43.166.139.6
+43.166.149.11
+43.166.149.18
+43.166.149.37
+43.166.149.247
+43.166.152.9
+43.166.152.98
+43.166.152.167
+43.166.152.186
+43.166.154.48
+43.166.162.38
+43.166.163.189
+43.166.171.211
+43.166.173.17
+43.166.173.80
+43.166.174.43
+43.166.177.253
+43.166.178.68
+43.166.178.92
+43.166.211.74
+43.166.212.48
+43.166.212.83
+43.166.212.210
+43.166.212.212
+170.106.8.251
+170.106.9.192
+170.106.15.18
+170.106.37.183
+170.106.51.222
+170.106.163.159
+170.106.163.182
+
+# A second address in 8.209, and the neighbour that makes 8.209.113.52 above a
+# pattern rather than a one-off. 8.209.72.63 carried 109 kB out / 88 kB in on
+# port 443 on 2026-08-02, established, with no DNS answer naming it and no TLS
+# ClientHello — the same "443 as a number" signature written up for .113.52.
+# It also probed 5228 in an earlier run and got nothing back, which is the LBS
+# shape: 5223/5228 first, 443 when those fail.
+#
+# The two are NOT in the same announced prefix. .113.52 is 8.209.96.0/19 and
+# this one is 8.209.64.0/18, so this is the sixth AS45102 prefix in this file
+# after 47.245.128.0/18, 47.245.160.0/19, 8.211.0.0/18, 8.209.96.0/19 and the
+# 47.79 spread noted below. That spread is the point: imo's LBS is not settling
+# in one Alibaba prefix, so a prefix here would have to be very wide to bite.
+#
+# A /32 for the usual reason and with the usual caveat. 8.209.64.0/18 was
+# considered and declined — it is ~16k addresses of general-purpose Alibaba
+# Cloud Singapore, the same bet as 8.211.0.0/18 but taken on one observation
+# in this prefix rather than two. If a third 8.209 address appears, that
+# standard is met and the /18 becomes the right call.
+#
+# Known limitation, stated plainly: while the 943/1943/2943/9443 pool walk was
+# failing with 760 dropped SYNs in the 2026-08-02 18:49 run, this LBS layer was
+# working, and three tunnel flows on 47.79 addresses (AS45102) were live in the
+# same window — 9143/tcp, 24715/tcp and 29710/udp, all no-DNS, no-TLS, opaque
+# payload. Those ports do not repeat across runs and those addresses span four
+# 47.79 prefixes, so neither custom-port-blocklist.txt nor a /32 sweep reaches
+# them. This entry narrows the LBS; it does not close the tunnel.
+8.209.72.63
+
+# The tunnel the LBS above actually handed out — the one path in imo's estate
+# observed working end to end on 2026-08-02, and the reason the entry above is
+# not sufficient on its own.
+#
+# Timeline from the 18:28 capture, and it is the LBS-then-tunnel shape written
+# up in earlier rounds rather than an inference from the addresses:
+#
+#   t=1.2s    2.26.182.104:23575  tunnel already up, 9.0 kB out / 7.2 kB in
+#   t=12.7s   8.209.72.63:443     LBS session opens (the /32 above)
+#   t=45.7s   2.26.182.104        that tunnel dies
+#   t=49.6s   2.26.182.97:2305    new tunnel, 37s after the LBS, 46.6 kB out /
+#                                 26.6 kB in over 447 packets, held to t=216.9s
+#
+# Throughout all of that the 943/1943/2943/9443 pool walk ran from t=2.6s to
+# t=227.8s and drew 760 SYNs with zero SYN-ACKs, as did the 169.136 NETSTAR
+# pool. Every layer this file and custom-port-blocklist.txt already close was
+# closed. The app got through anyway, on an address neither of them names.
+#
+# Attribution: 2.26.182.0/24 is AS393942, the same WiredISP shell already
+# carrying the imoim.app/imostatic.com tier and ban.imo.im further up, and
+# whois gives netname ipxo / "Private Customer" — leased space, which is what
+# the rented half of this estate looks like. No TLS ClientHello on either
+# address, payload records of 98 and 50 bytes with occasional 1314-byte frames,
+# and no DNS answer in the capture naming either one.
+#
+# /32s and not 2.26.182.0/24, on the same reasoning as the WiredISP block
+# above: these are dedicated addresses inside a shared leased /24, not a
+# dedicated /24. IPXO leases to many customers, so the range is somebody
+# else's tenant too. If a third address in this /24 turns up carrying the same
+# no-TLS tunnel, the collateral argument has lost and the /24 is the call.
+2.26.182.97
+2.26.182.104
