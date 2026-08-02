@@ -242,6 +242,29 @@ live.tiktok.com
 # and must not be wildcarded.
 hcdnl.pulltiktok.ovc.gslb.rocket-cdn3.com
 
+# TikTok video upload. tos- is TikTok Object Storage and the whole namespace is
+# one direction: across every observation held here, tos-quic-cgk7c ran 2.65 MB
+# out against 40 KB in, tos-quic-kul2a 710 KB against 22 KB, tos-my216-up
+# 927 KB against 57 KB. Nothing under the prefix is a download path, where the
+# sibling p16-common-sign on the same CDN inverts to 63 KB out and 686 KB in.
+# So the prefix can be taken whole without touching playback.
+#
+# Two shapes exist and one pattern covers both: tos-quic-<pop> for the QUIC
+# upload edges, of which sixteen POPs have been seen (awsfr, awssg, bkk9a,
+# cgk7a, cgk7c, gcpbr, gcpgb, gcpid, gcppl, ist4a, kix1b, kul2a, kul4a, mnl4a,
+# sin2b, syd1a), and tos-<region>-up for the older ones. Intermediate labels
+# are allowed because ttdns2.com carries the same names one zone further out.
+# Checked against every name this network has ever resolved: 24 match, all of
+# them tos- upload hosts, and no name beginning tos- escapes it.
+/^tos-[^.]+\.(?:[^.]+\.)*(?:tiktokcdn\.com|ttdns2\.com)$/
+
+# The upload edge behind the tos- names, on ByteDance's load-balancer zone.
+# Only these two names have ever appeared under bytelb.com here, and both are
+# upload, but the zone is a general LB domain and is not wildcarded for that
+# reason. Exact hosts, matching the treatment rocket-cdn3.com gets above.
+direct.videoarch-upload-edge-i18n-v3.gcpid.bytelb.com
+origin.videoarch-upload-edge-i18n-bge.idcgk7c.bytelb.com
+
 # TikTok commerce and affiliate services
 *.pipopay.eu
 *.pipopayment.com

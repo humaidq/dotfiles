@@ -1396,3 +1396,33 @@
 # but Xiaomi hardware is on this network and an unused name today is not an
 # unused name forever. Take those ranges only if the rotation continues and
 # the imagery is worth losing.
+
+# TikTok video upload POPs, on ByteDance's own address space. The tos- names
+# are blocked by pattern in custom-blocklist.txt, and these are here for the
+# same reason the live edges are: a device was watched making its first ever
+# upload from a client that had never resolved a tos- name, and it reached
+# tos-quic-cgk7c.tiktokcdn.com anyway — 2.4 MB outbound against 23 KB back in
+# a sixty-second window, with no DNS query for the name in it. Nothing was
+# cached because nothing had uploaded before, so the address came from the
+# app's config channel rather than from any resolver.
+#
+# One /24 per POP, and each range answers for exactly one upload hostname in
+# the entire history here: syd1a, cgk7a, cgk7c, bkk9a, kul4a and kul2a
+# respectively, with cgk7c also carrying the videoarch-upload-edge origin that
+# sits behind it. ByteDance announces these itself, so unlike a cloud frontend
+# there is no neighbouring tenant to catch.
+#
+# DELIBERATELY PARTIAL. Sixteen upload POPs have been seen and only these six
+# are ByteDance's own; the rest sit on AWS, GCP and Akamai — tos-quic-awssg,
+# awsfr, gcpid, gcpbr, gcpgb, gcppl and the Akamai-fronted tos-*-up hosts —
+# where the addresses are shared or get reassigned between customers and
+# cannot be taken at any prefix. A client that loses these will fail over to
+# one of those. This raises the cost of uploading, it does not close it, and
+# the name pattern is the part that actually holds for any client using this
+# network's resolver.
+71.18.34.0/24
+71.18.36.0/24
+71.18.37.0/24
+71.18.93.0/24
+71.18.134.0/24
+139.177.247.0/24
