@@ -61,3 +61,15 @@
 # would block nothing 500 and 4500 do not already cover.
 500
 4500
+
+# 889, added 2026-08-04 from the first capture of imo on a real handset rather
+# than the emulator. With the LBS dropped and the UDP media candidates returning
+# nothing, this was the one channel still carrying: 589 kB to 46.183.24.171:889,
+# opaque from the first byte with no ClientHello, open across the whole call.
+# Same transport family as the four above, so it belongs with them.
+#
+# Free to take: no device on either site touched port 889 in the two 10-minute
+# whole-LAN captures from the same evening. 889 is not registered to anything in
+# common use — if some appliance ever wants it, this file is the first place to
+# look.
+889

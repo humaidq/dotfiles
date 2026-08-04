@@ -1851,3 +1851,50 @@
 #
 # The remaining ~60 uncovered addresses are AWS (27), Cloudflare (26), Google
 # Cloud and ChinaNet. Shared by definition; the zone wildcards handle them.
+
+# Twelfth imo run, 2026-08-04, and the first from a real handset on the LAN
+# rather than the emulator — a 5-minute capture of one phone while imo was
+# launched and a call placed. The app made no DNS query of its own for the
+# entire session, so the name layer is now bypassed completely; it runs off the
+# hardcoded pool and nothing else.
+#
+# What this file already holds did bite, and nothing new was needed for it:
+# 169.136.160.158 was dropped on ports 46216 and 4937 (the LBS, inside
+# 169.136.160.0/23), and the media candidates 169.136.164.50 and 169.136.165.80
+# took 1.03 MB across four high UDP ports (30666, 30058, 29720, 29436) over 52s
+# and returned zero bytes — both sit inside the 169.136.164.0/22 taken with the
+# rest of AS10122, and a connect test from the LAN confirms both are dropped
+# live while github, fastly and apple answer. That is the whole NETSTAR media
+# path closed; no addition is warranted here.
+#
+# Everything that answered in that session — all of it — was in 46.183.24.0/24.
+# Five addresses, each on its own arbitrary high port, none carrying a TLS
+# ClientHello and all high-entropy from byte 0, which is the sg.bigo.overwall
+# signature the 943/1943/2943/9443 set was taken on:
+#
+#   46.183.24.171:889    589 kB, t+114s to the end, burst exactly over the call
+#   46.183.24.182:25601    2 kB, t+109..125s
+#   46.183.24.181:480      852 B, t+109s
+#   46.183.24.183:26601    837 B, t+109s
+#   46.183.24.184:24601    837 B, t+109s
+#
+# The port spread is why the /24 and not another port entry: 889 carried this
+# call, but 480, 24601, 25601 and 26601 were negotiated in the same second and
+# would carry the next one. 889 goes into custom-port-blocklist.txt as well,
+# since it is the one seen carrying, but the /24 is the operative block.
+#
+# 46.183.24.168 is blocked above as a /32, and its paragraph there ends "re-check
+# it rather than trust it". This is that re-check, and it moved: five new
+# addresses in the same /24, none of them .168. AS142146 (SANDHILL SOLUTION PTE.
+# LTD., SG) announces 20 separate /24s, so this is a rented block rather than the
+# whole operator, and every address imo has ever been seen using from it lands
+# here. The /32 above stays for its provenance; the generator collapses it in.
+#
+# Nothing else on either site touched this /24 or port 889 in the two 10-minute
+# whole-LAN captures taken the same evening, so there is no working traffic to
+# weigh against it. Note that the Tencent addresses in the same session are two
+# different things and only one is imo's: 43.166.x and 43.130.158.209 probing
+# 943/1943/2943/9443 are imo, and were dropped by the port list; 43.156.222.x
+# and 101.32.x on port 80 are WeChat (sgshort.wechat.com, MicroMessenger
+# client), answered 200, and must not be swept up with them.
+46.183.24.0/24

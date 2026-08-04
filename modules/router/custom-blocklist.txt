@@ -2254,3 +2254,24 @@ sportsseier.com
 # Cloudflare (104.18.2.14/104.18.3.14) behind Cloudflare nameservers — block the
 # zone by name only, never the address.
 *.zefrdata.com
+
+# Infinix ad-SDK backends, blocked 2026-08-04, found in a 10-minute LAN capture
+# on the second site alongside the already-blocked shalltry zone. Both are the
+# operator's own infrastructure, not shared CDN: api.vishavideo.com serves a
+# *.vishavideo.com wildcard cert off an Alibaba NLB (nlb-*.eu-central-1.
+# nlb.aliyuncs.com) behind an APISIX gateway, and club.twilighttrekway.com
+# serves a *.twilighttrekway.com wildcard cert off Alibaba Function Compute
+# (*.fc.aliyuncs.com). Their A records spread over 16 Alibaba addresses in
+# 47.254/47.91/8.209/8.211 — shared cloud, so block by name only, never the
+# address. The apex of twilighttrekway.com has no A record; only club. answers.
+*.vishavideo.com
+*.twilighttrekway.com
+
+# DNS-changer service, blocked 2026-08-04. A handset on the second site opened
+# TLS to www.frozondns.com during the same capture in which every one of its
+# plain-53 and DoT/DoH attempts at 8.8.8.8 was being dropped — i.e. an app or
+# user shopping for a resolver that is not the router's. Own cert (CN=
+# frozondns.com, SAN *.frozondns.com) on Cloudflare 104.18.26.187/104.18.27.187;
+# the apex does not resolve, www does. Block the zone by name only — the
+# addresses are shared Cloudflare.
+*.frozondns.com
