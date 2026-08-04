@@ -1898,3 +1898,34 @@
 # and 101.32.x on port 80 are WeChat (sgshort.wechat.com, MicroMessenger
 # client), answered 200, and must not be swept up with them.
 46.183.24.0/24
+
+# Thirteenth run, 2026-08-04, immediately after the /24 above went live — same
+# handset, same 5-minute method, imo launched again. The /24 held: 46.183.24.182
+# was dialled on 25601 throughout and returned nothing, where an hour earlier it
+# had answered. The NETSTAR media pair took another 1.33 MB to the same silence,
+# the Tencent 943/1943/2943/9443 probes were dropped by the port list, and
+# 47.245.167.194 was dropped by the /19 above. imo again made no DNS query at
+# all. Two endpoints answered, both opaque from byte 0 with no ClientHello, and
+# both are taken here as /32s rather than prefixes.
+#
+# 47.91.67.150 took the largest session of the run — 790 kB out and 1.49 MB in
+# on port 5228 over 216s, plus 149 kB on 443. That is the LBS pattern this file
+# already records on 5228 for 47.245.167.228 and 8.211.45.119, one AS over in
+# Alibaba's 47.91.64.0/20. Port 5228 is deliberately absent from
+# custom-port-blocklist.txt because it is Google FCM, so the address is the only
+# way to reach this; blocking it costs nothing, since real FCM is on Google
+# addresses. It is not a per-call pick either — the same address appears 2932
+# times in a whole-LAN capture from the other site the same evening, on three
+# unrelated handsets, so it is shared imo infrastructure. Shared Alibaba cloud,
+# hence the /32 and not the /20.
+47.91.67.150
+
+# 213.218.225.20 carried 2.47 MB outbound against 85 kB in over the last 7
+# seconds of the capture, on 45349/udp with a 33443/tcp alongside — the upload
+# leg of a call still running when the capture ended. AS22427 GNET INC., the
+# rented tier this file already holds a long run of 31.58.69.x /32s from, and a
+# second GNET address (31.58.84.2) was probed on 80 in the same session and got
+# nothing back. Taken as a /32 to match that precedent rather than as
+# 213.218.225.0/24; if the pool walks the /24 the way SANDHILL's did, take the
+# /24 then.
+213.218.225.20
