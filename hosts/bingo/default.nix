@@ -89,6 +89,13 @@
   ];
 
   sifr = {
+    # First install only. bingo's age key does not exist until it has booted
+    # once, so secrets/all.yaml — and user-passwd with it — cannot be
+    # decrypted, which would leave the primary user with no password to log in
+    # with. Remove this once the key is in .sops.yaml, which is also what
+    # clears the build-time warning.
+    bootstrap = true;
+
     autoupgrade.enable = true;
     basePlus.enable = true;
     personal = {
