@@ -1925,7 +1925,19 @@
 # leg of a call still running when the capture ended. AS22427 GNET INC., the
 # rented tier this file already holds a long run of 31.58.69.x /32s from, and a
 # second GNET address (31.58.84.2) was probed on 80 in the same session and got
-# nothing back. Taken as a /32 to match that precedent rather than as
-# 213.218.225.0/24; if the pool walks the /24 the way SANDHILL's did, take the
-# /24 then.
-213.218.225.20
+# nothing back.
+#
+# Taken as the /24 rather than the /32 the 31.58.69.x precedent would suggest.
+# Be clear about the standard of evidence: only one address in it has ever been
+# observed, so this is pre-emptive and not the SANDHILL case, where five
+# addresses across five ports all answered inside one /24 before it was taken.
+# What supports it is tenancy rather than volume — 213.218.225.0/24 is announced
+# by AS22427 (GNET INC.) specifically, inside the 213.218.224.0/19 its upstream
+# AS8851 announces, which is the shape of a block rented whole to one customer.
+# No address in it has rDNS and none serves a certificate, so there is no
+# visible co-tenant to damage, and nothing on either site has ever touched it
+# apart from imo. The run after the /32 landed is the reason to widen rather
+# than narrow: imo came back to the same address on new ports (25349/udp and
+# 43443/tcp against the earlier 45349 and 33443), which the /32 still caught —
+# but ports moving first is usually what addresses moving looks like next.
+213.218.225.0/24
