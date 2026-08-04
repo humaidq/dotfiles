@@ -202,6 +202,20 @@ bigbigbig.club
 # hostname only in SNI. This closes the resolving path; custom-ip-blocklist.txt
 # closes the one actually seen.
 *.downstext.com
+# The next zone in that rotation, tied by the hostname prefix rather than by
+# where it lands. sgp-stream2.streamingcloth.com carries the same sgp-stream
+# prefix as sgp-stream.downstext.com above, which is the one name in this group
+# proven outright by a CN=*.imo.im certificate; the operator indexes the prefix
+# across fresh zones as it burns them. It also appears in the same one-second
+# bootstrap burst as imo's whole hostname set, where the only other name still
+# resolving was api.tmdak.top — already blocked below as imo's.
+#
+# Weaker than the downstext entry and deliberately marked so: it is
+# Cloudflare-fronted on full setup with no CNAME leak, so there is no origin to
+# fingerprint and no address worth blocking. The prefix and the burst are the
+# whole case. The apex has no A record and serves no site, so the wildcard costs
+# nothing if it is wrong.
+*.streamingcloth.com
 # Seen only in the runtime capture, never in the string table. Both already
 # answer 0.0.0.0 from an upstream list; listed here so the block does not depend
 # on that list keeping them. The gdl./bstream. prefixes match imo's gdl.imostatic.com
@@ -328,6 +342,21 @@ origin.videoarch-upload-edge-i18n-bge.idcgk7c.bytelb.com
 *.tiktokglobalshop.com
 *.tiktokglobalshop.us
 *.tiktokglobalshopv.us
+# The .com twin of the .us entry above. Only the .us was ever listed, so
+# oec-im-tt-sg.tiktokglobalshopv.com — TikTok Shop's buyer/seller IM, oec being
+# ByteDance's overseas e-commerce prefix — stayed live while every other name in
+# this group answered 0.0.0.0. Four clients on this network query it.
+#
+# Not a lookalike: the apex and the host both answer Server: TLB with the
+# x-tt-trace-id/X-TT-LOGID header set behind a CN=*.tiktokglobalshopv.com cert,
+# so the zone is ByteDance's own rather than parked or squatted.
+*.tiktokglobalshopv.com
+# The same name also resolves one zone further out, as
+# oec-im-tt-sg.tiktokglobalshopv.com.ttdns2.com, which the wildcard above cannot
+# reach because ttdns2.com is the suffix there and tiktokglobalshopv.com only a
+# middle label. Same route the tos- pattern allows for, and one client has been
+# seen querying the long form directly.
+/^(?:[^.]+\.)*tiktokglobalshopv\.com\.(?:[^.]+\.)*ttdns2\.com$/
 *.shop.tiktok.com
 *.seller-us.tiktok.com
 *.affiliate-us.tiktok.com
@@ -426,6 +455,48 @@ d3rgif8ui183nr.cloudfront.net
 d9nifsca344ir.cloudfront.net
 dbcxwhezi52eu.cloudfront.net
 dqsj71pqtgpha.cloudfront.net
+# Four unbranded front zones for the same imo/BIGO API tier, found resolving
+# live while every branded name around them answered 0.0.0.0. Each is proven by
+# where it lands rather than by its name:
+#
+# tmdak.top serves api.tmdak.top off a direct A record with no CNAME, returning
+# 169.136.79.56/79.180/125.252 — byte-for-byte the same triple as the already
+# blocked imo.bigobuzz.tv, and stable across six resolution rounds. All three
+# are AS10122 (NETSTAR (SG) PTE. LTD.), the origin AS of the 169.136.0.0/16
+# documented as BIGO's above, so this is an operator A record and not a shared
+# CDN POP.
+#
+# companinons.site is a CNAME to vir-https-api-all.imotech.tech, landing in the
+# same /16 on 169.136.79.34/79.169/125.236. imotech.tech is imo's own zone —
+# api.imotech.tech is already caught by an upstream list, but the vir- host the
+# CNAME points at is not, so blocking the front alone would have left the
+# target reachable. Both apexes run on the same ns3/ns4.dnsv5.com pair.
+#
+# bytegle.tech is the BIGO-side twin, reached via api.successwe.site,
+# api.antibanads.com and api.maxesads.com, which chain into https-api-eu and
+# https-api-eu2 on it. Conclusive by fingerprint rather than by address: a
+# request to https-api-eu2.bytegle.tech answers openresty 405 with a
+# bigotraceresponse header — the exact signature used to attribute the
+# CloudFront distributions just above — and its A set includes 169.136.175.251
+# alongside rented Alibaba space, which is why the addresses alone prove
+# nothing here. The ad-flavoured naming is camouflage; no ad network is
+# involved.
+#
+# None of the four apexes has an A record or a website, so these are pure
+# infrastructure zones and the wildcards cost nothing. Upstream lists already
+# catch antibanads/maxesads/successwe, but not tmdak or companinons, and
+# upstream coverage is not something to depend on for the rest.
+*.tmdak.top
+*.companinons.site
+*.imotech.tech
+*.bytegle.tech
+*.successwe.site
+*.antibanads.com
+*.maxesads.com
+# Same bstream. prefix and same /16 as bstream.sgmbocast.com and
+# bstream.kzhi.tech already blocked above (169.136.75.255/79.110/79.166).
+# Upstream-blocked today; listed here so it stays blocked if that changes.
+*.hzmklvdieo.com
 # YY (Joyy, BIGO's parent) — itself a live-streaming platform
 *.yy.com
 # Tango

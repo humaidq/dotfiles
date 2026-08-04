@@ -297,6 +297,19 @@
 # neighbour.
 5.181.130.23
 
+# A second host in the same fleet, and the same attribution rather than an
+# inference: SNI for sgp-stream.downstext.com, a certificate for CN=*.imo.im
+# (GlobalSign AlphaSSL), and openresty/1.25.3.2 behind it — the identical
+# signature to .23 above, on a different network. Found the way .23 was, by a
+# LAN-side capture rather than by resolving anything: the name is covered by
+# *.downstext.com already, and the app reached this address without ever
+# querying it, so only the address closes the path actually used.
+#
+# A /32 and not 96.62.247.0/24 (AS21840, NET3 - WiredISP Inc.): that is a
+# general US ISP and cannot be treated as single-tenant, and of ten addresses
+# probed across the /24 only .231 answered at all. Same reasoning as .23.
+96.62.247.231
+
 # And the Tencent /19 the tunnel layer keeps returning to. Four distinct
 # addresses across three separate runs have now landed inside 43.166.224.0/19:
 #
@@ -1563,3 +1576,108 @@
 # no-TLS tunnel, the collateral argument has lost and the /24 is the call.
 2.26.182.97
 2.26.182.104
+
+# The bytegle.tech origin pool, blocked in custom-blocklist.txt as *.bytegle.tech
+# and added here as belt and braces so the tier stays closed if the app resolves
+# it by any means other than blocky.
+#
+# Attribution is by response fingerprint, not by address, which is what makes
+# /32s defensible on space this shared. Every one of these six answers an
+# openresty 405 carrying a bigotraceresponse header — the same signature used to
+# attribute the Likee CloudFront distributions — when reached with SNI for
+# https-api-eu2.bytegle.tech. That is the operator's own edge answering, not a
+# neighbour on the same rented hardware.
+#
+# The address set was resolved over eight rounds across every bytegle hostname
+# known here and did not grow, so this is the whole pool rather than a sample of
+# a rotating one. The remaining twelve addresses these names return are already
+# covered: ten by the 169.136 NETSTAR ranges above, 202.168.105.26 by
+# 202.168.104.0/22, and 8.211.19.200 by the Alibaba 8.211.0.0/18 entry.
+#
+# /32s and not the /24s, deliberately. The origin ASes are small rented hosting
+# — AS137517 FlameHosting, AS137235 Wired ISP, AS395374 Cyber Sainik, AS45102
+# Alibaba — and every one of those /24s is somebody else's tenant as well. The
+# usual escalation applies: if further addresses in these /24s turn up serving
+# the same fingerprint, the prefix becomes the right call instead.
+141.11.124.140
+143.20.85.97
+143.20.89.32
+143.20.90.69
+162.141.119.128
+47.254.156.223
+
+# The rented edge behind the imo/BIGO zones already in custom-blocklist.txt.
+# Every hostname under those zones that this network has ever recorded was
+# re-resolved over four rounds — 386 names, 286 of which answered, 408 distinct
+# addresses. 281 were already caught by the ranges above; these are the ones
+# that were not and that survived triage.
+#
+# Attribution is the TLS certificate, which is what makes /32s defensible on
+# rented space. Each address below serves a dedicated single-zone certificate
+# for the zone it is listed under — CN=*.bigo.tv with SAN {*.bigo.tv, bigo.tv}
+# and nothing else, and so on. All five wildcard certs are issued by the same
+# GlobalSign GCC R6 AlphaSSL CA 2025 profile, which is the useful part: it ties
+# the unbranded fhsg.club and cb7lvj2ab.link zones to bigo.tv and bigolive.tv by
+# a shared issuance pattern rather than by co-occurrence alone.
+#
+# The ASes are the rented half of the estate this file already describes —
+# AS137235/AS393942/AS135402/AS21840 are all Wired ISP shells, the same family
+# carrying the imoim.app/imostatic.com tier and ban.imo.im further up, and
+# AS22427 GNET, AS31715 CloudIP, AS137517 FlameHosting and AS54994 Meteverse are
+# the same kind of leased space. /32s and not the /24s, on the standing rule:
+# these are dedicated addresses inside somebody else's range.
+#
+# *.bigo.tv
+31.56.23.214
+143.20.83.30
+143.20.91.60
+167.148.196.65
+# *.bigolive.tv
+143.20.91.130
+# *.bnxz.net
+155.117.247.19
+155.117.247.199
+162.141.114.182
+162.141.114.232
+167.148.199.98
+167.148.199.222
+# *.fhsg.club
+140.228.30.245
+185.194.228.5
+185.250.27.124
+206.206.83.42
+213.239.139.65
+# *.cb7lvj2ab.link
+140.228.30.30
+185.250.27.45
+213.239.139.231
+# bstream-ws.muosepicel.com — a Let's Encrypt cert naming the host exactly
+138.113.110.17
+138.113.110.24
+
+# Deliberately NOT blocked, recorded so the same ground is not covered twice.
+# These all resolve from the blocked imo/BIGO zones and all failed triage:
+#
+# 98.98.238.183-190 (AS21859 Zenlayer), from mesh-game.jieyou.shop. This is the
+# Alibaba CDN POP that custom-blocklist.txt already warns about by address —
+# chamet.com and tango.tv front the same eight — so a /32 here would be an
+# unrelated tenant. The *.jieyou.shop cert proves only that the POP does SNI.
+# 47.79.64.16, 47.84.187.220, 47.84.207.78, 170.33.12.185 are the same zone on
+# Alibaba OSS and cloud; jieyou.shop is flagged as the weakest entry in that
+# group already.
+#
+# 101.200.203.221, for jieyou.shop, presents CN=www.baiyoo.online under Apache
+# with a 200 — a mismatched cert on a parked or unrelated host.
+#
+# 2.57.91.91 (usebigo.com) and 145.79.24.42/.136/.192, 145.79.29.143/.174/.231
+# (securiumsolutions.com), all AS47583 Hostinger behind its shared hcdn edge.
+# securiumsolutions.com is worth a second look in custom-blocklist.txt: it
+# serves a live "CERT-IN Empanelled Security Company" site, i.e. a real Indian
+# security firm, and sits in the paragraph there that rests on co-occurrence
+# alone alongside zkruner.com.
+#
+# pipopay.com lands on AS8966 Etisalat via api.pipopay.com.edgekey.net —
+# Akamai, on our own ISP. Blocking any of it would be self-harm.
+#
+# The remaining ~60 uncovered addresses are AWS (27), Cloudflare (26), Google
+# Cloud and ChinaNet. Shared by definition; the zone wildcards handle them.
