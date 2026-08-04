@@ -2,6 +2,7 @@
   self,
   inputs,
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -41,7 +42,13 @@
     sopsFile = ../../secrets/bingo.yaml;
   };
 
-  sops.secrets."dnsmasq/dhcp-hosts" = {
+  # Gated on dnsmasq itself: the client specialisation turns dnsmasq off, and
+  # the NixOS module only declares the dnsmasq user when it is enabled. A
+  # secret owned by a user that does not exist fails manifest validation, and
+  # sops-install-secrets validates the whole manifest before it decrypts
+  # anything — so one dead entry leaves /run/secrets empty and takes nebula,
+  # and with it SSH over the mesh, down alongside it.
+  sops.secrets."dnsmasq/dhcp-hosts" = lib.mkIf config.services.dnsmasq.enable {
     sopsFile = ../../secrets/bingo.yaml;
     owner = "dnsmasq";
     group = "dnsmasq";
@@ -115,7 +122,9 @@
         rangeEnd = "192.168.50.250";
         routerAddress = "192.168.50.1";
         dnsServer = "192.168.50.1";
-        hostsFile = config.sops.secrets."dnsmasq/dhcp-hosts".path;
+        # Same gate as the secret above, so this does not reference a secret
+        # that the client specialisation no longer declares.
+        hostsFile = lib.mkIf config.services.dnsmasq.enable config.sops.secrets."dnsmasq/dhcp-hosts".path;
       };
       qos.lowPriorityPorts = [
         6881
