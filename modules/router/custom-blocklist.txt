@@ -2253,5 +2253,4 @@ sportsseier.com
 # the zone carries nothing a client needs. Apex has no A record, www is on
 # Cloudflare (104.18.2.14/104.18.3.14) behind Cloudflare nameservers — block the
 # zone by name only, never the address.
-zefrdata.com
 *.zefrdata.com
