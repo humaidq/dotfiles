@@ -7,10 +7,21 @@ let
   cfg = config.sifr.router;
   blockyCommon = import ./blocky-common.nix;
 
-  # The LAN is a /16 (see the sifr.router.lanAddress default), so the reverse
-  # zone is the first two octets of the router address, reversed.
+  # Reverse zone for the LAN: one octet of the router address per full byte of
+  # the prefix on sifr.router.lanAddress, reversed. Derived rather than fixed
+  # at two octets because the routers do not share a prefix length — a /16 LAN
+  # gives 20.10.in-addr.arpa, a /24 gives 50.168.192.in-addr.arpa. Claiming a
+  # shorter zone than the router owns would make dnsmasq authoritative (and
+  # so NXDOMAIN) for reverse lookups of addresses on other networks.
+  lanPrefix = lib.toInt (lib.elemAt (lib.splitString "/" cfg.lanAddress) 1);
   lanOctets = lib.splitString "." cfg.dhcp.routerAddress;
-  reverseZone = "${lib.elemAt lanOctets 1}.${lib.elemAt lanOctets 0}.in-addr.arpa";
+  reverseZone = lib.concatStringsSep "." (
+    lib.reverseList (lib.take (lanPrefix / 8) lanOctets)
+    ++ [
+      "in-addr"
+      "arpa"
+    ]
+  );
 
   # dnsmasq only serves DNS to blocky, on loopback.
   dnsmasqUpstream = "127.0.0.1:5353";
@@ -35,6 +46,16 @@ in
 
 {
   config = lib.mkIf cfg.enable {
+
+    # The reverse zone above is built from whole octets, so a prefix that ends
+    # mid-octet has no classful zone to name. Nothing here needs one, so this
+    # is an assertion rather than a CNAME delegation (RFC 2317).
+    assertions = [
+      {
+        assertion = lanPrefix == 8 || lanPrefix == 16 || lanPrefix == 24;
+        message = "sifr.router.lanAddress must use a /8, /16 or /24 prefix; got /${toString lanPrefix}";
+      }
+    ];
 
     # dnsmasq is the DHCP server and the authoritative resolver for the zones
     # derived from DHCP (hostnames and their PTRs). It is deliberately *not* on

@@ -27,6 +27,14 @@ creation_rules:
           - *oreamnos
           - *anoa
           - *bongo
+  # bingo's host key is added after its first install; until then only the
+  # admin hosts can decrypt this file. Add the anchor above and run
+  # `sops updatekeys secrets/bingo.yaml` once the key exists.
+  - path_regex: secrets/bingo.yaml$
+    key_groups:
+      - age:
+          - *oreamnos
+          - *anoa
   - path_regex: secrets/lighthouse.yaml$
     key_groups:
       - age:

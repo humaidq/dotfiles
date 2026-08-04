@@ -43,6 +43,7 @@ Systems managed by this flake.
 | `serow`      | ThinkPad T590            | i7-8565U     | 16GB  | Intel UHD 8th Gen | Laptop | NixOS | OK     |
 | `bongo`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | OK     |
 | `addax`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | OK     |
+| `bingo`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | New    |
 | `duisk`      | Vultr VPS                | vCPU         | 2GB   | None              | Server | NixOS | OK     |
 | `lighthouse` | Vultr VPS                | vCPU         | 1GB   | None              | Server | NixOS | OK     |
 | `boerbok`    | Star64                   | SiFive       | 8GB   | None              | Server | NixOS | Broken |

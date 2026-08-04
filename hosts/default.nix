@@ -27,6 +27,7 @@
         host-serow-vm = import ./serow-vm;
         host-anoa = import ./anoa;
         host-bongo = import ./bongo;
+        host-bingo = import ./bingo;
         host-duisk = import ./duisk;
         host-lighthouse = import ./lighthouse;
         #host-boerbok = import ./boerbok;
@@ -70,6 +71,13 @@
           inherit specialArgs;
           modules = [
             self.nixosModules.host-bongo
+            inputs.srvos.nixosModules.server
+          ];
+        };
+        bingo = lib.nixosSystem {
+          inherit specialArgs;
+          modules = [
+            self.nixosModules.host-bingo
             inputs.srvos.nixosModules.server
           ];
         };
@@ -164,6 +172,7 @@
           lighthouse = self.nixosConfigurations.lighthouse.config.system.build.toplevel;
           anoa = self.nixosConfigurations.anoa.config.system.build.toplevel;
           bongo = self.nixosConfigurations.bongo.config.system.build.toplevel;
+          bingo = self.nixosConfigurations.bingo.config.system.build.toplevel;
 
           #inherit (self.packages.x86_64-linux) boerbok-sd-from-x86_64;
         };

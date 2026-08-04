@@ -90,6 +90,7 @@
 
       # routers
       "v6.alq.ae" = "10.20.0.1";
+      "v10.alq.ae" = "192.168.50.1";
 
       # Nebula
       "lighthouse.s.alq.ae" = "10.10.0.10";
@@ -99,6 +100,7 @@
       "anoa.s.alq.ae" = "10.10.0.14";
       "pixel.s.alq.ae" = "10.10.0.15";
       "bongo.s.alq.ae" = "10.10.0.16";
+      "bingo.s.alq.ae" = "10.10.0.18";
 
       # Do locally
       "cache.huma.id" = "10.10.0.12,10.20.0.250";
