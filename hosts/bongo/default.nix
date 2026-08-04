@@ -112,6 +112,11 @@
     router = {
       enable = true;
       localDomain = "v6.alq.ae";
+      customDNSMappings = {
+        "alq.ae" = "10.10.0.12,10.20.0.250";
+        "cache.huma.id" = "10.10.0.12,10.20.0.250";
+        "g.huma.id" = "10.10.0.12,10.20.0.250";
+      };
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
       # Same gate as the secret above, so this does not reference a secret
       # that the client specialisation no longer declares.

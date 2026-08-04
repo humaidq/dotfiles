@@ -310,6 +310,23 @@
 # probed across the /24 only .231 answered at all. Same reasoning as .23.
 96.62.247.231
 
+# The rotation after .231 was blocked, found in the capture taken immediately
+# afterwards: same SNI for sgp-stream.downstext.com, same CN=*.imo.im behind
+# openresty/1.25.3.2, and again reached without ever being resolved — no
+# resolver answer anywhere names this address, so it is carried in the app.
+#
+# 185.250.27.0/24 is AS135402, which is where 5.181.130.23 above also sits, so
+# that entry's "revisit if a later run finds a neighbour" is now answered: the
+# neighbour is in a different prefix of the same AS rather than the same /24.
+# Still a /32 — ten addresses probed across this /24 and only .164 answers, and
+# AS135402 announces 49 scattered /24s, which is a reseller rather than a
+# single-tenant operator AS. Worth noting for whoever reads this next that
+# AS135402 (US-FXCAPITAL - Wired ISP Inc.) and AS21840 (NET3 - WiredISP Inc.)
+# are the same hosting outfit under two numbers, and that 143.14.159.0/24 —
+# already named against imo's http-dns.imostatic.com in custom-blocklist.txt —
+# is a third prefix of AS135402. Chasing /32s here will keep losing ground.
+185.250.27.164
+
 # And the Tencent /19 the tunnel layer keeps returning to. Four distinct
 # addresses across three separate runs have now landed inside 43.166.224.0/19:
 #

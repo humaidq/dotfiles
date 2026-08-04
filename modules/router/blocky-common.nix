@@ -86,7 +86,6 @@
 
       # way to test
       "test.huma.id" = "1.1.1.1";
-      "alq.ae" = "10.10.0.12,10.20.0.250";
 
       # routers
       "v6.alq.ae" = "10.20.0.1";
@@ -101,10 +100,6 @@
       "pixel.s.alq.ae" = "10.10.0.15";
       "bongo.s.alq.ae" = "10.10.0.16";
       "bingo.s.alq.ae" = "10.10.0.18";
-
-      # Do locally
-      "cache.huma.id" = "10.10.0.12,10.20.0.250";
-      "g.huma.id" = "10.10.0.12,10.20.0.250";
 
       # Fix TII sites
       "jira.tii.ae" = "10.151.12.77";

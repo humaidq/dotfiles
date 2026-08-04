@@ -6,6 +6,7 @@
 let
   cfg = config.sifr.router;
   blockyCommon = import ./blocky-common.nix;
+  customDNSMappings = blockyCommon.customDNS.mapping // cfg.customDNSMappings;
 
   # Reverse zone for the LAN: one octet of the router address per full byte of
   # the prefix on sifr.router.lanAddress, reversed. Derived rather than fixed
@@ -33,7 +34,7 @@ let
   # records (DHCP leases, host-record) before its own wildcards.
   shadowingMappings = lib.filterAttrs (
     name: _: lib.hasSuffix ".${name}" ".${cfg.localDomain}"
-  ) blockyCommon.customDNS.mapping;
+  ) customDNSMappings;
 
   # dnsmasq takes one address per directive, blocky takes a comma-separated
   # list, so expand them.
@@ -164,7 +165,7 @@ in
           # Set outside the recursiveUpdate, which would merge the removed
           # entries straight back in.
           customDNS = blockyCommon.customDNS // {
-            mapping = lib.removeAttrs blockyCommon.customDNS.mapping (lib.attrNames shadowingMappings);
+            mapping = lib.removeAttrs customDNSMappings (lib.attrNames shadowingMappings);
           };
         };
     }; # end blocky

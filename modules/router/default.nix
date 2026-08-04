@@ -47,6 +47,11 @@ in
       default = "home.arpa";
       description = "Local DNS domain served by the router for DHCP hostnames.";
     };
+    customDNSMappings = lib.mkOption {
+      type = with lib.types; attrsOf str;
+      default = { };
+      description = "Router-specific static DNS name-to-address mappings.";
+    };
     pppdConfig = lib.mkOption {
       type = lib.types.path;
       description = "Path to file containing the ISP provided credentials for PPPoE authentication.";
