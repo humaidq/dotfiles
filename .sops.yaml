@@ -5,6 +5,7 @@ keys:
   - &bongo age1tnl79m5zk9myngmaxvy2znt7rueeup9v8e760y9z3vsdk2650unqm0ckx8
   - &duisk age1pj6s2egqvseryr3eu7xhzuqdmnf3hsghp3fr6z48haptzlmggyvqvhg9v5
   - &lighthouse age19f88hjgpf3v22vpnv4tf62vzcapcjlzrt08h3pt29tgddacqlevsn8trmq
+  - &bingo age1swvwwcz00rukxfxkfq2m08gqq4jj0j2n04vcpnlxgwcm2n7qjq4stgg2u2
 creation_rules:
   - path_regex: secrets/all.yaml$
     key_groups:
@@ -27,14 +28,12 @@ creation_rules:
           - *oreamnos
           - *anoa
           - *bongo
-  # bingo's host key is added after its first install; until then only the
-  # admin hosts can decrypt this file. Add the anchor above and run
-  # `sops updatekeys secrets/bingo.yaml` once the key exists.
   - path_regex: secrets/bingo.yaml$
     key_groups:
       - age:
           - *oreamnos
           - *anoa
+          - *bingo
   - path_regex: secrets/lighthouse.yaml$
     key_groups:
       - age:
