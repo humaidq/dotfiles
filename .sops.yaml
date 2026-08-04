@@ -16,6 +16,7 @@ creation_rules:
           - *bongo
           - *duisk
           - *lighthouse
+          - *bingo
   - path_regex: secrets/duisk.yaml$
     key_groups:
       - age:
