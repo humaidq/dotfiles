@@ -170,6 +170,7 @@ in
                   23
                   80
                   853
+                  8853
                 ];
           };
         };
@@ -230,6 +231,7 @@ in
         client.fail("timeout 3 dig @${wanServerAddress} upstream.test +time=1 +tries=1")
         client.fail("timeout 3 dig @${wanServerAddress} upstream.test +tcp +time=1 +tries=1")
         client.fail("curl --connect-timeout 2 http://${wanServerAddress}:853/")
+        client.fail("curl --connect-timeout 2 http://${wanServerAddress}:8853/")
         client.fail("curl --connect-timeout 2 http://${wanServerAddress}:23/")
         wan.fail(f"ping -c 1 -W 2 {client_ip}")
         wan.fail("ping -c 1 -W 2 ${routerUplinkAddress}")

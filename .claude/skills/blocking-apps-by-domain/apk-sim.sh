@@ -53,6 +53,15 @@ capture_pid=""
 cap_dest=""
 stale_snapshot=0
 
+# swiftshader_indirect is the default because it is the only mode that renders
+# reliably headless, but emulator 36.5.11's gfxstream backend segfaults on it
+# on some hosts — reproducibly, twice in a row, immediately after "Emulator is
+# performing a full startup", with a crashpad "no stack mapping" and no boot.
+# `-gpu off` boots the same AVD in 25s there. Overridable rather than changed
+# outright: an app that needs GL will render worse (or refuse) under `off`, so
+# only reach for it on a host where the default crashes.
+gpu_mode="${APK_SIM_GPU:-swiftshader_indirect}"
+
 export ANDROID_SDK_ROOT="$sdk" ANDROID_HOME="$sdk" ANDROID_AVD_HOME="$avd_home"
 
 emulator_alive() {
@@ -126,7 +135,7 @@ wait_boot() {
 # second way to save one mid-run.
 launch_emulator() {
 	"$sdk/emulator/emulator" -avd "$avd_name" -port 5556 \
-		-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect \
+		-no-window -no-audio -no-boot-anim -gpu "$gpu_mode" \
 		"$@" >"$cache/emulator.log" 2>&1 &
 	emu_pid=$!
 }
@@ -482,7 +491,7 @@ ensure_avd() {
 		avdmanager="$(find "$sdk/cmdline-tools" -name avdmanager -type f | head -1)"
 		echo no | "$avdmanager" create avd -n "$avd_name" -k "$image" -d pixel_6 --force >&2
 		cat >>"$avd_home/$avd_name.avd/config.ini" <<-EOF
-			hw.gpu.mode=swiftshader_indirect
+			hw.gpu.mode=$gpu_mode
 			hw.ramSize=3072
 			hw.keyboard=yes
 			disk.dataPartition.size=6G

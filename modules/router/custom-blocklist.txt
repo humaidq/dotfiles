@@ -283,7 +283,19 @@ bigbigbig.club
 # Client attribution in the query log was only fixed on 2026-07-30 22:35;
 # everything before that logged as 127.0.0.1, so no pre-fix row can be tied to
 # a device at all — only to a run.
-/^(?:d12yfzfinm82vx|d1d65riqum5ov|d1d7mk5slijq0u|d1k080mgg40341|d1o2a1dvy4ydfc|d1p2f0ksgcgivh|d1slfh9t7sjvlh|d2a2jrhh2ri1hj|d2oplsxlk1d0so|d2p5f2vo26del7|d2wav5q10bfeht|d2xplh6bc39kz7|d31u03sr7ou25d|d35h7ub5u34xbi|d37tp9szxrigiu|d3a16m42psihkg|d3goy0vsfptofy|d3ivuap2ibxkc3|d3obboq1me5ipu|d3q500pql0crpy|d87xtzssols3u|dghwmknqfbc2v|dhfhtyg1h2goz|do8rcgamey0x4|dphulio5g51jf|dsikbx6m2wko3)\.cloudfront\.net$/
+#
+# d3r6lfw7jds5dy is the 27th, added 2026-08-04 from the 2026.06.1051 package. It
+# appears in the imo_signal_dict assets as the "domain" field of a captured
+# http_protocol_stable log event — imo's own telemetry naming the distribution it
+# had just used. Probed by --resolve against a live CloudFront edge, it returns
+# output byte-identical to d37tp9szxrigiu: no Server header at all and the body
+# {"response":{"type":"malformed_request","message":"incorrect api request"},
+# "status":"error"}. No other distribution in this set answers that way, which
+# also settles d37tp9szxrigiu — noted above as resting on the package alone.
+#
+# The edge addresses (3.165.247.0/24 at the time of writing) are deliberately not
+# in custom-ip-blocklist.txt: CloudFront edge is shared with the entire internet.
+/^(?:d12yfzfinm82vx|d1d65riqum5ov|d1d7mk5slijq0u|d1k080mgg40341|d1o2a1dvy4ydfc|d1p2f0ksgcgivh|d1slfh9t7sjvlh|d2a2jrhh2ri1hj|d2oplsxlk1d0so|d2p5f2vo26del7|d2wav5q10bfeht|d2xplh6bc39kz7|d31u03sr7ou25d|d35h7ub5u34xbi|d37tp9szxrigiu|d3a16m42psihkg|d3goy0vsfptofy|d3ivuap2ibxkc3|d3obboq1me5ipu|d3q500pql0crpy|d3r6lfw7jds5dy|d87xtzssols3u|dghwmknqfbc2v|dhfhtyg1h2goz|do8rcgamey0x4|dphulio5g51jf|dsikbx6m2wko3)\.cloudfront\.net$/
 
 # TikTok live streaming. Anchored on the webcast/pull-/push- prefixes so the
 # rest of the app keeps working: the same CDN zones also serve thumbnails
@@ -497,6 +509,63 @@ dqsj71pqtgpha.cloudfront.net
 # bstream.kzhi.tech already blocked above (169.136.75.255/79.110/79.166).
 # Upstream-blocked today; listed here so it stays blocked if that changes.
 *.hzmklvdieo.com
+# Seven more unbranded imo zones, from the 2026.06.1051 package (2026-08-04).
+# Five were found in assets/imo_signal_dict_1_{compress,decompress} — a pair of
+# 110 KB zstd dictionaries trained on live imo signalling, so they carry verbatim
+# captured protocol JSON rather than compiled constants. That JSON contains imo's
+# per-country domain-replacement table, which is the mechanism these zones exist
+# to serve: the client is handed a substitute host for each branded one, so
+# blocking only the branded name leaves the replacement reachable.
+#
+#   support0.bigo.sg -> bstream.kzhi.tech  (blocked already)
+#   giftesx.bigo.sg  -> giftesx.dfaklj.tech
+#   bigf.bigo.sg     -> bigf.dfaklj.tech
+#   gdl.bigo.sg      -> gdl.dfaklj.tech
+#   api.likee.video  -> setting.musicdream.club  (blocked already)
+#   api.imotech.tech -> api.news-img.site
+#
+# The same dictionary carries imo's own self-monitoring config, which names its
+# aliases outright and is the reason dfaklj was recognisable at all:
+#   "cc.network.monitor.regex":"[(?:imo|bigo|hello|yy|dfaklj|cubetecn|like).*?\.",
+#                               ".*?\.(azureedge|cloudfront)\.net"]
+#
+# Each zone is proven by where it lands, not by its name — every operator address
+# any of them resolves to was already in custom-ip-blocklist.txt before this:
+#
+# channelcom.tech: apiact.channelcom.tech answers 83.229.99.0/33/105, inside
+# imo's own AS36131 /24. The apiact. prefix is imo's, matching apiact.imoim.net.
+# m.channelcom.tech rotates over 143.14.159.144, 167.148.163.139, 185.93.35.145
+# and 82.22.195.12 — four addresses this file already carries as /32s.
+#
+# loveprogram.tech: dns-fra/dns-sgp/dns-sjc, an exact mirror of imo's own
+# dns-fra/dns-sjc/dns-sgp.imo.im trio. Unlike the others it sits entirely on
+# rented AWS, so the names are the only durable control; the twelve instance
+# addresses are in custom-ip-blocklist.txt and are expected to age.
+#
+# dfaklj.tech: gdl./bigf./giftesx., the same three prefixes as BIGO's bigo.sg
+# CDN hosts. bigf. answers 169.136.79.35/79.188/125.245, in the 169.136.0.0/16
+# documented as BIGO's above.
+#
+# musiclike.top: already referenced by the imodns regex further up, but only as
+# imodns*.musiclike.top. fastly.musiclike.top serves a wildcard cert for
+# *.musiclike.top, so the zone is real infrastructure and takes a wildcard. It
+# fronts on Fastly, so the address is shared and is deliberately not blocked.
+#
+# likeimo.tech and ukyuh.tech (atb-im-conf/atb-im-stats, the imo-flavoured twins
+# named further up) share one A set with each other: 164.90.114.1/114.6/117.67
+# and 169.136.79.34/79.169/125.236. That second triple is exactly what
+# companinons.site's vir-https-api-all.imotech.tech resolves to above, so this is
+# one operator. Both are upstream-blocked today and neither apex resolves;
+# they are pinned here because upstream coverage is not something to depend on.
+#
+# news-img.site is the api.imotech.tech replacement target, also upstream-only.
+*.channelcom.tech
+*.loveprogram.tech
+*.dfaklj.tech
+*.musiclike.top
+*.likeimo.tech
+*.ukyuh.tech
+*.news-img.site
 # YY (Joyy, BIGO's parent) — itself a live-streaming platform
 *.yy.com
 # Tango
@@ -2097,8 +2166,9 @@ vpn-api.proton.me
 *.nextdns.io
 
 # dns4all publishes DoH, DoT and DoQ on one certificate. DoQ is the one that
-# matters here: it is not in hagezi's doh list and rides UDP 853/8853, which
-# the forwarded-53 rules do not touch.
+# matters here: it is not in hagezi's doh list and rides UDP 853/8853. Both
+# ports are dropped on the forward path now, so this entry is the second layer
+# rather than the only one.
 *.dns4all.eu
 
 # Bare proxies on rented hosting, each with a single-name certificate. In no
@@ -2162,3 +2232,26 @@ d-misvr2e9b5.execute-api.us-east-1.amazonaws.com
 # The apex resolves to Google's shared 216.239.32-38.21 forwarding addresses,
 # which also answer for go.dev among others. Block the name; never the address.
 *.logsanalytics.net
+
+# Transsion (Infinix) launcher / ad-SDK telemetry — "shalltry". Preinstalled on
+# the HOT 40i, it beacons device data and pulls ads/recommendations. The apex is
+# already covered by an upstream list (resolves 0.0.0.0), but launcher.shalltry.com
+# has no upstream A record and the app falls back to hardcoded IPs regardless
+# (those are in custom-ip-blocklist.txt), so pin the whole zone here by name too.
+# Same vendor as palmplaystore.com, different service.
+shalltry.com
+*.shalltry.com
+
+# Adware, flagged 2026-08-04. football.sportsseier.com fronts on Akamai
+# (sportsseier.com.akamaized.net -> a636.dscd.akamai.net -> 95.100.170.x) and the
+# apex is Alibaba (47.237.21.204). Blocked at the zone by name only — never the
+# Akamai address, which also serves TikTok CDN and other unrelated tenants.
+sportsseier.com
+*.sportsseier.com
+
+# ZEFR ad-tech telemetry, blocked 2026-08-04. Brand-safety/measurement vendor;
+# the zone carries nothing a client needs. Apex has no A record, www is on
+# Cloudflare (104.18.2.14/104.18.3.14) behind Cloudflare nameservers — block the
+# zone by name only, never the address.
+zefrdata.com
+*.zefrdata.com

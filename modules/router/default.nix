@@ -359,11 +359,18 @@ in
               # verdict — sharing them would let packets over the rate escape
               # the drop as well as the log. Counters on the verdicts carry the
               # exact volume.
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport { 53, 853 } limit rate 60/minute burst 20 packets log prefix "nft-block-dns " comment "sample DNS/DoT bypass drops"
+              # 8853 alongside 853: it is the conventional alternate port for
+              # DNS-over-QUIC, which dns4all and a few other resolvers publish
+              # on the same certificate as their DoT service. Same category as
+              # 853 and nothing on this LAN speaks it for anything else, so it
+              # belongs with the DNS rules rather than in the port blocklist —
+              # drops then land under nft-block-dns, where a client retrying
+              # encrypted DNS reads as one story in LogQL.
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport { 53, 853, 8853 } limit rate 60/minute burst 20 packets log prefix "nft-block-dns " comment "sample DNS/DoT bypass drops"
               iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 53 counter drop comment "Block LAN DNS bypass to WAN"
               iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 53 counter drop comment "Block LAN DNS bypass to WAN"
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 853 counter drop comment "Block LAN DoT bypass to WAN"
-              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport 853 counter drop comment "Block LAN DoT bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 853, 8853 } counter drop comment "Block LAN DoT/DoQ bypass to WAN"
+              iifname "${cfg.lan0}" oifname "${cfg.ppp}" tcp dport { 853, 8853 } counter drop comment "Block LAN DoT/DoQ bypass to WAN"
             }
           '';
         };

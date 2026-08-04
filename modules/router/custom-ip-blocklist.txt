@@ -16,7 +16,8 @@
 
 # dns4all's resolver, blocked by name as *.dns4all.eu. The address is worth
 # having as well because a DoQ client that has the IP cached does not need the
-# name again, and DoQ on UDP 853/8853 is not covered by the forwarded-53 rules.
+# name again, and an address block also covers a resolver moved to some other
+# port than the 853/8853 the forward rules drop.
 # AS210004 announces only this /24 and it serves nothing but the resolver, so
 # there is no collateral in the address itself.
 194.0.5.3
@@ -1671,6 +1672,158 @@
 # bstream-ws.muosepicel.com — a Let's Encrypt cert naming the host exactly
 138.113.110.17
 138.113.110.24
+
+# Fifth imo run, 2026-08-04, on bingo. A device that had just resolved
+# sgp.imoim.net — answered 0.0.0.0 by the resolver, so the DNS layer worked —
+# still placed a ~2.4 min call: the app fell back to cached relay addresses and
+# never needed the name again. The media ran as encrypted UDP on rotating high
+# ports (13798/34164, 13087/34314, so no stable port to add to
+# custom-port-blocklist.txt), and the signalling rode TCP 443 to
+# sgp-stream.downstext.com — the same *.imo.im origin documented above. Blocking
+# the addresses is what closes this, and the temp drop on all three had its
+# counter climbing within seconds, so the app was still hammering them.
+#
+# All /32 — carrier and shared cloud, so the neighbours are unrelated tenants:
+#   212.62.98.152  AS43766 Mobile Telecommunication Company Saudi Arabia, a new
+#                  operator for this file; carried the bulk of the call.
+#   47.82.7.64     AS45102 Alibaba (US), prefix 47.82 not yet among the other
+#                  AS45102 /32s here; the second media relay.
+#   150.241.249.34 AS31715 CloudIP LLC, the sgp-stream.downstext.com host itself.
+212.62.98.152
+47.82.7.64
+150.241.249.34
+
+# Same 2026-08-04 sitting, a second device on a different relay: a ~3.3 min
+# encrypted-UDP call on high ports (10162-10298) to 105.245.104.82, AS29975
+# Vodacom. Confirmed imo, not a look-alike: the same device queried
+# lbs.imolive2.com (imo's LBS, already sinkholed by *.imolive2.com), and when
+# 105.245.104.82 was dropped the app re-signalled and failed over to
+# 47.79.237.58 (AS45102 Alibaba, imo's known 47.79 relay range) after a :3112
+# punch sweep. The payload is encrypted from byte 0, which rules out the
+# Botim/GoChat/GoCall family (cleartext RTP 0x80/0x90 to Etisalat 86.96.113.x).
+#
+# imo hosts media on regional carriers and shared cloud and rotates per call, so
+# each /32 is one host and this is whack-a-mole — the name/port blocks are the
+# real control and these are the addresses actually seen carrying media.
+105.245.104.82
+47.79.237.58
+
+# Transsion (Infinix) launcher / ad-SDK — "shalltry", seen 2026-08-04 on bingo.
+# The device's dominant flow was opaque TCP to 101.46.37.197:14481 (Huawei
+# Cloud): the port answers, serves no certificate and waits for the client to
+# speak first — a proprietary binary protocol — while cleartext WhatsApp and
+# Facebook SNI ran alongside, so this is one preinstalled app, not a device
+# tunnel. It resolves launcher.shalltry.com; the apex is already sinkholed to
+# 0.0.0.0, so the app fell back to hardcoded addresses, the same bypass imo uses
+# above. The names are blocked as *.shalltry.com in custom-blocklist.txt; these
+# are the hardcoded fallbacks a name block cannot reach.
+#
+# All /32 — shared cloud and adware-hosting tenants, so no wider prefix:
+#   101.46.37.197  AS136907 Huawei Clouds, the launcher backend on :14481.
+#   185.250.27.164 AS135402 Wired ISP, the same /24 as the 185.250.27.45/.124
+#                  already blocked above.
+#   146.103.94.46  AS54994 Meteverse, already named as adware infra in this file.
+#   146.103.94.64  second Meteverse host in the same /24.
+101.46.37.197
+185.250.27.164
+146.103.94.46
+146.103.94.64
+
+# imo 2026.06.1051 static pull, 2026-08-04. Three addresses from the hardcoded
+# dex pool that no entry above reached. All three are AS21859 (Zenlayer), the
+# same rented hosting as the 128.14.88.122 / 128.14.18.126 / 169.197.100.124
+# /32s already in this file — 169.197.119.145 is a direct neighbour of the last
+# of those, in 169.197.116.0/22.
+#
+# /32s and not the announcing prefixes: Zenlayer is general-purpose rented
+# hosting, so the neighbours are other tenants. Being written into imo's own
+# binary is the attribution, and it is the same standard the existing Zenlayer
+# entries were added under.
+#
+# The other 106 operator addresses in this package's dex were already covered by
+# the AS36131 and NETSTAR ranges above, which is the useful result: the pool has
+# not moved since it was last read.
+169.197.119.145
+199.91.73.45
+45.124.253.99
+
+# 164.90.101.119, from the same package. It is in imo's own 164.90 space but
+# 164.90.101.0/24 is not currently announced by anyone, so it is absent from the
+# AS36131 prefix list above. It appears in the imo_signal_dict assets as the
+# "ip" field of a captured HTTPDNS answer — imo handing the address to a client
+# — so it is a live backend regardless of what BGP says today.
+#
+# A /32 rather than the /24: the /24 being dark means there is no evidence about
+# who else is in it. Revisit if AS36131 starts announcing it.
+164.90.101.119
+
+# Ninth imo run, 2026-08-04, on the 2026.06.1051 package, with everything above
+# enforced. The most degraded run yet and the second with no working tunnel.
+#
+# Every layer that has one held. All sixteen hostnames answered 0.0.0.0 and not
+# one was connected to by name. The hardcoded pool got its walk — 21 addresses
+# across 83.229.88/96, 164.90.100 and 169.136.118/160 on 443/5223/5228 and
+# 375/4937/17953/46216 — and every one of them got four to seven SYNs and
+# nothing back. The DNS-over-TCP escape to 8.8.8.8 was refused again.
+#
+# The tunnel layer failed outright, as it did in run seven: 43.166.152.149 on
+# 943 and 2943 and 43.130.68.237 on 943, one exchange each and no session.
+# Neither is blocked here. 43.166.152.149 sits beside the already-listed
+# 43.166.152.147 in 43.166.128.0/18, and 43.130.68.237 is a fourth distinct
+# Tencent prefix (43.130.64.0/18) — but this file's rule for the Tencent group
+# is to block on an answer rather than on a SYN, and neither answered. Re-check
+# these two first if imo starts working.
+#
+# What still worked is the LBS, in the same role and on the same ports as every
+# round before: 8.209.89.172 took 23 kB on port 5228 over 94.8s, then 2.2 kB
+# more on 5228 at t=173s and 2.3 kB on 5223 at t=234s. Probed directly on 443 it
+# speaks a non-TLS protocol, so it is not a generic web tenant.
+#
+# This is the third distinct Alibaba Cloud Singapore prefix to host the LBS —
+# 47.245.160.0/19 (runs three and seven), 8.211.0.0/18 (runs four, five and six)
+# and now 8.209.64.0/19. A /32 for now, on this file's stated rule of one
+# observation one address; 8.209.64.0/19 is the escalation target if a second
+# run lands in it, and on the evidence of the other two prefixes it will.
+8.209.89.172
+
+# The rented half of the newly-blocked zones, resolved over six rounds from
+# bongo on 2026-08-04. Of the 40 addresses those zones returned, 23 were already
+# in this file — which is what attributes them — and these twelve are the
+# remainder worth having.
+#
+# All twelve are dns-fra/dns-sgp/dns-sjc.loveprogram.tech, imo's HTTPDNS mirror
+# and the exact counterpart of its own dns-*.imo.im trio. All twelve are also in
+# the package's dex string table, so they are shipped instances rather than
+# addresses one capture happened to see.
+#
+# AWS EC2 in eu-west-1/2 and eu-central-1 (AS16509), so /32s and never the
+# prefixes: those are general-purpose and an elastic IP can be reassigned to an
+# unrelated tenant. Expect these to age faster than anything else in this file —
+# twelve addresses across six rounds is a rotating pool, and *.loveprogram.tech
+# in custom-blocklist.txt is the control that actually holds.
+3.65.178.248
+3.78.101.153
+3.123.106.227
+13.43.17.154
+13.43.221.109
+18.132.170.246
+18.134.93.50
+18.192.252.215
+18.198.84.7
+35.157.218.70
+35.178.2.93
+52.56.144.219
+
+# Deliberately NOT blocked from that same resolution sweep, for the usual
+# reason: they are shared CDN edge, not imo's.
+#
+# 3.165.247.112/194/205/218 are the CloudFront edge behind
+# d3r6lfw7jds5dy.cloudfront.net. The distribution hostname is blocked by name in
+# custom-blocklist.txt, which is precise because a distribution ID belongs to one
+# AWS account; the edge addresses serve every CloudFront customer there is.
+#
+# 167.82.49.91 (AS54113, Fastly) is fastly.musiclike.top. Same reasoning — the
+# zone takes a wildcard by name, the Fastly POP is shared with the internet.
 
 # Deliberately NOT blocked, recorded so the same ground is not covered twice.
 # These all resolve from the blocked imo/BIGO zones and all failed triage:
