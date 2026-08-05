@@ -1994,3 +1994,26 @@
 157.245.194.245
 143.198.214.26
 138.68.74.158
+
+# Two more client tunnels, found 2026-08-05 in a 5-minute whole-LAN capture taken
+# right after the SailfishX nodes were dropped. Different devices and different
+# operators from SailfishX, so these are a second and third tool rather than that
+# one relocating.
+#
+# 144.225.91.11 — 40.4 MB in five minutes, 100% of one tablet's bytes, on
+# tcp/443, with no resolver line explaining it. It presents a fabricated SNI:
+# status-29.shop-51.stacksnippets.net resolves nowhere, while the real
+# stacksnippets.net (a Stack Overflow property) is 198.252.206.1. So the name is
+# camouflage chosen to look ordinary in a TLS log, not a CNAME or a shared host,
+# and it cannot be reached by any entry in custom-blocklist.txt. Ace Data Centers
+# / IPXO leased space.
+#
+# 79.142.74.43 — 22.5 MB in the same window, 100% of one handset's bytes, on
+# tcp/22, also unexplained by DNS. AltusHost B.V. (AS51430, NL). SSH carrying the
+# whole of a phone's traffic is a SOCKS tunnel, not administration.
+#
+# Both are single rented hosts rather than pools, so /32s. Expect replacements:
+# the tell that found these is a peer holding nearly all of one device's bytes
+# with no resolver line behind it, which no name list can catch.
+144.225.91.11
+79.142.74.43
