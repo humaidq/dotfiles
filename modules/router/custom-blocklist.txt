@@ -2390,3 +2390,17 @@ sportsseier.com
 # the apex does not resolve, www does. Block the zone by name only — the
 # addresses are shared Cloudflare.
 *.frozondns.com
+
+# SailfishX, a commercial VPN sold as an "encrypted tunnel accelerator" for
+# reaching "all international network content" — that is sailfishx.com's own
+# marketing copy, carried in Chinese, Russian and English. Registered 2024-10-23
+# through Namecheap behind Withheld for Privacy, nameservers at Cloudflare.
+#
+# jwt.sailfishx.live is the token endpoint the client polls to keep a session
+# alive; the name is the only durable handle on it, because it is multi-CDN
+# fronted — Tencent EdgeOne via jwt.sailfishx.live.eo.dnse4.com, and Cloudflare
+# via us-jwt.sailfishx.live.cdn.cloudflare.net. The addresses behind both are
+# shared edge, so they cannot be taken; the tunnel nodes themselves are in
+# custom-ip-blocklist.txt.
+*.sailfishx.live
+*.sailfishx.com

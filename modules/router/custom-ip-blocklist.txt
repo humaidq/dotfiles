@@ -1976,3 +1976,21 @@
 47.79.225.0/24
 47.79.230.0/24
 47.79.242.0/24
+
+# SailfishX tunnel nodes — see *.sailfishx.live in custom-blocklist.txt for what
+# the service is. DigitalOcean droplets reached with no DNS lookup and no SNI,
+# which is the whole tell: a handset has no other reason to hold a raw session
+# with a rented VPS. Observed carrying:
+#
+#   157.245.194.245  tcp/553  the tunnel proper — 264 MB in one ~1h session
+#   143.198.214.26   tcp/22   SSH, version banner then steady payload
+#   138.68.74.158    udp/443  full-MTU 1282/1287 both ways, WireGuard-shaped
+#
+# None of the three serves TLS on 443, so there is no certificate to examine and
+# no co-tenant visible to damage. DigitalOcean is shared cloud, so /32s rather
+# than ranges, consistent with the rest of this file. Expect the list to rotate:
+# these are droplets and a fresh one costs the operator nothing, so the name
+# block above is the durable control and these are the addresses seen in use.
+157.245.194.245
+143.198.214.26
+138.68.74.158
