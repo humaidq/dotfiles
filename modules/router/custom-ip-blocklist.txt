@@ -1941,3 +1941,38 @@
 # 43443/tcp against the earlier 45349 and 33443), which the /32 still caught —
 # but ports moving first is usually what addresses moving looks like next.
 213.218.225.0/24
+
+# imo's hardcoded relay pool on Alibaba Cloud SG (AS45102), inside 47.79.0.0/16.
+# This is the layer that still carries voice calls once the control plane is
+# sealed. With authentication and the LBS both blocked, an already-authenticated
+# client skips discovery entirely and dials a pool member straight from its
+# cached session, so no lookup and no LBS exchange ever precedes the call — the
+# name layer cannot see it and the prefixes already in this file do not cover it.
+#
+# The five /24s below are the members observed carrying media. The signature is
+# the documented imo one: a single peer taking the bulk of the flow across two
+# high random UDP ports (34511 and 34533 on 47.79.1.189), opaque from byte 0,
+# with nothing in any resolver log explaining the address.
+#
+# Taken as /24s rather than the enclosing /16, deliberately. 47.79.0.0/16 is
+# shared Alibaba cloud and one legitimate tenant is already in use here:
+# alialarm-sgp.oss-ap-southeast-1.aliyuncs.com, the Hikvision camera alarm
+# channel, resolves into 47.79.49.0/24 and has to keep working. Across the full
+# resolver history the only other name that has ever resolved into 47.79/47.82
+# is api.bidnex.com, an ad exchange, so a carve-out was the only thing the wider
+# block needed — but the narrower list is cheaper to be wrong about. The pool is
+# hardcoded in the app and therefore finite, so extending this as new members
+# appear is bounded rather than an endless chase. Expect to extend it: each call
+# may pick a member not yet seen.
+#
+# Note 47.79.237.58 is already listed further up as a bare /32, from the run
+# where dropping a Vodacom relay made the app fail over into this range. It is a
+# sixth member of the same pool and is deliberately left as a /32 here rather
+# than widened to 47.79.237.0/24, so that the /24s below stay exactly the set
+# that has been observed carrying media. Widen it if that /24 ever produces a
+# second address.
+47.79.1.0/24
+47.79.120.0/24
+47.79.225.0/24
+47.79.230.0/24
+47.79.242.0/24
