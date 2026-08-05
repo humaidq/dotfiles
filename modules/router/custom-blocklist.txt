@@ -1943,17 +1943,132 @@ jlmmm-6f65f.firebaseapp.com
 # 1,026,054-name corpus, so match the shape rather than chasing the list.
 /(^|\.)[a-z0-9]-[a-z0-9]-[a-z0-9]-[a-z0-9]\.com$/
 
-# The all-numeric fronts from the same estate stay listed individually. The
-# obvious regex — seven or more digits then .com — is not safe: it also matches
-# legitimate Chinese sites named after a dialling code, 0510118114.com and
-# 0555528.com among 349 in Tranco's top 1M, and there is no shape that
-# separates those from these.
+# The all-numeric fronts from the same estate. The obvious regex — seven or
+# more digits then .com — is not safe: it also matches legitimate Chinese sites
+# named after a dialling code, 0510118114.com and 0555528.com among 353 in
+# Tranco's top 1M, and there is no shape that separates those apexes from
+# these. Anchoring on the host label does separate them: twenty of these zones
+# appeared in the resolver's history and every one was reached only as
+# images.<digits>, socket.<digits> or mgs.<digits>, which is not a layout a
+# dialling-code site uses. The two apexes below stay listed because they were
+# also queried bare.
+#
+# Worth recording for the next pass: nineteen of those twenty zones are
+# themselves in Tranco's top 1M. For this pool a rank measures query volume,
+# not legitimacy, so it cannot be used as the safety check the way it can for
+# the jili and ja5 labels above.
+/^(?:images|socket|mgs)\.[0-9]{7,}\.com$/
 *.483939992.com
 *.283949993.com
 
 # ggslot rotates the TLD and keeps the label, in the same way jili does, so
 # match the label. Not a word that occurs in a legitimate domain.
 /(^|\.)ggslot[a-z0-9-]*\.[a-z]{2,}$/
+
+# ---------------------------------------------------------------------------
+# A second pass over the resolver's history, scored rather than eyeballed.
+# Every domain in the log was ranked by the share of its own queries falling
+# within sixty seconds of a query for a name already listed above; the
+# background rate for that is 3.8%, so anything at 50% or more is tied to this
+# estate rather than merely coincident with it. Of the 193 registrable domains
+# that survived, 144 were already blocked by the entries above and hagezi's
+# lists — the 49 that were not are below, grouped by certificate.
+#
+# Percentages in the comments are that share. They are the reason each entry
+# is here, and they are worth re-deriving rather than trusting if any of these
+# are ever revisited: a name that stops appearing in the history has either
+# been abandoned or renamed, and the two look identical from the file.
+
+# The cash-in layer, which the entries above never reached: every casino front
+# here is free to run its deposit flow on a zone that shares nothing with the
+# game hosts. gauiipay is the clearest — one gateway per merchant on
+# mmpay/wmpay/wpay/sgpay/wanli/dafa2 subdomains, the last reading as Dafabet,
+# and 100% of its queries sit inside a session. yeecopay answers with a
+# RuoYi-framework 401 in Chinese, onlinegwpay fronts Tengine, and
+# cashier.transera.ph is named for what it does. happypaytm is the weakest at
+# 38% and is a Paytm lookalike, which is its own reason to list it.
+*.gauiipay.com
+*.phcasher.com
+*.transera.ph
+*.yeecopay.com
+*.onlinegwpay.com
+*.happypaytm.com
+
+# JDB Gaming again, established the same way as the groups above: the
+# certificate on achvapi247as.zyfira69.com carries *.th1games.com,
+# *.jdb199.com, *.fcg1688.net, *.jdb247.net, *.gtfgaming.net, *.jteam.dev and
+# *.jdbcdn.net alongside its own zone. jdbcdn.net is already listed further up
+# this file, which is what anchors the rest to the same operator. Four of them
+# have not been seen in the history at all and are here on the certificate
+# alone; jygrq.com is not on it but serves the same achv* host prefix.
+*.zyfira69.com
+*.th1games.com
+*.jdb199.com
+*.jdb247.net
+*.fcg1688.net
+*.gtfgaming.net
+*.jteam.dev
+*.jygrq.com
+
+# One fixed eight-character label reused across five unrelated-looking zones —
+# trininder.com, skytvro.com, modohiyaku.com, ecosysmail.com and
+# trgovhaha.com. The zones rotate and the token does not, so match the token.
+# No legitimate host carries a label of this shape.
+/^k25ryj8x\./
+
+# The ossjj pool, named like the ossphs.com entry further up and serving a
+# jiasu.* host on each — jiasu being the Chinese for "accelerate", the same
+# naming those operators use for their asset hosts.
+/(^|\.)ossjj[0-9]+\.com$/
+
+# Front zones with a single-domain certificate each, so no grouping is
+# possible and no grouping is needed: each was reached only from inside a
+# session. The two punycode names decode to 赢zx钱pl随we机ty.com and
+# 抽zx奖pl机we会qp.com — "win money random" and "prize draw chance" with the
+# letters of a brand interleaved through the characters, which is as
+# self-describing as this estate gets.
+*.fc3xuccu.com
+*.ec3gghda.com
+*.3yjt.com
+*.xsqzj.com
+*.datgeni2e47.net
+*.t4oc7gzc.com
+*.zirrz0hz.com
+*.ssut2sx0jc7g.com
+*.nwmkkxno5mvq.com
+*.vuprppwldvo.com
+*.ltguevmavv.com
+*.hlhoo010il1i.com
+*.dsidos-fodops.com
+*.acelink01.com
+*.dpnkpe59.com
+*.111jlcom.com
+*.6595-784.com
+*.arrtdtuh.biz
+*.8c99.live
+*.8c99a.live
+*.j188app.cc
+*.trgovhaha.com
+*.xn--zxplwety-sh7qj661ad2q79e.com
+*.xn--zxplweqp-o31m585fouxdkm.com
+
+# Not listed, and deliberately so, since each looks like an omission:
+#
+#   connect.facebook.net   31% — the Meta Pixel the landing pages carry, which
+#                          is the conversion hook for the ads that deliver
+#                          them. Also every Facebook login button on the web.
+#   static.geetest.com     96%, challenges.cloudflare.com 51% — the captcha
+#                          walls these sites put up, both shared with
+#                          legitimate sites.
+#   icons.pawwalls.com     11 sessions, but a plain S3 bucket behind its own
+#   farsunpteltd.com       CloudFront distribution, and a generic PHP API.
+#                          Both read as the ad-supported apps showing the ads
+#                          rather than anything the operator runs.
+#   web.mynt.xyz           Mynt, the operator of GCash. A licensed payment
+#                          provider, not a casino cashier.
+#   signalone.io           100% and 63%, but nothing attributes either — no
+#   rtsg.dev               sibling on the certificate, no useful origin.
+#                          Revisit if they reappear with company.
 
 # Piracy sites that resolved unblocked. thepiratebay, therarbg, bt4g,
 # torrentdownload and torrentsnipe were in the history too but upstream lists
