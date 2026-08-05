@@ -88,8 +88,13 @@ cmd_add() {
 			echo "already blocked: $ip"
 			continue
 		fi
+		# The comment is passed with literal double quotes inside the argument.
+		# nft joins its argv back into one string and re-lexes it, so the shell's
+		# own quotes are long gone by then and a bare tempblock:1.2.3.4 makes its
+		# parser stop at the colon ("unexpected colon"), so every add aborted on
+		# the first address and no rule was ever installed.
 		nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN" \
-			"$(fam_of "$ip")" daddr "$ip" counter drop comment "tempblock:$ip"
+			"$(fam_of "$ip")" daddr "$ip" counter drop comment "\"tempblock:$ip\""
 		echo "blocked: $ip"
 	done
 }
