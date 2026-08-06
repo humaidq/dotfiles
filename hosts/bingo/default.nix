@@ -91,6 +91,19 @@
           command = "${pkgs.nftables}/bin/nft";
           options = [ "NOPASSWD" ];
         }
+        # conntrack reads the live flow table with byte counters, which answers
+        # "what is carrying this device's traffic right now" in one call rather
+        # than the two minutes a capture costs. Read-only in practice for this
+        # use, though -D can delete entries, so it sits in the same
+        # effectively-root bracket as the two above.
+        {
+          command = "/run/current-system/sw/bin/conntrack";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "${pkgs.conntrack-tools}/bin/conntrack";
+          options = [ "NOPASSWD" ];
+        }
       ];
     }
   ];

@@ -1,0 +1,263 @@
+# Addresses to cripple rather than drop.
+#
+# Everything here is shaped to 100 kbit/s each way with 400 ms of added latency,
+# 100 ms of jitter and 3% random loss, instead of being blocked outright. The
+# point is that a tunnel behaves like a bad connection rather than a filtered
+# one: there is no clean failure for the client to detect and route around, and
+# an app that reconnects instantly when a node is dropped has nothing to react
+# to when the node merely becomes miserable. The jitter matters more than the
+# bitrate — 400 ms ± 100 ms reorders packets badly enough to make a tunnelled
+# session unusable while leaving it technically connected.
+#
+# Same format and same guarantees as custom-ip-blocklist.txt: parsed at build
+# time, so a typo fails the rebuild rather than silently shaping nothing, and
+# overlapping entries are collapsed. Add live with `tempthrottle add <ip>`,
+# which is cleared by the next rebuild — anything worth keeping belongs here.
+#
+# TEST SITE: https://ash-speed.hetzner.com/ — Hetzner's Ashburn speed test.
+# Present so the shaping can be verified end to end from a LAN client: run the
+# speed test and the result should be ~100 kbit/s with visibly awful latency.
+# Remove it once the throttle is confirmed working.
+5.161.7.195
+
+# VPNs
+38.123.110.196
+148.153.50.179
+148.153.67.208
+148.153.234.111
+# Same operator as the three 148.153 addresses above — all four are AS63199
+# (CDS Global Cloud), and this one is what every host under lifegram.cc CNAMEs
+# to. The zone is blocked by name in custom-blocklist.txt; this is the belt to
+# that pair of braces, since a zone whose whole purpose is minting new names
+# for other people's backends can mint one this list has never seen.
+#
+# A /32 and not the /23: CDS is a general-purpose cloud, so the neighbours are
+# other people's tenants.
+148.153.116.134
+# proxy.dlmate.cc. Single-name certificate, no other hostname known to resolve
+# here. A /32 only — 162.55.0.0/16 is Hetzner, so the range is full of
+# unrelated tenants.
+162.55.0.240
+# A full-device tunnel, caught 2026-08-01 in a netwatch window. Different
+# operator from the four above, which are all AS63199: this is AS394381
+# (L7-CONNECT - L7 Connect, US) in 154.51.185.0/24.
+#
+# It took 97.1% of the device's bytes — 90.9 MB of a 93.6 MB window, with only
+# 4450 bytes going anywhere else at all, and the peer count collapsing from 112
+# the window before to 19. That is not an app with a dominant peer, it is the
+# whole device routed through one address.
+#
+# Every frame was UDP on port 2311, 73 MB down against 17 MB up, with 53106
+# packets at over 1400 bytes and 3116 IP fragments — bulk transfer at MTU,
+# which a voice or video call does not produce. No DNS has ever resolved into
+# 154.51.185.0/24, there was no TLS and so no SNI, and no certificate could be
+# retrieved, so there is no name anywhere to attribute it by. Deliberately not
+# confused with the allowed VoIP relays, which resolve normally under their own
+# domains and sit in entirely different ranges.
+#
+# A /32 rather than the /24: the /24 has no reverse DNS on the address or its
+# neighbours and nothing has ever resolved into it, which is suggestive of a
+# single tenant but is three lookups rather than proof. Expect the operator to
+# move — a tunnel endpoint is the easiest thing in this file to replace.
+154.51.185.190
+# SailfishX tunnel nodes — see *.sailfishx.live in custom-blocklist.txt for what
+# the service is. DigitalOcean droplets reached with no DNS lookup and no SNI,
+# which is the whole tell: a handset has no other reason to hold a raw session
+# with a rented VPS. Observed carrying:
+#
+#   157.245.194.245  tcp/553  the tunnel proper — 264 MB in one ~1h session
+#   143.198.214.26   tcp/22   SSH, version banner then steady payload
+#   138.68.74.158    udp/443  full-MTU 1282/1287 both ways, WireGuard-shaped
+#
+# None of the three serves TLS on 443, so there is no certificate to examine and
+# no co-tenant visible to damage. DigitalOcean is shared cloud, so /32s rather
+# than ranges, consistent with the rest of this file. Expect the list to rotate:
+# these are droplets and a fresh one costs the operator nothing, so the name
+# block above is the durable control and these are the addresses seen in use.
+157.245.194.245
+143.198.214.26
+138.68.74.158
+
+# Two more client tunnels, found 2026-08-05 in a 5-minute whole-LAN capture taken
+# right after the SailfishX nodes were dropped. Different devices and different
+# operators from SailfishX, so these are a second and third tool rather than that
+# one relocating.
+#
+# 144.225.91.11 — 40.4 MB in five minutes, 100% of one tablet's bytes, on
+# tcp/443, with no resolver line explaining it. It presents a fabricated SNI:
+# status-29.shop-51.stacksnippets.net resolves nowhere, while the real
+# stacksnippets.net (a Stack Overflow property) is 198.252.206.1. So the name is
+# camouflage chosen to look ordinary in a TLS log, not a CNAME or a shared host,
+# and it cannot be reached by any entry in custom-blocklist.txt. Ace Data Centers
+# / IPXO leased space.
+#
+# 79.142.74.43 — 22.5 MB in the same window, 100% of one handset's bytes, on
+# tcp/22, also unexplained by DNS. AltusHost B.V. (AS51430, NL). SSH carrying the
+# whole of a phone's traffic is a SOCKS tunnel, not administration.
+#
+# Both are single rented hosts rather than pools, so /32s. Expect replacements:
+# the tell that found these is a peer holding nearly all of one device's bytes
+# with no resolver line behind it, which no name list can catch.
+144.225.91.11
+79.142.74.43
+
+# The same tool as the two entries above, caught properly this time. Watching a
+# device across four successive drops showed it is not a single rented host but
+# a client carrying a node pool, and the two /32s above were simply the members
+# that happened to be in use that day.
+#
+# It moves between four transports and will switch mid-session when one is
+# dropped: SSH on tcp/22 (its default), raw UDP on a random high port, TLS to an
+# SNI proxy that forwards on whatever name it is handed, and a cleartext HTTP
+# channel that carries the payload base64-encoded in a "Cookie: rvs=..." header
+# with Content-Type: text/xml and no User-Agent. It also fakes its SSH identity
+# — one handset announced itself as PuTTY_Release_0.68, and the same device sent
+# two different OpenSSH version strings to two nodes minutes apart, with the
+# KEXINIT algorithm order shuffled each time. Authentication is a password to
+# root@, which is how these are sold: a monthly SSH account plus a config file.
+#
+# The fronting names it presents are in custom-blocklist.txt, but that list is
+# nearly decorative here — the client dials every one of these by address and
+# was never seen resolving any of them. Addresses are the only thing that bites,
+# and they are a rearguard action: each drop produced a replacement from a
+# different provider within about a minute, so treat this block as raising the
+# cost rather than closing the door. Grouped by host below only to show the
+# spread; there is no single operator to take down.
+#
+# DigitalOcean:
+146.185.133.73
+209.38.19.101
+157.245.194.248
+188.166.2.75
+178.62.209.103
+165.22.34.76
+134.122.45.83
+159.203.0.59
+# IONOS:
+217.160.155.154
+217.160.33.174
+217.160.102.24
+82.165.169.40
+# OVH:
+51.75.39.84
+135.125.164.189
+51.195.36.31
+# DigitalOcean again, on tcp/554 — the app reuses the RTSP port number across
+# transports, having already been seen sending raw UDP to 554 on another node:
+139.59.59.242
+# Hetzner, AltusHost and other leased space:
+188.245.69.44
+31.3.154.181
+# CH-AH-NET. This is the one range that has repeated: 79.142.74.43 above was
+# taken from this tool on an earlier day, and 79.142.79.185 turned up on a later
+# one. Two /24s of the same /16 across separate sessions suggests a range the
+# operator holds rather than a coincidence of rented hosts, so a wider block may
+# be justified if a third address appears.
+79.142.79.185
+108.165.21.144
+199.244.102.118
+205.237.95.191
+# The pair carrying the cleartext Cookie channel, in one ARIN-transferred /24:
+110.172.149.119
+110.172.149.191
+#
+# Deliberately not here: an Akamai edge address seen carrying one of its SNIs.
+# Shared edge, so the name-only rule applies.
+#
+# These two are the DNS-changer already sinkholed as *.frozondns.com, which the
+# app reaches by address with no lookup at all. It moved to the second one
+# within minutes of the first being dropped, so expect a third. The first serves
+# a valid GlobalSign *.imo.im certificate, putting it on imo edge infrastructure
+# rather than anything of the DNS service's own — the same overwall pattern as
+# the ousaqb.tech names.
+45.66.151.43
+194.4.52.220
+45.136.38.51
+
+# Further nodes of the same tunnel client, added by working through successive
+# captures: drop the address currently carrying the device's traffic, watch
+# where it reconnects, drop that. Each address here was the dominant peer of a
+# handset — upwards of 87% of everything that device sent, against 22-32% for
+# the same handset browsing normally — with no resolver line behind it. They are
+# listed without further comment because they are interchangeable: the client
+# holds a pool spanning DigitalOcean, IONOS, OVH, Hetzner, AltusHost and leased
+# space, and picks a fresh one within seconds of any drop. One of the two
+# handsets stopped tunnelling entirely after enough of its pool was taken, which
+# is the only outcome this approach can produce; the other kept finding nodes.
+164.92.188.145
+46.105.58.71
+37.46.116.89
+2.28.31.237
+54.38.198.163
+# AltusHost AS51430 has now produced four nodes across two sites and several
+# days — 79.142.74.43 above, 79.142.79.185, 37.46.116.89 and 185.10.58.188.
+# That is the one operator in the pool that looks held rather than rented ad
+# hoc, and the case for taking its ranges wholesale rather than a node at a
+# time is stronger than for the general-purpose hosts.
+185.10.58.188
+206.189.210.204
+77.68.90.148
+151.243.14.64
+217.160.104.239
+46.166.163.178
+142.93.223.184
+217.160.34.78
+217.160.36.145
+217.160.102.109
+172.235.173.112
+51.89.244.45
+172.105.74.225
+199.244.102.203
+159.203.8.245
+172.237.104.173
+110.172.149.207
+188.166.110.214
+104.105.82.84
+217.160.155.179
+46.105.59.176
+205.237.95.93
+145.239.237.96
+79.142.75.43
+188.226.154.141
+212.227.226.232
+199.244.103.182
+167.172.251.49
+79.142.75.56
+104.105.15.25
+78.46.216.169
+62.238.51.134
+49.12.11.247
+104.105.192.152
+172.234.244.32
+46.105.61.36
+62.238.58.152
+2.28.28.1
+46.105.44.228
+54.38.50.229
+165.22.100.45
+151.115.52.76
+192.241.238.219
+69.55.59.154
+# Nodes dropped live earlier in the same sweep, recorded here so a rebuild does
+# not quietly hand them back when it flushes the temporary set.
+170.64.140.197
+172.235.98.212
+178.128.44.164
+199.244.102.81
+212.227.32.178
+217.160.34.122
+31.3.154.235
+79.142.79.195
+154.17.253.125
+109.228.55.232
+152.42.187.214
+172.233.117.123
+162.243.255.244
+217.160.104.143
+91.134.61.190
+62.238.59.69
+2.28.2.91
+167.233.167.102
+172.104.51.35
+172.232.212.49
+89.167.61.113

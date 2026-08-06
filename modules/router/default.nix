@@ -93,6 +93,33 @@ in
         description = "Optional path to a dnsmasq static DHCP hosts file.";
       };
     };
+    # Applied to the addresses in custom-throttle-list.txt, in both directions.
+    # These are deliberately bad rather than merely slow: the aim is a tunnel
+    # that stays connected and is useless, because a client that fails cleanly
+    # just reconnects somewhere else.
+    throttle = {
+      rate = lib.mkOption {
+        type = lib.types.str;
+        default = "100kbit";
+        description = "Rate cap applied to throttled addresses, each direction.";
+      };
+      delay = lib.mkOption {
+        type = lib.types.str;
+        default = "400ms";
+        description = "Latency added to throttled addresses.";
+      };
+      jitter = lib.mkOption {
+        type = lib.types.str;
+        default = "100ms";
+        description = "Jitter around the added latency. Reorders packets, which hurts a tunnel more than the rate cap does.";
+      };
+      loss = lib.mkOption {
+        type = lib.types.str;
+        default = "3%";
+        description = "Random packet loss applied to throttled addresses.";
+      };
+    };
+
     bandwidth = {
       upload = lib.mkOption {
         type = lib.types.str;

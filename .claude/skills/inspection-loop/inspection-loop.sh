@@ -36,8 +36,12 @@ ssh -n -S "$SOCK" "$HOST" 'rm -f ~/.cache/inspect.pcap' >/dev/null 2>&1
 ssh -n -S "$SOCK" "$HOST" 'tempblock list' 2>/dev/null | awk '{print $1}' \
   | grep -E '^[0-9]' | sort >"$WORK/blocked.txt"
 
+# Keyed on src AND dst. Keying on the destination alone misattributes: CDN edge
+# is shared, so another device's ClientHello to the same address gets reported
+# as this client's, which is how a plain CDN flow can be mistaken for a fronted
+# tunnel.
 tshark -r "$WORK/r.pcap" -Y tls.handshake.extensions_server_name -T fields \
-  -E separator=/t -e ip.dst -e tls.handshake.extensions_server_name 2>/dev/null \
+  -E separator=/t -e ip.src -e ip.dst -e tls.handshake.extensions_server_name 2>/dev/null \
   | sort -u >"$WORK/sni.txt"
 
 tshark -r "$WORK/r.pcap" -T fields -E separator=/t \
@@ -58,12 +62,14 @@ while read -r client total topbytes share peer port; do
   net=$(whois "$peer" 2>/dev/null | grep -iE '^(netname|orgname|org-name|descr)' \
         | head -2 | tr -s ' ' | cut -d: -f2- | tr -d '\n' | cut -c1-46)
   asn=$(whois "$peer" 2>/dev/null | grep -iE '^(origin|originas)' | head -1 | tr -s ' ' | cut -d: -f2-)
-  sni=$(grep -F "$peer	" "$WORK/sni.txt" | cut -f2 | paste -sd, - | cut -c1-40)
+  sni=$(awk -F'\t' -v c="$client" -v p="$peer" '$1==c && $2==p {print $3}' \
+        "$WORK/sni.txt" | paste -sd, - | cut -c1-40)
+  [ -z "$sni" ] && sni_note="no-clienthello-from-this-client" || sni_note=""
   dns=$(ssh -n -S "$SOCK" "$HOST" "journalctl -u blocky --no-pager --since '10 min ago' \
         | grep -F '$peer' | head -1" 2>/dev/null)
-  printf '%-16s %10d %5.1f%%  %-16s %-9s %s%s%s%s %s\n' \
+  printf '%-16s %10d %5.1f%%  %-16s %-9s %s%s%s%s%s %s\n' \
     "$client" "$total" "$share" "$peer" "${port:-?}" \
-    "${net}" "${asn:+ /$asn}" "${sni:+ sni=$sni}" \
+    "${net}" "${asn:+ /$asn}" "${sni:+ sni=$sni}" "${sni_note:+ $sni_note}" \
     "$([ -n "$dns" ] && echo ' resolver-explains' || echo ' NO-DNS')" "$state"
 done <"$WORK/rank.txt"
 

@@ -29,12 +29,24 @@ let
     ];
     text = builtins.readFile ./tempblock.bash;
   };
+  tempthrottle = pkgs.writeShellApplication {
+    name = "tempthrottle";
+    runtimeInputs = with pkgs; [
+      coreutils
+      gawk
+      gnused
+      iproute2
+      nftables
+    ];
+    text = builtins.readFile ./tempthrottle.bash;
+  };
 in
 {
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [
       clients
       tempblock
+      tempthrottle
     ];
   };
 }

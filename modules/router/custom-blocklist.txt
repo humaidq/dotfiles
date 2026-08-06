@@ -2439,3 +2439,4 @@ sportsseier.com
 *.voicecoffeeits.net
 *.leafnpaw.com
 *.iciclecrush.com
+*.dyimin.com

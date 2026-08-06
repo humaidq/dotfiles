@@ -168,6 +168,20 @@ let
         python3 ${portBlocklistGen} ${./custom-port-blocklist.txt} "$out" \
           router-blocklists blocked_ports
       '';
+
+  # The throttle list reuses the local blocklist's generator verbatim — same
+  # format, same build-time validation, same interval collapsing — and only the
+  # target sets differ. What happens to a matching packet is decided in the
+  # ruleset and in tc, not here.
+  throttleList =
+    pkgs.runCommand "nft-throttle-list.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-throttle-list.txt} "$out" \
+          router-blocklists throttle4 throttle6
+      '';
 in
 {
 
@@ -209,6 +223,20 @@ in
           flags interval
         }
 
+        # Populated from custom-throttle-list.txt by nft-blocklists-local, and
+        # also the set `tempthrottle` adds to at runtime. Matching packets are
+        # marked rather than dropped; the shaping itself lives in tc, see
+        # qos.nix.
+        set throttle4 {
+          type ipv4_addr
+          flags interval
+        }
+
+        set throttle6 {
+          type ipv6_addr
+          flags interval
+        }
+
         # Populated from custom-port-blocklist.txt by nft-blocklists-local.
         # Plain set rather than an interval one: the entries are discrete ports,
         # and a range has never been needed. Adding `flags interval` later is a
@@ -243,6 +271,27 @@ in
           ip6 daddr @remote_block6 counter drop comment "block forwarded IPv6 destinations"
           ip daddr @local_block4 counter drop comment "block forwarded IPv4 destinations (local list)"
           ip6 daddr @local_block6 counter drop comment "block forwarded IPv6 destinations (local list)"
+        }
+
+        # Marks both directions of a throttled conversation so the tc filters in
+        # qos.nix can steer it into the crippled class. Priority 0 puts this
+        # after the drop chains at -10, which is deliberate: an address that is
+        # both blocked and throttled should be dropped, and marking a packet
+        # that is about to be dropped would be wasted work.
+        #
+        # Both saddr and daddr are matched because the two directions are shaped
+        # on different interfaces — upload leaves via the PPP link where the
+        # throttled address is the destination, download leaves via the LAN
+        # interface where it is the source. One rule per direction per family
+        # rather than a combined match, so the counters show which way the
+        # traffic is actually flowing.
+        chain forward_throttle {
+          type filter hook forward priority 0; policy accept;
+
+          ip daddr @throttle4 counter meta mark set 0x2 comment "throttle upload (IPv4)"
+          ip saddr @throttle4 counter meta mark set 0x2 comment "throttle download (IPv4)"
+          ip6 daddr @throttle6 counter meta mark set 0x2 comment "throttle upload (IPv6)"
+          ip6 saddr @throttle6 counter meta mark set 0x2 comment "throttle download (IPv6)"
         }
 
         chain forward_doh {
@@ -372,6 +421,7 @@ in
         set -euo pipefail
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
+        nft -f ${throttleList}
       '';
     };
 

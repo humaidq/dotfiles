@@ -8,6 +8,7 @@
 let
   cfg = config.sifr.router;
   pppdService = "pppd-etisalat.service";
+  inherit (cfg) throttle;
 in
 {
   config = lib.mkIf cfg.enable {
@@ -41,24 +42,60 @@ in
         # fed from there. Shaping LAN egress runs after the forward hook, so
         # CAKE's diffserv4 classifier sees the marks and prioritisation works in
         # both directions.
+        #
+        # CAKE is no longer the root qdisc. It sits under an HTB root as the
+        # default class, so a second class can exist alongside it for the
+        # addresses in custom-throttle-list.txt, which nftables marks 0x2 (see
+        # forward_throttle in ip-blocklist.nix).
+        #
+        # HTB purely to get two classes — the default one is given the full link
+        # rate and CAKE inside it still does all the real work, so ordinary
+        # traffic behaves as it did when CAKE was root. The throttled class is
+        # rate-limited by HTB and then made unpleasant by netem.
+        #
+        # netem does the impairment rather than the rate: its own `rate` option
+        # is a plain token bucket with none of HTB's borrowing behaviour, and
+        # keeping the two concerns in separate qdiscs means the shaping number
+        # and the misery numbers can be tuned independently.
         script = ''
           set -euo pipefail
 
+          shape() {
+            local dev="$1" bw="$2"; shift 2
+
+            tc qdisc replace dev "$dev" root handle 1: htb default 10
+
+            # Default class: the whole link, CAKE unchanged underneath.
+            tc class replace dev "$dev" parent 1: classid 1:10 htb \
+              rate "$bw" ceil "$bw"
+            tc qdisc replace dev "$dev" parent 1:10 handle 10: cake \
+              bandwidth "$bw" "$@"
+
+            # Throttled class. `limit 1000` bounds netem's own queue: at
+            # ${throttle.rate} a deep queue would add minutes of delay on top of
+            # the intended latency and the tunnel would stall outright rather
+            # than merely crawl, which is more detectable than what we want.
+            tc class replace dev "$dev" parent 1: classid 1:20 htb \
+              rate ${throttle.rate} ceil ${throttle.rate}
+            tc qdisc replace dev "$dev" parent 1:20 handle 20: netem \
+              delay ${throttle.delay} ${throttle.jitter} distribution normal \
+              loss ${throttle.loss} \
+              limit 1000
+
+            # Steer anything nftables marked into the throttled class. `protocol
+            # all` so one filter covers IPv4 and IPv6 alike.
+            tc filter replace dev "$dev" parent 1: protocol all prio 1 \
+              handle 0x2 fw flowid 1:20
+          }
+
           # Upload: egress of the PPP uplink. "nat" recovers the real LAN source
           # behind the masquerade so dual-srchost fairness is per-LAN-host.
-          tc qdisc replace dev ${cfg.ppp} root cake \
-            bandwidth ${cfg.bandwidth.upload} \
-            diffserv4 \
-            nat \
-            dual-srchost
+          shape ${cfg.ppp} ${cfg.bandwidth.upload} diffserv4 nat dual-srchost
 
           # Download: egress towards the LAN. At this point reverse-NAT has
           # already restored the real LAN destination, so "nat" is unnecessary;
           # dual-dsthost gives per-LAN-host fairness on inbound traffic.
-          tc qdisc replace dev ${cfg.lan0} root cake \
-            bandwidth ${cfg.bandwidth.download} \
-            diffserv4 \
-            dual-dsthost
+          shape ${cfg.lan0} ${cfg.bandwidth.download} diffserv4 dual-dsthost
         '';
       };
     };
