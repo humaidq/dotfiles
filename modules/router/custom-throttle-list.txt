@@ -261,3 +261,12 @@
 172.104.51.35
 172.232.212.49
 89.167.61.113
+51.15.69.147
+
+# Found 2026-08-06 during monitoring. The OVH address is the same client as
+# the nodes above moving on again; the DigitalOcean one is a fourth handset,
+# single long-lived flow at 100% of the device with no lookup for the peer in
+# forty minutes.
+51.91.209.72
+134.209.110.68
+54.38.155.41

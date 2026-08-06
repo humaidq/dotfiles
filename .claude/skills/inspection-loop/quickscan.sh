@@ -39,7 +39,9 @@ if [ $# -gt 0 ]; then
   filt="$filt and ($h)"
 fi
 
-blocked=$(ssh -n -S "$SOCK" "$HOST" 'tempblock list' 2>/dev/null \
+# Both lists: an address may be dropped outright or merely crippled, and
+# either way it is already handled and not a fresh find.
+blocked=$(ssh -n -S "$SOCK" "$HOST" 'tempblock list; tempthrottle list' 2>/dev/null \
           | awk '{print $1}' | grep -E '^[0-9]' | sort -u)
 
 ssh -n -S "$SOCK" "$HOST" \
@@ -64,6 +66,6 @@ ssh -n -S "$SOCK" "$HOST" \
         if (tot[c] < 10000) continue
         printf "%-16s %10d %8.0f %5.1f%%  %-16s %-8s %s\n", \
           c, tot[c], m[c]*8/1000/secs, 100*m[c]/tot[c], tp[c], tpt[c], \
-          (tp[c] in bl ? "already-blocked" : "NEW")
+          (tp[c] in bl ? "already-handled" : "NEW")
       }
     }' | { read -r hdr; echo "$hdr"; sort -k2 -rn; }

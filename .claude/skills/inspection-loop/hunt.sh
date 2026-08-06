@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hunt — watch known-tunnelling devices and drop each node as it appears.
+# hunt — watch known-tunnelling devices and cripple each node as it appears.
 #
 # Usage: hunt.sh <bongo|bingo> <cycles> <client> [client ...]
 #
@@ -17,7 +17,11 @@
 #     node — this is the condition that spares CDN traffic.
 #   * only when whois says rented hosting, never CDN or carrier space. A call
 #     peer and a live-stream upload both look like a tunnel otherwise, and
-#     dropping them cuts a call or someone's broadcast.
+#     throttling them makes a call unusable or a broadcast stall.
+#
+# Only tunnel endpoints belong on this path. imo/BIGO infrastructure is blocked
+# by address instead, and everything else — gambling, adware, tracking — is a
+# wildcard host block. See SKILL.md for which lever suits which finding.
 #
 # Every decision, including every skip and why, goes to the log. Read it.
 set -u
@@ -36,7 +40,7 @@ esac
 here=$(dirname "$0")
 SOCK=/tmp/claude-1000/$site.sock
 REPO=$(git -C "$here" rev-parse --show-toplevel)
-LIST=$REPO/modules/router/custom-ip-blocklist.txt
+LIST=$REPO/modules/router/custom-throttle-list.txt
 LOG=${LOG:-/tmp/claude-1000/hunt-$site.log}
 
 KEEP='GOOGLE|AKAMAI|FASTLY|CLOUDFLARE|FACEBOOK|META |AMAZON|MICROSOFT|APPLE|NETFLIX|SAMSUNG|ALIBABA|ALICLOUD|TENCENT|BYTEDANCE|BYTED|TIKTOK|CDN77|LIMELIGHT|EDGECAST|ZENLAYER|ZENLA|EMIRNET|ETISALAT|EITC|MOBILE|TELECOM|VODA|ZAIN|STC|BANGLALINK|GRAMEEN|AIRTEL'
@@ -49,7 +53,7 @@ for cycle in $(seq 1 "$cycles"); do
   while read -r client _b kbit share peer port state; do
     [ "$client" = CLIENT ] && continue
     [ -z "${peer:-}" ] && continue
-    [ "$state" = already-blocked ] && continue
+    [ "$state" = already-handled ] && continue
     key="$client $peer"; seen="$seen|$key|"
     streak[$key]=$(( ${streak[$key]:-0} + 1 ))
     [ "${streak[$key]}" -ge 2 ] || continue
@@ -68,9 +72,9 @@ for cycle in $(seq 1 "$cycles"); do
       echo "cycle $cycle HOLD $client -> $peer — unrecognised owner, not auto-blocking: $net" >>"$LOG"; continue
     fi
 
-    ssh -n -S "$SOCK" "$sshhost" "tempblock add $peer" >>"$LOG" 2>&1
+    ssh -n -S "$SOCK" "$sshhost" "tempthrottle add $peer" >>"$LOG" 2>&1
     grep -qE "^${peer//./\\.}([[:space:]]|#|$)" "$LIST" || printf '%s\n' "$peer" >>"$LIST"
-    echo "cycle $cycle BLOCK $client -> $peer port $port share=$share ${kbit}kbit/s  $net" >>"$LOG"
+    echo "cycle $cycle THROTTLE $client -> $peer port $port share=$share ${kbit}kbit/s  $net" >>"$LOG"
     unset "streak[$key]"
   done <<<"$out"
   for k in "${!streak[@]}"; do

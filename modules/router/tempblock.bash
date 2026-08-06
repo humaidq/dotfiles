@@ -2,11 +2,20 @@
 # tempblock — add ad-hoc, non-persistent IP drops on a router.
 #
 # Blocks live in their own nftables table (inet router_tempblock) with a
-# forward-hook chain at priority -20, so they take effect immediately, sit ahead
-# of the blocklist chains, and — because nftables.service flushes the ruleset on
-# start — a `nixos-rebuild switch` or any nftables reload clears them. That is
-# what makes them "temporary": the lifetime is a reload, not a timer. Anything
-# worth keeping goes in custom-ip-blocklist.txt and a rebuild instead.
+# forward-hook chain at priority -20, so they take effect immediately and sit
+# ahead of the blocklist chains.
+#
+# "Temporary" means a reboot, NOT a rebuild. This comment used to claim that
+# `nixos-rebuild switch` cleared them, and it does not: networking.nftables.tables
+# manages named tables individually rather than flushing the whole ruleset, so a
+# table created here is invisible to it and survives every rebuild. 99 blocks
+# added over one session were found still in force afterwards, silently dropping
+# traffic that had since been moved to custom-throttle-list.txt to be shaped
+# instead — the block won, and the new policy never applied.
+#
+# So `tempblock flush` is a step you have to take deliberately. Check `list`
+# before assuming a rebuild cleaned up after you, and remember the same is true
+# of any other ad-hoc table (imo_temp, adware_temp) left behind by hand.
 #
 # Each address is its own rule with its own counter, so `list` shows exactly
 # which target is being hit and how hard — the usual reason to set a temp block

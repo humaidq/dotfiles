@@ -33,6 +33,21 @@ writing any of it down.
 Both have NOPASSWD `tcpdump` and the `tempblock` CLI. Open **one**
 ControlMaster per router before starting — see `detecting-client-tunnels`.
 
+## Which lever for which finding
+
+Three files, three different failure modes, and picking the wrong one is how a
+finding ends up doing nothing:
+
+| Finding | Goes in | Why that one |
+|---|---|---|
+| VPN / tunnel endpoints | `custom-throttle-list.txt` — **throttle** | A dropped node is replaced within a minute; a slow one is not, because nothing fails. Blocking these caused ~40 rotations across eight providers in one evening. Throttling produced none. |
+| imo, BIGO and their relays / control plane | `custom-ip-blocklist.txt` — **block by IP** | These are reached by hardcoded address with no lookup, so a name block cannot touch them, and there is no reason to leave them half-working. |
+| Gambling, adware, tracking, DNS-changers, everything else | `custom-blocklist.txt` — **wildcard host block** | Ordinary apps resolve these normally, so the name is the durable handle and costs no address collateral. Reach for an IP here only when the name is proven bypassed. |
+
+The throttle numbers live in `sifr.router.throttle`. Add live with
+`tempthrottle add`, drop live with `tempblock add` — both are cleared only by a
+reboot, **not** by a rebuild, so flush deliberately.
+
 ## What counts as a node
 
 The discriminator that has held every time: **a tunnel peer holds 70-100% of
