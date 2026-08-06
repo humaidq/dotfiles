@@ -270,3 +270,47 @@
 51.91.209.72
 134.209.110.68
 54.38.155.41
+46.101.64.147
+
+# ---------------------------------------------------------------------------
+# NOT EVERYTHING THROTTLED IS IN THIS FILE. One path is handled by a live rule
+# that deliberately has no entry here, because the address it targets must not
+# be in an address list at all.
+#
+# The tunnel operator is a paying Akamai customer: their domain has a real
+# certificate provisioned on Akamai edge, so the client speaks ordinary HTTPS to
+# a CDN address and Akamai forwards to their origin. The names are sinkholed in
+# custom-blocklist.txt and the client reaches the edge anyway on a cached
+# address, so the name layer does not stop it.
+#
+# The edge addresses cannot go in this file. 95.100.170.0/24 is shared Akamai
+# edge — the same addresses serve Apple's iTunes certificate and TikTok assets
+# to every other device on the LAN. Throttling them here would degrade those for
+# the whole house. The client also moves between edge addresses freely
+# (.42 -> .49 -> .51 observed), so pinning single addresses does not hold.
+#
+# So it is scoped to the client instead, as a live rule. Reapply after a reboot
+# — this survives `nixos-rebuild switch` but not a restart, and nothing will
+# indicate it is missing except the traffic going fast again:
+#
+#   ssh <router> 'sudo -n nft delete table inet flow_throttle 2>/dev/null;
+#                 sudo -n /run/current-system/sw/bin/nft -f -' <<'RULE'
+#   table inet flow_throttle {
+#     chain shape {
+#       type filter hook forward priority 1; policy accept;
+#       ip saddr 192.168.50.220 ip daddr 95.100.170.0/24 counter meta mark set 0x2
+#       ip saddr 95.100.170.0/24 ip daddr 192.168.50.220 counter meta mark set 0x2
+#       ip saddr 192.168.50.156 ip daddr 95.100.170.0/24 counter meta mark set 0x2
+#       ip saddr 95.100.170.0/24 ip daddr 192.168.50.156 counter meta mark set 0x2
+#     }
+#   }
+#   RULE
+#
+# Delete the table first: `nft -f` appends to an existing chain rather than
+# replacing it, so re-running without the delete silently doubles the rules.
+# Mark 0x2 is what the tc filters in qos.nix steer into the throttled class, so
+# this gets the same treatment as everything listed above.
+#
+# The cost, which is accepted deliberately: those two clients lose Akamai-hosted
+# content generally, not only the tunnel. No other client is affected.
+# ---------------------------------------------------------------------------
