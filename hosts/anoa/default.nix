@@ -210,6 +210,16 @@
     # headroom and reduces how often we reach for swap at all. ARC reclaim under
     # pressure is laggy, so a lower cap is worth the slightly smaller file cache.
     "zfs.zfs_arc_max=4294967296"
+
+    # DIAGNOSTIC (2026-08-05, remove once resolved). anoa hard-resets with a fatal
+    # Intel SoC crashlog in the ACPI BERT table and nothing in the journal. The
+    # signature is bit-identical across Lenovo firmware 0.1.22 and 0.1.26, so it is
+    # not a firmware bug we can update away; the fault sits in the SoC's power
+    # management domain. Capping idle states is the one thing we can vary from here:
+    # if uptime goes from ~40 min to hours, the fault is C-state related and this is
+    # a usable stopgap until the board is serviced. Costs battery life, so drop this
+    # line the moment the machine comes back from Lenovo.
+    "intel_idle.max_cstate=1"
   ];
   boot.kernel.sysctl."kernel.sysrq" = lib.mkForce 1;
 

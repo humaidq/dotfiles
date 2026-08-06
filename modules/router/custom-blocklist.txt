@@ -2404,3 +2404,38 @@ sportsseier.com
 # custom-ip-blocklist.txt.
 *.sailfishx.live
 *.sailfishx.com
+
+# Fronting hostnames for a multi-protocol "config file" tunnel client of the
+# HTTP-Injector family, found 2026-08-05 on the second site. The app is not one
+# service with one endpoint — it carries a node list across DigitalOcean,
+# IONOS, OVH, Hetzner and AltusHost and rotates to a fresh address within about
+# a minute of any node being dropped, so an address list cannot converge on it.
+# It moves between four transports: SSH on tcp/22 (primary), raw UDP on a
+# random high port, TLS to an SNI-proxy that forwards on whatever name it is
+# given, and a cleartext HTTP channel that smuggles the payload base64-encoded
+# in a "Cookie: rvs=..." header with Content-Type: text/xml and no User-Agent.
+#
+# The names below are the SNI values and Host headers it presents. Blocking
+# them is documentation more than enforcement: the client dials its nodes by
+# address and was never once seen resolving any of these through the router, so
+# the sinkhole only bites if some client does look one up. They are random
+# word-salad registrations with no service behind them and no collateral —
+# ajchampionclass.com is the Host header on the cleartext channel, the rest are
+# SNI. Deliberately excluded: ocfrx.com, seen as SNI on Akamai edge, which is
+# unattributed and could be a real customer name.
+*.wnmg.net
+*.hackssong.org
+*.menubullestaterunner.net
+*.moveelsteriv.com
+*.coffeeflexialoha.net
+*.vietnamstand.com
+*.ipadlocal.org
+*.gadgethe.org
+*.ajchampionclass.com
+*.wbunderalphacool.net
+*.zfyglcdt.org
+*.africansyabcfu.com
+*.xzcs3zlph.com
+*.voicecoffeeits.net
+*.leafnpaw.com
+*.iciclecrush.com
