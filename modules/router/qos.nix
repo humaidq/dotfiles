@@ -8,7 +8,7 @@
 let
   cfg = config.sifr.router;
   pppdService = "pppd-etisalat.service";
-  inherit (cfg) throttle;
+  inherit (cfg) throttle imoThrottle;
 in
 {
   config = lib.mkIf cfg.enable {
@@ -86,6 +86,23 @@ in
             # all` so one filter covers IPv4 and IPv6 alike.
             tc filter replace dev "$dev" parent 1: protocol all prio 1 \
               handle 0x2 fw flowid 1:20
+
+            # imo class. Rate capped at every hour; only the loss varies, and
+            # the value written here is just a starting point —
+            # imo-throttle-schedule.service corrects it for the current time
+            # of day as soon as this unit finishes, and every half hour after.
+            #
+            # No delay or jitter, unlike the throttled class above. Latency is
+            # what makes a long-lived tunnel unusable; for imo the rate cap
+            # and the loss are the whole mechanism.
+            tc class replace dev "$dev" parent 1: classid 1:30 htb \
+              rate ${imoThrottle.rate} ceil ${imoThrottle.rate}
+            tc qdisc replace dev "$dev" parent 1:30 handle 30: netem \
+              loss ${imoThrottle.baseLoss} \
+              limit 1000
+
+            tc filter replace dev "$dev" parent 1: protocol all prio 1 \
+              handle 0x3 fw flowid 1:30
           }
 
           # Upload: egress of the PPP uplink. "nat" recovers the real LAN source
