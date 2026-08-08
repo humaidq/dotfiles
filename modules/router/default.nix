@@ -119,6 +119,36 @@ in
         description = "Random packet loss applied to throttled addresses.";
       };
     };
+    # A second throttle tier, independent of `throttle` above. imo is rate
+    # capped at every hour of the day and made lossy only during the windows
+    # the household actually places calls. The reasoning, and the fact that
+    # this replaces an outright block that kept losing to re-homing, is in
+    # docs/superpowers/specs/2026-08-08-imo-throttle-tier-design.md.
+    imoThrottle = {
+      rate = lib.mkOption {
+        type = lib.types.str;
+        default = "2mbit";
+        description = "Rate cap applied to imo addresses, each direction, at all hours.";
+      };
+      baseLoss = lib.mkOption {
+        type = lib.types.str;
+        default = "3%";
+        description = "Packet loss applied to imo addresses outside the peak windows.";
+      };
+      peakLoss = lib.mkOption {
+        type = lib.types.str;
+        default = "70%";
+        description = "Packet loss applied to imo addresses inside the peak windows.";
+      };
+      peakWindows = lib.mkOption {
+        type = with lib.types; listOf str;
+        default = [
+          "07:00-11:30"
+          "15:30-21:30"
+        ];
+        description = "Local-time windows, each HH:MM-HH:MM, during which peakLoss applies instead of baseLoss.";
+      };
+    };
 
     bandwidth = {
       upload = lib.mkOption {

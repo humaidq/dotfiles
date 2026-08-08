@@ -1,0 +1,14 @@
+# imo (com.imo.android.imoim) — throttled, not blocked.
+#
+# These addresses were blocked outright in custom-ip-blocklist.txt across
+# eleven documented runs. Every run had the same shape: a layer was blocked,
+# the app failed hard, and the operator re-homed onto fresh infrastructure
+# that then had to be found. That is the same failure the tunnel throttle
+# list documents for VPN nodes — a dropped endpoint is replaced within a
+# minute, a slow one is not, because nothing fails cleanly enough to trigger
+# failover.
+#
+# Matching traffic is rate capped at sifr.router.imoThrottle.rate at all
+# hours, and given sifr.router.imoThrottle.peakLoss during the call-peak
+# windows, baseLoss otherwise. Format is the same as every other list here:
+# one address or CIDR per line, comments free-form.
