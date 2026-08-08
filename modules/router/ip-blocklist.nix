@@ -182,6 +182,20 @@ let
         python3 ${localBlocklistGen} ${./custom-throttle-list.txt} "$out" \
           router-blocklists throttle4 throttle6
       '';
+
+  # Same generator again, third target. See the note on throttleList above:
+  # the file format and validation are identical and only the set names
+  # differ, because what happens to a matching packet is decided in the
+  # ruleset and in tc rather than here.
+  imoList =
+    pkgs.runCommand "nft-imo-list.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-imo-list.txt} "$out" \
+          router-blocklists imo4 imo6
+      '';
 in
 {
 
@@ -233,6 +247,20 @@ in
         }
 
         set throttle6 {
+          type ipv6_addr
+          flags interval
+        }
+
+        # Populated from custom-imo-list.txt by nft-blocklists-local. Marked
+        # 0x3 rather than 0x2 so tc can steer it into a class of its own: imo
+        # is rate capped and lossy on a schedule, not crippled outright the
+        # way a tunnel node is.
+        set imo4 {
+          type ipv4_addr
+          flags interval
+        }
+
+        set imo6 {
           type ipv6_addr
           flags interval
         }
@@ -292,6 +320,15 @@ in
           ip saddr @throttle4 counter meta mark set 0x2 comment "throttle download (IPv4)"
           ip6 daddr @throttle6 counter meta mark set 0x2 comment "throttle upload (IPv6)"
           ip6 saddr @throttle6 counter meta mark set 0x2 comment "throttle download (IPv6)"
+
+          # After the 0x2 rules deliberately. `meta mark set` overwrites, so an
+          # address that somehow appears in both lists resolves to the imo
+          # tier — which is the weaker of the two and therefore the safer
+          # outcome for a misfiled address.
+          ip daddr @imo4 counter meta mark set 0x3 comment "imo upload (IPv4)"
+          ip saddr @imo4 counter meta mark set 0x3 comment "imo download (IPv4)"
+          ip6 daddr @imo6 counter meta mark set 0x3 comment "imo upload (IPv6)"
+          ip6 saddr @imo6 counter meta mark set 0x3 comment "imo download (IPv6)"
         }
 
         chain forward_doh {
@@ -422,6 +459,7 @@ in
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
         nft -f ${throttleList}
+        nft -f ${imoList}
       '';
     };
 
