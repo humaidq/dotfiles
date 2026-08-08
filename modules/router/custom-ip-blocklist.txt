@@ -11,7 +11,6 @@
 194.0.5.3
 
 
-
 # BIGO Live (sg.bigo.live) IP-level fallback, from an apk-sim.sh capture. Every
 # address below was connected to during that run while no DNS answer in the
 # capture mentioned it. That is the sg.bigo.overwall module (IBackupLbsConfig /
@@ -59,80 +58,6 @@
 128.14.88.122
 23.236.121.250
 
-# imo (com.imo.android.imoim): every prefix announced by AS36131, "IMO -
-# PageBites, Inc." — imo's own single-tenant AS, so unlike the Tencent and
-# Chinese-carrier addresses above these are the operator's own network and
-# carry no third-party collateral.
-#
-# Why an AS and not more hostnames: an apk-sim.sh run on 2026-07-31, the first
-# against a bongo that had actually been rebuilt with the custom-blocklist.txt
-# entries, showed the DNS layer working perfectly and imo reaching its backend
-# regardless. All fifteen of its hostnames answered 0.0.0.0 and not one of them
-# was ever connected to, its DNS-over-TCP escape to 8.8.8.8 was refused by the
-# router, and it then dialled hardcoded addresses that appear in no DNS answer
-# in the capture: 83.229.96.64:443 held a session for 184s (19 kB two-way), and
-# 43.166.152.147 / 43.166.171.91 held ~91s each on ports 943/1943/9443. No TLS
-# ClientHello on any of them — a proprietary protocol, matching the socks./
-# tunnel. names it could no longer resolve. That is sg.bigo.overwall's backup
-# LBS, and it is the reason the hostname entries alone were never going to be
-# enough.
-#
-# 83.229.96.0/24 is what the capture actually proved; the rest of the AS is
-# included because a backup-LBS pool is only useful to block wholesale.
-#
-# The two Tencent Cloud addresses from the same capture are listed at the end,
-# as addresses and never as a prefix: 43.166.128.0/18 is AS132203 (Aceville
-# PTE SG), shared infrastructure where blocking the range would take unrelated
-# tenants with it.
-#
-# Corroborates the NETSTAR group above, incidentally: AS36131 also holds RADB
-# route objects for 169.136.68-73/128/130/132 and 202.63.47-48, so those BIGO
-# addresses and imo's estate are one operator. Only currently-announced
-# prefixes are listed here — the RADB-only ones (103.208.252.0/22,
-# 45.249.44.0/22, 185.155.136.0/22, 63.141.60.0/24 and the two /48s) are
-# registered but not routed, and are worth re-checking if imo starts working.
-5.150.156.0/24
-5.150.157.0/24
-5.150.158.0/24
-5.150.159.0/24
-38.90.96.0/24
-69.57.173.0/24
-83.229.88.0/24
-83.229.89.0/24
-83.229.90.0/24
-83.229.91.0/24
-83.229.96.0/24
-83.229.97.0/24
-83.229.98.0/24
-83.229.99.0/24
-104.36.224.0/24
-164.90.99.0/24
-164.90.100.0/24
-164.90.118.0/24
-164.90.119.0/24
-164.90.120.0/24
-169.136.141.0/24
-185.22.42.0/24
-192.12.31.0/24
-198.51.96.0/24
-199.30.240.0/24
-199.30.242.0/24
-199.30.243.0/24
-
-# The imo run's two Tencent Cloud SG addresses (AS132203, Aceville PTE). Both
-# carried ~3.2 kB over ~91s on ports 943/1943/9443 with no TLS ClientHello and
-# no DNS answer naming them, so this is backend transport rather than the
-# HTTPDNS lookups the earlier capture showed on 43.166.247.111 and
-# 170.106.51.222. After the AS36131 block above went live these were the only
-# path imo still had that answered, which is why they are here despite the
-# weaker evidence.
-#
-# Addresses, not the /18 — see above. Being on a shared cloud, they are the
-# entries here most likely to go stale: a single capture is all that supports
-# them, and the operator can move to a new instance at will. If imo starts
-# working again, re-capture rather than assume this list still holds.
-43.166.152.147
-43.166.171.91
 
 # Third imo run, with everything above enforced. The AS36131 block held
 # perfectly — 16 addresses dialled across 83.229.88.x and 83.229.96.x, not one
@@ -154,124 +79,6 @@
 169.136.162.192/27
 169.136.162.224/31
 
-# The rented half of the pool, and the weakest entries in this file by some
-# margin. 43.166.211.162 is Tencent again but in 43.166.192.0/19, a different
-# prefix from the /18 above, and 43.166.247.111 is the address an earlier
-# capture had recorded as HTTPDNS — it is carrying the 1943/2943 tunnel here.
-# 47.245.168.156 is Alibaba Cloud (AS45102, 47.245.128.0/17) and held the
-# largest session of the run, 21 kB over 61s on port 5223.
-#
-# Blocking these as /32s is knowingly whack-a-mole: three runs have now produced
-# four distinct Tencent addresses, and nothing stops the operator renting more.
-# The prefixes that would actually settle it are general-purpose cloud — a /17
-# and two /19-/18s hosting large numbers of unrelated services — so the
-# collateral was judged worse than the leak. Expect to re-capture.
-43.166.211.162
-43.166.247.111
-47.245.168.156
-
-# Fourth imo run, 2026-08-01, with everything above enforced. The blocked layers
-# both held: all fifteen hostnames answered 0.0.0.0 and none was dialled by
-# name, the 8.8.8.8 DNS-over-TCP escape was refused again, and the app walked 41
-# addresses of its hardcoded dex pool across 83.229.88/96, 164.90.100 and
-# 169.136.118/160 on ports 443/5223/5228 and 375/4937/17953/46216 without one of
-# them answering. It got a session anyway, from three addresses that are in
-# neither the dex nor any DNS answer in the capture.
-#
-# 8.211.19.35 is the same mechanism as 47.245.168.156 above, one AS over: Alibaba
-# Cloud SG, AS45102, this time in 8.211.0.0/17 rather than 47.245.128.0/17. It
-# took the largest session of the run — 24 kB on port 5228 over 29s, and a
-# non-TLS protocol on 443 when probed directly, so not a generic web tenant. It
-# is the LBS: the app spent 150s failing against the dead pool, handshook here at
-# t=173s, and 29s later opened tunnels to two Tencent addresses it had never
-# dialled before.
-#
-# Those two carried 30-byte heartbeats every ~10s on ports 2943/9443 until the
-# capture ended. Neither appears in the dex, so they were handed out at runtime
-# by the address above rather than shipped in the package.
-#
-# Round four of the same whack-a-mole, and worth stating plainly: the runs have
-# now produced six distinct Tencent addresses and two distinct Alibaba ones, on
-# four different cloud prefixes, with zero overlap between any two runs. These
-# /32s are recorded because they are cheap and the attribution is good, not
-# because they are expected to hold.
-8.211.19.35
-43.166.175.23
-43.166.211.142
-
-# Fifth imo run, 2026-08-01, immediately after the three above went live. Same
-# shape, two new addresses, and one genuinely new fact.
-#
-# 8.211.45.119 is the LBS again — 22 kB on port 5228 over 94s plus two smaller
-# sessions on 5223 — and it is in 8.211.0.0/18, the same /18 as 8.211.19.35
-# blocked one run earlier. That is the first time any two runs have landed in the
-# same prefix, and it puts the LBS rotation inside a single Alibaba Cloud SG /18
-# for two runs running. 43.166.250.133 took the tunnels on 943/2943/9443, in
-# 43.166.224.0/19 — a third distinct Tencent /19, so the tunnel layer is still
-# spread wide.
-#
-# The app also found the LBS much faster: t=43s here against t=173s last run, and
-# it only bothered with 12 addresses of the hardcoded pool before giving up on
-# it. The pool walk is becoming vestigial; the LBS is the whole mechanism.
-#
-# Running tally over five runs: seven distinct Tencent addresses across three
-# prefixes, three Alibaba ones across two. No two runs have ever repeated a /32.
-8.211.45.119
-43.166.250.133
-
-# And the prefix behind the LBS. 8.211.0.0/18 is Alibaba Cloud Singapore
-# (AS45102) and is the first target in this file justified by a repeat rather
-# than by a single observation: two consecutive runs put imo's LBS inside it,
-# at 8.211.19.35 and 8.211.45.119.
-#
-# It is blocked at the LBS layer deliberately. The tunnel addresses are handed
-# out by the LBS at runtime, so cutting the LBS stops them being issued at all,
-# where blocking tunnels one at a time has failed five runs running. It is also
-# the narrower target: three Tencent /19s carry the tunnels against one Alibaba
-# /18 here.
-#
-# This is general-purpose shared cloud and the widest non-single-tenant entry in
-# the file — ~16k addresses, unlike the AS36131 and NETSTAR ranges above, which
-# are the operator's own. Nothing else in the house is expected to talk to
-# Alibaba Cloud SG, but that is an assumption rather than a measurement, so this
-# is the first entry to suspect if something unrelated breaks.
-8.211.0.0/18
-
-# Sixth imo run, 2026-08-01. The /18 above worked: the app tried its Alibaba LBS
-# twice — 8.211.45.119 on 5223 and 8.211.19.238 on 5228, the latter an address
-# never seen before and caught by the prefix without a new entry — and got
-# nothing from either. That is the first time a prefix has pre-empted a rotation
-# rather than chased it.
-#
-# It then reached a different LBS entirely, and this one is not on a cloud.
-# 5.181.130.23:443 took two sessions of 28 kB and 13 kB, both held for the whole
-# 181s remainder of the capture — the largest of any run — and the Tencent
-# tunnels came up 26s later, the same LBS-then-tunnel shape as every round
-# before.
-#
-# Attribution here is not an inference for once. The app sent SNI for
-# stream.downstext.com, and the origin presents a certificate for CN=*.imo.im
-# behind openresty/1.25.3.2, matching the unbranded failover pool already in
-# custom-blocklist.txt. It is imo's own host.
-#
-# A /32 and not 5.181.130.0/24 (AS135402, geolocating AE): of seven addresses
-# probed across the /24 only .23 answered at all, so the range is mostly dark and
-# there is no evidence it is single-tenant. Revisit if a later run finds a
-# neighbour.
-5.181.130.23
-
-# A second host in the same fleet, and the same attribution rather than an
-# inference: SNI for sgp-stream.downstext.com, a certificate for CN=*.imo.im
-# (GlobalSign AlphaSSL), and openresty/1.25.3.2 behind it — the identical
-# signature to .23 above, on a different network. Found the way .23 was, by a
-# LAN-side capture rather than by resolving anything: the name is covered by
-# *.downstext.com already, and the app reached this address without ever
-# querying it, so only the address closes the path actually used.
-#
-# A /32 and not 96.62.247.0/24 (AS21840, NET3 - WiredISP Inc.): that is a
-# general US ISP and cannot be treated as single-tenant, and of ten addresses
-# probed across the /24 only .231 answered at all. Same reasoning as .23.
-96.62.247.231
 
 # The rotation after .231 was blocked, found in the capture taken immediately
 # afterwards: same SNI for sgp-stream.downstext.com, same CN=*.imo.im behind
@@ -288,61 +95,12 @@
 # are the same hosting outfit under two numbers, and that 143.14.159.0/24 —
 # already named against imo's http-dns.imostatic.com in custom-blocklist.txt —
 # is a third prefix of AS135402. Chasing /32s here will keep losing ground.
+#
+# NOT migrated to custom-imo-list.txt with the rest of imo's estate: this same
+# address is also a hardcoded Transsion/shalltry fallback further down, and that
+# finding has to stay a hard drop rather than a throttle.
 185.250.27.164
 
-# And the Tencent /19 the tunnel layer keeps returning to. Four distinct
-# addresses across three separate runs have now landed inside 43.166.224.0/19:
-#
-#   43.166.247.111  round 3, recorded as HTTPDNS, then carrying 1943/2943
-#   43.166.250.133  round 5, tunnels on 943/2943/9443
-#   43.166.232.254  round 6, tunnels on 1943/2943
-#   43.166.247.66   round 6, tunnel on 943
-#
-# Same reasoning that justified 8.211.0.0/18 one run earlier, and on more
-# evidence: that prefix was argued from two observations in two runs, this one
-# has four in three. The generator collapses the individual /32s above into it.
-#
-# The tunnel layer is the cheaper half of imo's estate to replace — the LBS hands
-# these out at runtime — so this is expected to age faster than the LBS entries,
-# and 43.166.128.0/18 and 43.166.192.0/19 still hold observed addresses that are
-# deliberately left as /32s. If a fifth Tencent prefix shows up, the question
-# stops being which /19 and becomes whether to take AS132203 wholesale, which is
-# a much larger call than this one.
-#
-# Collateral, stated plainly: 8192 addresses of general-purpose Tencent Cloud
-# Singapore, half the size of the Alibaba /18 above and the same kind of
-# multi-tenant space. Second entry to suspect, after 8.211.0.0/18, if something
-# unrelated stops working.
-43.166.224.0/19
-
-# Seventh imo run, 2026-08-01. The most degraded run so far, and the first with
-# no working tunnel at all.
-#
-# Everything blocked held and most of it was not even retried: no attempt on
-# 8.211.0.0/18, none on 43.166.224.0/19, none on 5.181.130.23, and
-# stream.downstext.com never appeared as SNI. The hardcoded pool got its usual
-# walk across 83.229/164.90.100/169.136 and answered nothing. Of 24 addresses
-# dialled, only two were outside this file.
-#
-# The tunnel layer failed outright. 43.166.173.17:943 got a SYN, a SYN-ACK, and
-# then a RST from the app itself 0.48s later — one attempt, no payload. Every
-# previous run finished with three concurrent tunnels heartbeating to the end of
-# the capture, so starving it of usable addresses is working.
-#
-# What still worked is the LBS: 47.245.167.228 took 23 kB on port 5228 over 91s
-# plus smaller sessions on 443 and 5223. That is the second time 47.245.128.0/17
-# has hosted the LBS — round three used 47.245.168.156, one /24 over — so this
-# blocks 47.245.160.0/19, the tightest prefix covering both observations. 8192
-# addresses, the same size as the Tencent /19 above and a quarter of the /17.
-#
-# Weaker attribution than 5.181.130.23 deliberately noted: this address serves
-# nothing reachable on 443, so there is no certificate or openresty banner behind
-# it. The evidence is the captured session in the LBS role and nothing else.
-#
-# 43.166.173.17 is in 43.166.128.0/18 and is left as part of that range's /32
-# treatment rather than escalated — it could not hold a session, so there is no
-# case yet for a third Tencent prefix.
-47.245.160.0/19
 
 # Second sg.bigo.live run, 2026-08-01, with everything above enforced. The DNS
 # layer was perfect — all nine BIGO hostnames (newlbs.live.bigo.sg,
@@ -375,124 +133,6 @@
 # it out is this group's rule of blocking on an answer rather than on a SYN.
 # Re-check these first if BIGO Live starts working.
 
-# Eighth imo run, 2026-08-01. The first run in which nothing carried a session.
-#
-# All sixteen hostnames answered 0.0.0.0 and not one was connected to by name.
-# The hardcoded pool got its usual walk — 26 addresses across 83.229.88/96,
-# 164.90.100 and 169.136.118/160 — and every one of them got 4 to 20 SYNs over
-# 80 to 150s with nothing back. 47.245.163.28 and 8.211.45.119 are the first
-# confirmations that 47.245.160.0/19 and 8.211.0.0/18 hold. There was no UDP to
-# any operator address at all, so the media path never opened.
-#
-# The tunnel layer failed again and this time not because of us: the two port
-# 943 attempts, 43.130.111.192 (a third Tencent prefix, 43.130.64.0/18) and
-# 43.166.154.48, got one SYN each and no answer, and from the LAN both refuse
-# :443 instantly while hanging on :943. They are reachable and simply dead, so
-# neither is blocked here — a stale pool is not evidence of a prefix worth
-# taking.
-#
-# The app stopped dialling entirely at t=114s and spent the last minute of the
-# capture silent, which is what a client does once it has exhausted its pool.
-#
-# One address answered. 45.132.216.241 took two TLS 1.3 connections at t=91s
-# carrying ~24 kB in a burst — one stream 19 kB up, the other 9 kB down, the
-# shape of a telemetry upload and a config pull — then two short exchanges and
-# nothing for the final 41s, connections left open and idle. It is not a session
-# backend: every LBS port (5223, 5228, 375, 4937, 17953, 46216) was dialled in
-# the same window and none answered.
-#
-# Attribution is conclusive rather than inferred, the same way 5.181.130.23 was:
-# the SNI is stream.downstext.com, and the origin presents CN=*.imo.im issued by
-# GlobalSign behind openresty/1.25.3.2. imo re-homed that host off the blocked
-# 5.181.130.23 and onto AS22427 (GNET INC.), which is the rented tier already
-# handled below as /32s in shared /24s — so a /32 here too, not 45.132.216.0/24.
-45.132.216.241
-
-# Ninth imo run, 2026-08-01. The first run in which a session actually carried.
-#
-# 81.199.29.246 held two TLS connections on 443 for the whole 202s window and
-# moved 257 kB between them. They split by direction rather than sharing one
-# duplex stream: the first took 155 kB down against 10 kB up, the second 83 kB
-# up against 8 kB down, a receive and a send channel run in parallel. Traffic
-# was small Application Data exchanges roughly every 7s with TCP keep-alives
-# filling the gaps, which is a chat and signalling channel holding open, not a
-# call — there was no UDP to any operator address, so no media path opened.
-#
-# Both connections predated the capture, so the window caught no handshake and
-# no SNI, and the resolver log does not explain the address. Attribution comes
-# from the origin instead and is conclusive on its own: it serves CN=*.imo.im
-# with a SAN of exactly *.imo.im and imo.im and nothing else, issued by
-# GlobalSign AlphaSSL. Same test that settled 5.181.130.23 and 45.132.216.241.
-#
-# Origin AS is AS395374 (CYSA-MAIN - Cyber Sainik, US) in 81.199.29.0/24 — a
-# third rented provider, not either operator AS, so a /32 in a shared /24 as
-# the rest of that tier gets, not 81.199.29.0/24.
-81.199.29.246
-
-# Dialled in this run but never answered, so again NOT blocked: 43.130.71.117
-# on ports 9443 and 1943, and 170.106.37.183 on 943 and 2943, took nine SYNs
-# each at t=145s and t=167s and returned nothing at all. 43.130.71 sits inside
-# the 43.130.64.0/18 the eighth run declined to take, and this is the second
-# consecutive run in which that prefix was dialled and stayed silent — still a
-# stale pool, and a stale pool is still not evidence of a prefix worth taking.
-# Note the app kept probing this tunnel layer even while the session above was
-# already carrying, so the probing is not a sign the layer is needed.
-
-# Tenth and eleventh imo runs, 2026-08-01. The app went silent for a window —
-# no dials at all, the state the eighth run described as an exhausted pool —
-# then came back on two hosts that had never appeared before, both of which
-# answered. Neither was covered by anything already in this file.
-#
-# 47.245.142.42 is the conclusive one, and it is a re-homed LBS. It took 431 kB
-# over 28s on port 5228 and a further 83 kB over 183s on port 443, and carried
-# no TLS ClientHello on either. `openssl s_client` to its 443 returns no
-# certificate at all, so that port is 443 in name only and the protocol is
-# proprietary — the same signature the earlier runs recorded. 5228 is already
-# listed above as one of the LBS ports, and AS45102 is where the LBS was found
-# before on 47.245.168.156:5223. It sits in 47.245.128.0/18, immediately
-# outside the 47.245.160.0/19 that the eighth run confirmed holds, which is the
-# whole reason it was reachable.
-47.245.142.42
-
-# 46.183.24.168 is the weaker of the two and is recorded as such. The
-# certificate settles the host but not the operator: SAN is exactly
-# *.bigbigbig.club and bigbigbig.club, issued by GlobalSign AlphaSSL, so this
-# is bigbigbig.club's own host — but that bigbigbig.club is BIGO is inference
-# from the name, not the standard the *.imo.im hosts were taken on.
-#
-# What supports it: the name has never resolved on this network, so the app
-# reached the address directly out of a hardcoded pool rather than by lookup,
-# which is the overwall pattern; the registrant is SANDHILL SOLUTION PTE. LTD.
-# (AS142146, SG), and both operators are Singaporean; port 45953 is high and
-# arbitrary like the 375/4937/17953/46216 set above; and it answered with
-# 252 kB in the same window and on the same device as the LBS above. Blocked on
-# the answer, per this file's rule, but re-check it rather than trust it.
-46.183.24.168
-
-# Twelfth imo run, 2026-08-01, the first with everything above deployed rather
-# than held in a hand-added nft element. The deployed entries did hold: the two
-# addresses still dialled took 14 packets each and returned nothing, and the
-# other three were not tried at all.
-#
-# It re-homed by one address. 46.183.24.169 carried 250 kB on port 6593 with no
-# TLS ClientHello and the same CN=*.bigbigbig.club certificate as .168, from the
-# same AS142146 and the same announced prefix, inside the hour.
-#
-# 46.183.24.0/24 was considered and declined. The argument for it is that the
-# /24 is the whole of AS142146's announcement rather than a slice of a shared
-# cloud, so it is not the same bet as taking an Alibaba or Cyber Sainik prefix,
-# and two addresses in it now serve the same certificate. It was left at /32s
-# anyway. If a third address in this /24 turns up, take the prefix — at that
-# point the collateral argument has lost to the evidence.
-46.183.24.169
-
-# Same run. 8.209.113.52 carried 227 kB on port 443 with no TLS ClientHello,
-# and `openssl s_client` against that port returns no certificate at all, which
-# is the signature 47.245.142.42 has: a proprietary protocol using 443 as a
-# number. AS45102 again, but a fourth prefix — 8.209.96.0/19, after
-# 47.245.128.0/18, 47.245.160.0/19 and 8.211.0.0/18. A /32 for the usual
-# reason, that the prefix is general-purpose cloud.
-8.209.113.52
 
 # ---------------------------------------------------------------------------
 # Alibaba Cloud HTTPDNS, from Chatta (com.metaztech.chatta), 2026-08-01
@@ -643,6 +283,11 @@
 #
 # These are the entries most likely to rot; re-resolve rather than trust them.
 #
+# The three sub-groups that named only imo services — AS137517, AS135402 and
+# AS21769 — now live in custom-imo-list.txt with their comments. The groups
+# below all carry bigo.sg, bigolive.tv or like.video names as well, so they
+# stay dropped outright.
+#
 # AS393942 (WiredISP) — newlbs/lbs.live.bigo.sg, the bigo.sg esx/gdl tier,
 # fs.calldev.bigo.sg, the imoim.app/imostatic.com tier, ban.imo.im, and the
 # like.video static and api tiers.
@@ -691,17 +336,6 @@
 151.243.15.6
 162.141.114.40
 162.141.114.149
-# AS137517 (FLAMEHOSTING) — the imoim/imostatic tier and ban.imo.im.
-185.93.35.145
-185.93.35.254
-194.4.52.119
-206.206.83.151
-# AS135402 (WiredISP) — the imoim/imostatic tier. 143.14.159.228 is the address
-# already documented above as shared between http-dns.imostatic.com and
-# singbox.sg on direct A records.
-143.14.159.144
-143.14.159.215
-143.14.159.228
 # AS21840 (WiredISP) — the bigo.sg esx/gdl tier, hotroom, up.ousaqb.tech.
 82.26.160.163
 167.148.196.76
@@ -716,8 +350,6 @@
 48.45.197.17
 48.45.197.58
 48.45.197.70
-# AS21769 — ban.imo.im.
-185.194.228.3
 
 # Deliberately NOT blocked from the same resolution sweep, because the
 # addresses are shared infrastructure and the collateral would land on
@@ -795,10 +427,6 @@
 128.14.88.124
 128.14.88.125
 128.14.88.126
-# AS22427 GNET, from the imo package. Same AS as the rented BIGO fronting
-# addresses above, one /24 over from the 31.58.69.x newlbs pool.
-31.58.84.2
-31.58.84.4
 
 # The remainder of sg.bigo.live's pool, after a full re-scan of all 12057 files
 # in the package — 31 dex, 77 native libs, resources and assets, ASCII and
@@ -843,57 +471,6 @@
 183.60.214.9
 223.111.253.190
 
-# ---------------------------------------------------------------------------
-# The same full scan over com.imo.android.imoim (2026-08-01)
-# ---------------------------------------------------------------------------
-#
-# 9740 files, 26 dex, 165 native libs, ASCII and UTF-16: 240 public addresses,
-# of which 179 are standalone strings rather than substrings. imo's package is
-# far noisier than BIGO's, and the noise is dangerous — it embeds Quad9,
-# OpenDNS, AdGuard, Cloudflare, Google, Level3, Comodo, Comcast, Charter,
-# CleanBrowsing, Norton/Vercara, CZ.NIC, DNS.SB, SWITCH and Quickline. Blocking
-# any of that would break DNS for the house to no benefit.
-#
-# What separates them is not the address but the *file*. Every public resolver
-# lives in a native library — libcronet.so (Chromium's networking stack, which
-# ships an upstream DoH provider table) and libimostream.so. Every operator
-# address lives in the dex. The test is one grep:
-#
-#   grep -rlaF <ip> x | grep -q '\.dex$'     # imo's own; .so means Chromium's
-#
-# Note the -a: without it grep silently skips binaries and reports nothing,
-# which is the same class of vacuous negative as the CORRECTION at the top.
-#
-# That split puts 39 addresses in the libraries (untouched, correctly) and 139
-# in the dex. Of the dex set, all 31 AS10122, all 17 AS21859, all 10 AS36131
-# and both AS22427 addresses were already covered — the AS blocks and the BIGO
-# work between them had already caught imo's entire named backend. What was
-# left is below.
-
-# Chinese carrier and provincial IDC addresses, from the dex rather than the
-# Cronet tables, so they are imo's pool and not a resolver list. Probing them
-# does not discriminate — a provincial ISP resolver is source-filtered and
-# times out from outside its own network exactly as a backend does — so the
-# file location is the whole of the evidence, and it is good evidence.
-42.56.95.167
-42.81.4.50
-42.81.14.17
-36.155.160.58
-36.155.161.85
-58.217.207.157
-58.217.207.239
-58.221.37.68
-58.255.174.39
-116.132.138.56
-116.132.138.103
-182.132.32.44
-211.95.159.165
-218.60.98.52
-218.91.170.177
-222.28.155.90
-# UCloud HK, the same provider as BIGO's 45.255.134.20 above.
-157.119.233.34
-157.119.233.59
 # 164.90.124.237 is NETSTAR registered space (inetnum 164.90.122.0 -
 # 164.90.127.255) that AS10122 does not currently announce, so the
 # announced-prefix block above missed it. Closing the two /24s of that inetnum
@@ -901,18 +478,6 @@
 164.90.123.0/24
 164.90.124.0/24
 
-# Observed and deliberately NOT blocked: 55 AWS addresses in eu-west-1/2,
-# eu-central-1 and eu-north-1, hardcoded in the dex alongside everything above,
-# so they are imo's European fleet rather than third-party infrastructure.
-#
-# They are left out on staleness rather than on attribution, which is a weaker
-# reason than this file usually accepts, so it is worth stating: EC2 addresses
-# recycle in bulk, 55 of them would be 55 chances to block a stranger in six
-# months, and none of the four sampled (18.130.109.24, 3.65.157.110,
-# 52.56.222.70, 35.176.105.107) answers on 80 or 443 today, so there is no
-# evidence they are even live. If imo survives everything above, this is the
-# group to revisit — the addresses are in the dex and can be re-read at any
-# time.
 
 # The "Wired ISP" cluster — observed, deliberately NOT blocked, recorded because
 # it predicts where imo goes next.
@@ -1420,142 +985,6 @@
 71.18.134.0/24
 139.177.247.0/24
 
-# imo / sg.bigo.overwall tunnel endpoints, harvested from the router's own
-# nft-block-port drops rather than from a capture. Three days of
-# `journalctl -k -g nft-block-port` on bongo held 7917 lines, of which 7786
-# were the four tunnel ports, and they name 63 distinct destinations across two
-# LAN hosts. Origin AS on every one of them: 62 in AS132203 (Tencent Cloud SG)
-# and 45.132.216.241 in AS22427 (GNET INC), both already established above as
-# imo/BIGO rented space. No third party appeared in the sample at all, which is
-# what justifies taking the whole set rather than triaging it.
-#
-# BELT AND BRACES, NOT THE CONTROL. custom-port-blocklist.txt already drops
-# 943/1943/2943/9443 on the forward path and that is what actually stops this —
-# every address here was observed being dropped by that rule, so none of them
-# has ever completed a handshake. The argument in that file still stands: no
-# /32 has ever repeated across rounds and imo rents a new address each time, so
-# these will rot. The reason to carry them anyway is that a rotting redundant
-# entry costs nothing, where a rotting primary control costs everything; if the
-# port rule ever has to come off for a legitimate service, this list is what is
-# left standing.
-#
-# Read as a SAMPLE, not as the pool. The log rule is rate-limited to 60/minute
-# with a burst of 20, so these are the drops that fit under the limit — the
-# real set of addresses dialled is larger, and any future count taken from this
-# file understates it.
-#
-# 43.130.0.0/16 is new territory: no earlier round put a tunnel endpoint there,
-# and it contributes 12 of the 46 additions below. Left as /32s like the rest —
-# the addresses spread across 43.130.64.0/18 and 43.130.128.0/18, and taking
-# either prefix would mean 16k addresses of general-purpose Tencent Cloud for a
-# layer that is already closed by port.
-43.130.71.117
-43.130.74.180
-43.130.91.145
-43.130.100.18
-43.130.100.80
-43.130.102.162
-43.130.107.91
-43.130.111.63
-43.130.111.192
-43.130.132.162
-43.130.147.189
-43.130.174.174
-43.166.132.94
-43.166.132.251
-43.166.133.248
-43.166.139.6
-43.166.149.11
-43.166.149.18
-43.166.149.37
-43.166.149.247
-43.166.152.9
-43.166.152.98
-43.166.152.167
-43.166.152.186
-43.166.154.48
-43.166.162.38
-43.166.163.189
-43.166.171.211
-43.166.173.17
-43.166.173.80
-43.166.174.43
-43.166.177.253
-43.166.178.68
-43.166.178.92
-43.166.211.74
-43.166.212.48
-43.166.212.83
-43.166.212.210
-43.166.212.212
-170.106.8.251
-170.106.9.192
-170.106.15.18
-170.106.37.183
-170.106.51.222
-170.106.163.159
-170.106.163.182
-
-# A second address in 8.209, and the neighbour that makes 8.209.113.52 above a
-# pattern rather than a one-off. 8.209.72.63 carried 109 kB out / 88 kB in on
-# port 443 on 2026-08-02, established, with no DNS answer naming it and no TLS
-# ClientHello — the same "443 as a number" signature written up for .113.52.
-# It also probed 5228 in an earlier run and got nothing back, which is the LBS
-# shape: 5223/5228 first, 443 when those fail.
-#
-# The two are NOT in the same announced prefix. .113.52 is 8.209.96.0/19 and
-# this one is 8.209.64.0/18, so this is the sixth AS45102 prefix in this file
-# after 47.245.128.0/18, 47.245.160.0/19, 8.211.0.0/18, 8.209.96.0/19 and the
-# 47.79 spread noted below. That spread is the point: imo's LBS is not settling
-# in one Alibaba prefix, so a prefix here would have to be very wide to bite.
-#
-# A /32 for the usual reason and with the usual caveat. 8.209.64.0/18 was
-# considered and declined — it is ~16k addresses of general-purpose Alibaba
-# Cloud Singapore, the same bet as 8.211.0.0/18 but taken on one observation
-# in this prefix rather than two. If a third 8.209 address appears, that
-# standard is met and the /18 becomes the right call.
-#
-# Known limitation, stated plainly: while the 943/1943/2943/9443 pool walk was
-# failing with 760 dropped SYNs in the 2026-08-02 18:49 run, this LBS layer was
-# working, and three tunnel flows on 47.79 addresses (AS45102) were live in the
-# same window — 9143/tcp, 24715/tcp and 29710/udp, all no-DNS, no-TLS, opaque
-# payload. Those ports do not repeat across runs and those addresses span four
-# 47.79 prefixes, so neither custom-port-blocklist.txt nor a /32 sweep reaches
-# them. This entry narrows the LBS; it does not close the tunnel.
-8.209.72.63
-
-# The tunnel the LBS above actually handed out — the one path in imo's estate
-# observed working end to end on 2026-08-02, and the reason the entry above is
-# not sufficient on its own.
-#
-# Timeline from the 18:28 capture, and it is the LBS-then-tunnel shape written
-# up in earlier rounds rather than an inference from the addresses:
-#
-#   t=1.2s    2.26.182.104:23575  tunnel already up, 9.0 kB out / 7.2 kB in
-#   t=12.7s   8.209.72.63:443     LBS session opens (the /32 above)
-#   t=45.7s   2.26.182.104        that tunnel dies
-#   t=49.6s   2.26.182.97:2305    new tunnel, 37s after the LBS, 46.6 kB out /
-#                                 26.6 kB in over 447 packets, held to t=216.9s
-#
-# Throughout all of that the 943/1943/2943/9443 pool walk ran from t=2.6s to
-# t=227.8s and drew 760 SYNs with zero SYN-ACKs, as did the 169.136 NETSTAR
-# pool. Every layer this file and custom-port-blocklist.txt already close was
-# closed. The app got through anyway, on an address neither of them names.
-#
-# Attribution: 2.26.182.0/24 is AS393942, the same WiredISP shell already
-# carrying the imoim.app/imostatic.com tier and ban.imo.im further up, and
-# whois gives netname ipxo / "Private Customer" — leased space, which is what
-# the rented half of this estate looks like. No TLS ClientHello on either
-# address, payload records of 98 and 50 bytes with occasional 1314-byte frames,
-# and no DNS answer in the capture naming either one.
-#
-# /32s and not 2.26.182.0/24, on the same reasoning as the WiredISP block
-# above: these are dedicated addresses inside a shared leased /24, not a
-# dedicated /24. IPXO leases to many customers, so the range is somebody
-# else's tenant too. If a third address in this /24 turns up carrying the same
-# no-TLS tunnel, the collateral argument has lost and the /24 is the call.
-2.26.182.97
-2.26.182.104
 
 # The bytegle.tech origin pool, blocked in custom-blocklist.txt as *.bytegle.tech
 # and added here as belt and braces so the tier stays closed if the app resolves
@@ -1635,40 +1064,6 @@
 138.113.110.17
 138.113.110.24
 
-# Fifth imo run, 2026-08-04, on bingo. A device that had just resolved
-# sgp.imoim.net — answered 0.0.0.0 by the resolver, so the DNS layer worked —
-# still placed a ~2.4 min call: the app fell back to cached relay addresses and
-# never needed the name again. The media ran as encrypted UDP on rotating high
-# ports (13798/34164, 13087/34314, so no stable port to add to
-# custom-port-blocklist.txt), and the signalling rode TCP 443 to
-# sgp-stream.downstext.com — the same *.imo.im origin documented above. Blocking
-# the addresses is what closes this, and the temp drop on all three had its
-# counter climbing within seconds, so the app was still hammering them.
-#
-# All /32 — carrier and shared cloud, so the neighbours are unrelated tenants:
-#   212.62.98.152  AS43766 Mobile Telecommunication Company Saudi Arabia, a new
-#                  operator for this file; carried the bulk of the call.
-#   47.82.7.64     AS45102 Alibaba (US), prefix 47.82 not yet among the other
-#                  AS45102 /32s here; the second media relay.
-#   150.241.249.34 AS31715 CloudIP LLC, the sgp-stream.downstext.com host itself.
-212.62.98.152
-47.82.7.64
-150.241.249.34
-
-# Same 2026-08-04 sitting, a second device on a different relay: a ~3.3 min
-# encrypted-UDP call on high ports (10162-10298) to 105.245.104.82, AS29975
-# Vodacom. Confirmed imo, not a look-alike: the same device queried
-# lbs.imolive2.com (imo's LBS, already sinkholed by *.imolive2.com), and when
-# 105.245.104.82 was dropped the app re-signalled and failed over to
-# 47.79.237.58 (AS45102 Alibaba, imo's known 47.79 relay range) after a :3112
-# punch sweep. The payload is encrypted from byte 0, which rules out the
-# Botim/GoChat/GoCall family (cleartext RTP 0x80/0x90 to Etisalat 86.96.113.x).
-#
-# imo hosts media on regional carriers and shared cloud and rotates per call, so
-# each /32 is one host and this is whack-a-mole — the name/port blocks are the
-# real control and these are the addresses actually seen carrying media.
-105.245.104.82
-47.79.237.58
 
 # Transsion (Infinix) launcher / ad-SDK — "shalltry", seen 2026-08-04 on bingo.
 # The device's dominant flow was opaque TCP to 101.46.37.197:14481 (Huawei
@@ -1691,101 +1086,6 @@
 146.103.94.46
 146.103.94.64
 
-# imo 2026.06.1051 static pull, 2026-08-04. Three addresses from the hardcoded
-# dex pool that no entry above reached. All three are AS21859 (Zenlayer), the
-# same rented hosting as the 128.14.88.122 / 128.14.18.126 / 169.197.100.124
-# /32s already in this file — 169.197.119.145 is a direct neighbour of the last
-# of those, in 169.197.116.0/22.
-#
-# /32s and not the announcing prefixes: Zenlayer is general-purpose rented
-# hosting, so the neighbours are other tenants. Being written into imo's own
-# binary is the attribution, and it is the same standard the existing Zenlayer
-# entries were added under.
-#
-# The other 106 operator addresses in this package's dex were already covered by
-# the AS36131 and NETSTAR ranges above, which is the useful result: the pool has
-# not moved since it was last read.
-169.197.119.145
-199.91.73.45
-45.124.253.99
-
-# 164.90.101.119, from the same package. It is in imo's own 164.90 space but
-# 164.90.101.0/24 is not currently announced by anyone, so it is absent from the
-# AS36131 prefix list above. It appears in the imo_signal_dict assets as the
-# "ip" field of a captured HTTPDNS answer — imo handing the address to a client
-# — so it is a live backend regardless of what BGP says today.
-#
-# A /32 rather than the /24: the /24 being dark means there is no evidence about
-# who else is in it. Revisit if AS36131 starts announcing it.
-164.90.101.119
-
-# Ninth imo run, 2026-08-04, on the 2026.06.1051 package, with everything above
-# enforced. The most degraded run yet and the second with no working tunnel.
-#
-# Every layer that has one held. All sixteen hostnames answered 0.0.0.0 and not
-# one was connected to by name. The hardcoded pool got its walk — 21 addresses
-# across 83.229.88/96, 164.90.100 and 169.136.118/160 on 443/5223/5228 and
-# 375/4937/17953/46216 — and every one of them got four to seven SYNs and
-# nothing back. The DNS-over-TCP escape to 8.8.8.8 was refused again.
-#
-# The tunnel layer failed outright, as it did in run seven: 43.166.152.149 on
-# 943 and 2943 and 43.130.68.237 on 943, one exchange each and no session.
-# Neither is blocked here. 43.166.152.149 sits beside the already-listed
-# 43.166.152.147 in 43.166.128.0/18, and 43.130.68.237 is a fourth distinct
-# Tencent prefix (43.130.64.0/18) — but this file's rule for the Tencent group
-# is to block on an answer rather than on a SYN, and neither answered. Re-check
-# these two first if imo starts working.
-#
-# What still worked is the LBS, in the same role and on the same ports as every
-# round before: 8.209.89.172 took 23 kB on port 5228 over 94.8s, then 2.2 kB
-# more on 5228 at t=173s and 2.3 kB on 5223 at t=234s. Probed directly on 443 it
-# speaks a non-TLS protocol, so it is not a generic web tenant.
-#
-# This is the third distinct Alibaba Cloud Singapore prefix to host the LBS —
-# 47.245.160.0/19 (runs three and seven), 8.211.0.0/18 (runs four, five and six)
-# and now 8.209.64.0/19. A /32 for now, on this file's stated rule of one
-# observation one address; 8.209.64.0/19 is the escalation target if a second
-# run lands in it, and on the evidence of the other two prefixes it will.
-8.209.89.172
-
-# The rented half of the newly-blocked zones, resolved over six rounds from
-# bongo on 2026-08-04. Of the 40 addresses those zones returned, 23 were already
-# in this file — which is what attributes them — and these twelve are the
-# remainder worth having.
-#
-# All twelve are dns-fra/dns-sgp/dns-sjc.loveprogram.tech, imo's HTTPDNS mirror
-# and the exact counterpart of its own dns-*.imo.im trio. All twelve are also in
-# the package's dex string table, so they are shipped instances rather than
-# addresses one capture happened to see.
-#
-# AWS EC2 in eu-west-1/2 and eu-central-1 (AS16509), so /32s and never the
-# prefixes: those are general-purpose and an elastic IP can be reassigned to an
-# unrelated tenant. Expect these to age faster than anything else in this file —
-# twelve addresses across six rounds is a rotating pool, and *.loveprogram.tech
-# in custom-blocklist.txt is the control that actually holds.
-3.65.178.248
-3.78.101.153
-3.123.106.227
-13.43.17.154
-13.43.221.109
-18.132.170.246
-18.134.93.50
-18.192.252.215
-18.198.84.7
-35.157.218.70
-35.178.2.93
-52.56.144.219
-
-# Deliberately NOT blocked from that same resolution sweep, for the usual
-# reason: they are shared CDN edge, not imo's.
-#
-# 3.165.247.112/194/205/218 are the CloudFront edge behind
-# d3r6lfw7jds5dy.cloudfront.net. The distribution hostname is blocked by name in
-# custom-blocklist.txt, which is precise because a distribution ID belongs to one
-# AWS account; the edge addresses serve every CloudFront customer there is.
-#
-# 167.82.49.91 (AS54113, Fastly) is fastly.musiclike.top. Same reasoning — the
-# zone takes a wildcard by name, the Fastly POP is shared with the internet.
 
 # Deliberately NOT blocked, recorded so the same ground is not covered twice.
 # These all resolve from the blocked imo/BIGO zones and all failed triage:
@@ -1814,127 +1114,4 @@
 # The remaining ~60 uncovered addresses are AWS (27), Cloudflare (26), Google
 # Cloud and ChinaNet. Shared by definition; the zone wildcards handle them.
 
-# Twelfth imo run, 2026-08-04, and the first from a real handset on the LAN
-# rather than the emulator — a 5-minute capture of one phone while imo was
-# launched and a call placed. The app made no DNS query of its own for the
-# entire session, so the name layer is now bypassed completely; it runs off the
-# hardcoded pool and nothing else.
-#
-# What this file already holds did bite, and nothing new was needed for it:
-# 169.136.160.158 was dropped on ports 46216 and 4937 (the LBS, inside
-# 169.136.160.0/23), and the media candidates 169.136.164.50 and 169.136.165.80
-# took 1.03 MB across four high UDP ports (30666, 30058, 29720, 29436) over 52s
-# and returned zero bytes — both sit inside the 169.136.164.0/22 taken with the
-# rest of AS10122, and a connect test from the LAN confirms both are dropped
-# live while github, fastly and apple answer. That is the whole NETSTAR media
-# path closed; no addition is warranted here.
-#
-# Everything that answered in that session — all of it — was in 46.183.24.0/24.
-# Five addresses, each on its own arbitrary high port, none carrying a TLS
-# ClientHello and all high-entropy from byte 0, which is the sg.bigo.overwall
-# signature the 943/1943/2943/9443 set was taken on:
-#
-#   46.183.24.171:889    589 kB, t+114s to the end, burst exactly over the call
-#   46.183.24.182:25601    2 kB, t+109..125s
-#   46.183.24.181:480      852 B, t+109s
-#   46.183.24.183:26601    837 B, t+109s
-#   46.183.24.184:24601    837 B, t+109s
-#
-# The port spread is why the /24 and not another port entry: 889 carried this
-# call, but 480, 24601, 25601 and 26601 were negotiated in the same second and
-# would carry the next one. 889 goes into custom-port-blocklist.txt as well,
-# since it is the one seen carrying, but the /24 is the operative block.
-#
-# 46.183.24.168 is blocked above as a /32, and its paragraph there ends "re-check
-# it rather than trust it". This is that re-check, and it moved: five new
-# addresses in the same /24, none of them .168. AS142146 (SANDHILL SOLUTION PTE.
-# LTD., SG) announces 20 separate /24s, so this is a rented block rather than the
-# whole operator, and every address imo has ever been seen using from it lands
-# here. The /32 above stays for its provenance; the generator collapses it in.
-#
-# Nothing else on either site touched this /24 or port 889 in the two 10-minute
-# whole-LAN captures taken the same evening, so there is no working traffic to
-# weigh against it. Note that the Tencent addresses in the same session are two
-# different things and only one is imo's: 43.166.x and 43.130.158.209 probing
-# 943/1943/2943/9443 are imo, and were dropped by the port list; 43.156.222.x
-# and 101.32.x on port 80 are WeChat (sgshort.wechat.com, MicroMessenger
-# client), answered 200, and must not be swept up with them.
-46.183.24.0/24
 
-# Thirteenth run, 2026-08-04, immediately after the /24 above went live — same
-# handset, same 5-minute method, imo launched again. The /24 held: 46.183.24.182
-# was dialled on 25601 throughout and returned nothing, where an hour earlier it
-# had answered. The NETSTAR media pair took another 1.33 MB to the same silence,
-# the Tencent 943/1943/2943/9443 probes were dropped by the port list, and
-# 47.245.167.194 was dropped by the /19 above. imo again made no DNS query at
-# all. Two endpoints answered, both opaque from byte 0 with no ClientHello, and
-# both are taken here as /32s rather than prefixes.
-#
-# 47.91.67.150 took the largest session of the run — 790 kB out and 1.49 MB in
-# on port 5228 over 216s, plus 149 kB on 443. That is the LBS pattern this file
-# already records on 5228 for 47.245.167.228 and 8.211.45.119, one AS over in
-# Alibaba's 47.91.64.0/20. Port 5228 is deliberately absent from
-# custom-port-blocklist.txt because it is Google FCM, so the address is the only
-# way to reach this; blocking it costs nothing, since real FCM is on Google
-# addresses. It is not a per-call pick either — the same address appears 2932
-# times in a whole-LAN capture from the other site the same evening, on three
-# unrelated handsets, so it is shared imo infrastructure. Shared Alibaba cloud,
-# hence the /32 and not the /20.
-47.91.67.150
-
-# 213.218.225.20 carried 2.47 MB outbound against 85 kB in over the last 7
-# seconds of the capture, on 45349/udp with a 33443/tcp alongside — the upload
-# leg of a call still running when the capture ended. AS22427 GNET INC., the
-# rented tier this file already holds a long run of 31.58.69.x /32s from, and a
-# second GNET address (31.58.84.2) was probed on 80 in the same session and got
-# nothing back.
-#
-# Taken as the /24 rather than the /32 the 31.58.69.x precedent would suggest.
-# Be clear about the standard of evidence: only one address in it has ever been
-# observed, so this is pre-emptive and not the SANDHILL case, where five
-# addresses across five ports all answered inside one /24 before it was taken.
-# What supports it is tenancy rather than volume — 213.218.225.0/24 is announced
-# by AS22427 (GNET INC.) specifically, inside the 213.218.224.0/19 its upstream
-# AS8851 announces, which is the shape of a block rented whole to one customer.
-# No address in it has rDNS and none serves a certificate, so there is no
-# visible co-tenant to damage, and nothing on either site has ever touched it
-# apart from imo. The run after the /32 landed is the reason to widen rather
-# than narrow: imo came back to the same address on new ports (25349/udp and
-# 43443/tcp against the earlier 45349 and 33443), which the /32 still caught —
-# but ports moving first is usually what addresses moving looks like next.
-213.218.225.0/24
-
-# imo's hardcoded relay pool on Alibaba Cloud SG (AS45102), inside 47.79.0.0/16.
-# This is the layer that still carries voice calls once the control plane is
-# sealed. With authentication and the LBS both blocked, an already-authenticated
-# client skips discovery entirely and dials a pool member straight from its
-# cached session, so no lookup and no LBS exchange ever precedes the call — the
-# name layer cannot see it and the prefixes already in this file do not cover it.
-#
-# The five /24s below are the members observed carrying media. The signature is
-# the documented imo one: a single peer taking the bulk of the flow across two
-# high random UDP ports (34511 and 34533 on 47.79.1.189), opaque from byte 0,
-# with nothing in any resolver log explaining the address.
-#
-# Taken as /24s rather than the enclosing /16, deliberately. 47.79.0.0/16 is
-# shared Alibaba cloud and one legitimate tenant is already in use here:
-# alialarm-sgp.oss-ap-southeast-1.aliyuncs.com, the Hikvision camera alarm
-# channel, resolves into 47.79.49.0/24 and has to keep working. Across the full
-# resolver history the only other name that has ever resolved into 47.79/47.82
-# is api.bidnex.com, an ad exchange, so a carve-out was the only thing the wider
-# block needed — but the narrower list is cheaper to be wrong about. The pool is
-# hardcoded in the app and therefore finite, so extending this as new members
-# appear is bounded rather than an endless chase. Expect to extend it: each call
-# may pick a member not yet seen.
-#
-# Note 47.79.237.58 is already listed further up as a bare /32, from the run
-# where dropping a Vodacom relay made the app fail over into this range. It is a
-# sixth member of the same pool and is deliberately left as a /32 here rather
-# than widened to 47.79.237.0/24, so that the /24s below stay exactly the set
-# that has been observed carrying media. Widen it if that /24 ever produces a
-# second address.
-47.79.1.0/24
-47.79.120.0/24
-47.79.225.0/24
-47.79.230.0/24
-47.79.242.0/24
