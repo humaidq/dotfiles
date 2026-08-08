@@ -9,6 +9,36 @@ let
   cfg = config.sifr.router;
   pppdService = "pppd-etisalat.service";
   inherit (cfg) throttle imoThrottle;
+
+  # Split out of the service so the schedule can be checked at any time
+  # without waiting for a boundary: `imo-loss-for 07:00` answers for 07:00.
+  # 10# forces base ten, otherwise "08" and "09" are invalid octal and the
+  # arithmetic fails at exactly two hours of the day.
+  imoLossFor = pkgs.writeShellApplication {
+    name = "imo-loss-for";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      now=''${1:-$(date +%H:%M)}
+
+      to_min() {
+        local hhmm="$1"
+        echo $(( 10#''${hhmm%%:*} * 60 + 10#''${hhmm##*:} ))
+      }
+
+      n=$(to_min "$now")
+
+      for w in ${lib.escapeShellArgs imoThrottle.peakWindows}; do
+        s=$(to_min "''${w%%-*}")
+        e=$(to_min "''${w##*-}")
+        if [ "$n" -ge "$s" ] && [ "$n" -lt "$e" ]; then
+          echo "${imoThrottle.peakLoss}"
+          exit 0
+        fi
+      done
+
+      echo "${imoThrottle.baseLoss}"
+    '';
+  };
 in
 {
   config = lib.mkIf cfg.enable {
@@ -114,6 +144,56 @@ in
           # dual-dsthost gives per-LAN-host fairness on inbound traffic.
           shape ${cfg.lan0} ${cfg.bandwidth.download} diffserv4 dual-dsthost
         '';
+      };
+
+      imo-throttle-schedule = {
+        description = "Apply the time-of-day loss value to the imo tc class";
+        # cake-sqm rebuilds the qdiscs from scratch whenever pppd flaps, which
+        # resets this class to baseLoss. Running after it means the correct
+        # value is restored immediately rather than at the next tick, and the
+        # timer below is then only a backstop.
+        after = [ "cake-sqm.service" ];
+        wantedBy = [ "cake-sqm.service" ];
+
+        path = [
+          pkgs.iproute2
+          imoLossFor
+        ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = false;
+        };
+
+        script = ''
+          set -euo pipefail
+
+          loss=$(imo-loss-for)
+
+          for dev in ${cfg.ppp} ${cfg.lan0}; do
+            # `tc qdisc change` replaces the entire netem parameter set, so
+            # limit has to be restated every time rather than loss alone.
+            #
+            # Tolerate failure: the timer fires regardless of whether cake-sqm
+            # has built the class yet, and a missing qdisc before the link is
+            # up is expected rather than an error.
+            tc qdisc change dev "$dev" parent 1:30 handle 30: netem \
+              loss "$loss" limit 1000 || true
+          done
+        '';
+      };
+    };
+
+    systemd.timers = lib.mkIf config.services.pppd.enable {
+      imo-throttle-schedule = {
+        description = "Re-evaluate the imo loss value every half hour";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          # Half-hourly because the windows end at 11:30 and 21:30; an hourly
+          # tick would hold peak loss for thirty minutes too long.
+          OnCalendar = "*:00,30";
+          Persistent = true;
+        };
       };
     };
   };
