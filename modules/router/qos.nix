@@ -170,15 +170,36 @@ in
 
           loss=$(imo-loss-for)
 
+          # `tc qdisc change` replaces the entire netem parameter set, so
+          # limit has to be restated every time rather than loss alone.
+          #
+          # Only the "not built yet" failures are tolerated below: the timer
+          # fires regardless of whether cake-sqm has built the 1:30 class and
+          # its netem qdisc yet, or whether the PPP device even exists yet,
+          # and those are expected on some ticks rather than an error. tc's
+          # own wording distinguishes these cases, so match on it rather than
+          # swallowing every failure: a missing device ("Cannot find
+          # device"), a missing htb root ("Failed to find specified qdisc"),
+          # a missing 1:30 class ("Specified class not found"), or a class
+          # that exists but has no netem attached yet ("Qdisc not found").
+          # Anything else (a typo'd handle, a permissions problem, a future
+          # refactor that changes parent/handle) fails the unit so it shows
+          # up via systemctl instead of silently never applying the loss
+          # value.
           for dev in ${cfg.ppp} ${cfg.lan0}; do
-            # `tc qdisc change` replaces the entire netem parameter set, so
-            # limit has to be restated every time rather than loss alone.
-            #
-            # Tolerate failure: the timer fires regardless of whether cake-sqm
-            # has built the class yet, and a missing qdisc before the link is
-            # up is expected rather than an error.
-            tc qdisc change dev "$dev" parent 1:30 handle 30: netem \
-              loss "$loss" limit 1000 || true
+            if err=$(tc qdisc change dev "$dev" parent 1:30 handle 30: netem \
+                       loss "$loss" limit 1000 2>&1); then
+              continue
+            fi
+            case "$err" in
+              *"Cannot find device"* | *"Failed to find specified qdisc"* | *"Specified class not found"* | *"Qdisc not found"*)
+                echo "imo-throttle-schedule: $dev not ready yet: $err" >&2
+                ;;
+              *)
+                echo "imo-throttle-schedule: tc failed on $dev: $err" >&2
+                exit 1
+                ;;
+            esac
           done
         '';
       };
