@@ -41,7 +41,8 @@ finding ends up doing nothing:
 | Finding | Goes in | Why that one |
 |---|---|---|
 | VPN / tunnel endpoints | `custom-throttle-list.txt` — **throttle** | A dropped node is replaced within a minute; a slow one is not, because nothing fails. Blocking these caused ~40 rotations across eight providers in one evening. Throttling produced none. |
-| imo, BIGO and their relays / control plane | `custom-ip-blocklist.txt` — **block by IP** | These are reached by hardcoded address with no lookup, so a name block cannot touch them, and there is no reason to leave them half-working. |
+| BIGO and its relays / control plane | `custom-ip-blocklist.txt` — **block by IP** | Reached by hardcoded address with no lookup, so a name block cannot touch it, and there is no reason to leave it half-working. |
+| imo and its relays / control plane | `custom-imo-list.txt` — **throttle** | Also reached by hardcoded address, but blocking it outright drove the operator onto fresh infrastructure across eleven documented runs; throttling holds it on a slow node instead. See `sifr.router.imoThrottle`. |
 | Gambling, adware, tracking, DNS-changers, everything else | `custom-blocklist.txt` — **wildcard host block** | Ordinary apps resolve these normally, so the name is the durable handle and costs no address collateral. Reach for an IP here only when the name is proven bypassed. |
 
 The throttle numbers live in `sifr.router.throttle`. Add live with
@@ -112,8 +113,8 @@ One round at a time. The script gathers; you decide.
 
 It prints a table — every client by bytes, its dominant peer, that peer's
 share, port, whois, origin AS, any SNI, and whether the resolver explains the
-address — then exits. Read it, decide what is a node, `tempblock add` those,
-append them to `modules/router/custom-ip-blocklist.txt`, and run it again.
+address — then exits. Read it, decide what is a node, `tempblock add` or
+`tempthrottle add` it per the table above, and append it to the matching file.
 Report each round to the user as you go.
 
 **The script must never block on its own, and no version of it should.** Both

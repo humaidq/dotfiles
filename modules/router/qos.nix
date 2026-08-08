@@ -217,5 +217,9 @@ in
         };
       };
     };
+
+    # Exposed the same way tools.nix exposes tempblock/tempthrottle, so the
+    # comment above pointing operators at `imo-loss-for` is actually true.
+    environment.systemPackages = [ imoLossFor ];
   };
 }

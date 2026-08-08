@@ -91,8 +91,8 @@ let
     # intervals specified") unless the set is declared auto-merge, so a
     # broad entry added next to a narrower one already in the file would
     # otherwise fail the whole `nft -f` at runtime. Collapsing here keeps
-    # the txt free to list whatever is clearest — 169.136.141.0/24 from an
-    # AS listing and the wider NETSTAR range that contains it, say — and
+    # the txt free to list whatever is clearest — 169.136.140.0/24 from an
+    # AS listing and the wider 169.136.140.0/22 that contains it, say — and
     # merges adjacent prefixes into the shortest equivalent set as a bonus.
     v4 = [str(n) for n in ipaddress.collapse_addresses(v4)]
     v6 = [str(n) for n in ipaddress.collapse_addresses(v6)]
