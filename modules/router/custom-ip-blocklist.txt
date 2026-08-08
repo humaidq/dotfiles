@@ -69,8 +69,10 @@
 # one group here with a real owner behind it rather than a rented instance, and
 # it is blocked as the whole registered range rather than as the single address
 # that answered (169.136.160.158, on ports 375/4937/17953/46216). The range
-# overlaps 169.136.141.0/24 from the AS36131 list above; the generator collapses
-# that, so both can stay for the sake of documenting where each came from.
+# contains 169.136.141.0/24, which now lives in custom-imo-list.txt. Nothing
+# collapses across the two lists — each generates into its own nftables set —
+# and the drop chain here runs at hook priority -10 against the throttle mark's
+# priority 0, so that /24 is dropped rather than throttled.
 169.136.140.0/22
 169.136.144.0/20
 169.136.160.0/23

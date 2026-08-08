@@ -65,6 +65,11 @@
 164.90.118.0/24
 164.90.119.0/24
 164.90.120.0/24
+# 169.136.141.0/24 also sits inside the 169.136.140.0/22 kept in
+# custom-ip-blocklist.txt. Nothing collapses across the two lists — each
+# generates into its own nftables set — and the drop chain there runs at hook
+# priority -10 against this list's mark at priority 0, so this /24 is dropped
+# rather than throttled. It stays here to record that it is AS36131's.
 169.136.141.0/24
 185.22.42.0/24
 192.12.31.0/24
@@ -640,8 +645,8 @@
 # imo 2026.06.1051 static pull, 2026-08-04. Three addresses from the hardcoded
 # dex pool that no entry above reached. All three are AS21859 (Zenlayer), the
 # same rented hosting as the 128.14.88.122 / 128.14.18.126 / 169.197.100.124
-# /32s already in this file — 169.197.119.145 is a direct neighbour of the last
-# of those, in 169.197.116.0/22.
+# /32s already in custom-ip-blocklist.txt — 169.197.119.145 is a direct
+# neighbour of the last of those, in 169.197.116.0/22.
 #
 # /32s and not the announcing prefixes: Zenlayer is general-purpose rented
 # hosting, so the neighbours are other tenants. Being written into imo's own
@@ -739,7 +744,8 @@
 # entire session, so the name layer is now bypassed completely; it runs off the
 # hardcoded pool and nothing else.
 #
-# What this file already holds did bite, and nothing new was needed for it:
+# What custom-ip-blocklist.txt already holds did bite, and nothing new was
+# needed for it:
 # 169.136.160.158 was dropped on ports 46216 and 4937 (the LBS, inside
 # 169.136.160.0/23), and the media candidates 169.136.164.50 and 169.136.165.80
 # took 1.03 MB across four high UDP ports (30666, 30058, 29720, 29436) over 52s
@@ -804,9 +810,9 @@
 # 213.218.225.20 carried 2.47 MB outbound against 85 kB in over the last 7
 # seconds of the capture, on 45349/udp with a 33443/tcp alongside — the upload
 # leg of a call still running when the capture ended. AS22427 GNET INC., the
-# rented tier this file already holds a long run of 31.58.69.x /32s from, and a
-# second GNET address (31.58.84.2) was probed on 80 in the same session and got
-# nothing back.
+# rented tier custom-ip-blocklist.txt already holds a long run of 31.58.69.x
+# /32s from, and a second GNET address (31.58.84.2) was probed on 80 in the
+# same session and got nothing back.
 #
 # Taken as the /24 rather than the /32 the 31.58.69.x precedent would suggest.
 # Be clear about the standard of evidence: only one address in it has ever been
