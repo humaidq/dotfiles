@@ -1,0 +1,119 @@
+# shellcheck shell=bash
+# caffeine-ctl — three-state sleep inhibition: decaf / caffeine / double.
+# `double` additionally runs the caffeine-beeper unit, which beeps while on
+# battery. The inhibitor PID file is authoritative for "is sleep inhibited";
+# the mode file is advisory and reconciled against it on every invocation.
+set -euo pipefail
+
+MODE_FILE="${CAFFEINE_MODE_FILE:-/tmp/caffeine-mode-${USER:-unknown}}"
+INHIBIT_FILE="${CAFFEINE_INHIBIT_FILE:-/tmp/caffeine-inhibit-${USER:-unknown}.pid}"
+BEEPER_UNIT="${CAFFEINE_BEEPER_UNIT:-caffeine-beeper}"
+
+inhibitor_alive() {
+  [ -f "$INHIBIT_FILE" ] || return 1
+  local pid
+  pid="$(cat "$INHIBIT_FILE" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+current_mode() {
+  # A dead inhibitor means decaf no matter what the mode file claims.
+  if ! inhibitor_alive; then
+    printf 'decaf\n'
+    return 0
+  fi
+  local mode
+  mode="$(cat "$MODE_FILE" 2>/dev/null || true)"
+  case "$mode" in
+    caffeine | double) printf '%s\n' "$mode" ;;
+    *) printf 'caffeine\n' ;;
+  esac
+}
+
+next_mode() {
+  case "$1" in
+    decaf) printf 'caffeine\n' ;;
+    caffeine) printf 'double\n' ;;
+    *) printf 'decaf\n' ;;
+  esac
+}
+
+stop_inhibitor() {
+  local pid=""
+  if [ -f "$INHIBIT_FILE" ]; then
+    pid="$(cat "$INHIBIT_FILE" 2>/dev/null || true)"
+    if [ -n "$pid" ]; then
+      kill "$pid" 2>/dev/null || true
+    fi
+    rm -f "$INHIBIT_FILE"
+  fi
+}
+
+start_inhibitor() {
+  if inhibitor_alive; then
+    return 0
+  fi
+  rm -f "$INHIBIT_FILE"
+  systemd-inhibit --what=idle:sleep:handle-lid-switch \
+    --why="Caffeine mode - preventing sleep" \
+    --who="${USER:-unknown}" \
+    --mode=block \
+    sleep infinity &
+  printf '%s' "$!" > "$INHIBIT_FILE"
+}
+
+beeper() { # start|stop
+  systemctl --user "$1" "$BEEPER_UNIT" 2>/dev/null || true
+}
+
+notify() { # summary body
+  notify-send -t 3000 "$1" "$2" 2>/dev/null || true
+}
+
+set_mode() {
+  case "$1" in
+    decaf)
+      stop_inhibitor
+      beeper stop
+      printf 'decaf\n' > "$MODE_FILE"
+      notify "☕ Decaf" "Sleep enabled"
+      ;;
+    caffeine)
+      start_inhibitor
+      beeper stop
+      printf 'caffeine\n' > "$MODE_FILE"
+      notify "☕ Caffeine" "Sleep disabled (locking still works)"
+      ;;
+    double)
+      start_inhibitor
+      beeper start
+      printf 'double\n' > "$MODE_FILE"
+      notify "☕☕ Double caffeine" "Sleep disabled, will beep on battery"
+      ;;
+    *)
+      printf 'caffeine-ctl: unknown mode: %s\n' "$1" >&2
+      exit 2
+      ;;
+  esac
+}
+
+main() {
+  case "${1:-cycle}" in
+    cycle) set_mode "$(next_mode "$(current_mode)")" ;;
+    set)
+      if [ $# -lt 2 ]; then
+        printf 'caffeine-ctl: set requires a mode\n' >&2
+        exit 2
+      fi
+      set_mode "$2"
+      ;;
+    status) current_mode ;;
+    *)
+      printf 'usage: caffeine-ctl [cycle|set <decaf|caffeine|double>|status]\n' >&2
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"
