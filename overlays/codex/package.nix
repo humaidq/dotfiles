@@ -1,7 +1,9 @@
 # Vendored copy of nixpkgs' codex package (pkgs/by-name/co/codex) so we can bump
 # codex ahead of nixos-unstable. To update, bump `version` + `src.hash` +
-# `cargoHash` here (and re-sync librusty_v8.nix/fetchers.nix if upstream's V8
-# pin moves), or re-copy the three files from nixpkgs master.
+# `cargoHash` here, and re-sync librusty_v8.nix if the `v8` crate in codex-rs's
+# Cargo.lock moved. Note this no longer tracks nixpkgs verbatim: since v8 150
+# the V8 artifacts come from openai/codex rather than denoland/rusty_v8, so
+# librusty_v8.nix/fetchers.nix must not be re-copied from nixpkgs wholesale.
 {
   lib,
   stdenv,
@@ -15,8 +17,8 @@
   gitMinimal,
   libcap,
   libclang,
-  librusty_v8 ? callPackage ./librusty_v8.nix {
-    inherit (callPackage ./fetchers.nix { }) fetchLibrustyV8;
+  rustyV8 ? callPackage ./librusty_v8.nix {
+    inherit (callPackage ./fetchers.nix { }) fetchRustyV8;
   },
   lld,
   makeBinaryWrapper,
@@ -29,18 +31,18 @@
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "codex";
-  version = "0.146.0";
+  version = "0.147.0";
 
   src = fetchFromGitHub {
     owner = "openai";
     repo = "codex";
     tag = "rust-v${finalAttrs.version}";
-    hash = "sha256-/kTIOX/klxm1nq2bJsBqS8f1jZZp2ilaTeULQFPJgDk=";
+    hash = "sha256-NKeOxp9vLcx7tpghqhpS3ocPqUDP2PircNwkJNpHBPo=";
   };
 
   sourceRoot = "${finalAttrs.src.name}/codex-rs";
 
-  cargoHash = "sha256-N9jbH/cgAyu2QxneSnpkdaF0MgV3ZtDmN9q6rr9u+hE=";
+  cargoHash = "sha256-MJuM2QLxvL+r/Gw8QXLjtsLS25QGVCqcqU5GJssSoQ4=";
 
   __structuredAttrs = true;
 
@@ -96,7 +98,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
         "-Wno-error=character-conversion"
       ]
     );
-    RUSTY_V8_ARCHIVE = librusty_v8;
+    RUSTY_V8_ARCHIVE = rustyV8.archive;
+    # v8 >= 150 no longer ships a usable binding for this feature combination in
+    # the crate's gen/ directory, so point its build script at the fetched one.
+    RUSTY_V8_SRC_BINDING_PATH = rustyV8.srcBinding;
   }
   // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
     # Link with lld on Darwin. nixpkgs' classic open-source ld64 fails to insert
