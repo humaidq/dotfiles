@@ -46,6 +46,7 @@ run_ctl() {
   CAFFEINE_MODE_FILE="$tmp/mode" \
   CAFFEINE_INHIBIT_FILE="$tmp/inhibit.pid" \
   CAFFEINE_BEEPER_UNIT="caffeine-beeper" \
+  CAFFEINE_INHIBIT_MATCH="sleep" \
     bash "$CTL" "$@"
 }
 
@@ -125,6 +126,20 @@ check "cycle from stale state advances to caffeine" caffeine "$(cat "$tmp/mode")
 # --- inhibitor alive but mode file missing ----------------------------------
 rm -f "$tmp/mode"
 check "alive inhibitor, no mode file reports caffeine" caffeine "$(run_ctl status)"
+
+# --- PID-reuse: stale PID that no longer matches inhibit pattern ----------------
+# Simulate PID reuse: start a process that doesn't contain "sleep" in its cmdline,
+# write its PID to inhibit file, and verify status reports decaf.
+unrelated_pid=""
+tail -f /dev/null &
+unrelated_pid=$!
+printf '%s' "$unrelated_pid" > "$tmp/inhibit.pid"
+printf 'double\n' > "$tmp/mode"
+# status should report decaf because tail -f doesn't match "sleep"
+check "stale PID (cmdline mismatch) reports decaf" decaf "$(run_ctl status)"
+# Clean up the unrelated process
+kill "$unrelated_pid" 2>/dev/null || true
+rm -f "$tmp/inhibit.pid"
 
 # --- bad input --------------------------------------------------------------
 if run_ctl set espresso >/dev/null 2>&1; then

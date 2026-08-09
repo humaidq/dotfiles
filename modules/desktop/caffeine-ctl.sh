@@ -8,13 +8,23 @@ set -euo pipefail
 MODE_FILE="${CAFFEINE_MODE_FILE:-/tmp/caffeine-mode-${USER:-unknown}}"
 INHIBIT_FILE="${CAFFEINE_INHIBIT_FILE:-/tmp/caffeine-inhibit-${USER:-unknown}.pid}"
 BEEPER_UNIT="${CAFFEINE_BEEPER_UNIT:-caffeine-beeper}"
+INHIBIT_MATCH="${CAFFEINE_INHIBIT_MATCH:-systemd-inhibit}"
 
 inhibitor_alive() {
   [ -f "$INHIBIT_FILE" ] || return 1
-  local pid
+  local pid cmdline
   pid="$(cat "$INHIBIT_FILE" 2>/dev/null || true)"
   [ -n "$pid" ] || return 1
-  kill -0 "$pid" 2>/dev/null
+  # Cheap gate: process exists
+  kill -0 "$pid" 2>/dev/null || return 1
+  # Confirmation: PID's cmdline contains the expected process name (guards against PID reuse)
+  # Use tr to convert NUL separators before command substitution to avoid bash warnings
+  cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+  [ -n "$cmdline" ] || return 1
+  case "$cmdline" in
+    *"$INHIBIT_MATCH"*) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 current_mode() {
