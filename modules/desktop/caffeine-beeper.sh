@@ -1,16 +1,23 @@
 # shellcheck shell=bash
 # caffeine-beeper — while on battery, emit a short tone every few seconds.
 # Started and stopped on demand by caffeine-ctl for the "double" mode.
-# Authoritative power state comes from sysfs; upower events wake the loop
-# to re-check status. Dry-run prints the decision and exits.
+# Authoritative power state comes from sysfs. There is no event source:
+# the main loop just polls sysfs every CAFFEINE_BEEP_AC_POLL_INTERVAL
+# seconds while on AC, and every CAFFEINE_BEEP_INTERVAL seconds while
+# beeping on battery. No external process is used to wait for power
+# events. Dry-run prints the decision and exits.
 set -euo pipefail
 
 SYSFS="${CAFFEINE_BEEP_SYSFS:-/sys/class/power_supply}"
 DURATION="${CAFFEINE_BEEP_DURATION:-0.2}"
 INTERVAL="${CAFFEINE_BEEP_INTERVAL:-2}"
 FREQ="${CAFFEINE_BEEP_FREQ:-1000}"
+AC_POLL_INTERVAL="${CAFFEINE_BEEP_AC_POLL_INTERVAL:-2}"
 DRY_RUN="${CAFFEINE_BEEP_DRY_RUN:-}"
-WAKEUP_FILE="${CAFFEINE_BEEP_WAKEUP_FILE:-/tmp/caffeine-beeper-wakeup-${USER:-unknown}}"
+# Test-only escape hatch: bound the number of main-loop iterations so a
+# test can drive the loop over a scripted sysfs sequence and then let it
+# exit on its own. 0 (default) means run forever, as in production.
+MAX_ITER="${CAFFEINE_BEEP_MAX_ITER:-0}"
 
 export AUDIODRIVER=pulseaudio
 
@@ -41,7 +48,7 @@ play_tone() {
 }
 
 main() {
-  local bat status decision armed=1
+  local bat status decision armed=1 iter=0
   if ! bat="$(find_battery)"; then
     exit 0
   fi
@@ -67,33 +74,14 @@ main() {
       play_tone
       sleep "$INTERVAL"
     else
-      # Back on AC: re-arm the notification and idle until a power event.
+      # Back on AC: re-arm the notification and poll again shortly.
       armed=1
-      rm -f "$WAKEUP_FILE"
+      sleep "$AC_POLL_INTERVAL"
+    fi
 
-      if command -v upower >/dev/null 2>&1; then
-        # Drain upower events; timeout after 2s to ensure re-check.
-        # Never break from the read loop — that leaves upower orphaned.
-        timeout 2 upower --monitor 2>/dev/null | while read -r _; do
-          # Power event occurred; check if status changed to Discharging.
-          # We run in a subshell (pipe), so use a file to signal.
-          if bat="$(find_battery)"; then
-            st="$(cat "$bat/status")"
-            if [ "$st" = "Discharging" ]; then
-              touch "$WAKEUP_FILE"
-            fi
-          fi
-        done
-      else
-        sleep 10
-      fi
-
-      # Debounce only if upower timed out with no discharge event.
-      # If we detected discharge, skip debounce and re-check immediately.
-      if [ ! -f "$WAKEUP_FILE" ]; then
-        sleep 5
-      fi
-      rm -f "$WAKEUP_FILE"
+    iter=$((iter + 1))
+    if [ "$MAX_ITER" -gt 0 ] && [ "$iter" -ge "$MAX_ITER" ]; then
+      exit 0
     fi
   done
 }

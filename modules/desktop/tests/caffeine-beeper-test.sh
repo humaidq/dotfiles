@@ -60,6 +60,61 @@ else
   fail=1
 fi
 
+# --- armed / once-per-unplug integration test -----------------------------
+# The dry-run cases above only exercise should_beep(); they never run the
+# main loop, which is exactly the gap that let two broken upower-waiting
+# implementations pass review. Now that the loop is plain sysfs polling
+# with no subshell, drive it for real: stub notify-send and play, bound
+# the loop with CAFFEINE_BEEP_MAX_ITER, and script a sysfs sequence of
+# unplug -> still-unplugged -> replug -> unplug while the loop runs.
+# Assert the notification fires exactly twice (once per unplug), not once
+# per beep.
+
+stub_bin="$tmp/stubbin"
+mkdir -p "$stub_bin"
+notify_log="$tmp/notify.log"
+: > "$notify_log"
+
+cat > "$stub_bin/notify-send" <<'EOF'
+#!/usr/bin/env bash
+printf 'NOTIFY\n' >> "$NOTIFY_LOG"
+EOF
+chmod +x "$stub_bin/notify-send"
+
+# play_tone shells out to `play` (sox); stub it so no audio is ever emitted.
+cat > "$stub_bin/play" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$stub_bin/play"
+
+set_battery Discharging # unplugged from the start
+
+(
+  sleep 0.4
+  set_battery Charging # replugged
+  sleep 0.4
+  set_battery Discharging # unplugged again
+) &
+writer_pid=$!
+
+NOTIFY_LOG="$notify_log" PATH="$stub_bin:$PATH" \
+CAFFEINE_BEEP_SYSFS="$tmp/sysfs" \
+CAFFEINE_BEEP_INTERVAL=0.05 \
+CAFFEINE_BEEP_AC_POLL_INTERVAL=0.05 \
+CAFFEINE_BEEP_MAX_ITER=30 \
+  bash "$BEEPER"
+
+wait "$writer_pid" 2>/dev/null || true
+
+notify_count="$(wc -l < "$notify_log" | tr -d ' ')"
+if [ "$notify_count" = "2" ]; then
+  printf 'PASS: unplug -> still-unplugged -> replug -> unplug notifies exactly twice (%s)\n' "$notify_count"
+else
+  printf 'FAIL: expected exactly 2 notifications across unplug/replug/unplug, got %s\n' "$notify_count"
+  fail=1
+fi
+
 if [ "$fail" -eq 0 ]; then
   printf '\nAll caffeine-beeper tests passed.\n'
 else
