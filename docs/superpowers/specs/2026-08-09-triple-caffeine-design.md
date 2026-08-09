@@ -53,9 +53,26 @@ raises an audible alarm whenever the laptop is running on battery — an
 Mode lives in a new state file `/tmp/caffeine-mode-$USER` containing exactly one
 of `decaf`, `caffeine`, `double`. A missing or unreadable file means `decaf`.
 
-The existing `/tmp/caffeine-inhibit-$USER.pid` is retained **unchanged** as the
-sleep-inhibitor handle, so `suspend-if-allowed` and `battery-guard`'s
-`caffeine_active` keep working with no change to their logic.
+The existing `/tmp/caffeine-inhibit-$USER.pid` is retained as the
+sleep-inhibitor handle, but all three readers of that file now agree on the
+same PID-reuse-hardened liveness check — alive *and* `/proc/$pid/cmdline`
+matches `*_INHIBIT_MATCH*` — instead of the two-of-three agreement the branch
+started with:
+
+- `caffeine-ctl`'s `inhibitor_alive` (the original hardened check).
+- `battery-guard`'s `caffeine_active` (hardened alongside it).
+- `suspend-if-allowed`, which no longer re-implements a `kill -0` liveness
+  check at all — it shells out to `caffeine-ctl status` and suspends only on
+  `decaf`, so there is exactly one liveness implementation, not three that can
+  drift out of sync.
+
+The two `kill` sites that mutate the PID file — `caffeine-ctl`'s
+`stop_inhibitor` and `battery-guard`'s `clear_caffeine` — also gate their
+`kill` on that same check before signalling (they still unconditionally
+`rm -f` the PID file). This closes a PID-reuse gap the earlier hardening left
+open: `battery-guard`'s `decide()` returns `suspend` at ≤7% regardless of
+whether caffeine is active, so a stale PID file whose PID had been recycled
+by an unrelated process would otherwise get SIGTERM'd at critical battery.
 
 | Mode | Inhibitor PID file | `caffeine-beeper` unit |
 |---|---|---|
@@ -63,10 +80,25 @@ sleep-inhibitor handle, so `suspend-if-allowed` and `battery-guard`'s
 | `caffeine` | present, alive | stopped |
 | `double` | present, alive | running |
 
-The two files can disagree if something external kills the inhibitor. The mode
-file is advisory; the PID file remains authoritative for "is sleep inhibited".
-`caffeine-ctl` reconciles on every invocation: it derives the current mode as
-`decaf` whenever the inhibitor PID is dead, regardless of the mode file.
+The two files can disagree if something external kills the inhibitor, or the
+beeper unit stops on its own (crash, or a logout/compositor restart — the
+beeper is `partOf graphical-session.target` but the backgrounded inhibitor
+process is not a systemd unit and survives, since
+`services.logind.killUserProcesses = false`). The mode file is advisory; the
+PID file remains authoritative for "is sleep inhibited". `caffeine-ctl`
+reconciles on every invocation:
+
+- It derives the current mode as `decaf` whenever the inhibitor PID is dead,
+  regardless of the mode file.
+- If the mode file says `double` but `systemctl --user is-active --quiet
+  caffeine-beeper` says the beeper unit is not active, the reported mode
+  downgrades to `caffeine` — `double` means inhibitor-alive *and*
+  beeper-running, and reporting a beeper-less `double` would leave the user
+  believing an alarm is armed when it silently isn't. This downgrade only
+  affects what `status`/`cycle` *report*; the mode file itself is left as
+  `double`, so the very next `Super+c` press (`cycle` from the downgraded
+  `caffeine` reading) restarts the beeper and returns to `double`, rather than
+  advancing past a state that was never actually armed.
 
 ### Components
 
@@ -99,20 +131,24 @@ A `systemd.user.service` that is deliberately **not** `wantedBy` any target — 
 is started and stopped on demand by `caffeine-ctl`. It is `partOf`
 `graphical-session.target` so it dies with the session.
 
-Loop, mirroring `battery-guard`'s structure (sysfs is authoritative,
-`upower --monitor` only wakes the loop):
+Loop is a pure sysfs poll — there is no event source, unlike `battery-guard`,
+which blocks on `upower --monitor`. The beeper never shells out to `upower` at
+all: it polls sysfs every `CAFFEINE_BEEP_AC_POLL_INTERVAL` seconds while on AC,
+and every `CAFFEINE_BEEP_INTERVAL` seconds while beeping on battery:
 
 ```
 startup: exit 0 if no BAT* present
 armed=1
 loop:
-  read status from /sys BAT0
+  read status from /sys BAT0 (tolerate a failed/empty read — e.g. -EIO from a
+    busy EC, or a battery hot-remove — by sleeping CAFFEINE_BEEP_AC_POLL_INTERVAL
+    and retrying, rather than dying under set -e)
   if should_beep(status):        # status == "Discharging"
       if armed: notify "🔌 Power lost — double caffeine"; armed=0
-      play tone (0.2s), sleep 2
+      play tone (0.2s), sleep CAFFEINE_BEEP_INTERVAL (2s)
   else:
       armed=1                    # re-arm for the next unplug
-      block on upower --monitor / sleep poll
+      sleep CAFFEINE_BEEP_AC_POLL_INTERVAL (2s)
 ```
 
 `should_beep` is a pure function taking the status string, so it is unit
@@ -158,20 +194,30 @@ options), following the `battery-guard` precedent:
 
 - `CAFFEINE_MODE_FILE` (default `/tmp/caffeine-mode-$USER`)
 - `CAFFEINE_INHIBIT_FILE` (default `/tmp/caffeine-inhibit-$USER.pid`)
+- `CAFFEINE_INHIBIT_MATCH` (default `systemd-inhibit`) — substring
+  `inhibitor_alive()` requires in `/proc/$pid/cmdline` before treating the PID
+  file as live, guarding both the read path and the `stop_inhibitor` kill path
+  against PID reuse
+- `CAFFEINE_BEEPER_UNIT` (default `caffeine-beeper`)
 - `CAFFEINE_BEEP_SYSFS` (default `/sys/class/power_supply`) — point at a fixture
 - `CAFFEINE_BEEP_DURATION` (default `0.2`)
 - `CAFFEINE_BEEP_INTERVAL` (default `2`)
 - `CAFFEINE_BEEP_FREQ` (default `1000`)
+- `CAFFEINE_BEEP_AC_POLL_INTERVAL` (default `2`) — poll period while on AC,
+  and the retry delay after a transient sysfs read failure
 - `CAFFEINE_BEEP_DRY_RUN` — print `beep` / `silent` instead of playing
+- `CAFFEINE_BEEP_MAX_ITER` (default `0`, meaning run forever) — test-only
+  escape hatch bounding the number of main-loop iterations, so a test can
+  drive the loop over a scripted sysfs sequence and let it exit on its own
 - `BATTERY_GUARD_MODE_FILE` (default `/tmp/caffeine-mode-$USER`, the same path
   as `CAFFEINE_MODE_FILE`)
-- `CAFFEINE_BEEPER_UNIT` (default `caffeine-beeper`)
 - `BATTERY_GUARD_BEEPER_UNIT` (default `caffeine-beeper`)
 - `BATTERY_GUARD_ONCE` — perform real actions once, then exit (testing only)
 - `BATTERY_GUARD_INHIBIT_MATCH` (default `systemd-inhibit`) — substring
   `caffeine_active` requires in `/proc/$pid/cmdline` before treating the PID
   file as live, mirroring `caffeine-ctl`'s `CAFFEINE_INHIBIT_MATCH`/
-  `inhibitor_alive()` hardening against PID reuse
+  `inhibitor_alive()` hardening against PID reuse; also gates the
+  `clear_caffeine` kill path, not just the read path
 
 ## Testing
 
@@ -181,22 +227,49 @@ test is not wired into `nix flake check` either):
 
 - Full cycle from a clean slate: `decaf → caffeine → double → decaf`, asserting
   the mode file contents, inhibitor liveness, and beeper start/stop calls at
-  each step. `systemctl` is stubbed on `PATH` to record invocations.
+  each step. `systemctl` is stubbed on `PATH` to record invocations and to
+  track each unit's active/inactive state, so `is-active --quiet` answers
+  honestly.
 - `set decaf` from `double` stops both the inhibitor and the beeper.
 - `set` is idempotent: `set caffeine` twice leaves one live inhibitor.
 - Reconciliation: with a stale mode file of `double` but a dead inhibitor PID,
   `status` reports `decaf` and `cycle` advances to `caffeine`.
+- Cmdline hardening: a live PID whose `/proc/$pid/cmdline` doesn't match
+  `CAFFEINE_INHIBIT_MATCH` (simulated PID reuse) is treated as dead —
+  `status` reports `decaf`.
+- I1 downgrade: with the beeper unit forced `inactive` behind
+  `caffeine-ctl`'s back (simulating a crash or a logout that stopped the
+  `partOf graphical-session.target` unit while the backgrounded inhibitor
+  survived), `status` reports `caffeine` even though the mode file still says
+  `double`; the mode file itself is left alone; the next `cycle` restarts the
+  beeper and returns to `double`.
+- I2 kill-path hardening: `stop_inhibitor` (via `set decaf`) does not signal a
+  PID-reuse-mismatched PID, but still removes the stale inhibit file.
 
 New `modules/desktop/tests/caffeine-beeper-test.sh`:
 
 - `should_beep` via `CAFFEINE_BEEP_DRY_RUN` against a fake sysfs:
   `Discharging → beep`; `Charging`, `Full`, `Not charging` → `silent`.
 - No `BAT*` in the fixture → exits 0 without beeping.
+- Armed / once-per-unplug integration test: drives the real main loop (not
+  just `should_beep`) with `notify-send` and `play` stubbed, `notify-send`'s
+  invocations logged, and `CAFFEINE_BEEP_MAX_ITER` bounding the loop. Scripts
+  a sysfs sequence of unplug → still-unplugged → replug → unplug while the
+  loop runs concurrently, and asserts the notification fires exactly twice
+  (once per unplug, not once per beep). This is the test that would have
+  caught the two prior upower-waiting implementations that never actually
+  polled sysfs in a loop.
 
 Extension to `modules/desktop/tests/battery-guard-test.sh`:
 
 - At 20% discharging in `double`, `clear_caffeine` writes `decaf` to the mode
   file and issues the beeper stop.
+- Cmdline hardening: a live inhibitor process whose cmdline doesn't match
+  `BATTERY_GUARD_INHIBIT_MATCH` is treated as caffeine-inactive.
+- I2 kill-path hardening: at ≤7% discharging (where `decide()` returns
+  `suspend` regardless of whether caffeine is active), `clear_caffeine` does
+  not signal a PID-reuse-mismatched PID, but still removes the stale inhibit
+  file.
 
 Manual verification on anoa: enter `double`, unplug, confirm the 0.2s/2s pattern
 and the single notification; replug and confirm silence; re-unplug and confirm

@@ -3,6 +3,10 @@
 # `double` additionally runs the caffeine-beeper unit, which beeps while on
 # battery. The inhibitor PID file is authoritative for "is sleep inhibited";
 # the mode file is advisory and reconciled against it on every invocation.
+# `double` specifically means inhibitor-alive AND beeper-active; if the mode
+# file says `double` but the beeper unit isn't actually running, current_mode
+# downgrades the reported mode to `caffeine` so a stale/silent "double" is
+# never reported as armed (see current_mode).
 set -euo pipefail
 
 MODE_FILE="${CAFFEINE_MODE_FILE:-/tmp/caffeine-mode-${USER:-unknown}}"
@@ -27,6 +31,10 @@ inhibitor_alive() {
   esac
 }
 
+beeper_active() {
+  systemctl --user is-active --quiet "$BEEPER_UNIT"
+}
+
 current_mode() {
   # A dead inhibitor means decaf no matter what the mode file claims.
   if ! inhibitor_alive; then
@@ -36,7 +44,16 @@ current_mode() {
   local mode
   mode="$(cat "$MODE_FILE" 2>/dev/null || true)"
   case "$mode" in
-    caffeine | double) printf '%s\n' "$mode" ;;
+    double)
+      # double requires the beeper to actually be running; if it died or
+      # never started, report the half that is still true.
+      if beeper_active; then
+        printf 'double\n'
+      else
+        printf 'caffeine\n'
+      fi
+      ;;
+    caffeine) printf 'caffeine\n' ;;
     *) printf 'caffeine\n' ;;
   esac
 }
@@ -53,7 +70,10 @@ stop_inhibitor() {
   local pid=""
   if [ -f "$INHIBIT_FILE" ]; then
     pid="$(cat "$INHIBIT_FILE" 2>/dev/null || true)"
-    if [ -n "$pid" ]; then
+    # Only signal the PID if it's actually our inhibitor (same cmdline-based
+    # liveness check the read path uses); a stale, recycled PID must never be
+    # killed. Always clear the file either way.
+    if [ -n "$pid" ] && inhibitor_alive; then
       kill "$pid" 2>/dev/null || true
     fi
     rm -f "$INHIBIT_FILE"

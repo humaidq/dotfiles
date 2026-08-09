@@ -32,19 +32,22 @@ let
     text = builtins.readFile ./caffeine-beeper.sh;
   };
 
-  suspendIfAllowed = pkgs.writeShellScriptBin "suspend-if-allowed" ''
-    INHIBIT_FILE="/tmp/caffeine-inhibit-$USER.pid"
-
-    if [ -f "$INHIBIT_FILE" ]; then
-      PID=$(cat "$INHIBIT_FILE")
-      if kill -0 "$PID" 2>/dev/null; then
-        exit 0
+  # Delegates the "is sleep inhibited" question to caffeine-ctl instead of
+  # re-reading the PID file itself, so there is exactly one PID-reuse-hardened
+  # liveness check in the codebase (caffeine-ctl's inhibitor_alive) rather
+  # than three that can drift out of sync.
+  suspendIfAllowed = pkgs.writeShellApplication {
+    name = "suspend-if-allowed";
+    runtimeInputs = [
+      caffeineCtl
+      pkgs.systemd
+    ];
+    text = ''
+      if [ "$(caffeine-ctl status)" = "decaf" ]; then
+        exec systemctl suspend
       fi
-      rm -f "$INHIBIT_FILE"
-    fi
-
-    exec ${pkgs.systemd}/bin/systemctl suspend
-  '';
+    '';
+  };
 
   batteryGuard = pkgs.writeShellApplication {
     name = "battery-guard";
@@ -138,6 +141,7 @@ in
           Type = "simple";
           ExecStart = lib.getExe caffeineBeeper;
           Restart = "on-failure";
+          RestartSec = 5;
         };
         partOf = [ "graphical-session.target" ];
       };

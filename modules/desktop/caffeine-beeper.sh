@@ -63,7 +63,18 @@ main() {
     if ! bat="$(find_battery)"; then
       exit 0
     fi
-    status="$(cat "$bat/status")"
+    # Tolerate a transient sysfs read failure (-EIO/-ENODATA from a busy EC,
+    # or a battery hot-remove mid-read) instead of letting it kill this
+    # long-lived service under set -e. Just wait and retry.
+    status="$(cat "$bat/status" 2>/dev/null || true)"
+    if [ -z "$status" ]; then
+      sleep "$AC_POLL_INTERVAL"
+      iter=$((iter + 1))
+      if [ "$MAX_ITER" -gt 0 ] && [ "$iter" -ge "$MAX_ITER" ]; then
+        exit 0
+      fi
+      continue
+    fi
     decision="$(should_beep "$status")"
 
     if [ "$decision" = "beep" ]; then

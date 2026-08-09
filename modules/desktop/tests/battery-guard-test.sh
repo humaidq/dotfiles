@@ -175,6 +175,29 @@ check_side_effect "healthy battery issues no beeper stop" none "$(beeper_stopped
 check_side_effect "healthy battery keeps inhibitor" present "$(inhibit_file_state)"
 stop_caffeine
 
+# --- I2: the kill path must not signal a recycled PID either -----------------
+# clear_caffeine must gate its kill on caffeine_active (the same check the
+# read path uses), so a stale PID file whose PID has been recycled by an
+# unrelated process is only cleaned up, never signalled. This matters because
+# decide() returns "suspend" at <=7% discharging *regardless* of whether
+# caffeine is active, and that branch calls clear_caffeine unconditionally —
+# a stale/reused PID at critical battery must not get SIGTERM'd.
+unrelated_pid=""
+tail -f /dev/null &
+unrelated_pid=$!
+printf '%s' "$unrelated_pid" > "$tmp/inhibit.pid"
+printf 'double\n' > "$tmp/mode"
+set_battery 5 Discharging # <=7%: decide() returns suspend unconditionally
+run_guard_once
+if kill -0 "$unrelated_pid" 2>/dev/null; then
+  printf 'PASS: %s\n' "clear_caffeine does not kill a cmdline-mismatched PID"
+else
+  printf 'FAIL: %s\n' "clear_caffeine killed an unrelated process on PID reuse"
+  fail=1
+fi
+check_side_effect "clear_caffeine still removes the stale inhibit file on PID reuse" gone "$(inhibit_file_state)"
+kill "$unrelated_pid" 2>/dev/null || true
+
 if [ "$fail" -eq 0 ]; then
   printf '\nAll battery-guard tests passed.\n'
 else

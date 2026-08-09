@@ -26,9 +26,33 @@ cat > "$tmp/bin/systemd-inhibit" <<'EOF'
 exec sleep 300
 EOF
 
+# Stub tracks per-unit active/inactive state (in $SYSTEMCTL_STATE_DIR) so
+# `is-active --quiet` can answer honestly, instead of always exiting 0 like a
+# stub that only logs would — that would make every current_mode check see
+# "active" and defeat the I1 downgrade test below.
 cat > "$tmp/bin/systemctl" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$SYSTEMCTL_LOG"
+args=("$@")
+if [ "${args[0]:-}" = "--user" ]; then
+  args=("${args[@]:1}")
+fi
+cmd="${args[0]:-}"
+case "$cmd" in
+  start)
+    printf 'active\n' > "$SYSTEMCTL_STATE_DIR/${args[1]}"
+    ;;
+  stop)
+    printf 'inactive\n' > "$SYSTEMCTL_STATE_DIR/${args[1]}"
+    ;;
+  is-active)
+    unit="${args[-1]}"
+    state="$(cat "$SYSTEMCTL_STATE_DIR/$unit" 2>/dev/null || printf 'inactive\n')"
+    [ "$state" = "active" ]
+    exit $?
+    ;;
+esac
+exit 0
 EOF
 
 cat > "$tmp/bin/notify-send" <<'EOF'
@@ -40,6 +64,8 @@ chmod +x "$tmp/bin/systemd-inhibit" "$tmp/bin/systemctl" "$tmp/bin/notify-send"
 
 export SYSTEMCTL_LOG="$tmp/systemctl.log"
 : > "$SYSTEMCTL_LOG"
+mkdir -p "$tmp/systemctl-state"
+export SYSTEMCTL_STATE_DIR="$tmp/systemctl-state"
 
 run_ctl() {
   PATH="$tmp/bin:$PATH" \
@@ -71,8 +97,11 @@ inhibitor_state() { # -> alive|dead
 }
 
 last_beeper_call() { # -> the most recent "--user start|stop caffeine-beeper" line, or "none"
+  # Anchored to start/stop specifically so the is-active --quiet probes that
+  # current_mode's beeper_active() now issues (also logged to SYSTEMCTL_LOG)
+  # don't get picked up as if they were start/stop calls.
   local line
-  line="$(grep -E 'caffeine-beeper$' "$SYSTEMCTL_LOG" | tail -n 1 || true)"
+  line="$(grep -E '^--user (start|stop) caffeine-beeper$' "$SYSTEMCTL_LOG" | tail -n 1 || true)"
   if [ -z "$line" ]; then printf 'none\n'; else printf '%s\n' "$line"; fi
 }
 
@@ -137,9 +166,41 @@ printf '%s' "$unrelated_pid" > "$tmp/inhibit.pid"
 printf 'double\n' > "$tmp/mode"
 # status should report decaf because tail -f doesn't match "sleep"
 check "stale PID (cmdline mismatch) reports decaf" decaf "$(run_ctl status)"
+
+# --- I2: the kill path must not signal a recycled PID either -----------------
+# `set decaf` (stop_inhibitor) must gate its kill on the same cmdline check as
+# the read path, so a stale PID file whose PID has been reused by an
+# unrelated process is never signalled — only cleaned up.
+run_ctl set decaf
+if kill -0 "$unrelated_pid" 2>/dev/null; then
+  printf 'PASS: %s\n' "stop_inhibitor does not kill a cmdline-mismatched PID"
+else
+  printf 'FAIL: %s\n' "stop_inhibitor killed an unrelated process on PID reuse"
+  fail=1
+fi
+check "stop_inhibitor still removes the stale inhibit file" gone \
+  "$([ -f "$tmp/inhibit.pid" ] && printf 'present\n' || printf 'gone\n')"
 # Clean up the unrelated process
 kill "$unrelated_pid" 2>/dev/null || true
 rm -f "$tmp/inhibit.pid"
+
+# --- I1: double downgrades to caffeine when the beeper unit isn't actually
+# active (unit exited on its own, or survived logout while the beeper died) --
+run_ctl set double
+check "double: beeper active per stub" active "$(cat "$tmp/systemctl-state/caffeine-beeper")"
+# Simulate the beeper unit dying on its own, without going through
+# caffeine-ctl (e.g. it crashed, or graphical-session.target restart killed
+# it while the backgrounded inhibitor survived).
+printf 'inactive\n' > "$tmp/systemctl-state/caffeine-beeper"
+check "double with dead beeper reports caffeine, not double" caffeine "$(run_ctl status)"
+check "double with dead beeper: mode file is untouched (advisory only)" double "$(cat "$tmp/mode")"
+check "double with dead beeper: inhibitor still alive" alive "$(inhibitor_state)"
+# One Super+c press from the downgraded reading must restore the alarm.
+run_ctl cycle
+check "cycle from downgraded double restores double" double "$(cat "$tmp/mode")"
+check "cycle from downgraded double restarts the beeper" "--user start caffeine-beeper" "$(last_beeper_call)"
+check "cycle from downgraded double: status now double" double "$(run_ctl status)"
+run_ctl set decaf
 
 # --- bad input --------------------------------------------------------------
 if run_ctl set espresso >/dev/null 2>&1; then

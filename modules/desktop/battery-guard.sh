@@ -46,7 +46,10 @@ clear_caffeine() {
   local pid=""
   if [ -f "$INHIBIT_FILE" ]; then
     pid="$(cat "$INHIBIT_FILE" 2>/dev/null || true)"
-    if [ -n "$pid" ]; then
+    # Only signal the PID if it's actually our inhibitor (same cmdline-based
+    # liveness check the read path uses); a stale, recycled PID must never be
+    # killed. Always clear the file either way.
+    if [ -n "$pid" ] && caffeine_active; then
       kill "$pid" 2>/dev/null || true
     fi
     rm -f "$INHIBIT_FILE"
