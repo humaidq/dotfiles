@@ -1,8 +1,8 @@
 # shellcheck shell=bash
 # caffeine-beeper — while on battery, emit a short tone every few seconds.
 # Started and stopped on demand by caffeine-ctl for the "double" mode.
-# Authoritative power state comes from sysfs; `upower --monitor` only wakes
-# the loop while on AC. Dry-run prints the decision and exits.
+# Authoritative power state comes from sysfs; upower events wake the loop
+# to re-check status. Dry-run prints the decision and exits.
 set -euo pipefail
 
 SYSFS="${CAFFEINE_BEEP_SYSFS:-/sys/class/power_supply}"
@@ -69,10 +69,13 @@ main() {
       # Back on AC: re-arm the notification and idle until a power event.
       armed=1
       if command -v upower >/dev/null 2>&1; then
-        timeout 60 upower --monitor >/dev/null 2>&1 || true
+        upower --monitor | while read -r _; do
+          break
+        done
       else
         sleep 10
       fi
+      sleep 5
     fi
   done
 }
