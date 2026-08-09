@@ -2404,6 +2404,36 @@ sportsseier.com
 # custom-ip-blocklist.txt.
 *.sailfishx.live
 *.sailfishx.com
+# The same operator on a domain the two entries above do not reach, found
+# 2026-08-07 by walking 48h of resolver history for the EdgeOne chain rather
+# than by name. It answers as sailfish.yalla.live.eo.dnse4.com onto the same
+# shared EdgeOne edge as jwt.sailfishx.live, one address along from the
+# 43.152.18.169 recorded above — so the chain and the label are the tie, not
+# the address, which is shared and cannot be taken.
+#
+# Taken as a wildcard by decision, having first been added as the single host.
+# The caution against it was that Yalla is an established UAE voice-chat brand
+# and it was not established whether this is their domain carrying someone
+# else's subdomain or a name chosen to resemble theirs. The cost is bounded
+# either way: no hostname under yalla.live other than the sailfish label was
+# queried anywhere on either network across 48 hours, so nothing in ordinary
+# use here is behind it. Narrow it back to the single host if a legitimate
+# label appears.
+*.yalla.live
+
+# Control-plane name for the tunnel or side-channel on two handsets that also
+# hold unexplained long-lived UDP sessions to Alibaba Cloud. Attribution is by
+# coincidence of clients rather than by content: exactly the two devices with
+# those flows query it, and nothing else on either network ever has.
+#
+# Fronted through Alibaba's CDN — it answers as seeky.reaqle.tech.w.cdngslb.com
+# onto Zenlayer space (98.98.238.183-190), which is shared edge and therefore
+# not blockable by address; the name is the only handle. Registered 2023-09-26
+# through Alibaba Cloud/HiChina on AWS nameservers.
+#
+# A wildcard here rather than the single host: the domain has no legitimate use
+# visible on this network, unlike the yalla.live case above.
+*.reaqle.tech
 
 # Fronting hostnames for a multi-protocol "config file" tunnel client of the
 # HTTP-Injector family, found 2026-08-05 on the second site. The app is not one
@@ -2440,3 +2470,24 @@ sportsseier.com
 *.leafnpaw.com
 *.iciclecrush.com
 *.dyimin.com
+
+# Two public STUN servers, blocked as exact hostnames. STUN is how a client
+# discovers its own public address and port so two peers behind NAT can talk
+# directly, which is the step a tunnel client takes before falling back to a
+# peer-to-peer transport when its rented nodes stop being useful. Denying the
+# discovery does not break a tunnel on its own, but it removes the fallback that
+# survives every address-based control, since a P2P leg has no fixed endpoint to
+# list.
+#
+# Neither is anybody's service here: across two days these were queried only at
+# the site running the tunnel client, and by the handsets carrying it. The other
+# site has never asked for either name once.
+#
+# Exact hostnames, deliberately not wildcards. *.nextcloud.com would take out
+# Nextcloud itself, and *.blackberry.com is a vendor with unrelated services —
+# the STUN endpoint is the only part that matters and the only part taken.
+# Public STUN servers are interchangeable and there are dozens, so treat this as
+# raising the cost rather than closing the door; the durable tell is a client
+# querying a STUN name it has no VoIP app to justify.
+stun.nextcloud.com
+stun.voip.blackberry.com

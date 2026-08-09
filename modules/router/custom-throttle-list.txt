@@ -314,3 +314,51 @@
 # The cost, which is accepted deliberately: those two clients lose Akamai-hosted
 # content generally, not only the tunnel. No other client is affected.
 # ---------------------------------------------------------------------------
+159.203.16.60
+64.23.232.164
+
+# Found 2026-08-07. Five handsets and tablets, five separate rented VPSes, one
+# shape: raw UDP to an arbitrary high port, effectively the whole of the
+# device's egress, no resolver line for the peer and no TLS and so no SNI or
+# certificate to attribute it by. Long-lived rather than transient — the
+# conntrack entries were still established well after the flows were first
+# seen, which is what separates these from a call.
+#
+# The two Linode addresses register as AKAMAI and LINODE-US in whois because
+# Akamai bought Linode; reverse DNS puts both in linodeusercontent.com, so they
+# are customer instances and not CDN edge. /32s throughout, since all four
+# ranges are shared cloud full of unrelated tenants.
+172.232.148.22
+170.187.250.189
+128.140.92.109
+# Hetzner CLOUD-HEL1, 62.238.48.0 - 62.238.63.255. This inetnum has now given
+# up five nodes across separate days — 62.238.51.134, 62.238.58.152 and
+# 62.238.59.69 are already above. That is more than a coincidence of rented
+# hosts and suggests the operator is working through the range, but it is
+# general-purpose Hetzner cloud, so a block covering the whole inetnum would
+# land on other people's instances. Left as /32s pending that call.
+62.238.62.145
+62.238.48.148
+# Where the 62.238.62.145 client went one round after that address was shaped:
+# same transport, same whole-of-device share, no lookup. Hetzner CLOUD-NBG1,
+# 167.233.160.0 - 167.233.175.255, which is the second Hetzner cloud inetnum to
+# repeat — 167.233.167.102 further up is in it too. Both repeating ranges are
+# deliberately left as /32s: these are general-purpose cloud, so a range-wide
+# rule would shape unrelated tenants' instances, and a single address does not.
+167.233.171.121
+# Linode-under-Akamai, 172.232.0.0/13. This is now the range that has given up
+# the most nodes by a wide margin — 172.232.148.22, 172.232.212.49,
+# 172.233.117.123, 172.234.244.32, 172.235.98.212, 172.235.173.112 and
+# 172.237.104.173 are all above, with four more in custom-ip-blocklist.txt.
+# The whois still reads AKAMAI because Akamai bought Linode, but none of these
+# serve a matching SNI or have a resolver line behind them; they are rented
+# instances. First address below held the whole of one client's traffic on an
+# arbitrary high port with no lookup, and ran roughly eleven to one inbound,
+# which is a tunnel carrying browsing rather than a call or a broadcast.
+172.239.10.154
+# Second address, a different client, same round, two /24s from the already
+# throttled 172.232.212.49. Whole-of-device share on another arbitrary high
+# port with no lookup, but near-symmetric at keepalive rate rather than
+# download-heavy, so this one is the range and the shape rather than the
+# direction. Kept as a /32 for that reason.
+172.232.214.59
