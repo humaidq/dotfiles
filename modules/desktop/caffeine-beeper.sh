@@ -10,6 +10,7 @@ DURATION="${CAFFEINE_BEEP_DURATION:-0.2}"
 INTERVAL="${CAFFEINE_BEEP_INTERVAL:-2}"
 FREQ="${CAFFEINE_BEEP_FREQ:-1000}"
 DRY_RUN="${CAFFEINE_BEEP_DRY_RUN:-}"
+WAKEUP_FILE="${CAFFEINE_BEEP_WAKEUP_FILE:-/tmp/caffeine-beeper-wakeup-${USER:-unknown}}"
 
 export AUDIODRIVER=pulseaudio
 
@@ -68,14 +69,31 @@ main() {
     else
       # Back on AC: re-arm the notification and idle until a power event.
       armed=1
+      rm -f "$WAKEUP_FILE"
+
       if command -v upower >/dev/null 2>&1; then
-        upower --monitor | while read -r _; do
-          break
+        # Drain upower events; timeout after 2s to ensure re-check.
+        # Never break from the read loop — that leaves upower orphaned.
+        timeout 2 upower --monitor 2>/dev/null | while read -r _; do
+          # Power event occurred; check if status changed to Discharging.
+          # We run in a subshell (pipe), so use a file to signal.
+          if bat="$(find_battery)"; then
+            st="$(cat "$bat/status")"
+            if [ "$st" = "Discharging" ]; then
+              touch "$WAKEUP_FILE"
+            fi
+          fi
         done
       else
         sleep 10
       fi
-      sleep 5
+
+      # Debounce only if upower timed out with no discharge event.
+      # If we detected discharge, skip debounce and re-check immediately.
+      if [ ! -f "$WAKEUP_FILE" ]; then
+        sleep 5
+      fi
+      rm -f "$WAKEUP_FILE"
     fi
   done
 }
