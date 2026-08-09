@@ -205,7 +205,7 @@ in
             "${mod}+p" = "exec ${lib.getExe pkgs.fuzzel}";
             "${mod}+o" =
               "exec ${lib.getExe pkgs.rbw} unlock && ${lib.getExe pkgs.rbw} ls | ${lib.getExe pkgs.fuzzel} --dmenu | xargs ${lib.getExe pkgs.rbw} get | wl-copy";
-            "${mod}+c" = "exec caffeine-toggle";
+            "${mod}+c" = "exec caffeine-ctl cycle";
             "${mod}+v" = "exec ${clipboardManager}/bin/clipboard-manager";
 
             # laptop bindings

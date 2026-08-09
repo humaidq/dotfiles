@@ -11,31 +11,26 @@ let
   swayEnabled = config.sifr.desktop.sway.enable;
   labwcEnabled = config.sifr.desktop.labwc.enable;
 
-  # Caffeine toggle script to prevent sleep
-  caffeineToggle = pkgs.writeShellScriptBin "caffeine-toggle" ''
-    INHIBIT_FILE="/tmp/caffeine-inhibit-$USER.pid"
+  # Three-state sleep inhibition: decaf / caffeine / double (beeps on battery).
+  caffeineCtl = pkgs.writeShellApplication {
+    name = "caffeine-ctl";
+    runtimeInputs = with pkgs; [
+      coreutils
+      libnotify
+      systemd
+    ];
+    text = builtins.readFile ./caffeine-ctl.sh;
+  };
 
-    if [ -f "$INHIBIT_FILE" ]; then
-      # Caffeine is on, turn it off
-      PID=$(cat "$INHIBIT_FILE")
-      if kill "$PID" 2>/dev/null; then
-        rm "$INHIBIT_FILE"
-        ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Sleep enabled"
-      else
-        rm "$INHIBIT_FILE"
-        ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Already disabled"
-      fi
-    else
-      # Caffeine is off, turn it on
-      ${pkgs.systemd}/bin/systemd-inhibit --what=idle:sleep:handle-lid-switch \
-        --why="Caffeine mode - preventing sleep" \
-        --who="$USER" \
-        --mode=block \
-        sleep infinity &
-      echo $! > "$INHIBIT_FILE"
-      ${pkgs.libnotify}/bin/notify-send -t 3000 "☕ Caffeine" "Sleep disabled (locking still works)"
-    fi
-  '';
+  caffeineBeeper = pkgs.writeShellApplication {
+    name = "caffeine-beeper";
+    runtimeInputs = with pkgs; [
+      coreutils
+      libnotify
+      sox
+    ];
+    text = builtins.readFile ./caffeine-beeper.sh;
+  };
 
   suspendIfAllowed = pkgs.writeShellScriptBin "suspend-if-allowed" ''
     INHIBIT_FILE="/tmp/caffeine-inhibit-$USER.pid"
@@ -103,7 +98,8 @@ in
       swayidle
       chayang # gradual screen dimming
       libnotify
-      caffeineToggle
+      caffeineCtl
+      caffeineBeeper
       suspendIfAllowed
       batteryGuard
       cliphist # clipboard history
@@ -133,6 +129,17 @@ in
         };
         partOf = [ "graphical-session.target" ];
         wantedBy = [ "graphical-session.target" ];
+      };
+      caffeine-beeper = {
+        enable = true;
+        description = "Beep while on battery (double caffeine mode)";
+        # Started on demand by caffeine-ctl, so no wantedBy.
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = lib.getExe caffeineBeeper;
+          Restart = "on-failure";
+        };
+        partOf = [ "graphical-session.target" ];
       };
     }
     // lib.optionalAttrs cfg.batteryGuard.enable {
