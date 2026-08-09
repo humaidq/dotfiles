@@ -9,6 +9,10 @@ LOW="${BATTERY_GUARD_LOW:-20}"
 CRITICAL="${BATTERY_GUARD_CRITICAL:-7}"
 DRY_RUN="${BATTERY_GUARD_DRY_RUN:-}"
 INHIBIT_FILE="${BATTERY_GUARD_INHIBIT_FILE:-/tmp/caffeine-inhibit-${USER:-unknown}.pid}"
+INHIBIT_MATCH="${BATTERY_GUARD_INHIBIT_MATCH:-systemd-inhibit}"
+MODE_FILE="${BATTERY_GUARD_MODE_FILE:-/tmp/caffeine-mode-${USER:-unknown}}"
+BEEPER_UNIT="${BATTERY_GUARD_BEEPER_UNIT:-caffeine-beeper}"
+ONCE="${BATTERY_GUARD_ONCE:-}"
 
 find_battery() {
   local bat
@@ -23,10 +27,19 @@ find_battery() {
 
 caffeine_active() {
   [ -f "$INHIBIT_FILE" ] || return 1
-  local pid
+  local pid cmdline
   pid="$(cat "$INHIBIT_FILE" 2>/dev/null || true)"
   [ -n "$pid" ] || return 1
-  kill -0 "$pid" 2>/dev/null
+  # Cheap gate: process exists
+  kill -0 "$pid" 2>/dev/null || return 1
+  # Confirmation: PID's cmdline contains the expected process name (guards against PID reuse)
+  # Use tr to convert NUL separators before command substitution to avoid bash warnings
+  cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+  [ -n "$cmdline" ] || return 1
+  case "$cmdline" in
+    *"$INHIBIT_MATCH"*) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 clear_caffeine() {
@@ -38,6 +51,10 @@ clear_caffeine() {
     fi
     rm -f "$INHIBIT_FILE"
   fi
+  # Collapse caffeine-ctl's mode to decaf and silence the beeper. Both are
+  # best-effort: the safety net must never fail because of them.
+  printf 'decaf\n' > "$MODE_FILE" 2>/dev/null || true
+  systemctl --user stop "$BEEPER_UNIT" 2>/dev/null || true
 }
 
 decide() {
@@ -93,6 +110,7 @@ main() {
   fi
   run_once
   if [ -n "$DRY_RUN" ]; then exit 0; fi
+  if [ -n "$ONCE" ]; then exit 0; fi
   if command -v upower >/dev/null 2>&1; then
     while true; do
       upower --monitor | while read -r _; do

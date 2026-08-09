@@ -38,6 +38,7 @@ run_guard() {
   BATTERY_GUARD_LOW=20 \
   BATTERY_GUARD_CRITICAL=7 \
   BATTERY_GUARD_INHIBIT_FILE="$tmp/inhibit.pid" \
+  BATTERY_GUARD_INHIBIT_MATCH="sleep" \
     bash "$GUARD"
 }
 
@@ -79,6 +80,100 @@ stop_caffeine
 
 set_battery 100 Full; stop_caffeine
 expect "100% full" none
+
+# --- cmdline hardening: a live process whose cmdline does not match must be
+# treated as caffeine-inactive (guards against PID reuse), mirroring
+# caffeine-ctl.sh's inhibitor_alive(). Deliberately does NOT override
+# BATTERY_GUARD_INHIBIT_MATCH, so the default ("systemd-inhibit") is compared
+# against the fake inhibitor's real cmdline ("sleep 300"), which is a
+# genuinely live but non-matching process — not the pre-existing dead-PID path.
+set_battery 15 Discharging; start_caffeine
+hardening_got="$(
+  BATTERY_GUARD_DRY_RUN=1 \
+  BATTERY_GUARD_SYSFS="$tmp/sysfs" \
+  BATTERY_GUARD_LOW=20 \
+  BATTERY_GUARD_CRITICAL=7 \
+  BATTERY_GUARD_INHIBIT_FILE="$tmp/inhibit.pid" \
+    bash "$GUARD"
+)"
+if [ "$hardening_got" = "none" ]; then
+  printf 'PASS: %s (%s)\n' "live process with non-matching cmdline is treated as inactive" "$hardening_got"
+else
+  printf 'FAIL: %s — want %s, got %s\n' "live process with non-matching cmdline is treated as inactive" "none" "$hardening_got"
+  fail=1
+fi
+stop_caffeine
+
+# --- side-effect tests: clear_caffeine also resets mode + stops the beeper ---
+# These use BATTERY_GUARD_ONCE (real actions, single pass) rather than dry-run,
+# with notify-send and systemctl stubbed on PATH.
+mkdir -p "$tmp/bin"
+
+cat > "$tmp/bin/systemctl" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$SYSTEMCTL_LOG"
+EOF
+
+cat > "$tmp/bin/notify-send" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+
+chmod +x "$tmp/bin/systemctl" "$tmp/bin/notify-send"
+export SYSTEMCTL_LOG="$tmp/systemctl.log"
+
+run_guard_once() {
+  : > "$SYSTEMCTL_LOG"
+  PATH="$tmp/bin:$PATH" \
+  BATTERY_GUARD_ONCE=1 \
+  BATTERY_GUARD_SYSFS="$tmp/sysfs" \
+  BATTERY_GUARD_LOW=20 \
+  BATTERY_GUARD_CRITICAL=7 \
+  BATTERY_GUARD_INHIBIT_FILE="$tmp/inhibit.pid" \
+  BATTERY_GUARD_MODE_FILE="$tmp/mode" \
+  BATTERY_GUARD_BEEPER_UNIT="caffeine-beeper" \
+  BATTERY_GUARD_INHIBIT_MATCH="sleep" \
+    bash "$GUARD"
+}
+
+check_side_effect() { # desc want got
+  if [ "$2" = "$3" ]; then
+    printf 'PASS: %s (%s)\n' "$1" "$3"
+  else
+    printf 'FAIL: %s — want %s, got %s\n' "$1" "$2" "$3"
+    fail=1
+  fi
+}
+
+beeper_stopped() { # -> stopped|none
+  if grep -q -e '--user stop caffeine-beeper' "$SYSTEMCTL_LOG" 2>/dev/null; then
+    printf 'stopped\n'
+  else
+    printf 'none\n'
+  fi
+}
+
+inhibit_file_state() { # -> present|gone
+  if [ -f "$tmp/inhibit.pid" ]; then printf 'present\n'; else printf 'gone\n'; fi
+}
+
+# 15% discharging while in double caffeine -> collapse to decaf, stop beeper.
+set_battery 15 Discharging; start_caffeine
+printf 'double\n' > "$tmp/mode"
+run_guard_once
+check_side_effect "low battery in double resets mode file" decaf "$(cat "$tmp/mode")"
+check_side_effect "low battery in double stops beeper" stopped "$(beeper_stopped)"
+check_side_effect "low battery in double kills inhibitor" gone "$(inhibit_file_state)"
+stop_caffeine
+
+# Healthy battery in double caffeine -> nothing is touched.
+set_battery 80 Discharging; start_caffeine
+printf 'double\n' > "$tmp/mode"
+run_guard_once
+check_side_effect "healthy battery leaves mode file alone" double "$(cat "$tmp/mode")"
+check_side_effect "healthy battery issues no beeper stop" none "$(beeper_stopped)"
+check_side_effect "healthy battery keeps inhibitor" present "$(inhibit_file_state)"
+stop_caffeine
 
 if [ "$fail" -eq 0 ]; then
   printf '\nAll battery-guard tests passed.\n'

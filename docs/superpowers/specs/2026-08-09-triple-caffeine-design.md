@@ -165,6 +165,13 @@ options), following the `battery-guard` precedent:
 - `CAFFEINE_BEEP_DRY_RUN` — print `beep` / `silent` instead of playing
 - `BATTERY_GUARD_MODE_FILE` (default `/tmp/caffeine-mode-$USER`, the same path
   as `CAFFEINE_MODE_FILE`)
+- `CAFFEINE_BEEPER_UNIT` (default `caffeine-beeper`)
+- `BATTERY_GUARD_BEEPER_UNIT` (default `caffeine-beeper`)
+- `BATTERY_GUARD_ONCE` — perform real actions once, then exit (testing only)
+- `BATTERY_GUARD_INHIBIT_MATCH` (default `systemd-inhibit`) — substring
+  `caffeine_active` requires in `/proc/$pid/cmdline` before treating the PID
+  file as live, mirroring `caffeine-ctl`'s `CAFFEINE_INHIBIT_MATCH`/
+  `inhibitor_alive()` hardening against PID reuse
 
 ## Testing
 
