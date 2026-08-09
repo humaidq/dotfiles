@@ -6,8 +6,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CTL="$SCRIPT_DIR/../caffeine-ctl.sh"
 
 tmp="$(mktemp -d)"
+
+# Every PID any stub inhibitor (systemd-inhibit -> sleep 300, or the PID-reuse
+# tail -f /dev/null stand-in) is spawned under gets appended here, so cleanup
+# can kill all of them — not just whichever one happens to be recorded in
+# $tmp/inhibit.pid at exit. Code paths that start a new stub and then
+# overwrite the inhibit file with a different PID (or an unrelated PID, for
+# the PID-reuse tests) would otherwise orphan the earlier one.
+declare -a spawned_pids=()
+
 cleanup() {
-  # kill any stub inhibitor still alive
+  local pid
+  for pid in "${spawned_pids[@]}"; do
+    [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+  done
+  # belt-and-suspenders: also kill whatever is currently recorded in the
+  # inhibit file, in case it was never added to spawned_pids.
   if [ -f "$tmp/inhibit.pid" ]; then
     kill "$(cat "$tmp/inhibit.pid" 2>/dev/null || true)" 2>/dev/null || true
   fi
@@ -23,7 +37,10 @@ mkdir -p "$tmp/bin"
 cat > "$tmp/bin/systemd-inhibit" <<'EOF'
 #!/usr/bin/env bash
 # Ignore all the --what/--why/--who/--mode flags and just be a long-lived proc.
-exec sleep 300
+# Redirect away from whatever stdio this stub inherited: it's forked from the
+# test script, so leaving it connected to our stdout/stderr would hold a
+# piped reader (tail, tee, CI log collector) open until this sleep exits.
+exec sleep 300 >/dev/null 2>&1
 EOF
 
 # Stub tracks per-unit active/inactive state (in $SYSTEMCTL_STATE_DIR) so
@@ -67,6 +84,14 @@ export SYSTEMCTL_LOG="$tmp/systemctl.log"
 mkdir -p "$tmp/systemctl-state"
 export SYSTEMCTL_STATE_DIR="$tmp/systemctl-state"
 
+track_inhibitor() { # record whatever PID is currently in the inhibit file
+  local pid
+  [ -f "$tmp/inhibit.pid" ] || return 0
+  pid="$(cat "$tmp/inhibit.pid" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 0
+  spawned_pids+=("$pid")
+}
+
 run_ctl() {
   PATH="$tmp/bin:$PATH" \
   CAFFEINE_MODE_FILE="$tmp/mode" \
@@ -74,6 +99,9 @@ run_ctl() {
   CAFFEINE_BEEPER_UNIT="caffeine-beeper" \
   CAFFEINE_INHIBIT_MATCH="sleep" \
     bash "$CTL" "$@"
+  local rc=$?
+  track_inhibitor
+  return "$rc"
 }
 
 check() { # desc want got
@@ -160,8 +188,9 @@ check "alive inhibitor, no mode file reports caffeine" caffeine "$(run_ctl statu
 # Simulate PID reuse: start a process that doesn't contain "sleep" in its cmdline,
 # write its PID to inhibit file, and verify status reports decaf.
 unrelated_pid=""
-tail -f /dev/null &
+tail -f /dev/null >/dev/null 2>&1 &
 unrelated_pid=$!
+spawned_pids+=("$unrelated_pid")
 printf '%s' "$unrelated_pid" > "$tmp/inhibit.pid"
 printf 'double\n' > "$tmp/mode"
 # status should report decaf because tail -f doesn't match "sleep"

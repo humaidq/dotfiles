@@ -7,7 +7,19 @@ GUARD="$SCRIPT_DIR/../battery-guard.sh"
 
 tmp="$(mktemp -d)"
 caffeine_pid=""
+
+# Every stub inhibitor PID spawned via start_caffeine (or the PID-reuse
+# tail -f /dev/null stand-in) is appended here, so cleanup can kill all of
+# them rather than relying solely on whatever the caffeine_pid variable last
+# held — a straightforward safety net in case any start/stop pairing is ever
+# skipped or reordered.
+declare -a spawned_pids=()
+
 cleanup() {
+  local pid
+  for pid in "${spawned_pids[@]}"; do
+    [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+  done
   rm -rf "$tmp"
   if [ -n "${caffeine_pid:-}" ]; then kill "$caffeine_pid" 2>/dev/null || true; fi
 }
@@ -22,8 +34,12 @@ set_battery() { # capacity status
 }
 
 start_caffeine() {
-  sleep 300 &
+  # Redirect away from whatever stdio this stub inherited: it's forked from
+  # the test script, so leaving it connected to our stdout/stderr would hold
+  # a piped reader (tail, tee, CI log collector) open until this sleep exits.
+  sleep 300 >/dev/null 2>&1 &
   caffeine_pid=$!
+  spawned_pids+=("$caffeine_pid")
   printf '%s' "$caffeine_pid" > "$tmp/inhibit.pid"
 }
 
@@ -183,8 +199,9 @@ stop_caffeine
 # caffeine is active, and that branch calls clear_caffeine unconditionally —
 # a stale/reused PID at critical battery must not get SIGTERM'd.
 unrelated_pid=""
-tail -f /dev/null &
+tail -f /dev/null >/dev/null 2>&1 &
 unrelated_pid=$!
+spawned_pids+=("$unrelated_pid")
 printf '%s' "$unrelated_pid" > "$tmp/inhibit.pid"
 printf 'double\n' > "$tmp/mode"
 set_battery 5 Discharging # <=7%: decide() returns suspend unconditionally
