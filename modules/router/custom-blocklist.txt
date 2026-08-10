@@ -2491,3 +2491,53 @@ sportsseier.com
 # querying a STUN name it has no VoIP app to justify.
 stun.nextcloud.com
 stun.voip.blackberry.com
+
+# Unattributed tracking or affiliate zone, blocked 2026-08-09. Every query is a
+# distinct 14-character hex label under masterbetter.eu — a single handset was
+# seen using four of them — and the apex carries no A record, so exact-match
+# entries are useless and the wildcard is the only handle. The labels stop
+# resolving once they have been used, which is why a name pulled from a log will
+# not reproduce later; do not read that as the zone being dead. Nameservers are
+# Cloudflare, so the addresses are shared and the zone must be taken by name
+# only.
+#
+# The name reads as gambling affiliate and the rotating-label shape is typical
+# ad-SDK attribution, but neither is confirmed — this entry is a guess about
+# purpose and a certainty only about the pattern. No legitimate service was
+# found using the zone.
+*.masterbetter.eu
+
+# Video-chat app backend, blocked 2026-08-09. Namecheap registration from 2020.
+# The apex answers on a single Alibaba Singapore address behind its own
+# *.v-videoapp.com ZeroSSL wildcard cert, and api. is fronted by Cloudflare
+# under a single-name Google Trust Services cert — both single-tenant, no
+# sibling brands on either SAN list, so the zone is the operator's alone.
+# Addresses are shared cloud in both cases; block by name only.
+#
+# The log. host was already caught by an upstream list while api. and the apex
+# answered, which is what left the app working. Note that call media does not
+# use these names at all — it goes to rented VPS space reached by address, so
+# this entry stops the app reaching its control plane and will not cut a session
+# already in progress.
+*.v-videoapp.com
+
+# Xiaomi push-stack resolver failover, blocked 2026-08-09. A handset at the
+# second site queries one of these Alibaba Cloud NLB instances within seconds of
+# resolver.msg.global.xiaomi.net being denied, repeatedly and across days, in the
+# same stretch as blocked dns.google and http-dns.imoim.net attempts. That is the
+# push SDK reaching a hardcoded cloud fallback once its own resolver is gone, not
+# a person shopping for an unfiltered resolver — the distinction matters if these
+# ever look like they warrant escalation. None answers TLS on 443.
+#
+# Exact hostnames, deliberately not a wildcard. aliyuncsslbintl.com is served by
+# vip3/vip4.alidns.com — Alibaba's own authoritative DNS for the shared
+# international NLB zone — so every Alibaba Cloud tenant has a name under it, and
+# a wildcard would take out unrelated apps across the house. Same reasoning the
+# vishavideo.com entry above uses when it declines to touch nlb.aliyuncs.com.
+#
+# An NLB instance ID belongs to one account, so these are precise, but nothing
+# stops the SDK being pointed at a fresh instance; treat a reappearance under a
+# new nlb-* label as the same finding rather than a new one.
+nlb-uo231cms7bji7g2doh.ap-southeast-1.nlb.aliyuncsslbintl.com
+nlb-vhvlpepi34c8e0aa4x.ap-southeast-1.nlb.aliyuncsslbintl.com
+nlb-0oihvq70lz6v3c6vn7.ap-southeast-1.nlb.aliyuncsslbintl.com
