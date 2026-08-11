@@ -39,6 +39,21 @@ in
       default = "10.20.0.1/16";
       description = "The LAN address configured on the router interface.";
     };
+    meshAddress = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "10.10.0.18";
+      description = ''
+        Address on the mesh interface to serve the peers page from, without a
+        prefix length. When null the peers routes are not served at all and
+        router-web behaves exactly as it did before the feature existed.
+
+        Deliberately explicit rather than resolved from the mesh interface at
+        startup: the interface may not be up when router-web starts, and a
+        service that sometimes fails to bind depending on start order is worse
+        than one that is configured.
+      '';
+    };
     ppp = lib.mkOption {
       type = lib.types.str;
       default = "ppp0";

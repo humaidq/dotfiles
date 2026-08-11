@@ -48,5 +48,15 @@ in
       tempblock
       tempthrottle
     ];
+
+    # router-web's peers page shells out to these to throttle/block a peer.
+    # DynamicUser services (see web.nix) get a PATH built solely from their
+    # own `path` list, not /run/current-system/sw/bin, so
+    # environment.systemPackages above is not enough on its own to put these
+    # on router-web's PATH.
+    systemd.services.router-web.path = [
+      tempblock
+      tempthrottle
+    ];
   };
 }

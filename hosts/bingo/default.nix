@@ -124,6 +124,7 @@
 
     router = {
       enable = true;
+      meshAddress = "10.10.0.18"; # bingo
       localDomain = "v10.alq.ae";
       # A /24 rather than bongo's /16: this site has far fewer clients, and the
       # smaller pool keeps the reverse zone (50.168.192.in-addr.arpa) scoped to

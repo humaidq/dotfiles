@@ -124,6 +124,7 @@
 
     router = {
       enable = true;
+      meshAddress = "10.10.0.16"; # bongo
       localDomain = "v6.alq.ae";
       customDNSMappings = {
         "alq.ae" = "10.10.0.12,10.20.0.250";

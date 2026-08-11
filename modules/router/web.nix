@@ -18,12 +18,20 @@ in
       path = with pkgs; [
         iproute2
         procps
+        conntrack-tools
+        nftables
       ];
 
       serviceConfig = {
         DynamicUser = true;
-        AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
-        CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
+        AmbientCapabilities = [
+          "CAP_NET_BIND_SERVICE"
+          "CAP_NET_ADMIN"
+        ];
+        CapabilityBoundingSet = [
+          "CAP_NET_BIND_SERVICE"
+          "CAP_NET_ADMIN"
+        ];
         Environment = [
           "ROUTER_PPP_INTERFACE=${cfg.ppp}"
           "ROUTER_LAN_INTERFACE=${cfg.lan0}"
@@ -35,8 +43,12 @@ in
           "ROUTER_DHCP_ROUTER=${cfg.dhcp.routerAddress}"
           "ROUTER_DHCP_DNS=${cfg.dhcp.dnsServer}"
           "ROUTER_DHCP_LEASES_FILE=${cfg.dhcp.leasesFile}"
+          "ROUTER_LISTEN_LAN=${lib.head (lib.splitString "/" cfg.lanAddress)}:80"
+          "ROUTER_LAN_CIDR=${cfg.lanAddress}"
+          "ROUTER_IP2ASN_FILE=${./ip2asn-combined.tsv}"
         ]
-        ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}";
+        ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
+        ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80";
         ExecStart = "${routerWeb}/bin/router-web --root ${routerWeb}/share/router-web --addr :80";
         Restart = "on-failure";
         RestartSec = "5s";
