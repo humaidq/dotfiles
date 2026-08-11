@@ -44,6 +44,10 @@ in
         procps
         conntrack-tools
         nftables
+        # The peers page's capture button shells out to this. A DynamicUser
+        # service builds its PATH from this list alone, so being in
+        # environment.systemPackages would not be enough.
+        tcpdump
       ];
 
       serviceConfig = {
@@ -51,11 +55,20 @@ in
         AmbientCapabilities = [
           "CAP_NET_BIND_SERVICE"
           "CAP_NET_ADMIN"
+          # Opening a capture socket. tcpdump inherits this service's ambient
+          # set, so the capture needs no setuid helper of its own.
+          "CAP_NET_RAW"
         ];
         CapabilityBoundingSet = [
           "CAP_NET_BIND_SERVICE"
           "CAP_NET_ADMIN"
+          "CAP_NET_RAW"
         ];
+        # Where captures land. DynamicUser puts this under
+        # /var/lib/private/router-web and keeps it across restarts, which is
+        # what lets a capture interrupted by a restart still be downloaded.
+        StateDirectory = "router-web";
+        StateDirectoryMode = "0700";
         Environment = [
           "ROUTER_PPP_INTERFACE=${cfg.ppp}"
           "ROUTER_LAN_INTERFACE=${cfg.lan0}"
@@ -74,6 +87,7 @@ in
           # which conntrack mark means the qos chain recognised a call.
           "ROUTER_SUSPECT_PORTS=${lib.concatStringsSep "," suspectPorts}"
           "ROUTER_CALL_MARK=${toString cfg.qos.highPriorityMark}"
+          "ROUTER_CAPTURE_DIR=%S/router-web/captures"
         ]
         ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
         ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80";

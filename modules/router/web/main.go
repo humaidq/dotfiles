@@ -426,6 +426,12 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
 	leasesPath := os.Getenv("ROUTER_DHCP_LEASES_FILE")
 	peers := newPeersServer(prefix, table, peersTmpl, indexTmpl, leasesPath)
 	peers.namer = newNamerFromEnv()
+	// Captures are opt-in on the directory: a router without one keeps every
+	// route and every pixel it had before this feature.
+	if dir := strings.TrimSpace(os.Getenv("ROUTER_CAPTURE_DIR")); dir != "" {
+		peers.captures = newCaptureManager(dir, getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0"))
+		go peers.captures.sweepEvery(captureSweepEvery)
+	}
 	handler := peers.mux()
 	go serveMeshWithRetry(validAddr, handler)
 	return nil

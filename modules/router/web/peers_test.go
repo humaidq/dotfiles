@@ -1149,3 +1149,13 @@ func TestRealTemplateOmitsTheBannerWithoutAManager(t *testing.T) {
 		}
 	}
 }
+
+func TestCaptureManagerTakesItsInterfaceFromTheEnvironment(t *testing.T) {
+	// The capture filter is applied on the LAN interface, so a manager built
+	// with the wrong one would capture nothing and say nothing about why.
+	t.Setenv("ROUTER_LAN_INTERFACE", "lan9")
+	manager := newCaptureManager(t.TempDir(), getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0"))
+	if manager.iface != "lan9" {
+		t.Fatalf("iface = %q, want lan9", manager.iface)
+	}
+}
