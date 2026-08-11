@@ -581,3 +581,27 @@
 # to leave alone, and a lopsided one to rented hosting is this. Do not treat the
 # device as settled either way.
 15.224.47.11
+
+# A second address in 45.78.192.0/18, the APNIC allocation 45.78.196.212 above
+# came from. Both were live on the same handset in one capture, on several
+# simultaneous ports each — the older one mixing TCP and UDP as its note
+# records, this one TCP on 6651, 51590 and 3135 — near-symmetric at keepalive
+# rate, no resolver line for either and no TLS, so no SNI or certificate to
+# attribute them by. Two /24s of one /18 on one device at one moment is the
+# range repeating within a single round rather than across days, which is
+# tighter than anything else in this file and worth raising if a third appears.
+# Kept as a /32: the allocation is APNIC-direct with no netname behind it, so
+# what else lives in it is unknown rather than known-innocent.
+#
+# Read alongside the operational note that came out of the same round: every
+# address in this file was inert at this site when the round started. A plain
+# `systemctl reload nftables` re-applies the base ruleset, which declares
+# throttle4, imo4 and local_block4 empty, and nft-blocklists-local is wired
+# `partOf` nftables.service — which propagates stop and restart but *not*
+# reload, so nothing repopulates them. remote_block4 survives because
+# nft-blocklists-restore is ordered after nftables and runs again. The window
+# is silent: traffic simply goes fast and no unit is failed. So an address
+# listed here still carrying traffic is not automatically a shaping failure or
+# a client defeating the shaper — check the set is populated before concluding
+# anything about the client.
+45.78.195.206

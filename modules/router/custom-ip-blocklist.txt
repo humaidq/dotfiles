@@ -1088,6 +1088,27 @@
 146.103.94.46
 146.103.94.64
 
+# A TikTok live pull edge, and the address that shows the live name blocks in
+# custom-blocklist.txt are bypassed rather than merely incomplete. The client
+# opened it with pull-flv-l10-sg01.tiktokcdn.com in SNI — a name the resolver
+# answers 0.0.0.0 for, and has done for as long as the log goes back. Blocky has
+# never returned this address for anything, so it did not come from the router's
+# DNS at all: the app resolves live edges in-band through its own HTTPS
+# resolution service, reached under names that are not themselves blockable
+# without taking the rest of the app with them. Same overwall shape as the BIGO
+# backup-LBS section at the top of this file.
+#
+# Safe as a /32 despite 149.104.0.0/16 being Cogent: only one client ever
+# touched it, only one SNI was ever presented to it, and it carried a 120:1
+# download-heavy GQUIC stream and nothing else. That is a leased live edge, not
+# shared CDN serving the house.
+#
+# Expect rotation — pull-flv-* names number in the dozens and the app picks
+# another edge when one stops answering, so this is one address rather than a
+# fix. The fix, if the live block is meant to hold, is the in-band resolution
+# path, and taking that is a bigger decision than a single address.
+149.104.103.58
+
 
 # Deliberately NOT blocked, recorded so the same ground is not covered twice.
 # These all resolve from the blocked imo/BIGO zones and all failed triage:

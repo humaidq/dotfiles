@@ -309,6 +309,26 @@ live.tiktok.com
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:wsdvs\.com|worldfcdn2?\.com)$/
 
+# The RTC signalling plane, which the webcast and pull-/push- patterns above do
+# not reach — they were resolving normally long after the rest of TikTok live
+# was blocked, and they are what actually sets up a broadcast. A capture showed
+# a handset holding a session with a rented Zenlayer host on udp/50000 carrying
+# STUN and RTCP, near-symmetric, while none of the names above answered
+# anything but 0.0.0.0. The media address appears in no DNS answer at all: it is
+# handed to the client inside the RTC signalling, so the name layer only bites
+# here, at the step before it.
+#
+# rtc-logger was already caught by an existing entry; the access names were not.
+# Both the rtc- and rtcpc- prefixes have been seen, with and without a numbered
+# region suffix (rtc-access-fr, rtc-access16-normal-alisg,
+# rtcpc-access-fr, rtc-access19-normal-useast1a), hence the optional pc.
+#
+# Collateral, accepted deliberately: this is also the transport for TikTok's
+# in-app video calling, which stops working too. Watching other people's lives
+# was already gone via the webcast and pull- patterns, so what this adds is the
+# broadcast direction and calls.
+/^rtc(?:pc)?-[^.]*\.(?:[^.]+\.)*tiktokv\.com$/
+
 # The first pattern above previously anchored at $ immediately after the CDN
 # zone, so it matched pull-flv-l11-sg01.tiktokcdn.com but not
 # pull-flv-f11-sg01.tiktokcdn.com.qlivecdn.com, where tiktokcdn.com is a middle
