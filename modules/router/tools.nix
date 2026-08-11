@@ -31,10 +31,11 @@ let
   };
   tempblock = pkgs.writeShellApplication {
     name = "tempblock";
-    runtimeInputs = with pkgs; [
-      coreutils
-      gawk
-      nftables
+    runtimeInputs = [
+      killconn
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.nftables
     ];
     text = builtins.readFile ./tempblock.bash;
   };
