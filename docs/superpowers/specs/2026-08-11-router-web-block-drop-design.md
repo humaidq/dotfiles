@@ -95,8 +95,19 @@ the web UI as a red error. Deleting zero entries is a success and is reported
 as such. The number deleted is echoed, because "killed 4 flows" and "killed 0
 flows" are the two answers worth having and they look identical otherwise.
 
-Root/sudo indirection is copied verbatim from `nft()` in `tempblock.bash`: run
-directly when it works, otherwise `sudo -n` the fully-qualified binary.
+Root/sudo indirection follows `nft()` in `tempblock.bash` — run directly when
+that works, otherwise `sudo -n` the fully-qualified binary that both routers
+already whitelist NOPASSWD — but it cannot use the same probe. `nft()` decides
+by running a harmless `nft list tables`; the equivalent for conntrack is a
+`-D` whose exit code cannot distinguish "not permitted" from "nothing matched",
+and a full `-L` dump costs a table walk per invocation. A uid test will not do
+either: `router-web` is a `DynamicUser`, so it is neither root nor able to
+sudo, yet it holds ambient `CAP_NET_ADMIN` and must take the direct path.
+
+So the decision is made by testing CAP_NET_ADMIN — bit 12 of `CapEff` in
+`/proc/self/status`. That is true for root as well, so it is one predicate
+covering all three callers: root at a shell, the operator's unprivileged
+shell, and `router-web`.
 
 Address validation reuses `tempblock`'s `validate` — a friendly message on a
 typo beats conntrack's.
@@ -262,10 +273,10 @@ checked:
   aggregated `list`, `killconn` call.
 - `modules/router/tools.nix` — `killconn` package; on `systemPackages`, on
   `router-web`'s systemd path, and on `tempblock`'s `runtimeInputs`.
-- `hosts/bingo/default.nix`, `hosts/bongo/default.nix` — NOPASSWD `conntrack`
-  alongside the existing `nft` grant, both path forms. `router-web` needs no
-  sudo: it already has `conntrack-tools` on its path and ambient
-  `CAP_NET_ADMIN`.
+- No host changes. `hosts/bingo` and `hosts/bongo` already grant NOPASSWD
+  `conntrack` in both path forms, added for the peers page's own use of the
+  flow table. `router-web` needs no sudo at all: it already has
+  `conntrack-tools` on its path and ambient `CAP_NET_ADMIN`.
 - `modules/router/web/shaping.go` — tempblock chain reader, `invalidate`.
 - `modules/router/web/peers.go` — action table, drop route.
 - `modules/router/web/peers.html` — third button, one note.
