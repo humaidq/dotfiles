@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/netip"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
@@ -38,6 +39,64 @@ var shapingSets = []struct {
 }
 
 var shapeRank = map[string]int{shapeNone: 0, shapeIMO: 1, shapeThrottled: 2, shapeBlocked: 3}
+
+// tempblock keeps its rules in a table of its own rather than in the sets
+// above, so the sweep over shapingSets cannot see it and a peer blocked from
+// the page's own button showed no status at all.
+//
+// That is worse than cosmetic. conntrack tracks at prerouting priority -200,
+// well ahead of the block chain at -20, so a dropped packet still creates an
+// entry: a blocked app that keeps retrying reappears on the peers page showing
+// traffic out and nothing back. Without a badge that reads as a block that
+// failed rather than one that is working.
+const (
+	tempblockTable         = "router_tempblock"
+	tempblockChain         = "block"
+	tempblockCommentPrefix = "tempblock:"
+)
+
+func readTempblockChain(ctx context.Context) ([]byte, error) {
+	return exec.CommandContext(ctx, "nft", "-j", "list", "chain",
+		"inet", tempblockTable, tempblockChain).Output()
+}
+
+// addTempblockRules folds the addresses tempblock is dropping into the index.
+//
+// The address comes from each rule's comment rather than from its match
+// expression, which buys two things: the parser touches one field instead of
+// walking nft's expression tree, and the two rules per address — one for each
+// direction — carry the same comment and so collapse to one entry for free.
+func (i *shapeIndex) addTempblockRules(raw []byte) {
+	var doc struct {
+		Nftables []struct {
+			Rule *struct {
+				Comment string `json:"comment"`
+			} `json:"rule"`
+		} `json:"nftables"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return
+	}
+	for _, obj := range doc.Nftables {
+		if obj.Rule == nil {
+			continue
+		}
+		text, found := strings.CutPrefix(obj.Rule.Comment, tempblockCommentPrefix)
+		if !found {
+			continue
+		}
+		if addr, err := netip.ParseAddr(text); err == nil {
+			addr = addr.Unmap()
+			if shapeRank[shapeBlocked] > shapeRank[i.exact[addr]] {
+				i.exact[addr] = shapeBlocked
+			}
+			continue
+		}
+		if prefix, err := netip.ParsePrefix(text); err == nil {
+			i.prefixes = append(i.prefixes, shapePrefix{prefix.Masked(), shapeBlocked})
+		}
+	}
+}
 
 // shapeIndex answers "how is this address currently treated?".
 //
@@ -166,10 +225,14 @@ type shapeCache struct {
 	index  *shapeIndex
 	loaded time.Time
 	read   func(ctx context.Context, set string) ([]byte, error)
+	// Read separately from the sets above because tempblock's state is rules in
+	// another table, which is a different nft call rather than another set
+	// name. Nil in tests that do not care.
+	readTempblock func(ctx context.Context) ([]byte, error)
 }
 
 func newShapeCache() *shapeCache {
-	return &shapeCache{ttl: 30 * time.Second, read: readShapingSet}
+	return &shapeCache{ttl: 30 * time.Second, read: readShapingSet, readTempblock: readTempblockChain}
 }
 
 func readShapingSet(ctx context.Context, set string) ([]byte, error) {
@@ -194,6 +257,26 @@ func (c *shapeCache) get(ctx context.Context) *shapeIndex {
 		docs[set.name] = raw
 	}
 	c.index = parseShapingSets(docs)
+	if c.readTempblock != nil {
+		// A router with no temp blocks set has no such table and nft exits
+		// non-zero. That is the common case, not an error worth losing the
+		// sets over.
+		if raw, err := c.readTempblock(ctx); err == nil {
+			c.index.addTempblockRules(raw)
+		}
+	}
 	c.loaded = time.Now()
 	return c.index
+}
+
+// invalidate drops the cached index so the next read is current.
+//
+// Called after a button changes what the sets and rules say. Without it the
+// page the action redirects to is served from an index up to a TTL old, so a
+// peer that was just blocked can still render as untouched — which reads as
+// the block having failed.
+func (c *shapeCache) invalidate() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.index = nil
 }
