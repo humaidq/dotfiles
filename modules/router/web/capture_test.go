@@ -593,18 +593,58 @@ func TestCaptureStopRacingStartNeitherPanicsNorHangs(t *testing.T) {
 	}
 }
 
+// TestCaptureStartFailureDoesNotStrandAStop drives an actual racing Stop
+// through two of run's three pre-copier failure paths. Each of those paths
+// must close entry.done itself: a Stop that found the slot in the window
+// before the failure is already blocked on <-entry.done, and a path that
+// fails to close it hangs that request forever.
 func TestCaptureStartFailureDoesNotStrandAStop(t *testing.T) {
-	// A start that cannot even create its file must still release a Stop that
-	// found the slot in the window before the failure.
-	manager := newCaptureManager(filepath.Join(t.TempDir(), "file-not-a-dir"), "lan0")
-	if err := os.WriteFile(manager.dir, []byte("x"), 0o600); err != nil {
-		t.Fatalf("write blocker: %v", err)
-	}
-	if err := manager.Start(testDevice); err == nil {
-		t.Fatal("Start succeeded with an unusable capture directory")
-	}
-	if state := manager.Get(testDevice).State; state != captureIdle {
-		t.Fatalf("state = %q, want %q", state, captureIdle)
+	t.Run("capture directory unusable", func(t *testing.T) {
+		manager := newCaptureManager(filepath.Join(t.TempDir(), "file-not-a-dir"), "lan0")
+		if err := os.WriteFile(manager.dir, []byte("x"), 0o600); err != nil {
+			t.Fatalf("write blocker: %v", err)
+		}
+		assertRacingStopIsReleasedByAFailedStart(t, manager)
+	})
+
+	t.Run("start seam fails", func(t *testing.T) {
+		manager := newCaptureManager(t.TempDir(), "lan0")
+		manager.start = func(context.Context, string, netip.Addr) (io.ReadCloser, error) {
+			return nil, errors.New("exec: \"tcpdump\": executable file not found in $PATH")
+		}
+		assertRacingStopIsReleasedByAFailedStart(t, manager)
+	})
+}
+
+// assertRacingStopIsReleasedByAFailedStart fires a Stop concurrently with a
+// Start that is rigged to fail before the copier goroutine exists. The race
+// means Stop may find nothing at all and return errNoCapture immediately, or
+// it may find the entry and block on entry.done until run closes it — both
+// are acceptable outcomes. What is not acceptable is Stop never returning,
+// which is what a missing close(entry.done) on the exercised path produces.
+func assertRacingStopIsReleasedByAFailedStart(t *testing.T, manager *captureManager) {
+	t.Helper()
+	for i := 0; i < 20; i++ {
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			_ = manager.Stop(testDevice)
+		}()
+
+		err := manager.Start(testDevice)
+
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Fatalf("Stop racing a failed Start hung on iteration %d", i)
+		}
+
+		if err == nil {
+			t.Fatalf("Start succeeded when it was rigged to fail, iteration %d", i)
+		}
+		if state := manager.Get(testDevice).State; state != captureIdle {
+			t.Fatalf("state = %q after a failed start, want %q (iteration %d)", state, captureIdle, i)
+		}
 	}
 }
 
