@@ -73,8 +73,17 @@ recognising both byte orders and both the microsecond (`0xa1b2c3d4`) and
 nanosecond (`0xa1b23c4d`) magics, and copies it. It then loops: read a 16-byte
 record header, take `caplen` from it in the file's byte order, and if
 `written + 16 + caplen` would exceed the limit, stop. Otherwise copy the whole
-record through. The file therefore always ends on a record boundary and always
-parses. `pcapCopy` returns why it stopped: `limit`, `eof`, or an error.
+record through. `pcapCopy` returns why it stopped: `limit`, `eof`, or an
+error.
+
+This guarantees the boundary against a truncated *input* stream (tcpdump dying
+mid-record) and against a *failed write* (the manager truncates back to the
+last complete record when one occurs) — not against router-web itself being
+killed. Each record reaches the file as two separate `Write` calls, header
+then payload, so a SIGKILL of router-web landing between those two calls can
+leave a final record with a header and no payload. Both tcpdump and Wireshark
+read a file with a torn final record without complaint, so the real impact is
+small, but the file is not unconditionally guaranteed to parse.
 
 ### State is derived, not stored
 

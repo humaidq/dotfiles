@@ -869,8 +869,31 @@ func TestCaptureDownloadServesThePcapAsAnAttachment(t *testing.T) {
 	if got := rec.Header().Get("Content-Type"); got != "application/vnd.tcpdump.pcap" {
 		t.Fatalf("Content-Type = %q, want application/vnd.tcpdump.pcap", got)
 	}
-	if rec.Body.Len() < pcapGlobalHeaderLen {
-		t.Fatalf("body is %d bytes, want at least a pcap header", rec.Body.Len())
+	// The magic, not just a length floor: 24 arbitrary bytes or the wrong file
+	// entirely would also satisfy "at least a pcap header".
+	body := rec.Body.Bytes()
+	if len(body) < pcapGlobalHeaderLen {
+		t.Fatalf("body is %d bytes, want at least a pcap header", len(body))
+	}
+	if magic := binary.LittleEndian.Uint32(body[:4]); magic != 0xa1b2c3d4 {
+		t.Fatalf("body magic = %#x, want the fixture's 0xa1b2c3d4", magic)
+	}
+}
+
+func TestCaptureDownloadOfARunningCaptureIs409(t *testing.T) {
+	// Not 404: an operator who bookmarks or reloads this URL mid-capture must
+	// not be told the capture doesn't exist when the page they came from says
+	// it's running.
+	server := testPeersServerWithCaptures(t)
+	if err := server.captures.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = server.captures.Stop(testDevice) })
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil))
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409", rec.Code)
 	}
 }
 
@@ -930,6 +953,27 @@ func TestCaptureDownloadRefusesCrossSiteRequests(t *testing.T) {
 	testPeersServerWithCaptures(t).mux().ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+}
+
+func TestCaptureDownloadAllowsSecFetchSiteNone(t *testing.T) {
+	// "none" is what a browser sends for a typed URL or a bookmark — exactly
+	// how an operator reaches this route days after starting the capture — and
+	// no cross-site page can produce it, unlike "cross-site" above.
+	server := testPeersServerWithCaptures(t)
+	if err := server.captures.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if err := server.captures.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil)
+	req.Header.Set("Sec-Fetch-Site", "none")
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 — Sec-Fetch-Site: none must not be refused", rec.Code)
 	}
 }
 
@@ -1044,11 +1088,17 @@ func TestCaptureActionsAreLogged(t *testing.T) {
 	server := testPeersServerWithCaptures(t)
 	server.mux().ServeHTTP(httptest.NewRecorder(), postForm("/peers/192.168.0.10/capture/start"))
 	server.mux().ServeHTTP(httptest.NewRecorder(), postForm("/peers/192.168.0.10/capture/stop"))
+	// The download is what actually hands packet payloads out of the router —
+	// a more invasive act than any of the three above — so it gets a journal
+	// line too, not just the mutations.
+	server.mux().ServeHTTP(httptest.NewRecorder(),
+		httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil))
 
 	body := out.String()
 	for _, want := range []string{
 		`action=capture-start peer="-" device="192.168.0.10" result="ok"`,
 		`action=capture-stop peer="-" device="192.168.0.10" result="ok"`,
+		`action=capture-download peer="-" device="192.168.0.10" result="ok"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("journal is missing %s\n%s", want, body)
@@ -1147,15 +1197,5 @@ func TestRealTemplateOmitsTheBannerWithoutAManager(t *testing.T) {
 		if strings.Contains(out.String(), unwanted) {
 			t.Fatalf("page offers %s without a manager:\n%s", unwanted, out.String())
 		}
-	}
-}
-
-func TestCaptureManagerTakesItsInterfaceFromTheEnvironment(t *testing.T) {
-	// The capture filter is applied on the LAN interface, so a manager built
-	// with the wrong one would capture nothing and say nothing about why.
-	t.Setenv("ROUTER_LAN_INTERFACE", "lan9")
-	manager := newCaptureManager(t.TempDir(), getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0"))
-	if manager.iface != "lan9" {
-		t.Fatalf("iface = %q, want lan9", manager.iface)
 	}
 }

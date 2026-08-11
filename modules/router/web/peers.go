@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -349,12 +350,18 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 // refused. This is the whole CSRF defence: these endpoints are otherwise
 // unauthenticated by design.
 //
-// Shared rather than repeated per handler. Copied into each of the seven
-// routes that need it, one copy would eventually drift — and on these routes
-// that means an unauthenticated firewall mutation or a capture handed to
-// another origin.
+// Browsers also send "none" for a typed URL, a bookmark, or a link opened
+// from another application — never something a cross-site page can produce —
+// so it is allowed alongside absence and "same-origin". That matters for
+// capture.pcap specifically: it is exactly the URL an operator bookmarks to
+// collect a capture later.
+//
+// Shared rather than repeated per handler. If it were copied into each of the
+// eight routes that need it, one copy would eventually drift — and on these
+// routes that means an unauthenticated firewall mutation or a capture handed
+// to another origin.
 func sameOrigin(w http.ResponseWriter, r *http.Request) bool {
-	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" && site != "none" {
 		http.Error(w, "cross-site request refused", http.StatusForbidden)
 		return false
 	}
@@ -512,11 +519,19 @@ func (s *peersServer) handleCaptureDownload(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	file, info, err := s.captures.Open(device)
+	if errors.Is(err, errCaptureRunning) {
+		// Distinct from "no capture": an operator who bookmarks or reloads
+		// this URL mid-capture must not be told the capture doesn't exist
+		// when the page they came from says it's running.
+		http.Error(w, "capture still running; stop it first", http.StatusConflict)
+		return
+	}
 	if err != nil {
 		http.Error(w, "no capture to download", http.StatusNotFound)
 		return
 	}
 	defer file.Close()
+	s.logAction("capture-download", netip.Addr{}, device, "ok")
 
 	// Named for the device and the time it stopped, because a directory of
 	// files called capture.pcap is a directory nobody can read later. No

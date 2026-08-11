@@ -538,22 +538,37 @@ func TestCaptureStartReplacesAReadyCapture(t *testing.T) {
 	if state := manager.Get(testDevice).State; state != captureRunning {
 		t.Fatalf("state = %q, want %q", state, captureRunning)
 	}
+	// The state check above passes even if the file were opened O_APPEND
+	// instead of O_TRUNC — "running" says nothing about what is on disk
+	// underneath the stale bytes. Start has already written the new global
+	// header by the time it returns, so the file must no longer begin with
+	// the old capture's content.
+	raw, err := os.ReadFile(manager.path(testDevice))
+	if err != nil {
+		t.Fatalf("read capture: %v", err)
+	}
+	if bytes.HasPrefix(raw, []byte("stale")) {
+		t.Fatal("stale capture bytes survived Start; the file was appended to rather than replaced")
+	}
 }
 
 func TestCaptureFileSizeMatchesTheReportedByteCount(t *testing.T) {
-	// The invariant the copier's truncate exists to hold: what the page says
-	// was captured is exactly what is in the file. On the ordinary path the
-	// truncate is a no-op; on a failed write it is what stops the file ending
-	// mid-record.
+	// On the ordinary stop path (no write ever fails) the file and the page's
+	// byte count must both land on the size two whole records actually take,
+	// computed independently here rather than derived from either the slot or
+	// the file — comparing the slot to a stat of the same file proves nothing,
+	// since Get computes a ready slot's Bytes from that exact stat. The write-
+	// failure path, where the truncate actually does something, is covered by
+	// TestCaptureTruncatesToTheLastWholeRecordOnAWriteFailure.
 	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100))
 	if err := manager.Start(testDevice); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
-	want := formatBytes(pcapGlobalHeaderLen + 2*(pcapRecordHeaderLen+100))
+	want := uint64(pcapGlobalHeaderLen + 2*(pcapRecordHeaderLen+100))
 	deadline := time.Now().Add(2 * time.Second)
-	for manager.Get(testDevice).Bytes != want {
+	for manager.Get(testDevice).Bytes != formatBytes(want) {
 		if time.Now().After(deadline) {
-			t.Fatalf("byte count reached %q, want %q", manager.Get(testDevice).Bytes, want)
+			t.Fatalf("byte count reached %q, want %q", manager.Get(testDevice).Bytes, formatBytes(want))
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
@@ -562,12 +577,169 @@ func TestCaptureFileSizeMatchesTheReportedByteCount(t *testing.T) {
 	}
 
 	slot := manager.Get(testDevice)
+	if slot.Bytes != formatBytes(want) {
+		t.Fatalf("page reports %q, want %q", slot.Bytes, formatBytes(want))
+	}
 	info, err := os.Stat(manager.path(testDevice))
 	if err != nil {
 		t.Fatalf("stat capture: %v", err)
 	}
-	if slot.Bytes != formatBytes(uint64(info.Size())) {
-		t.Fatalf("page reports %q, file is %q", slot.Bytes, formatBytes(uint64(info.Size())))
+	if uint64(info.Size()) != want {
+		t.Fatalf("file is %d bytes, want %d", info.Size(), want)
+	}
+}
+
+// failingCaptureFile wraps a real file, failing the Nth write so a test can
+// rig the one condition copy's truncate exists for: a write that fails
+// partway through a record, after that record's header already reached disk.
+// Backed by a real *os.File (not a buffer) so a test can stat the actual file
+// on disk afterwards, the way a browser downloading it would see it.
+type failingCaptureFile struct {
+	*os.File
+	writes int
+	fail   int
+}
+
+func (f *failingCaptureFile) Write(p []byte) (int, error) {
+	f.writes++
+	if f.writes == f.fail {
+		return 0, bytes.ErrTooLarge
+	}
+	return f.File.Write(p)
+}
+
+// stallingStream serves head immediately, then blocks until ctx is done
+// before serving tail. Used to pin the order of a write failure against a
+// concurrent Stop: the stream will not hand over the record whose payload
+// write is rigged to fail until entry.cancel has run, and Stop calls
+// entry.stopped.Store(true) before it calls cancel — so by the time the write
+// fails, stopped is guaranteed already set. Without that pin, a test relying
+// on goroutine scheduling to race Stop against the write failure could pass
+// or fail depending on timing rather than on the code under test.
+type stallingStream struct {
+	head, tail *bytes.Reader
+	ctx        context.Context
+}
+
+func (s *stallingStream) Read(p []byte) (int, error) {
+	if s.head.Len() > 0 {
+		return s.head.Read(p)
+	}
+	<-s.ctx.Done()
+	if s.tail.Len() > 0 {
+		return s.tail.Read(p)
+	}
+	return 0, io.EOF
+}
+
+func (s *stallingStream) Close() error { return nil }
+
+// failingCreate returns a create seam that opens the real file and fails the
+// Nth write, per failingCaptureFile.
+func failingCreate(fail int) func(path string) (captureFile, error) {
+	return func(path string) (captureFile, error) {
+		real, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+		if err != nil {
+			return nil, err
+		}
+		return &failingCaptureFile{File: real, fail: fail}, nil
+	}
+}
+
+func TestCaptureTruncatesToTheLastWholeRecordOnAWriteFailure(t *testing.T) {
+	// The reviewer mutation-verified that capture_test.go's existing tests
+	// stay green with file.Truncate deleted from copy, because none of them
+	// can rig a write failure at the manager level. This one can, via the
+	// create seam: it must fail if the truncate is removed.
+	//
+	// Write sequence to the file: 1=global header, 2=record1 header,
+	// 3=record1 payload, 4=record2 header, 5=record2 payload (rigged to
+	// fail). Mirrors TestPcapRecordsCountStaysOnARecordBoundaryWhenAWriteFails,
+	// but through the manager's create seam rather than calling pcapRecords
+	// directly, so it exercises copy's own truncate rather than pcapRecords'
+	// internal count.
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 50, 50))
+	manager.create = failingCreate(5)
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.Stop(testDevice) })
+
+	slot := waitForState(t, manager, testDevice, captureReady)
+	if slot.Reason != stopReasonWrite {
+		t.Fatalf("reason = %q, want %q", slot.Reason, stopReasonWrite)
+	}
+
+	info, err := os.Stat(manager.path(testDevice))
+	if err != nil {
+		t.Fatalf("stat capture: %v", err)
+	}
+	// Record 2's header write (write #4) reached disk before its payload
+	// write (write #5) failed, so without the truncate the file would be
+	// pcapGlobalHeaderLen + 2*pcapRecordHeaderLen + 50 = 106 bytes, ending on
+	// a bare header with no payload. The truncate must cut that back to the
+	// last whole record: header + one full record.
+	want := int64(pcapGlobalHeaderLen + pcapRecordHeaderLen + 50)
+	if info.Size() != want {
+		t.Fatalf("file is %d bytes, want %d (last whole record; truncate did not run)", info.Size(), want)
+	}
+}
+
+func TestCaptureStopReasonWriteTakesPrecedenceOverAConcurrentStop(t *testing.T) {
+	// Without the `case reason == stopReasonWrite:` arm in copy's switch, a
+	// Stop landing while a write is failing would record stopReasonOperator
+	// and bury the fact that the capture actually died on a write error.
+	//
+	// This needs the write failure pinned to happen only after Stop has set
+	// entry.stopped, or the race could go either way and the test would prove
+	// nothing. stallingStream provides that pin: it withholds record 2, whose
+	// payload write is rigged to fail, until the capture's context is
+	// cancelled — which Stop does only after storing stopped=true.
+	stream := pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 50, 50)
+	split := pcapGlobalHeaderLen + pcapRecordHeaderLen + 50 // header + whole record 1
+	manager := newCaptureManager(t.TempDir(), "lan0")
+	manager.start = func(ctx context.Context, _ string, _ netip.Addr) (io.ReadCloser, error) {
+		return &stallingStream{
+			head: bytes.NewReader(stream[:split]),
+			tail: bytes.NewReader(stream[split:]),
+			ctx:  ctx,
+		}, nil
+	}
+	manager.create = failingCreate(5)
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	// Wait until record 1 has landed, which is exactly when the stream is
+	// about to block on ctx.Done() waiting for record 2.
+	deadline := time.Now().Add(2 * time.Second)
+	want := formatBytes(pcapGlobalHeaderLen + pcapRecordHeaderLen + 50)
+	for manager.Get(testDevice).Bytes != want {
+		if time.Now().After(deadline) {
+			t.Fatalf("record 1 never landed: %q", manager.Get(testDevice).Bytes)
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+
+	// Stop sets entry.stopped.Store(true) and then calls entry.cancel, which
+	// is what releases the stalled stream to hand over record 2 and trigger
+	// the rigged write failure. So by the time that failure happens, stopped
+	// is already true — this is not a race, it is Stop's own two-step order.
+	done := make(chan error, 1)
+	go func() { done <- manager.Stop(testDevice) }()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Stop: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop hung")
+	}
+
+	slot := manager.Get(testDevice)
+	if slot.Reason != stopReasonWrite {
+		t.Fatalf("reason = %q, want %q (stopReasonWrite must win over a concurrent operator stop)", slot.Reason, stopReasonWrite)
 	}
 }
 

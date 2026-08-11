@@ -32,7 +32,7 @@ const (
 // Why a capture stopped. Shown on the peers page, so these read as sentences
 // rather than as identifiers.
 const (
-	stopReasonLimit = "reached the 200 MiB limit"
+	stopReasonLimit = "reached the size limit"
 	stopReasonEOF   = "capture ended"
 	// A write error and a clean end of capture are different events. A capture
 	// that died on a full disk must report that fact, not claim the capture
@@ -155,7 +155,7 @@ const (
 
 const (
 	stopReasonOperator = "stopped from the page"
-	stopReasonAge      = "reached the 30 minute limit"
+	stopReasonAge      = "reached the time limit"
 )
 
 var (
@@ -190,6 +190,28 @@ type capture struct {
 	done    chan struct{}
 }
 
+// captureFile is what copy needs of its destination. An interface rather than
+// *os.File so a test can rig a write failure, which is the one path where the
+// truncate in copy earns its place: real disk writes essentially never fail,
+// so nothing else exercises it.
+type captureFile interface {
+	io.Writer
+	Truncate(size int64) error
+	Close() error
+}
+
+// createCaptureFile opens a device's capture file for writing. The default
+// for captureManager.create; a test replaces it to rig a write failure.
+//
+// O_TRUNC because Start replaces a ready capture rather than refusing a
+// second one, and a leftover ready file must not survive into the new
+// capture as garbage at the front. 0o600: a capture is packet payloads, and
+// the state directory being 0700 is not a reason for the file inside it to
+// be any more permissive.
+func createCaptureFile(path string) (captureFile, error) {
+	return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+}
+
 type captureManager struct {
 	mu     sync.Mutex
 	active map[netip.Addr]*capture
@@ -205,6 +227,10 @@ type captureManager struct {
 	// start opens a pcap byte stream for one device. The seam that keeps every
 	// test off a real interface.
 	start func(ctx context.Context, iface string, device netip.Addr) (io.ReadCloser, error)
+	// create opens a device's capture file. The seam that lets a test rig a
+	// write failure to exercise copy's truncate and its stopReasonWrite
+	// precedence, neither of which a real disk write can be made to fail on.
+	create func(path string) (captureFile, error)
 }
 
 func newCaptureManager(dir, iface string) *captureManager {
@@ -217,6 +243,7 @@ func newCaptureManager(dir, iface string) *captureManager {
 		maxAge:   captureMaxAge,
 		retain:   captureRetain,
 		start:    startTcpdump,
+		create:   createCaptureFile,
 	}
 }
 
@@ -280,7 +307,7 @@ func (m *captureManager) run(ctx context.Context, entry *capture) error {
 		close(entry.done)
 		return fmt.Errorf("capture directory: %w", err)
 	}
-	file, err := os.Create(entry.path)
+	file, err := m.create(entry.path)
 	if err != nil {
 		entry.cancel()
 		close(entry.done)
@@ -312,7 +339,7 @@ func (m *captureManager) run(ctx context.Context, entry *capture) error {
 
 // copy drains the stream to the file and closes the slot when it ends. Runs
 // for the whole life of the capture.
-func (m *captureManager) copy(ctx context.Context, entry *capture, file *os.File, stream io.ReadCloser, started chan<- error) {
+func (m *captureManager) copy(ctx context.Context, entry *capture, file captureFile, stream io.ReadCloser, started chan<- error) {
 	defer close(entry.done)
 
 	order, err := pcapHeader(file, stream)
@@ -322,6 +349,11 @@ func (m *captureManager) copy(ctx context.Context, entry *capture, file *os.File
 		file.Close()
 		os.Remove(entry.path)
 		wrapped := fmt.Errorf("capture produced no pcap stream: %w", err)
+		// Logged here rather than left to the caller: once the 500ms grace
+		// window has passed, nobody is receiving on started, and without this
+		// the failure would vanish — no reason is stored (see below), so the
+		// journal would be the only place it could still surface.
+		log.Printf("capture device=%q start failed: %v", entry.device, wrapped)
 		// Cleared before the error is handed back, so a caller that retries
 		// immediately does not meet its own abandoned slot. This also covers
 		// the case where the grace window expired and nobody is listening.
@@ -428,10 +460,17 @@ func (m *captureManager) Open(device netip.Addr) (*os.File, os.FileInfo, error) 
 	}
 	file, err := os.Open(m.path(device))
 	if err != nil {
+		// A missing file is the ordinary "nothing captured yet" and floods the
+		// journal if logged; anything else (permissions, I/O) is not ordinary
+		// and would otherwise read as absence with no trace of the real cause.
+		if !errors.Is(err, os.ErrNotExist) {
+			log.Printf("capture device=%q open: %v", device, err)
+		}
 		return nil, nil, errNoCapture
 	}
 	info, err := file.Stat()
 	if err != nil {
+		log.Printf("capture device=%q stat: %v", device, err)
 		file.Close()
 		return nil, nil, errNoCapture
 	}
