@@ -1055,3 +1055,97 @@ func TestCaptureActionsAreLogged(t *testing.T) {
 		}
 	}
 }
+
+func TestRealTemplateRendersTheIdleCaptureButton(t *testing.T) {
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{
+		Device:  "192.168.0.10",
+		Capture: captureSlot{State: captureIdle},
+	}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	body := out.String()
+	if !strings.Contains(body, `action="/peers/192.168.0.10/capture/start"`) {
+		t.Fatalf("start button absent:\n%s", body)
+	}
+	for _, unwanted := range []string{"capture/stop", "capture.pcap", "capture/discard"} {
+		if strings.Contains(body, unwanted) {
+			t.Fatalf("idle page offers %s:\n%s", unwanted, body)
+		}
+	}
+}
+
+func TestRealTemplateRendersTheRunningCaptureBanner(t *testing.T) {
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{
+		Device: "192.168.0.10",
+		Capture: captureSlot{
+			State:   captureRunning,
+			Bytes:   "12.4 MiB",
+			Limit:   "200.0 MiB",
+			Elapsed: "3m 12s",
+		},
+	}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	body := out.String()
+	if !strings.Contains(body, `action="/peers/192.168.0.10/capture/stop"`) {
+		t.Fatalf("stop button absent:\n%s", body)
+	}
+	for _, want := range []string{"12.4 MiB", "200.0 MiB", "3m 12s"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("running banner is missing %q:\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "capture/start") {
+		t.Fatalf("running page still offers to start a capture:\n%s", body)
+	}
+}
+
+func TestRealTemplateRendersTheReadyCaptureBanner(t *testing.T) {
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{
+		Device: "192.168.0.10",
+		Capture: captureSlot{
+			State:   captureReady,
+			Bytes:   "43.1 MiB",
+			Stopped: "14:02",
+			Reason:  stopReasonLimit,
+		},
+	}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	body := out.String()
+	for _, want := range []string{
+		`href="/peers/192.168.0.10/capture.pcap"`,
+		`action="/peers/192.168.0.10/capture/discard"`,
+		"43.1 MiB",
+		"14:02",
+		stopReasonLimit,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("ready banner is missing %q:\n%s", want, body)
+		}
+	}
+}
+
+func TestRealTemplateOmitsTheBannerWithoutAManager(t *testing.T) {
+	// A router with no capture directory renders the page it always did.
+	// Asserted on the routes rather than on the word "capture", which the
+	// stylesheet carries on every render.
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{Device: "192.168.0.10"}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	for _, unwanted := range []string{
+		"capture/start", "capture/stop", "capture/discard", "capture.pcap",
+	} {
+		if strings.Contains(out.String(), unwanted) {
+			t.Fatalf("page offers %s without a manager:\n%s", unwanted, out.String())
+		}
+	}
+}

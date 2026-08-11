@@ -29,6 +29,11 @@ code.port.suspect { color: #a00; font-weight: 600; border: 1px solid #a00; borde
 span.more { font-size: .85em; color: #888; }
 button { padding: .25rem .6rem; cursor: pointer; }
 form.device button { background: #fff0f0; border: 1px solid #d33; color: #a00; font-weight: 600; }
+form.capture { display: inline; }
+form.capture button { background: #eef4ff; border: 1px solid #468; color: #235; font-weight: 600; }
+p.capture { margin: 0 0 1rem; color: #444; }
+p.capture .figure { font-variant-numeric: tabular-nums; }
+p.capture .why { color: #666; }
 p.note { color: #666; }
 p.error { color: #a00; font-weight: 600; }
 </style>
@@ -44,6 +49,30 @@ p.error { color: #a00; font-weight: 600; }
 <button type="submit">drop all connections</button>
 </form>
 <p class="note">Ends every connection this device has, to every peer at once, and blocks nothing. Its apps reconnect from scratch.</p>
+{{if eq .Capture.State "running"}}
+<p class="capture">
+<form class="capture" method="post" action="/peers/{{.Device}}/capture/stop">
+<button type="submit">stop &amp; download capture</button>
+</form>
+<span class="figure">capturing &mdash; {{.Capture.Bytes}} of {{.Capture.Limit}}, {{.Capture.Elapsed}} elapsed</span>
+</p>
+<p class="note">Stops on its own at the limit or after 30 minutes, whichever comes first. Stopping downloads the file and leaves a copy here.</p>
+{{else if eq .Capture.State "ready"}}
+<p class="capture">
+<a href="/peers/{{.Device}}/capture.pcap">download capture</a>
+<span class="figure">&mdash; {{.Capture.Bytes}}, stopped {{.Capture.Stopped}}</span>
+{{if .Capture.Reason}}<span class="why">({{.Capture.Reason}})</span>{{end}}
+<form class="capture" method="post" action="/peers/{{.Device}}/capture/discard">
+<button type="submit">discard</button>
+</form>
+</p>
+<p class="note">Kept for 24 hours, then deleted. Starting a new capture for this device replaces it.</p>
+{{else if eq .Capture.State "idle"}}
+<form class="capture" method="post" action="/peers/{{.Device}}/capture/start" style="margin: 0 0 1rem">
+<button type="submit">start capture</button>
+</form>
+<p class="note">Records this device&rsquo;s full packets, in both directions, to a file you download. It follows the address this page is for &mdash; a device&rsquo;s traffic under a different address is not in it. Stops on its own at 200 MiB or 30 minutes.</p>
+{{end}}
 {{if .Peers}}
 <table>
 <tr><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th class="num">Share</th><th>Traffic</th><th>Status</th><th>Actions</th></tr>
