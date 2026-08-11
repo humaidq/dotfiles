@@ -99,16 +99,47 @@ rule_handles() {
 			}'
 }
 
+# Which directions are already covered for this address — "daddr", "saddr",
+# both, or nothing.
+#
+# Per-direction rather than a bare "is it present at all", because a one-sided
+# entry is a real state this has to handle, not a theoretical one: the old
+# single-rule version of this script wrote daddr-only rules, and
+# router_tempblock survives every rebuild (see the header comment), so those
+# leftovers exist in the field. A presence check would call them blocked and
+# leave the return direction forwarded forever.
+rule_dirs() {
+	nft -a list chain "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN" 2>/dev/null |
+		awk -v needle="comment \"tempblock:$1\"" '
+			index($0, needle) {
+				for (i = 1; i <= NF; i++)
+					if ($i == "daddr" || $i == "saddr") { print $i; next }
+			}'
+}
+
 cmd_add() {
 	[ "$#" -ge 1 ] || die "add needs at least one IP or CIDR"
 	ensure
 	for ip in "$@"; do
 		validate "$ip"
-		if [ -n "$(rule_handles "$ip")" ]; then
+		fam="$(fam_of "$ip")"
+		dirs="$(rule_dirs "$ip")"
+		have_out=0
+		have_in=0
+		case "$dirs" in
+		*daddr*) have_out=1 ;;
+		esac
+		case "$dirs" in
+		*saddr*) have_in=1 ;;
+		esac
+		if [ "$have_out" -eq 1 ] && [ "$have_in" -eq 1 ]; then
 			echo "already blocked: $ip"
 			continue
 		fi
-		fam="$(fam_of "$ip")"
+		repaired=0
+		if [ "$have_out" -eq 1 ] || [ "$have_in" -eq 1 ]; then
+			repaired=1
+		fi
 		# One rule per direction rather than a combined match, for the reason
 		# forward_throttle gives for doing the same thing: separate counters
 		# show which way the traffic is actually flowing.
@@ -123,14 +154,32 @@ cmd_add() {
 		# own quotes are long gone by then and a bare tempblock:1.2.3.4 makes its
 		# parser stop at the colon ("unexpected colon"), so every add aborted on
 		# the first address and no rule was ever installed.
-		nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN" \
-			"$fam" daddr "$ip" counter drop comment "\"tempblock:$ip\""
-		nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN" \
-			"$fam" saddr "$ip" counter drop comment "\"tempblock:$ip\""
-		echo "blocked: $ip"
+		#
+		# Only the missing direction is installed, not both unconditionally, so
+		# that re-running add against a one-sided leftover (or against an
+		# address whose saddr rule failed to land on a previous run, see below)
+		# repairs it instead of duplicating the side that is already there.
+		if [ "$have_out" -eq 0 ]; then
+			nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN" \
+				"$fam" daddr "$ip" counter drop comment "\"tempblock:$ip\""
+		fi
+		if [ "$have_in" -eq 0 ]; then
+			nft add rule "$TABLE_FAMILY" "$TABLE_NAME" "$CHAIN" \
+				"$fam" saddr "$ip" counter drop comment "\"tempblock:$ip\""
+		fi
+		if [ "$repaired" -eq 1 ]; then
+			echo "completed block (added missing direction): $ip"
+		else
+			echo "blocked: $ip"
+		fi
 		# After the rules, never before. A packet in flight between a flush and
 		# the rules landing recreates the conntrack entry, and the block then
 		# looks broken to whoever is watching the peers page.
+		#
+		# Called whenever this loop installed anything, repair included: a
+		# one-sided leftover from a previous run is exactly the case where a
+		# live flow is most likely to still be open in the direction that had
+		# been left unblocked, since nothing before this fix ever tore it down.
 		killconn "$ip"
 	done
 }
