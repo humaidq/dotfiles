@@ -20,6 +20,15 @@ let
       ''
       + builtins.readFile ./clients.bash;
   };
+  killconn = pkgs.writeShellApplication {
+    name = "killconn";
+    runtimeInputs = with pkgs; [
+      coreutils
+      gawk
+      conntrack-tools
+    ];
+    text = builtins.readFile ./killconn.bash;
+  };
   tempblock = pkgs.writeShellApplication {
     name = "tempblock";
     runtimeInputs = with pkgs; [
@@ -45,6 +54,7 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [
       clients
+      killconn
       tempblock
       tempthrottle
     ];
@@ -55,6 +65,7 @@ in
     # environment.systemPackages above is not enough on its own to put these
     # on router-web's PATH.
     systemd.services.router-web.path = [
+      killconn
       tempblock
       tempthrottle
     ];
