@@ -26,8 +26,10 @@ let
     name = "caffeine-beeper";
     runtimeInputs = with pkgs; [
       coreutils
+      gawk # float compare of the sink volume against the floor
       libnotify
       sox
+      wireplumber # wpctl, to floor the sink volume for the tone
     ];
     text = builtins.readFile ./caffeine-beeper.sh;
   };

@@ -235,7 +235,13 @@
       # It is safe to widen to because it names hosts rather than zones where
       # the zone is shared: vpn-api.proton.me and not proton.me, which would
       # take Mail and Drive with it; the individual API Gateway hostnames and
-      # not execute-api.*.amazonaws.com; mask.icloud.com and not icloud.com.
+      # not execute-api.*.amazonaws.com; mask-h2.icloud.com and not icloud.com.
+      #
+      # Do not read that as covering iCloud Private Relay. Verified 2026-08-11
+      # by querying both resolvers: this list carries mask-h2.icloud.com, the
+      # HTTP/2 fallback, and NOT mask.icloud.com, the primary QUIC ingress,
+      # which resolved fine on both sites while Private Relay was live on
+      # nineteen devices. Both names are pinned in custom-blocklist.txt now.
       #
       # It does carry tailscale.com, so the mesh goes down with it. That is the
       # one thing here worth a deliberate decision rather than a default.

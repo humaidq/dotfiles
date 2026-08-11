@@ -115,6 +115,76 @@ else
   fail=1
 fi
 
+# --- sink volume floor ----------------------------------------------------
+# The tone is played at full *stream* amplitude, but the sink's own volume
+# still applies on top of it — so a muted or turned-down output made the alarm
+# inaudible, which is the whole point of the mode. play_tone must floor the
+# sink and unmute it for the duration of the tone, then put the user's exact
+# prior volume and mute state back.
+
+wpctl_log="$tmp/wpctl.log"
+
+# Stub wpctl: `get-volume` replays a scripted sink state (or fails, to model an
+# unreachable wireplumber); everything else is logged instead of applied.
+cat > "$stub_bin/wpctl" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "get-volume" ]; then
+  [ -n "${WPCTL_FAIL:-}" ] && exit 1
+  printf '%s\n' "${WPCTL_STATE:-}"
+  exit 0
+fi
+printf '%s\n' "$*" >> "$WPCTL_LOG"
+EOF
+chmod +x "$stub_bin/wpctl"
+
+# One pass of the main loop over a discharging battery is exactly one beep.
+run_one_beep() { # sink-state [fail]
+  : > "$wpctl_log"
+  set_battery Discharging
+  NOTIFY_LOG="$notify_log" PATH="$stub_bin:$PATH" \
+  WPCTL_LOG="$wpctl_log" WPCTL_STATE="$1" WPCTL_FAIL="${2:-}" \
+  CAFFEINE_BEEP_SYSFS="$tmp/sysfs" \
+  CAFFEINE_BEEP_INTERVAL=0.01 \
+  CAFFEINE_BEEP_AC_POLL_INTERVAL=0.01 \
+  CAFFEINE_BEEP_MAX_ITER=1 \
+    bash "$BEEPER"
+}
+
+expect_wpctl() { # desc want-semicolon-joined
+  local got
+  got="$(tr '\n' ';' < "$wpctl_log")"
+  if [ "$got" = "$2" ]; then
+    printf 'PASS: %s\n' "$1"
+  else
+    printf 'FAIL: %s — want [%s], got [%s]\n' "$1" "$2" "$got"
+    fail=1
+  fi
+}
+
+SINK='@DEFAULT_AUDIO_SINK@'
+
+run_one_beep 'Volume: 0.20 [MUTED]'
+expect_wpctl "muted sink is raised and unmuted, then re-muted and restored" \
+  "set-volume $SINK 0.6;set-mute $SINK 0;set-mute $SINK 1;set-volume $SINK 0.20;"
+
+run_one_beep 'Volume: 0.20'
+expect_wpctl "quiet sink is raised to the floor, then restored" \
+  "set-volume $SINK 0.6;set-volume $SINK 0.20;"
+
+run_one_beep 'Volume: 0.80'
+expect_wpctl "sink above the floor is left completely alone" ""
+
+run_one_beep 'Volume: 0.60'
+expect_wpctl "sink exactly at the floor is left completely alone" ""
+
+# wireplumber unreachable: degrade to playing the tone and hope, never die.
+if run_one_beep 'Volume: 0.20' 1; then
+  expect_wpctl "unreachable wireplumber touches nothing" ""
+else
+  printf 'FAIL: unreachable wireplumber killed the beeper\n'
+  fail=1
+fi
+
 if [ "$fail" -eq 0 ]; then
   printf '\nAll caffeine-beeper tests passed.\n'
 else

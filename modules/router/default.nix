@@ -127,17 +127,17 @@ in
     imoThrottle = {
       rate = lib.mkOption {
         type = lib.types.str;
-        default = "2mbit";
+        default = "384kbit";
         description = "Rate cap applied to imo addresses, each direction, at all hours.";
       };
       baseLoss = lib.mkOption {
         type = lib.types.str;
-        default = "3%";
+        default = "0.3%";
         description = "Packet loss applied to imo addresses outside the peak windows.";
       };
       peakLoss = lib.mkOption {
         type = lib.types.str;
-        default = "70%";
+        default = "25%";
         description = "Packet loss applied to imo addresses inside the peak windows.";
       };
       peakWindows = lib.mkOption {

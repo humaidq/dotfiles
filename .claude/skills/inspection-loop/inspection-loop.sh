@@ -29,7 +29,10 @@ ssh -S "$SOCK" -O check "$HOST" >/dev/null 2>&1 || {
 ssh -n -S "$SOCK" "$HOST" "nohup sudo -n tcpdump -i $IFACE -nn -s 0 -G $secs -W 1 \
   -w ~/.cache/inspect.pcap 'not port 53' >/dev/null 2>&1 &" >/dev/null 2>&1
 sleep $((secs + 6))
-scp -o ControlPath="$SOCK" "$HOST":.cache/inspect.pcap "$WORK/r.pcap" >/dev/null 2>&1
+STAMP=$(date +%Y%m%d-%H%M%S)
+PCAP=$WORK/$site-$STAMP.pcap
+scp -o ControlPath="$SOCK" "$HOST":.cache/inspect.pcap "$PCAP" >/dev/null 2>&1
+ln -sf "$PCAP" "$WORK/r.pcap"
 ssh -n -S "$SOCK" "$HOST" 'rm -f ~/.cache/inspect.pcap' >/dev/null 2>&1
 [ -s "$WORK/r.pcap" ] || { echo "capture failed or empty" >&2; exit 1; }
 
@@ -73,4 +76,5 @@ while read -r client total topbytes share peer port; do
     "$([ -n "$dns" ] && echo ' resolver-explains' || echo ' NO-DNS')" "$state"
 done <"$WORK/rank.txt"
 
-rm -f "$WORK/r.pcap"
+echo
+echo "pcap retained: $PCAP"

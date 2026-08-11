@@ -362,3 +362,80 @@
 # download-heavy, so this one is the range and the shape rather than the
 # direction. Kept as a /32 for that reason.
 172.232.214.59
+
+# Found 2026-08-11, second site, one round. Both are the 2026-08-06 clients
+# moving on again rather than anything new, and each landed back in the range
+# its predecessor came from.
+#
+# OVH SBG5, 51.91.208.0 - 51.91.211.255. Second address this inetnum has given
+# up; 51.91.209.72 above is the first. Whole-of-device share, sole peer for the
+# entire capture, near-symmetric at keepalive rate with no lookup for the peer.
+# What settles it against a call is the client's own DNS: nothing in two hours
+# but STUN — blackberry, nextcloud and google's public servers — which is a
+# client discovering its external address, and the peer is a rented VPS rather
+# than a carrier subscriber. Two of two in one /22 is tight enough to be worth
+# raising, but left as a /32 pending that call.
+51.91.210.126
+# DigitalOcean DO-13. Different client, same round, and the same shape the
+# 2026-08-06 note recorded for 152.42.187.214: single long-lived established
+# flow at the whole of the device with no lookup for the peer. Port 554 reads
+# as RTSP but the payload is opaque, the device resolved plenty of unrelated
+# names in the same period without ever asking for this address, and no second
+# LAN device shares the host, so it is not a vendor relay session. /32 only —
+# 152.42.128.0/17 is general-purpose cloud full of unrelated tenants.
+152.42.160.159
+
+# Where the 51.91.210.126 client went, same day. It sat on the shaped address
+# through five consecutive two-minute rounds without moving — shaping does not
+# fail, so nothing prompts a reconnect — and then rotated anyway on the sixth,
+# a five-minute window. Worth recording against the assumption above this file
+# that throttled nodes stay put: they stay put longer, not forever.
+#
+# OVH Ltd, PCI-UK1, 51.75.168.0/24 — a second OVH inetnum for the same client,
+# and 51.75.39.84 further up is in the same /16. The old address went to zero
+# packets in the same capture, so this is a move rather than a second channel.
+# Whole-of-device share, no lookup, no ClientHello, and roughly eighteen to one
+# inbound at about 1.15 Mbit/s, which is a tunnel carrying browsing rather than
+# a call or a broadcast.
+#
+# Four addresses across two OVH inetnums now make AS16276 this operator's
+# preferred hoster, which is the pattern worth watching rather than any single
+# address. Kept as a /32: OVH is general-purpose hosting and a range rule would
+# shape unrelated tenants.
+51.75.168.2
+# Same client again, about twenty minutes later, and the entry that should be
+# read before trusting any port-based rule in this file: it left OVH entirely
+# and came back on TCP/22 as SSH — tshark dissects the flow as the protocol,
+# not merely the port — after two rounds of raw UDP on arbitrary high ports.
+# The transport moved, not just the address.
+#
+# DigitalOcean 159.203.0.0/16, which is now the fourth address this range has
+# given up; 159.203.0.59, 159.203.8.245 and 159.203.16.60 are all above. Whole
+# of the device, no lookup, near-symmetric at about 2.45 Mbit/s.
+#
+# Throughput rose at each move — roughly 1.15 Mbit/s on the first replacement,
+# 2.45 on this one — so shaping is not deterring the person using it, it is
+# prompting a reconnect somewhere faster. Three addresses across two providers
+# in thirty-five minutes is the point at which address-by-address stops
+# converging; a per-device egress policy is the lever that does not depend on
+# guessing the next address, and port 22 is still absent from
+# custom-port-blocklist.txt. Recorded here because the decision was to keep
+# looping, and the record is what makes the next round legible.
+159.203.1.196
+# Fourth rotation in fifty minutes, and back to OVH — PCI-DE1, 51.195.99.0/24,
+# a third OVH country after France and the UK. Raw UDP again on 55199, so the
+# SSH round was one transport in a rotation rather than a move to it. Roughly
+# six to one inbound at about 857 kbit/s, whole of the device, no lookup.
+#
+# 51.195.36.31 further up is in the same /16, which makes this the sixth OVH
+# address in this file across four of its inetnums: PCI-SBG5, PCI-UK1, PCI-DE1
+# and the 51.195.36 entry. At that count AS16276 is the operator's home rather
+# than a coincidence of rented hosts, and the shaped address is no longer the
+# interesting fact — the AS is. An AS-wide rule and a per-device egress policy
+# were both put to the user at this point and address-only was chosen; noted so
+# a later reader can see the option was live and declined, not overlooked.
+#
+# The throttled SSH address it came from kept about 1 MB of residual rather
+# than going to zero the way the two OVH predecessors did, so this looks like a
+# second channel opening beside the first rather than a clean handover.
+51.195.99.180

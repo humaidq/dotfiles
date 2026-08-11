@@ -2541,3 +2541,27 @@ stun.voip.blackberry.com
 nlb-uo231cms7bji7g2doh.ap-southeast-1.nlb.aliyuncsslbintl.com
 nlb-vhvlpepi34c8e0aa4x.ap-southeast-1.nlb.aliyuncsslbintl.com
 nlb-0oihvq70lz6v3c6vn7.ap-southeast-1.nlb.aliyuncsslbintl.com
+
+# iCloud Private Relay ingress, 2026-08-11. The doh denylist carries only
+# mask-h2.icloud.com, the HTTP/2 fallback — the note above that list claiming it
+# names mask.icloud.com is wrong. The primary QUIC ingress was therefore open on
+# both sites, and in use: thirteen devices on the second site and six on the
+# first resolved mask.apple-dns.net over a day, with 2.8 MB of QUIC to the
+# ingress in a single capture. Safari traffic and the device's own DNS both ride
+# that tunnel, so every list here is bypassed for whichever device turns it on.
+#
+# Both names, exact, per Apple's own guidance to network operators. mask-h2 is
+# already caught upstream and is repeated here so the pair is not split across
+# two lists where half can silently disappear when the feed changes.
+#
+# Deliberately not here: mask-api.icloud.com, which Apple does not list for
+# blocking, and *.apple-dns.net, which is shared Apple infrastructure carrying
+# contacts.fe2, setup.fe2, push and CalDAV — a wildcard there would take out
+# iCloud for the whole house. The .icloud.com names are the durable handle.
+#
+# Note blocky answers 0.0.0.0 where Apple specifies NXDOMAIN for the clean
+# "Private Relay is not available on this network" notice; mask-h2 has been
+# answered that way already without trouble, so the pair should behave, but
+# slow Safari loads rather than a clear notice would be the symptom if not.
+mask.icloud.com
+mask-h2.icloud.com

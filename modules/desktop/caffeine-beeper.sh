@@ -12,6 +12,9 @@ SYSFS="${CAFFEINE_BEEP_SYSFS:-/sys/class/power_supply}"
 DURATION="${CAFFEINE_BEEP_DURATION:-0.2}"
 INTERVAL="${CAFFEINE_BEEP_INTERVAL:-2}"
 FREQ="${CAFFEINE_BEEP_FREQ:-1000}"
+SINK="${CAFFEINE_BEEP_SINK:-@DEFAULT_AUDIO_SINK@}"
+# Sink volume the tone is guaranteed to play at, as a wpctl 0.0-1.0 fraction.
+MIN_VOLUME="${CAFFEINE_BEEP_MIN_VOLUME:-0.6}"
 AC_POLL_INTERVAL="${CAFFEINE_BEEP_AC_POLL_INTERVAL:-2}"
 DRY_RUN="${CAFFEINE_BEEP_DRY_RUN:-}"
 # Test-only escape hatch: bound the number of main-loop iterations so a
@@ -41,10 +44,58 @@ should_beep() {
   fi
 }
 
+# Prior sink state saved by boost_sink, put back by restore_sink. Empty means
+# nothing was touched and there is nothing to restore.
+saved_vol=""
+saved_muted=""
+
+boost_sink() {
+  # Full stream amplitude is not enough on its own: the sink's own volume still
+  # applies on top, so a muted or turned-down output silences the alarm. Raise
+  # the sink to MIN_VOLUME and unmute it, but only for the length of the tone,
+  # and only when it is actually too quiet — a sink already loud enough is left
+  # completely alone so the user's volume stays theirs between beeps.
+  local state vol muted=0
+  state="$(wpctl get-volume "$SINK" 2>/dev/null)" || return 0
+  # "Volume: 0.20" or "Volume: 0.20 [MUTED]"
+  vol="${state#Volume: }"
+  vol="${vol%% *}"
+  case "$vol" in
+    '' | *[!0-9.]*) return 0 ;; # unrecognised format; leave the sink alone
+  esac
+  case "$state" in
+    *'[MUTED]'*) muted=1 ;;
+  esac
+
+  if [ "$muted" -eq 0 ] && awk -v v="$vol" -v m="$MIN_VOLUME" 'BEGIN { exit !(v >= m) }'; then
+    return 0
+  fi
+
+  saved_vol="$vol"
+  saved_muted="$muted"
+  # Volume before unmute, so the sink is never briefly live at the old level.
+  wpctl set-volume "$SINK" "$MIN_VOLUME" 2>/dev/null || true
+  if [ "$muted" -eq 1 ]; then
+    wpctl set-mute "$SINK" 0 2>/dev/null || true
+  fi
+}
+
+restore_sink() {
+  [ -n "$saved_vol" ] || return 0
+  # Mute before volume, for the same reason boost_sink orders them the other way.
+  if [ "$saved_muted" = "1" ]; then
+    wpctl set-mute "$SINK" 1 2>/dev/null || true
+  fi
+  wpctl set-volume "$SINK" "$saved_vol" 2>/dev/null || true
+  saved_vol=""
+  saved_muted=""
+}
+
 play_tone() {
-  # Full stream amplitude; the sink's own volume still applies (see spec's
-  # "Known limitation"). Never let a missing sink kill the loop.
+  # Never let a missing sink kill the loop.
+  boost_sink
   play -qn synth "$DURATION" sine "$FREQ" gain -1 >/dev/null 2>&1 || true
+  restore_sink
 }
 
 main() {
@@ -96,5 +147,10 @@ main() {
     fi
   done
 }
+
+# Cover the ~0.2s window where the sink is held above the user's setting: if
+# the unit is stopped mid-tone, put their volume back rather than leaving it
+# floored. restore_sink clears its own state, so double-firing is harmless.
+trap restore_sink EXIT INT TERM
 
 main "$@"

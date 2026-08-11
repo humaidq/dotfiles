@@ -415,13 +415,13 @@
       "locked": {
         "lastModified": 1782194364,
         "narHash": "sha256-fvQKfmB0wJxIfM/JAV3yOct8PBYO8T3zeWRykEtHRIQ=",
-        "owner": "humaidq",
+        "owner": "ai4os-ae",
         "repo": "fleeti",
         "rev": "b3774826295a9c38641f839153a2f218202c91b0",
         "type": "github"
       },
       "original": {
-        "owner": "humaidq",
+        "owner": "ai4os-ae",
         "repo": "fleeti",
         "type": "github"
       }

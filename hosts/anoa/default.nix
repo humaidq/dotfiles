@@ -262,6 +262,12 @@
   # Kill the heaviest cgroup (e.g. a runaway browser tab in the user session)
   # before memory pressure stalls the whole machine. enableUserSlices is the key
   # bit: that's where the desktop apps live.
+  #
+  # enableSystemSlice stays off deliberately. -.slice is monitored, and
+  # systemd.resource-control(5) notes that a cgroup left at ManagedOOM*=auto is
+  # still a kill *candidate* when an ancestor is set to kill, so nix-daemon and
+  # friends under system.slice are already reachable. Arming system.slice as its
+  # own trigger would only add a way to lose postgresql or tailscaled.
   systemd.oomd = {
     enable = true;
     enableUserSlices = true;
@@ -269,7 +275,46 @@
     settings.OOM = {
       DefaultMemoryPressureLimit = "50%";
       DefaultMemoryPressureDurationSec = "10s";
+
+      # Act while zram still has room, before swap overflows onto the zvol and
+      # hits the deadlock described above. Swap totals 39.4 GiB: 15.4 GiB zram
+      # (39% of the total) plus the 24 GiB zvol, so any limit under 39% fires
+      # before the zvol is touched at all. 30% is ~11.8 GiB, i.e. zram ~77%
+      # full. The stock 90% is useless here -- 35 GiB of swap in use means the
+      # zvol has been in play for a long time already.
+      #
+      # Note this limit is an AND: oomd acts only when the used fraction of RAM
+      # *and* of swap both exceed it. RAM on this host sits above 30% almost
+      # always, so swap usage is the effective trigger.
+      SwapUsedLimit = "30%";
     };
+  };
+
+  # The two settings above do not apply on their own, which is why the machine
+  # still froze on 2026-08-10 with oomd enabled:
+  #
+  #   * DefaultMemoryPressureLimit only covers units that set no limit of their
+  #     own, and nixpkgs' oomd module puts ManagedOOMMemoryPressureLimit = 80%
+  #     on every slice it manages. `oomctl` reported "Default Memory Pressure
+  #     Limit: 50.00%" while every monitored cgroup listed 80%. It is mkDefault
+  #     upstream, so a plain value here wins.
+  #   * SwapUsedLimit only covers units with ManagedOOMSwap=kill, which nixpkgs
+  #     never sets, so swap-based killing was entirely inactive -- "Swap
+  #     Monitored CGroups:" in `oomctl` was empty.
+  #
+  # Verify after a rebuild with `oomctl`: each monitored cgroup should report a
+  # 50% limit, and both / and /user.slice should appear under the swap section.
+  # The user manager keeps a separate 80% drop-in of its own on app.slice and
+  # friends (/etc/systemd/user/slice.d, applied to every user slice by type);
+  # that is left alone as a later backstop, since the 50% on user.slice sits
+  # above it and fires first.
+  systemd.slices."-".sliceConfig = {
+    ManagedOOMMemoryPressureLimit = "50%";
+    ManagedOOMSwap = "kill";
+  };
+  systemd.slices."user".sliceConfig = {
+    ManagedOOMMemoryPressureLimit = "50%";
+    ManagedOOMSwap = "kill";
   };
 
   boot.lanzaboote = {

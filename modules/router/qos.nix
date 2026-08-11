@@ -73,15 +73,18 @@ in
         # CAKE's diffserv4 classifier sees the marks and prioritisation works in
         # both directions.
         #
-        # CAKE is no longer the root qdisc. It sits under an HTB root as the
-        # default class, so a second class can exist alongside it for the
-        # addresses in custom-throttle-list.txt, which nftables marks 0x2 (see
-        # forward_throttle in ip-blocklist.nix).
+        # CAKE is no longer the root qdisc. It sits under an HTB tree as the
+        # default class, so penalty classes can exist alongside it for the
+        # addresses in custom-throttle-list.txt (marked 0x2) and
+        # custom-imo-list.txt (marked 0x3) — see forward_throttle in
+        # ip-blocklist.nix.
         #
-        # HTB purely to get two classes — the default one is given the full link
+        # HTB purely to get the classes — the default one is given the full link
         # rate and CAKE inside it still does all the real work, so ordinary
-        # traffic behaves as it did when CAKE was root. The throttled class is
-        # rate-limited by HTB and then made unpleasant by netem.
+        # traffic behaves as it did when CAKE was root. The penalty classes are
+        # rate-limited by HTB and then made unpleasant by netem, and both sit at
+        # the lowest HTB priority so they only ever get what ordinary traffic
+        # has left.
         #
         # netem does the impairment rather than the rate: its own `rate` option
         # is a plain token bucket with none of HTB's borrowing behaviour, and
@@ -93,28 +96,53 @@ in
           shape() {
             local dev="$1" bw="$2"; shift 2
 
-            tc qdisc replace dev "$dev" root handle 1: htb default 10
+            # Torn down and rebuilt rather than `replace`d in place. The classes
+            # below hang off a shaping parent (1:1) instead of off the root, and
+            # tc cannot reparent an existing class: a `replace` against a tree
+            # left over from the older flat layout would silently keep the old
+            # parents, and the priorities would never take effect.
+            tc qdisc del dev "$dev" root 2>/dev/null || true
+            tc qdisc add dev "$dev" root handle 1: htb default 10
 
-            # Default class: the whole link, CAKE unchanged underneath.
-            tc class replace dev "$dev" parent 1: classid 1:10 htb \
+            # Shaping parent at the full link rate. Every class below is a
+            # sibling under it, and that is what makes HTB's `prio` mean
+            # anything: classes attached straight to the root qdisc have no
+            # common ancestor to compete for, so they never contend and a
+            # priority written on them would be decoration.
+            tc class add dev "$dev" parent 1: classid 1:1 htb \
               rate "$bw" ceil "$bw"
-            tc qdisc replace dev "$dev" parent 1:10 handle 10: cake \
+
+            # Default class: the whole link, CAKE unchanged underneath. prio 0
+            # is HTB's highest, so ordinary traffic is always dequeued ahead of
+            # the two penalty classes below.
+            tc class add dev "$dev" parent 1:1 classid 1:10 htb \
+              rate "$bw" ceil "$bw" prio 0
+            tc qdisc add dev "$dev" parent 1:10 handle 10: cake \
               bandwidth "$bw" "$@"
+
+            # The penalty classes are prio 7, HTB's lowest. Their rates
+            # deliberately overcommit the parent — 1:10 alone is already the
+            # whole link — which is the mechanism, not an oversight: when the
+            # link is busy the parent has no tokens to hand out, HTB serves the
+            # priority bands in order, and these two get only what 1:10 leaves.
+            # Their own rate caps are what bounds them when the link is idle.
 
             # Throttled class. `limit 1000` bounds netem's own queue: at
             # ${throttle.rate} a deep queue would add minutes of delay on top of
             # the intended latency and the tunnel would stall outright rather
             # than merely crawl, which is more detectable than what we want.
-            tc class replace dev "$dev" parent 1: classid 1:20 htb \
-              rate ${throttle.rate} ceil ${throttle.rate}
-            tc qdisc replace dev "$dev" parent 1:20 handle 20: netem \
+            tc class add dev "$dev" parent 1:1 classid 1:20 htb \
+              rate ${throttle.rate} ceil ${throttle.rate} prio 7
+            tc qdisc add dev "$dev" parent 1:20 handle 20: netem \
               delay ${throttle.delay} ${throttle.jitter} distribution normal \
               loss ${throttle.loss} \
               limit 1000
 
             # Steer anything nftables marked into the throttled class. `protocol
-            # all` so one filter covers IPv4 and IPv6 alike.
-            tc filter replace dev "$dev" parent 1: protocol all prio 1 \
+            # all` so one filter covers IPv4 and IPv6 alike. The filter hangs off
+            # the root qdisc, which is unchanged by the classes moving down a
+            # level — flowid names the class directly.
+            tc filter add dev "$dev" parent 1: protocol all prio 1 \
               handle 0x2 fw flowid 1:20
 
             # imo class. Rate capped at every hour; only the loss varies, and
@@ -125,13 +153,13 @@ in
             # No delay or jitter, unlike the throttled class above. Latency is
             # what makes a long-lived tunnel unusable; for imo the rate cap
             # and the loss are the whole mechanism.
-            tc class replace dev "$dev" parent 1: classid 1:30 htb \
-              rate ${imoThrottle.rate} ceil ${imoThrottle.rate}
-            tc qdisc replace dev "$dev" parent 1:30 handle 30: netem \
+            tc class add dev "$dev" parent 1:1 classid 1:30 htb \
+              rate ${imoThrottle.rate} ceil ${imoThrottle.rate} prio 7
+            tc qdisc add dev "$dev" parent 1:30 handle 30: netem \
               loss ${imoThrottle.baseLoss} \
               limit 1000
 
-            tc filter replace dev "$dev" parent 1: protocol all prio 1 \
+            tc filter add dev "$dev" parent 1: protocol all prio 1 \
               handle 0x3 fw flowid 1:30
           }
 

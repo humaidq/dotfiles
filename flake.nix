@@ -28,7 +28,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     fleeti = {
-      url = "github:humaidq/fleeti";
+      url = "github:ai4os-ae/fleeti";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     blueshot = {
