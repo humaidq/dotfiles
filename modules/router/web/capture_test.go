@@ -2,9 +2,17 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"errors"
+	"io"
+	"net/netip"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // pcapStream builds a pcap byte stream in the given byte order, with one
@@ -254,5 +262,355 @@ func TestPcapRecordsCountStaysOnARecordBoundaryWhenAWriteFails(t *testing.T) {
 	// not advance for record 2 whose payload write failed.
 	if want := uint64(pcapGlobalHeaderLen + pcapRecordHeaderLen + 50); count.Load() != want {
 		t.Fatalf("count = %d, want %d (end of first whole record)", count.Load(), want)
+	}
+}
+
+// testManager builds a manager over a temporary directory whose captures are
+// the given canned stream rather than a real interface.
+func testManager(t *testing.T, stream []byte) *captureManager {
+	t.Helper()
+	manager := newCaptureManager(t.TempDir(), "lan0")
+	manager.start = func(ctx context.Context, _ string, _ netip.Addr) (io.ReadCloser, error) {
+		return &blockingStream{reader: bytes.NewReader(stream), ctx: ctx}, nil
+	}
+	return manager
+}
+
+// blockingStream serves a canned stream and then blocks until its context is
+// cancelled, the way tcpdump sits waiting for the next packet. Without the
+// block every capture would finish the instant it started and no test could
+// observe a running one.
+type blockingStream struct {
+	reader *bytes.Reader
+	ctx    context.Context
+}
+
+func (s *blockingStream) Read(p []byte) (int, error) {
+	if s.reader.Len() > 0 {
+		return s.reader.Read(p)
+	}
+	<-s.ctx.Done()
+	return 0, io.EOF
+}
+
+func (s *blockingStream) Close() error { return nil }
+
+// waitForState polls until the slot reaches want, so a test never sleeps on a
+// fixed guess about how fast a goroutine ran.
+func waitForState(t *testing.T, manager *captureManager, device netip.Addr, want string) captureSlot {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	var slot captureSlot
+	for time.Now().Before(deadline) {
+		slot = manager.Get(device)
+		if slot.State == want {
+			return slot
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	t.Fatalf("slot state = %q after 2s, want %q", slot.State, want)
+	return slot
+}
+
+var testDevice = netip.MustParseAddr("192.168.0.10")
+
+func TestCaptureStartsAndReportsRunning(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100))
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.Stop(testDevice) })
+
+	slot := manager.Get(testDevice)
+	if slot.State != captureRunning {
+		t.Fatalf("state = %q, want %q", slot.State, captureRunning)
+	}
+	if slot.Limit != formatBytes(captureMaxBytes) {
+		t.Fatalf("limit = %q, want %q", slot.Limit, formatBytes(captureMaxBytes))
+	}
+}
+
+func TestCaptureRefusesASecondStartForTheSameDevice(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.Stop(testDevice) })
+
+	if err := manager.Start(testDevice); !errors.Is(err, errCaptureRunning) {
+		t.Fatalf("second Start returned %v, want errCaptureRunning", err)
+	}
+}
+
+func TestCaptureRunsForTwoDevicesAtOnce(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+	other := netip.MustParseAddr("192.168.0.20")
+	for _, device := range []netip.Addr{testDevice, other} {
+		if err := manager.Start(device); err != nil {
+			t.Fatalf("Start %s: %v", device, err)
+		}
+		t.Cleanup(func() { _ = manager.Stop(device) })
+	}
+	for _, device := range []netip.Addr{testDevice, other} {
+		if state := manager.Get(device).State; state != captureRunning {
+			t.Fatalf("%s state = %q, want %q", device, state, captureRunning)
+		}
+	}
+	if _, err := os.Stat(manager.path(other)); err != nil {
+		t.Fatalf("second device has no capture file: %v", err)
+	}
+}
+
+func TestCaptureStopLeavesAReadyFile(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100))
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	// The records are copied by a goroutine; wait for them before stopping,
+	// or this asserts on a race rather than on the feature.
+	deadline := time.Now().Add(2 * time.Second)
+	for manager.Get(testDevice).Bytes != formatBytes(pcapGlobalHeaderLen+2*(pcapRecordHeaderLen+100)) {
+		if time.Now().After(deadline) {
+			t.Fatalf("records never reached the file: %q", manager.Get(testDevice).Bytes)
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	if err := manager.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+
+	slot := manager.Get(testDevice)
+	if slot.State != captureReady {
+		t.Fatalf("state = %q, want %q", slot.State, captureReady)
+	}
+	if slot.Reason != stopReasonOperator {
+		t.Fatalf("reason = %q, want %q", slot.Reason, stopReasonOperator)
+	}
+	raw, err := os.ReadFile(manager.path(testDevice))
+	if err != nil {
+		t.Fatalf("read capture: %v", err)
+	}
+	if want := pcapGlobalHeaderLen + 2*(pcapRecordHeaderLen+100); len(raw) != want {
+		t.Fatalf("capture is %d bytes, want %d", len(raw), want)
+	}
+}
+
+func TestCaptureStopWithoutACaptureIsRefused(t *testing.T) {
+	manager := testManager(t, nil)
+	if err := manager.Stop(testDevice); !errors.Is(err, errNoCapture) {
+		t.Fatalf("Stop returned %v, want errNoCapture", err)
+	}
+}
+
+func TestCaptureStopsItselfAtTheSizeLimit(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100, 100))
+	manager.maxBytes = 300 // admits two of the three records
+
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	slot := waitForState(t, manager, testDevice, captureReady)
+	if slot.Reason != stopReasonLimit {
+		t.Fatalf("reason = %q, want %q", slot.Reason, stopReasonLimit)
+	}
+	info, err := os.Stat(manager.path(testDevice))
+	if err != nil {
+		t.Fatalf("stat capture: %v", err)
+	}
+	if info.Size() != 256 {
+		t.Fatalf("capture is %d bytes, want 256", info.Size())
+	}
+}
+
+func TestCaptureStopsItselfAtTheTimeLimit(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+	manager.maxAge = 50 * time.Millisecond
+
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	slot := waitForState(t, manager, testDevice, captureReady)
+	if slot.Reason != stopReasonAge {
+		t.Fatalf("reason = %q, want %q", slot.Reason, stopReasonAge)
+	}
+}
+
+func TestCaptureStartFailsWhenTheStreamIsNotPcap(t *testing.T) {
+	manager := newCaptureManager(t.TempDir(), "lan0")
+	manager.start = func(context.Context, string, netip.Addr) (io.ReadCloser, error) {
+		return io.NopCloser(strings.NewReader("tcpdump: lan0: No such device exists\n")), nil
+	}
+	if err := manager.Start(testDevice); err == nil {
+		t.Fatal("Start succeeded on a stream that is not pcap")
+	}
+	if state := manager.Get(testDevice).State; state != captureIdle {
+		t.Fatalf("state = %q after a failed start, want %q", state, captureIdle)
+	}
+	if _, err := os.Stat(manager.path(testDevice)); !os.IsNotExist(err) {
+		t.Fatal("a failed start left a file behind")
+	}
+}
+
+func TestCaptureStartFailsWhenTheProcessCannotBeSpawned(t *testing.T) {
+	manager := newCaptureManager(t.TempDir(), "lan0")
+	manager.start = func(context.Context, string, netip.Addr) (io.ReadCloser, error) {
+		return nil, errors.New("exec: \"tcpdump\": executable file not found in $PATH")
+	}
+	if err := manager.Start(testDevice); err == nil {
+		t.Fatal("Start succeeded when the process could not be spawned")
+	}
+	if state := manager.Get(testDevice).State; state != captureIdle {
+		t.Fatalf("state = %q after a failed start, want %q", state, captureIdle)
+	}
+}
+
+func TestCaptureReadsAReadyFileLeftByAPreviousProcess(t *testing.T) {
+	// Restart recovery. A capture killed by a router-web restart leaves a
+	// valid partial file and no in-memory state; it must read as ready.
+	manager := testManager(t, nil)
+	stream := pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100)
+	if err := os.WriteFile(manager.path(testDevice), stream, 0o600); err != nil {
+		t.Fatalf("write capture: %v", err)
+	}
+	slot := manager.Get(testDevice)
+	if slot.State != captureReady {
+		t.Fatalf("state = %q, want %q", slot.State, captureReady)
+	}
+	if slot.Bytes != formatBytes(uint64(len(stream))) {
+		t.Fatalf("bytes = %q, want %q", slot.Bytes, formatBytes(uint64(len(stream))))
+	}
+}
+
+func TestCaptureOpenRefusesARunningOrAbsentCapture(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+
+	if _, _, err := manager.Open(testDevice); !errors.Is(err, errNoCapture) {
+		t.Fatalf("Open with no capture returned %v, want errNoCapture", err)
+	}
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.Stop(testDevice) })
+	if _, _, err := manager.Open(testDevice); !errors.Is(err, errCaptureRunning) {
+		t.Fatalf("Open on a running capture returned %v, want errCaptureRunning", err)
+	}
+}
+
+func TestCaptureDiscardRemovesTheFileAndTheReason(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if err := manager.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+	if err := manager.Discard(testDevice); err != nil {
+		t.Fatalf("Discard: %v", err)
+	}
+	slot := manager.Get(testDevice)
+	if slot.State != captureIdle {
+		t.Fatalf("state = %q, want %q", slot.State, captureIdle)
+	}
+	if slot.Reason != "" {
+		t.Fatalf("reason = %q after discard, want empty", slot.Reason)
+	}
+	if _, err := os.Stat(manager.path(testDevice)); !os.IsNotExist(err) {
+		t.Fatal("discard left the file behind")
+	}
+}
+
+func TestCaptureDiscardOfNothingSucceeds(t *testing.T) {
+	// The button can be pressed twice, or after a sweep. Neither is an error.
+	if err := testManager(t, nil).Discard(testDevice); err != nil {
+		t.Fatalf("Discard: %v", err)
+	}
+}
+
+func TestCaptureStartReplacesAReadyCapture(t *testing.T) {
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+	if err := os.WriteFile(manager.path(testDevice), []byte("stale"), 0o600); err != nil {
+		t.Fatalf("write stale capture: %v", err)
+	}
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.Stop(testDevice) })
+	if state := manager.Get(testDevice).State; state != captureRunning {
+		t.Fatalf("state = %q, want %q", state, captureRunning)
+	}
+}
+
+func TestCaptureFileSizeMatchesTheReportedByteCount(t *testing.T) {
+	// The invariant the copier's truncate exists to hold: what the page says
+	// was captured is exactly what is in the file. On the ordinary path the
+	// truncate is a no-op; on a failed write it is what stops the file ending
+	// mid-record.
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100))
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	want := formatBytes(pcapGlobalHeaderLen + 2*(pcapRecordHeaderLen+100))
+	deadline := time.Now().Add(2 * time.Second)
+	for manager.Get(testDevice).Bytes != want {
+		if time.Now().After(deadline) {
+			t.Fatalf("byte count reached %q, want %q", manager.Get(testDevice).Bytes, want)
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	if err := manager.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+
+	slot := manager.Get(testDevice)
+	info, err := os.Stat(manager.path(testDevice))
+	if err != nil {
+		t.Fatalf("stat capture: %v", err)
+	}
+	if slot.Bytes != formatBytes(uint64(info.Size())) {
+		t.Fatalf("page reports %q, file is %q", slot.Bytes, formatBytes(uint64(info.Size())))
+	}
+}
+
+func TestCaptureStopRacingStartNeitherPanicsNorHangs(t *testing.T) {
+	// Stop reads entry.cancel and waits on entry.done, both of which must be
+	// usable from the instant the slot is published — otherwise a stop
+	// arriving while the capture is still opening either panics on a nil
+	// cancel or blocks on a channel nobody will close.
+	for i := 0; i < 50; i++ {
+		manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			_ = manager.Stop(testDevice)
+		}()
+		_ = manager.Start(testDevice)
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Fatalf("Stop racing Start hung on iteration %d", i)
+		}
+		_ = manager.Stop(testDevice)
+	}
+}
+
+func TestCaptureStartFailureDoesNotStrandAStop(t *testing.T) {
+	// A start that cannot even create its file must still release a Stop that
+	// found the slot in the window before the failure.
+	manager := newCaptureManager(filepath.Join(t.TempDir(), "file-not-a-dir"), "lan0")
+	if err := os.WriteFile(manager.dir, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write blocker: %v", err)
+	}
+	if err := manager.Start(testDevice); err == nil {
+		t.Fatal("Start succeeded with an unusable capture directory")
+	}
+	if state := manager.Get(testDevice).State; state != captureIdle {
+		t.Fatalf("state = %q, want %q", state, captureIdle)
+	}
+}
+
+func TestCapturePathIsBuiltFromTheParsedAddress(t *testing.T) {
+	manager := testManager(t, nil)
+	if got, want := manager.path(testDevice), filepath.Join(manager.dir, "192.168.0.10.pcap"); got != want {
+		t.Fatalf("path = %q, want %q", got, want)
 	}
 }

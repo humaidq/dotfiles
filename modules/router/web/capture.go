@@ -1,10 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"log"
+	"net/netip"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // pcap stream layout. A capture file is a 24-byte global header followed by
@@ -119,4 +128,380 @@ func pcapRecords(dst io.Writer, src io.Reader, order binary.ByteOrder, limit uin
 		written += pcapRecordHeaderLen + caplen
 		count.Store(written)
 	}
+}
+
+// Bounds on a capture. The size limit is the one the operator was promised;
+// the age limit is what makes "autostops" true on a quiet device, which would
+// otherwise never reach the size limit at all.
+const (
+	captureMaxBytes   = 200 << 20 // 200 MiB
+	captureMaxAge     = 30 * time.Minute
+	captureRetain     = 24 * time.Hour
+	captureSweepEvery = time.Hour
+	// How long Start waits for the stream to prove itself pcap. tcpdump emits
+	// the global header immediately, so this is only ever spent on a failure —
+	// which is the point: a missing binary or an unusable interface reports as
+	// a failed start rather than as a running capture that is not running.
+	captureStartGrace = 500 * time.Millisecond
+)
+
+// What a device's capture slot is doing.
+const (
+	captureIdle    = "idle"
+	captureRunning = "running"
+	captureReady   = "ready"
+)
+
+const (
+	stopReasonOperator = "stopped from the page"
+	stopReasonAge      = "reached the 30 minute limit"
+)
+
+var (
+	errCaptureRunning = errors.New("a capture is already running for this device")
+	errNoCapture      = errors.New("no capture for this device")
+)
+
+// captureSlot is what the peers page is told. Pre-formatted rather than raw
+// numbers so the template stays free of logic, matching the rest of the page.
+type captureSlot struct {
+	State   string
+	Bytes   string
+	Limit   string
+	Elapsed string
+	Stopped string
+	Reason  string
+}
+
+// capture is one running capture. Only running captures are held: a stopped
+// one is its file on disk and nothing more, which is what lets a router-web
+// restart need no recovery code.
+type capture struct {
+	device  netip.Addr
+	path    string
+	started time.Time
+	bytes   atomic.Uint64
+	// Set by Stop before the process is killed, so the copier can tell an
+	// operator stop from the process dying on its own — both of which arrive
+	// at the copier as nothing more than a closed pipe.
+	stopped atomic.Bool
+	cancel  context.CancelFunc
+	done    chan struct{}
+}
+
+type captureManager struct {
+	mu     sync.Mutex
+	active map[netip.Addr]*capture
+	// Why each device's waiting capture stopped. Lost on restart, which is
+	// why it is kept apart from the state itself: the file answers "is there a
+	// capture", this only decorates it.
+	reasons  map[netip.Addr]string
+	dir      string
+	iface    string
+	maxBytes uint64
+	maxAge   time.Duration
+	retain   time.Duration
+	// start opens a pcap byte stream for one device. The seam that keeps every
+	// test off a real interface.
+	start func(ctx context.Context, iface string, device netip.Addr) (io.ReadCloser, error)
+}
+
+func newCaptureManager(dir, iface string) *captureManager {
+	return &captureManager{
+		active:   map[netip.Addr]*capture{},
+		reasons:  map[netip.Addr]string{},
+		dir:      dir,
+		iface:    iface,
+		maxBytes: captureMaxBytes,
+		maxAge:   captureMaxAge,
+		retain:   captureRetain,
+		start:    startTcpdump,
+	}
+}
+
+// path names a device's capture. Built from the parsed address rather than
+// from request text, so no request can reach outside the capture directory.
+func (m *captureManager) path(device netip.Addr) string {
+	return filepath.Join(m.dir, device.String()+".pcap")
+}
+
+// Start begins a capture for one device.
+//
+// A capture already waiting to be downloaded is replaced rather than refused:
+// the page warns before the button is pressed, and refusing would put an extra
+// click on the common path of "capture that again, this time while it is
+// happening".
+func (m *captureManager) Start(device netip.Addr) error {
+	// The context and its cancel are built before the slot is published, not
+	// inside run: a Stop arriving in that window finds the entry in the map
+	// and calls entry.cancel, which must not be nil when it does.
+	ctx, cancel := context.WithTimeout(context.Background(), m.maxAge)
+	entry := &capture{
+		device:  device,
+		path:    m.path(device),
+		started: time.Now(),
+		cancel:  cancel,
+		done:    make(chan struct{}),
+	}
+
+	m.mu.Lock()
+	if _, running := m.active[device]; running {
+		m.mu.Unlock()
+		cancel()
+		return errCaptureRunning
+	}
+	// The slot is claimed before any slow work, so two posts arriving together
+	// cannot both get past the check above.
+	m.active[device] = entry
+	delete(m.reasons, device)
+	m.mu.Unlock()
+
+	if err := m.run(ctx, entry); err != nil {
+		m.mu.Lock()
+		if m.active[device] == entry {
+			delete(m.active, device)
+		}
+		m.mu.Unlock()
+		return err
+	}
+	return nil
+}
+
+// run sets the capture going and reports whether it started.
+//
+// Every failure path before the copier exists closes entry.done itself. A Stop
+// that raced the start is already blocked on that channel, and leaving it
+// unclosed would block that request forever. The paths after the copier exists
+// are closed by the copier's own defer, so nothing is closed twice.
+func (m *captureManager) run(ctx context.Context, entry *capture) error {
+	if err := os.MkdirAll(m.dir, 0o700); err != nil {
+		entry.cancel()
+		close(entry.done)
+		return fmt.Errorf("capture directory: %w", err)
+	}
+	file, err := os.Create(entry.path)
+	if err != nil {
+		entry.cancel()
+		close(entry.done)
+		return fmt.Errorf("create capture file: %w", err)
+	}
+
+	stream, err := m.start(ctx, m.iface, entry.device)
+	if err != nil {
+		entry.cancel()
+		file.Close()
+		os.Remove(entry.path)
+		close(entry.done)
+		return fmt.Errorf("start capture: %w", err)
+	}
+
+	started := make(chan error, 1)
+	go m.copy(ctx, entry, file, stream, started)
+
+	select {
+	case err := <-started:
+		return err
+	case <-time.After(captureStartGrace):
+		// Header not seen yet and no failure either. Treated as a success: the
+		// alternative is refusing a capture that is merely slow to start, and
+		// a later failure still lands in the journal and on the page.
+		return nil
+	}
+}
+
+// copy drains the stream to the file and closes the slot when it ends. Runs
+// for the whole life of the capture.
+func (m *captureManager) copy(ctx context.Context, entry *capture, file *os.File, stream io.ReadCloser, started chan<- error) {
+	defer close(entry.done)
+
+	order, err := pcapHeader(file, stream)
+	if err != nil {
+		entry.cancel()
+		stream.Close()
+		file.Close()
+		os.Remove(entry.path)
+		wrapped := fmt.Errorf("capture produced no pcap stream: %w", err)
+		// Cleared before the error is handed back, so a caller that retries
+		// immediately does not meet its own abandoned slot. This also covers
+		// the case where the grace window expired and nobody is listening.
+		m.finish(entry, "")
+		started <- wrapped
+		return
+	}
+	entry.bytes.Store(pcapGlobalHeaderLen)
+	started <- nil
+
+	reason := pcapRecords(file, stream, order, m.maxBytes, &entry.bytes)
+	entry.cancel()
+	stream.Close()
+	// Back to the last whole record. pcapRecords advances the count only once
+	// a record's header and payload have both been written, so the count names
+	// a record boundary — and a write that failed part way through a record is
+	// the one way this file could otherwise end torn.
+	if err := file.Truncate(int64(entry.bytes.Load())); err != nil {
+		log.Printf("capture device=%q truncate: %v", entry.device, err)
+	}
+	file.Close()
+
+	// pcapRecords sees a closed pipe and nothing else, so which of the ways a
+	// capture ends actually happened is decided here.
+	switch {
+	case reason == stopReasonWrite:
+		// The more useful of the two things that may have happened, so an
+		// operator stop does not paper over a capture that ran out of disk.
+	case entry.stopped.Load():
+		reason = stopReasonOperator
+	case reason == stopReasonEOF && errors.Is(ctx.Err(), context.DeadlineExceeded):
+		reason = stopReasonAge
+	}
+	m.finish(entry, reason)
+}
+
+func (m *captureManager) finish(entry *capture, reason string) {
+	m.mu.Lock()
+	if m.active[entry.device] == entry {
+		delete(m.active, entry.device)
+	}
+	if reason != "" {
+		m.reasons[entry.device] = reason
+	}
+	m.mu.Unlock()
+	log.Printf("capture device=%q stopped=%q bytes=%d", entry.device, reason, entry.bytes.Load())
+}
+
+// Stop ends a running capture and waits for its file to be closed, so the
+// download that follows sees a complete file rather than a partly flushed one.
+func (m *captureManager) Stop(device netip.Addr) error {
+	m.mu.Lock()
+	entry, running := m.active[device]
+	m.mu.Unlock()
+	if !running {
+		return errNoCapture
+	}
+	entry.stopped.Store(true)
+	entry.cancel()
+	<-entry.done
+	return nil
+}
+
+// Get reports what a device's capture slot is doing. Running captures come
+// from the map; everything else is answered from the file on disk.
+func (m *captureManager) Get(device netip.Addr) captureSlot {
+	m.mu.Lock()
+	entry, running := m.active[device]
+	reason := m.reasons[device]
+	m.mu.Unlock()
+
+	if running {
+		return captureSlot{
+			State:   captureRunning,
+			Bytes:   formatBytes(entry.bytes.Load()),
+			Limit:   formatBytes(m.maxBytes),
+			Elapsed: formatElapsed(time.Since(entry.started)),
+		}
+	}
+
+	info, err := os.Stat(m.path(device))
+	if err != nil || info.Size() == 0 {
+		return captureSlot{State: captureIdle}
+	}
+	return captureSlot{
+		State:   captureReady,
+		Bytes:   formatBytes(uint64(info.Size())),
+		Stopped: info.ModTime().Format("15:04"),
+		Reason:  reason,
+	}
+}
+
+// Open opens a waiting capture for download.
+//
+// A running capture is refused: it is being appended to, so its length is not
+// a number the server can state, and half a capture downloaded silently is
+// worse than a refusal.
+func (m *captureManager) Open(device netip.Addr) (*os.File, os.FileInfo, error) {
+	m.mu.Lock()
+	_, running := m.active[device]
+	m.mu.Unlock()
+	if running {
+		return nil, nil, errCaptureRunning
+	}
+	file, err := os.Open(m.path(device))
+	if err != nil {
+		return nil, nil, errNoCapture
+	}
+	info, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return nil, nil, errNoCapture
+	}
+	return file, info, nil
+}
+
+// Discard deletes a waiting capture. A capture holds packet payloads, so
+// throwing one away is an action worth having a button for rather than
+// something left to the retention sweep.
+func (m *captureManager) Discard(device netip.Addr) error {
+	m.mu.Lock()
+	_, running := m.active[device]
+	if !running {
+		delete(m.reasons, device)
+	}
+	m.mu.Unlock()
+	if running {
+		return errCaptureRunning
+	}
+	if err := os.Remove(m.path(device)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+// formatElapsed renders a running capture's age. Seconds matter here in a way
+// they do not for the router's uptime, so this is not formatUptime.
+func formatElapsed(d time.Duration) string {
+	seconds := int(d.Seconds())
+	if seconds < 60 {
+		return fmt.Sprintf("%ds", seconds)
+	}
+	return fmt.Sprintf("%dm %ds", seconds/60, seconds%60)
+}
+
+// startTcpdump spawns tcpdump writing pcap to its stdout.
+//
+// -U keeps it packet-buffered. Without it tcpdump buffers a non-tty stdout,
+// and both the byte count on the page and the file on disk would lag the
+// traffic by a buffer at a time — which on a quiet device means the page
+// showing nothing captured for minutes.
+//
+// -s 0 is deliberate: a truncated capture answers "who" but not "what", and
+// re-running a capture costs real waiting time.
+func startTcpdump(ctx context.Context, iface string, device netip.Addr) (io.ReadCloser, error) {
+	cmd := exec.CommandContext(ctx, "tcpdump",
+		"-i", iface, "-nn", "-s", "0", "-U", "-w", "-", "host", device.String())
+	// tcpdump's diagnostics go to the journal, where a capture that failed for
+	// a reason tcpdump knows about can be read after the fact.
+	cmd.Stderr = os.Stderr
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+	return &tcpdumpStream{ReadCloser: stdout, cmd: cmd}, nil
+}
+
+// tcpdumpStream reaps the process when the stream is closed. Without the Wait
+// every stopped capture would leave a zombie behind, and router-web is a
+// long-running service.
+type tcpdumpStream struct {
+	io.ReadCloser
+	cmd *exec.Cmd
+}
+
+func (s *tcpdumpStream) Close() error {
+	err := s.ReadCloser.Close()
+	// Non-zero because it was killed, which is how every capture ends.
+	_ = s.cmd.Wait()
+	return err
 }
