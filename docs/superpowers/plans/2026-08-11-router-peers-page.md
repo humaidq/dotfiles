@@ -1361,17 +1361,34 @@ Add to `serviceConfig` — note `DynamicUser` is kept:
         ];
 ```
 
-Add to `Environment`, after the existing entries:
+Add to `Environment`. The existing list already ends with a chained
+`++ lib.optional (...)` on line 39 followed by `;` — add the three literals
+inside the list brackets and chain the fourth after the existing optional, so
+the final shape is:
 
 ```nix
+        Environment = [
+          # ... existing ROUTER_* entries unchanged ...
           "ROUTER_LISTEN_LAN=${lib.head (lib.splitString "/" cfg.lanAddress)}:80"
           "ROUTER_LAN_CIDR=${cfg.lanAddress}"
-          "ROUTER_IP2ASN_FILE=${../ip2asn-combined.tsv}"
+          "ROUTER_IP2ASN_FILE=${./ip2asn-combined.tsv}"
         ]
-        ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80"
+        ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
+        ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80";
 ```
 
-`tempthrottle` and `tempblock` are on the service `PATH` because `modules/router/tools.nix` puts them in `environment.systemPackages`; confirm with Step 5 rather than assuming.
+`./ip2asn-combined.tsv`, not `../` — `web.nix` and the data file are both
+directly in `modules/router/`.
+
+`ExecStart` on line 40 passes `--addr :80`. `ROUTER_LISTEN_LAN` overrides it
+via `getenvDefault`, so leave the flag alone rather than editing two places
+that must agree.
+
+`tempthrottle` and `tempblock` reach the service through
+`environment.systemPackages` in `modules/router/tools.nix`, which lands them in
+`/run/current-system/sw/bin`. Confirm this in Step 5 rather than assuming it —
+if the unit's `PATH` does not include that directory, add the two packages to
+the service's `path` alongside `conntrack-tools` and `nftables`.
 
 - [ ] **Step 4: Set the mesh address on both routers**
 
