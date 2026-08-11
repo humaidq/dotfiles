@@ -13,6 +13,7 @@ in
     ./dns.nix
     ./qos.nix
     ./qos-metrics.nix
+    ./host-metrics.nix
     ./pppd.nix
     ./client-mode.nix
     ./ip-blocklist.nix

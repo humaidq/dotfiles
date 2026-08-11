@@ -5026,7 +5026,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `question_name=stun\\.`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "STUN discovery",
-                        "queryType": "range"
+                        "queryType": "instant"
                       }
                     },
                     "refId": "A",
@@ -5048,7 +5048,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*doh`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "Resolver bypass (doh)",
-                        "queryType": "range"
+                        "queryType": "instant"
                       }
                     },
                     "refId": "B",
@@ -5070,7 +5070,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*vpn`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "VPN list hits",
-                        "queryType": "range"
+                        "queryType": "instant"
                       }
                     },
                     "refId": "C",
@@ -5092,7 +5092,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*custom`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "Curated list hits (custom)",
-                        "queryType": "range"
+                        "queryType": "instant"
                       }
                     },
                     "refId": "D",
@@ -5158,7 +5158,7 @@
         "spec": {
           "id": 201,
           "title": "Devices ranked by VPN indicators — $network",
-          "description": "Deliberately NOT filtered by the host picker — this is the panel that tells you which host to pick. Combines all four indicators into one count per device.",
+          "description": "One bar per device over the selected range, highest first. Combines STUN discovery, resolver bypass, VPN-list and curated-list hits. Deliberately not filtered by the host picker: this is the panel that tells you which host to pick.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -5177,9 +5177,9 @@
                       "spec": {
                         "direction": "backward",
                         "editorMode": "code",
-                        "expr": "topk(20,\n  sum by (client_names, client_ip) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |~ `question_name=stun\\.|response_reason=BLOCKED \\([^)]*(doh|vpn|custom)`\n      | logfmt\n      | __error__ = \"\"\n      | client_ip != \"\"\n      [$__range]\n    )\n  )\n)",
+                        "expr": "sort_desc(\n  sum by (client_names, client_ip) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |~ `question_name=stun\\.|response_reason=BLOCKED \\([^)]*(doh|vpn|custom)`\n      | logfmt\n      | __error__ = \"\"\n      | client_ip != \"\"\n      [$__range]\n    )\n  )\n)",
                         "legendFormat": "{{client_names}} · {{client_ip}}",
-                        "queryType": "range"
+                        "queryType": "instant"
                       }
                     },
                     "refId": "A",
@@ -5193,35 +5193,32 @@
           },
           "vizConfig": {
             "kind": "VizConfig",
-            "group": "table",
+            "group": "bargauge",
             "version": "13.0.3",
             "spec": {
               "options": {
-                "cellHeight": "sm",
-                "footer": {
-                  "countRows": false,
-                  "fields": "",
-                  "reducer": [
-                    "sum"
+                "displayMode": "gradient",
+                "maxVizHeight": 300,
+                "minVizHeight": 16,
+                "minVizWidth": 8,
+                "namePlacement": "left",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
                   ],
-                  "show": false
+                  "fields": "",
+                  "values": false
                 },
-                "showHeader": true,
-                "sortBy": []
+                "showUnfilled": true,
+                "sizing": "auto",
+                "valueMode": "color"
               },
               "fieldConfig": {
                 "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "custom": {
-                    "align": "auto",
-                    "cellOptions": {
-                      "type": "auto"
-                    },
-                    "filterable": true,
-                    "inspect": false
-                  },
+                  "unit": "short",
+                  "min": 0,
+                  "decimals": 0,
                   "mappings": [],
                   "thresholds": {
                     "mode": "absolute",
@@ -5230,11 +5227,11 @@
                         "color": "green"
                       },
                       {
-                        "value": 1,
-                        "color": "orange"
+                        "value": 10,
+                        "color": "yellow"
                       },
                       {
-                        "value": 25,
+                        "value": 40,
                         "color": "red"
                       }
                     ]
@@ -5425,7 +5422,7 @@
                         "editorMode": "code",
                         "expr": "topk(25,\n  sum by (question_name) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |= \"response_reason=BLOCKED\"\n      | logfmt\n      | __error__ = \"\"\n      | client_ip =~ \"^${host:raw}$\"\n      | question_name != \"\"\n      [$__range]\n    )\n  )\n)",
                         "legendFormat": "{{question_name}}",
-                        "queryType": "range"
+                        "queryType": "instant"
                       }
                     },
                     "refId": "A",
@@ -5559,6 +5556,301 @@
                     ]
                   },
                   "mappings": []
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-220": {
+        "kind": "Panel",
+        "spec": {
+          "id": 220,
+          "title": "Top-peer share by device — $network",
+          "description": "The share of a device's currently tracked bytes held by its single largest peer. This is the discriminator every tunnel on this network has been found by: a tunnel peer holds 70-100%, the same device browsing normally sits at 20-35%. Requires the host-flow collector.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sort_desc(router_host_top_peer_share_ratio{instance=\"${node:raw}\"})",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{client}} → {{peer}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "bargauge",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "displayMode": "gradient",
+                "maxVizHeight": 300,
+                "minVizHeight": 16,
+                "minVizWidth": 8,
+                "namePlacement": "auto",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showUnfilled": true,
+                "sizing": "auto",
+                "valueMode": "color"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "percentunit",
+                  "min": 0,
+                  "max": 1,
+                  "decimals": 1,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "value": 0.5,
+                        "color": "yellow"
+                      },
+                      {
+                        "value": 0.7,
+                        "color": "red"
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-221": {
+        "kind": "Panel",
+        "spec": {
+          "id": 221,
+          "title": "Peer count by device — $network",
+          "description": "Distinct peers each device currently holds flows with. The companion to the share panel and the thing that separates a tunnel from a large download: a device pulling video from one CDN still talks to dozens of other hosts, a tunnelled device often talks to one.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sort_desc(router_host_peer_count{instance=\"${node:raw}\"})",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{client}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "bargauge",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "displayMode": "gradient",
+                "maxVizHeight": 300,
+                "minVizHeight": 16,
+                "minVizWidth": 8,
+                "namePlacement": "auto",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showUnfilled": true,
+                "sizing": "auto",
+                "valueMode": "color"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "min": 0,
+                  "decimals": 0,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "red"
+                      },
+                      {
+                        "value": 3,
+                        "color": "yellow"
+                      },
+                      {
+                        "value": 8,
+                        "color": "green"
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-222": {
+        "kind": "Panel",
+        "spec": {
+          "id": 222,
+          "title": "Traffic by device — $network",
+          "description": "Per-host throughput from the nftables element counters. Unlike the share figures above these are monotonic counters and survive the flows that produced them, so this is the panel to read for volume over time.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum by (client) (rate(router_host_bytes_total{instance=\"${node:raw}\", direction=\"download\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{client}} down",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum by (client) (rate(router_host_bytes_total{instance=\"${node:raw}\", direction=\"upload\"}[$__rate_interval])) * -8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{client}} up",
+                        "range": true
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "right",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bps",
+                  "mappings": [],
+                  "custom": {
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "lineWidth": 1,
+                    "showPoints": "never",
+                    "axisPlacement": "auto"
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  }
                 },
                 "overrides": []
               }
@@ -6261,7 +6553,7 @@
                         "x": 0,
                         "y": 14,
                         "width": 12,
-                        "height": 8,
+                        "height": 7,
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-202"
@@ -6274,10 +6566,62 @@
                         "x": 12,
                         "y": 14,
                         "width": 12,
-                        "height": 8,
+                        "height": 7,
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-204"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "kind": "TabsLayoutTab",
+            "spec": {
+              "title": "Flow",
+              "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                  "items": [
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 12,
+                        "height": 9,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-220"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 0,
+                        "width": 12,
+                        "height": 9,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-221"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 9,
+                        "width": 24,
+                        "height": 8,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-222"
                         }
                       }
                     }
