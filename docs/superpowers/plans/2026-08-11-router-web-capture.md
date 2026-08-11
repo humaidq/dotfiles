@@ -411,7 +411,9 @@ Slots, limits, and the state machine. Uses Task 1's framing. The `start` field i
 - Modify: `modules/router/web/capture_test.go`
 
 **Interfaces:**
-- Consumes: `pcapHeader`, `pcapRecords`, `stopReasonLimit`, `stopReasonEOF`, `pcapGlobalHeaderLen` (Task 1); `formatBytes` from `main.go`.
+- Consumes: `pcapHeader`, `pcapRecords`, `stopReasonLimit`, `stopReasonEOF`, `stopReasonWrite`, `pcapGlobalHeaderLen` (Task 1); `formatBytes` from `main.go`.
+
+**Contract inherited from Task 1:** `pcapRecords` advances `count` only after a record's header *and* payload have both reached the writer, so the count always names a whole-record boundary. This task's copier truncates the file back to that count when the copy ends — that truncation is what keeps the promise that a capture file always re-parses, including when a write failed part way through a record and `pcapRecords` returned `stopReasonWrite`.
 - Produces:
   - `type captureSlot struct { State, Bytes, Limit, Elapsed, Stopped, Reason string }`
   - `type captureManager struct { ... }` with `start func(ctx context.Context, iface string, device netip.Addr) (io.ReadCloser, error)`, and exported-in-package fields `dir`, `iface`, `maxBytes`, `maxAge`, `retain`
@@ -707,6 +709,37 @@ func TestCaptureStartReplacesAReadyCapture(t *testing.T) {
 	}
 }
 
+func TestCaptureFileSizeMatchesTheReportedByteCount(t *testing.T) {
+	// The invariant the copier's truncate exists to hold: what the page says
+	// was captured is exactly what is in the file. On the ordinary path the
+	// truncate is a no-op; on a failed write it is what stops the file ending
+	// mid-record.
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100))
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	want := formatBytes(pcapGlobalHeaderLen + 2*(pcapRecordHeaderLen+100))
+	deadline := time.Now().Add(2 * time.Second)
+	for manager.Get(testDevice).Bytes != want {
+		if time.Now().After(deadline) {
+			t.Fatalf("byte count reached %q, want %q", manager.Get(testDevice).Bytes, want)
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	if err := manager.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+
+	slot := manager.Get(testDevice)
+	info, err := os.Stat(manager.path(testDevice))
+	if err != nil {
+		t.Fatalf("stat capture: %v", err)
+	}
+	if slot.Bytes != formatBytes(uint64(info.Size())) {
+		t.Fatalf("page reports %q, file is %q", slot.Bytes, formatBytes(uint64(info.Size())))
+	}
+}
+
 func TestCaptureStopRacingStartNeitherPanicsNorHangs(t *testing.T) {
 	// Stop reads entry.cancel and waits on entry.done, both of which must be
 	// usable from the instant the slot is published — otherwise a stop
@@ -966,11 +999,21 @@ func (m *captureManager) copy(ctx context.Context, entry *capture, file *os.File
 	reason := pcapRecords(file, stream, order, m.maxBytes, &entry.bytes)
 	entry.cancel()
 	stream.Close()
+	// Back to the last whole record. pcapRecords advances the count only once
+	// a record's header and payload have both been written, so the count names
+	// a record boundary — and a write that failed part way through a record is
+	// the one way this file could otherwise end torn.
+	if err := file.Truncate(int64(entry.bytes.Load())); err != nil {
+		log.Printf("capture device=%q truncate: %v", entry.device, err)
+	}
 	file.Close()
 
-	// pcapRecords sees a closed pipe and nothing else, so which of the three
-	// ways a capture ends actually happened is decided here.
+	// pcapRecords sees a closed pipe and nothing else, so which of the ways a
+	// capture ends actually happened is decided here.
 	switch {
+	case reason == stopReasonWrite:
+		// The more useful of the two things that may have happened, so an
+		// operator stop does not paper over a capture that ran out of disk.
 	case entry.stopped.Load():
 		reason = stopReasonOperator
 	case reason == stopReasonEOF && errors.Is(ctx.Err(), context.DeadlineExceeded):
