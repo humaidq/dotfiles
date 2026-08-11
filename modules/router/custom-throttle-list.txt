@@ -542,3 +542,42 @@
 # everything went, and the devices are simply doing more of their ordinary
 # traffic alongside it than they were this morning.
 101.46.36.116
+# The Huawei address went to zero packets the round after it was shaped, which
+# makes nine abandoned in a morning. These two are where the client went.
+#
+# 170.64.237.166 runs on tcp/554 and will be labelled RTSP by a dissector for
+# the same reason the tcp/21 entry above gets labelled FTP: the port, and
+# nothing else. Near-symmetric, 94% of the device, no lookup. Same /17 as
+# 170.64.140.197 further up, so DigitalOcean's 170.64.128.0/17 has now produced
+# two.
+#
+# 45.78.196.212 is in an APNIC allocation and runs several port pairs at once —
+# 13754, 46778 and 34499 — mixing TCP and UDP on the same peer, which none of
+# the earlier nodes did.
+170.64.237.166
+45.78.196.212
+
+# A second, unrelated VPN on a sixth handset, and worth separating from
+# everything above it rather than filing as another node of the same client.
+#
+# This device is not in the STUN group that ties the five handsets above
+# together, and it does not rotate: it is an off-the-shelf commercial VPN whose
+# control plane is jwt.sailfishx.live, queried twelve times in a day and blocked
+# every time by the *.sailfishx.live entry in custom-blocklist.txt. The name
+# layer is doing its job; the data plane simply goes to the address instead.
+#
+# AWS 15.224.0.0/16 on udp/13418, 99% of the device, roughly twelve to one
+# inbound — a tunnel carrying browsing rather than a call.
+#
+# Checked and rejected: not WireGuard. A dissector flagged one frame out of
+# 42,989, the packet lengths show none of the 148/92/32 handshake clustering
+# real WireGuard produces, and the leading payload bytes do not match its type
+# field. Proprietary and opaque, like the rest of this file.
+#
+# The same handset had been carrying a genuine GoChat video call in the previous
+# capture, to a residential STC address that went to zero packets when the call
+# ended. Both readings were correct for their moment, and the sequence is the
+# useful part: on this device a symmetric flow to a subscriber address is a call
+# to leave alone, and a lopsided one to rented hosting is this. Do not treat the
+# device as settled either way.
+15.224.47.11

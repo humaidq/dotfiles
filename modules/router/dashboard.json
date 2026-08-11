@@ -115,8 +115,8 @@
         "kind": "Panel",
         "spec": {
           "id": 10,
-          "title": "DNS query volume and blocked percentage — $network / ${host:text}",
-          "description": "Total and blocked DNS queries per interval, with blocked percentage on the right axis.",
+          "title": "DNS query volume and blocked percentage (15m rolling) — $network / ${host:text}",
+          "description": "Total and blocked DNS queries over a rolling 15-minute window, with blocked percentage over the same window on the right axis.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -135,7 +135,7 @@
                       "spec": {
                         "direction": "backward",
                         "editorMode": "code",
-                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    | logfmt\n    | __error__ = \"\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__auto]\n  )\n)",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    | logfmt\n    | __error__ = \"\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [15m]\n  )\n)",
                         "legendFormat": "Total queries",
                         "queryType": "range"
                       }
@@ -157,7 +157,7 @@
                       "spec": {
                         "direction": "backward",
                         "editorMode": "code",
-                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |= \"response_reason=BLOCKED\"\n    | logfmt\n    | __error__ = \"\"\n    | response_reason = \"BLOCKED\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__auto]\n  )\n)",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |= \"response_reason=BLOCKED\"\n    | logfmt\n    | __error__ = \"\"\n    | response_reason = \"BLOCKED\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [15m]\n  )\n)",
                         "legendFormat": "Blocked queries",
                         "queryType": "range"
                       }
@@ -179,7 +179,7 @@
                       "spec": {
                         "direction": "backward",
                         "editorMode": "code",
-                        "expr": "100 *\nsum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |= \"response_reason=BLOCKED\"\n    | logfmt\n    | __error__ = \"\"\n    | response_reason = \"BLOCKED\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__auto]\n  )\n)\n/\nsum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    | logfmt\n    | __error__ = \"\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__auto]\n  )\n)",
+                        "expr": "100 *\nsum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |= \"response_reason=BLOCKED\"\n    | logfmt\n    | __error__ = \"\"\n    | response_reason = \"BLOCKED\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [15m]\n  )\n)\n/\nsum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    | logfmt\n    | __error__ = \"\"\n    | question_name != \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [15m]\n  )\n)",
                         "legendFormat": "Blocked %",
                         "queryType": "range"
                       }
@@ -238,7 +238,7 @@
                     "axisBorderShow": false,
                     "axisCenteredZero": false,
                     "axisColorMode": "text",
-                    "axisLabel": "Queries",
+                    "axisLabel": "Queries / 15m",
                     "axisPlacement": "left",
                     "barAlignment": 0,
                     "barWidthFactor": 0.6,
@@ -1200,7 +1200,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -1285,7 +1287,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -1370,7 +1374,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -1455,7 +1461,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -1567,7 +1575,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -1726,7 +1736,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -1885,7 +1897,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -2092,7 +2106,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -2977,7 +2993,9 @@
                   }
                 }
               ],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -3160,7 +3178,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -3417,7 +3437,9 @@
                 }
               ],
               "transformations": [],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -3520,7 +3542,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}[$__rate_interval])",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -3543,7 +3565,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_rule_bytes_total{instance=\"${node:raw}\"}[$__rate_interval]) * 8",
+                        "expr": "rate(router_qos_rule_bytes_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}[$__rate_interval]) * 8",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -3566,7 +3588,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "router_qos_rule_packets_total{instance=\"${node:raw}\"}",
+                        "expr": "router_qos_rule_packets_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -3606,7 +3628,9 @@
                   }
                 }
               ],
-              "queryOptions": {}
+              "queryOptions": {
+                "interval": "1m"
+              }
             }
           },
           "vizConfig": {
@@ -3693,6 +3717,1284 @@
                     ]
                   }
                 ]
+              }
+            }
+          }
+        }
+      },
+      "panel-120": {
+        "kind": "Panel",
+        "spec": {
+          "id": 120,
+          "title": "VPN throttle — download now",
+          "description": "Current inbound rate through the throttle class, measured on the LAN egress shaper.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": true,
+                        "legendFormat": "",
+                        "range": false
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bps",
+                  "decimals": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "orange"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-121": {
+        "kind": "Panel",
+        "spec": {
+          "id": 121,
+          "title": "VPN throttle — upload now",
+          "description": "Current outbound rate through the throttle class, measured on the PPP egress shaper.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": true,
+                        "legendFormat": "",
+                        "range": false
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bps",
+                  "decimals": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "orange"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "orange"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-122": {
+        "kind": "Panel",
+        "spec": {
+          "id": 122,
+          "title": "imo throttle — download now",
+          "description": "Current inbound rate through the imo class, measured on the LAN egress shaper.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": true,
+                        "legendFormat": "",
+                        "range": false
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bps",
+                  "decimals": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "purple"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "purple"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-123": {
+        "kind": "Panel",
+        "spec": {
+          "id": 123,
+          "title": "imo throttle — upload now",
+          "description": "Current outbound rate through the imo class, measured on the PPP egress shaper.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": true,
+                        "legendFormat": "",
+                        "range": false
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "bps",
+                  "decimals": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": 0,
+                        "color": "purple"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "fixed",
+                    "fixedColor": "purple"
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-124": {
+        "kind": "Panel",
+        "spec": {
+          "id": 124,
+          "title": "VPN throttle throughput vs cap — $network",
+          "description": "Traffic actually getting through the throttle class in each direction, against the HTB rate cap configured for it. Sitting flat on the cap means the tier is saturated and the shaper is the binding constraint.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "download",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "upload",
+                        "range": true
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "max(router_qos_class_rate_bytes_per_second{instance=\"${node:raw}\", class=\"throttle\"}) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "cap",
+                        "range": true
+                      }
+                    },
+                    "refId": "C",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Throughput",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "bps"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "download"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "orange",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "upload"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "semi-dark-orange",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "cap"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "text",
+                          "mode": "fixed"
+                        }
+                      },
+                      {
+                        "id": "custom.fillOpacity",
+                        "value": 0
+                      },
+                      {
+                        "id": "custom.lineWidth",
+                        "value": 1
+                      },
+                      {
+                        "id": "custom.lineStyle",
+                        "value": {
+                          "fill": "dash",
+                          "dash": [
+                            10,
+                            10
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-125": {
+        "kind": "Panel",
+        "spec": {
+          "id": 125,
+          "title": "imo throttle throughput vs cap — $network",
+          "description": "Traffic actually getting through the imo class in each direction, against the HTB rate cap configured for it. Sitting flat on the cap means the tier is saturated and the shaper is the binding constraint.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "download",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "upload",
+                        "range": true
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "max(router_qos_class_rate_bytes_per_second{instance=\"${node:raw}\", class=\"imo\"}) * 8",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "cap",
+                        "range": true
+                      }
+                    },
+                    "refId": "C",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Throughput",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "bps"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "download"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "purple",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "upload"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "semi-dark-purple",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "cap"
+                    },
+                    "properties": [
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "text",
+                          "mode": "fixed"
+                        }
+                      },
+                      {
+                        "id": "custom.fillOpacity",
+                        "value": 0
+                      },
+                      {
+                        "id": "custom.lineWidth",
+                        "value": 1
+                      },
+                      {
+                        "id": "custom.lineStyle",
+                        "value": {
+                          "fill": "dash",
+                          "dash": [
+                            10,
+                            10
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "panel-126": {
+        "kind": "Panel",
+        "spec": {
+          "id": 126,
+          "title": "Throttle drop rate — $network",
+          "description": "Packets discarded inside each penalty class — the HTB cap plus the netem loss applied on top of it. This is the throttling being felt, as opposed to merely configured.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "rate(router_qos_class_drops_total{instance=\"${node:raw}\", class=~\"throttle|imo\"}[$__rate_interval])",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{class}} / {{device}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Drops",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "pps"
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-127": {
+        "kind": "Panel",
+        "spec": {
+          "id": 127,
+          "title": "Rate-cap pressure — $network",
+          "description": "How often each penalty class asked for more than its rate allows. Overlimits climbing while drops stay low means traffic is being delayed into the cap rather than discarded.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "rate(router_qos_class_overlimits_total{instance=\"${node:raw}\", class=~\"throttle|imo\"}[$__rate_interval])",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{class}} / {{device}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Overlimits/s",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "ops"
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-128": {
+        "kind": "Panel",
+        "spec": {
+          "id": 128,
+          "title": "Throttled queue backlog — $network",
+          "description": "Bytes sitting in each penalty class waiting to be dequeued. A persistent backlog is the latency a throttled app experiences; netem's queue is bounded at 1000 packets, so what will not fit is dropped instead.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "router_qos_class_backlog_bytes{instance=\"${node:raw}\", class=~\"throttle|imo\"}",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{class}} / {{device}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Backlog",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "bytes"
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-129": {
+        "kind": "Panel",
+        "spec": {
+          "id": 129,
+          "title": "Throttle rule matches — $network",
+          "description": "Match rate of each rule in the nftables forward_throttle chain, which is where the throttle and imo sets are turned into a firewall mark. This is the only per-direction and per-address-family view of the two tiers — both families and both directions collapse into one HTB class once marked. A rule flat at zero while its tier shows traffic means the other family is carrying it.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "${ds_prometheus}"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\", chain=\"forward_throttle\"}[$__rate_interval])",
+                        "format": "time_series",
+                        "instant": false,
+                        "legendFormat": "{{rule}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {
+                "interval": "1m"
+              }
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "mean",
+                    "max"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Matches",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 10,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "smooth",
+                    "lineWidth": 2,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "never",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "pps"
+                },
+                "overrides": []
               }
             }
           }
@@ -4189,6 +5491,149 @@
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-104"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "kind": "TabsLayoutTab",
+            "spec": {
+              "title": "Throttling",
+              "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                  "items": [
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 6,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-120"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 6,
+                        "y": 0,
+                        "width": 6,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-121"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 0,
+                        "width": 6,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-122"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 18,
+                        "y": 0,
+                        "width": 6,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-123"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 4,
+                        "width": 12,
+                        "height": 9,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-124"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 4,
+                        "width": 12,
+                        "height": 9,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-125"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 13,
+                        "width": 12,
+                        "height": 8,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-126"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 13,
+                        "width": 12,
+                        "height": 8,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-127"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 21,
+                        "width": 24,
+                        "height": 7,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-128"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 28,
+                        "width": 24,
+                        "height": 8,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-129"
                         }
                       }
                     }

@@ -25,7 +25,8 @@ let
     Three sources, one file:
       * CAKE per-tin stats, which is where prioritisation is actually visible
       * the HTB penalty classes that the throttle and imo lists steer into
-      * the nftables qos-mark rule counters, which show classification firing
+      * the nftables rule counters from qos-mark and forward_throttle, which
+        show classification firing
     """
 
     import json
@@ -55,6 +56,16 @@ let
     # traffic class and is deliberately absent — its counters are the sum of
     # the three below and would double every total on the dashboard.
     CLASSES = {"1:10": "normal", "1:20": "throttle", "1:30": "imo"}
+
+    # (table, chain) pairs whose per-rule counters are exported, distinguished
+    # by a `chain` label. qos-mark shows prioritisation firing; forward_throttle
+    # shows the throttle and imo sets matching, split by direction and address
+    # family — a breakdown the HTB class counters cannot give, since both
+    # families and both directions land in the same class.
+    RULE_CHAINS = [
+        ("router-filter", "qos-mark"),
+        ("router-blocklists", "forward_throttle"),
+    ]
 
 
     def run_json(*argv):
@@ -204,10 +215,8 @@ let
         return found
 
 
-    def collect_rules(metrics):
-        doc = run_json(
-            "nft", "-j", "list", "chain", "inet", "router-filter", "qos-mark"
-        )
+    def collect_rules(metrics, table, chain):
+        doc = run_json("nft", "-j", "list", "chain", "inet", table, chain)
         if not doc:
             return False
         found = False
@@ -225,17 +234,17 @@ let
                 counter = expr.get("counter")
                 if not isinstance(counter, dict):
                     continue
-                labels = {"rule": comment}
+                labels = {"rule": comment, "chain": chain}
                 metrics.add(
                     "router_qos_rule_packets_total",
-                    "Packets matched by this qos-mark rule",
+                    "Packets matched by this classification rule",
                     "counter",
                     labels,
                     counter.get("packets", 0),
                 )
                 metrics.add(
                     "router_qos_rule_bytes_total",
-                    "Bytes matched by this qos-mark rule",
+                    "Bytes matched by this classification rule",
                     "counter",
                     labels,
                     counter.get("bytes", 0),
@@ -250,7 +259,8 @@ let
         for device in DEVICES:
             ok |= collect_tins(metrics, device)
             ok |= collect_classes(metrics, device)
-        ok |= collect_rules(metrics)
+        for table, chain in RULE_CHAINS:
+            ok |= collect_rules(metrics, table, chain)
 
         metrics.add(
             "router_qos_collector_success",
