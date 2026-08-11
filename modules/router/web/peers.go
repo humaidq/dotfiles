@@ -58,10 +58,11 @@ func runTool(name string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// mux registers the read-only route. Task 5 adds the two mutation routes here.
 func (s *peersServer) mux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /peers/{device}", s.handlePage)
+	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction("throttle", "tempthrottle"))
+	mux.HandleFunc("POST /peers/{device}/block", s.handleAction("block", "tempblock"))
 	return mux
 }
 
@@ -133,4 +134,51 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	if err := s.tmpl.Execute(w, data); err != nil {
 		log.Printf("peers: render: %v", err)
 	}
+}
+
+// handleAction returns a handler that runs one of the router's tools against a
+// peer. action names it for the journal; tool is the executable.
+func (s *peersServer) handleAction(action, tool string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		device, ok := s.device(r)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		peer, err := netip.ParseAddr(r.PostFormValue("peer"))
+		if err != nil {
+			http.Error(w, "unparseable peer address", http.StatusBadRequest)
+			return
+		}
+		peer = peer.Unmap()
+		if !isPublicAddr(peer) {
+			// Refused before the tool is invoked: shaping the gateway or
+			// another LAN device is hard to undo from the far side of it.
+			s.logAction(action, peer, device, "refused: not a public address")
+			http.Error(w, "peer must be a public address", http.StatusBadRequest)
+			return
+		}
+
+		output, runErr := s.runTool(tool, "add", peer.String())
+		result := "ok"
+		if runErr != nil {
+			result = fmt.Sprintf("error: %v: %s", runErr, output)
+		}
+		s.logAction(action, peer, device, result)
+
+		if runErr != nil {
+			http.Error(w, fmt.Sprintf("%s failed: %s", tool, output), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/peers/"+device.String(), http.StatusSeeOther)
+	}
+}
+
+// logAction writes the one line that makes blocks collectable later. The ASN,
+// share-bearing device and outcome are included deliberately: an address on its
+// own ages badly, and the reason is what is wanted months later.
+func (s *peersServer) logAction(action string, peer, device netip.Addr, result string) {
+	info, _ := s.asn.Lookup(peer)
+	log.Printf("peer-action action=%s peer=%s asn=%d org=%q cc=%s device=%s result=%s",
+		action, peer, info.Number, info.Org, info.Country, device, result)
 }
