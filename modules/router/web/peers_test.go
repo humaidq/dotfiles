@@ -980,29 +980,59 @@ func TestCaptureStartFailureRendersTheNoticeNotAnError(t *testing.T) {
 
 func TestCaptureRoutesAbsentWithoutAManager(t *testing.T) {
 	// A router with no capture directory configured behaves exactly as it did
-	// before this feature.
-	server := testPeersServer(t)
-	rec := httptest.NewRecorder()
-	server.mux().ServeHTTP(rec, postForm("/peers/192.168.0.10/capture/start"))
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("status = %d, want 404", rec.Code)
+	// before this feature. All four routes are covered, not just start: an
+	// unconditional registration of only capture.pcap would nil-deref in
+	// production, and a loop that stopped at start would miss it.
+	for _, path := range []string{
+		"/peers/192.168.0.10/capture/start",
+		"/peers/192.168.0.10/capture/stop",
+		"/peers/192.168.0.10/capture/discard",
+	} {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			testPeersServer(t).mux().ServeHTTP(rec, postForm(path))
+			if rec.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404", rec.Code)
+			}
+		})
 	}
+	t.Run("/peers/192.168.0.10/capture.pcap", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		testPeersServer(t).mux().ServeHTTP(rec,
+			httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil))
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status = %d, want 404", rec.Code)
+		}
+	})
 }
 
 func TestLANMuxHasNoCaptureRoutes(t *testing.T) {
 	// The capture routes are mesh-only, like every other peers route.
+	//
+	// Asserted on the matched pattern, not the response status: a status check
+	// would pass even if capture.pcap were mistakenly registered on this mux,
+	// because handleCaptureDownload itself answers a missing file with 404 —
+	// the same code a genuinely absent route produces. Handler's pattern names
+	// which handler actually matched, which the handler's own response cannot
+	// fake. Do not "simplify" this back to a status check.
 	config := loadConfig()
 	tmpl := template.Must(template.New("index").Parse("landing"))
 	lan := landingMux(config, tmpl)
-	for _, path := range []string{
-		"/peers/192.168.0.10/capture/start",
-		"/peers/192.168.0.10/capture.pcap",
+	for _, tc := range []struct {
+		method string
+		path   string
+	}{
+		{http.MethodPost, "/peers/192.168.0.10/capture/start"},
+		{http.MethodPost, "/peers/192.168.0.10/capture/stop"},
+		{http.MethodPost, "/peers/192.168.0.10/capture/discard"},
+		{http.MethodGet, "/peers/192.168.0.10/capture.pcap"},
 	} {
-		rec := httptest.NewRecorder()
-		lan.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
-		if rec.Code != http.StatusNotFound {
-			t.Fatalf("landing mux answered %s with %d, want 404", path, rec.Code)
-		}
+		t.Run(tc.path, func(t *testing.T) {
+			_, pattern := lan.Handler(httptest.NewRequest(tc.method, tc.path, nil))
+			if pattern != "/" {
+				t.Fatalf("landing mux matched %s with pattern %q, want the catch-all", tc.path, pattern)
+			}
+		})
 	}
 }
 
