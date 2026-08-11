@@ -117,6 +117,41 @@ rule_dirs() {
 			}'
 }
 
+# Run killconn for an address without letting its exit status reach the
+# caller, and say so loudly when it fails.
+#
+# The rules cmd_add installs ARE the block — they are already live in the
+# kernel by the time this runs. killconn is cleanup on top of that: it tears
+# down whatever conntrack entries were already open so an in-progress
+# transfer dies immediately instead of idling out. A killconn failure (a
+# genuine conntrack error, or router-web's 10-second exec timeout landing on
+# a busy conntrack table) does not undo the rules, so it must not be allowed
+# to read as "the block failed" — under set -e an unguarded call here would
+# abort cmd_add mid-loop, which does two things wrong at once:
+#
+#   1. It throws away the accurate report. The rules for THIS address are
+#      already in place and enforcing, but the process dies before saying so,
+#      and any address later in "$@" never gets touched at all — one flaky
+#      killconn call turns into a silent partial no-op for the rest of the
+#      batch.
+#   2. It poisons the retry. Run `add` again for the same address and the
+#      already-blocked branch below sees both directions present and returns
+#      without calling killconn — the one teardown attempt that failed was
+#      also the only one that was ever going to be made. Nothing would ever
+#      retry it again short of an operator noticing stale flows by hand.
+#
+# So: warn, keep going, and let the caller re-run `add` — which now retries
+# the teardown instead of skipping it — if the warning is still there.
+try_killconn() {
+	if ! killconn "$1"; then
+		echo "tempblock: WARNING: rules for $1 are in place (it IS blocked)," \
+			"but killconn failed to tear down flows already open to it —" \
+			"see the killconn error above. Re-run 'tempblock add $1' to retry" \
+			"the teardown; the rules will report as already blocked and" \
+			"killconn will be tried again." >&2
+	fi
+}
+
 cmd_add() {
 	[ "$#" -ge 1 ] || die "add needs at least one IP or CIDR"
 	ensure
@@ -134,6 +169,12 @@ cmd_add() {
 		esac
 		if [ "$have_out" -eq 1 ] && [ "$have_in" -eq 1 ]; then
 			echo "already blocked: $ip"
+			# Not a `continue` past teardown: an "already blocked" address is
+			# exactly where a previous killconn failure (see try_killconn
+			# above) would be hiding, silently, forever, if this call skipped
+			# it. Calling it again here is what makes a failed teardown
+			# retryable by just running `add` a second time.
+			try_killconn "$ip"
 			continue
 		fi
 		repaired=0
@@ -180,7 +221,7 @@ cmd_add() {
 		# one-sided leftover from a previous run is exactly the case where a
 		# live flow is most likely to still be open in the direction that had
 		# been left unblocked, since nothing before this fix ever tore it down.
-		killconn "$ip"
+		try_killconn "$ip"
 	done
 }
 
@@ -206,6 +247,21 @@ cmd_del() {
 # One line per address, not per rule. Two rules now carry each address, and a
 # raw dump would list every target twice with no indication of which line was
 # which direction.
+#
+# The address printed comes from the comment field, not from the daddr/saddr
+# match expression, even though today they hold the same text. nft normalises
+# what it prints in the match: `tempblock add 1.2.3.4/24` renders back as
+# `ip daddr 1.2.3.0/24` (host bits masked) and an IPv6 address gets its
+# canonical compressed form, neither of which is necessarily the string the
+# operator typed. The comment is copied through nft verbatim, unnormalised,
+# because `cmd_add` writes it from "$ip" — the raw argument — every time. `del`
+# in turn matches on that same comment text (see rule_handles), not on the
+# match expression. So printing the match expression here would hand back an
+# address that looks right and is not: copy `1.2.3.0/24` out of old `list`
+# output, paste it into `del`, and rule_handles' index($0, "comment
+# \"tempblock:1.2.3.0/24\"") finds nothing, because the rule's comment still
+# says `1.2.3.4/24`. `list` output has to be valid `del` input, so the comment
+# is the only field allowed to answer "what address is this".
 cmd_list() {
 	if ! table_exists; then
 		echo "no temp blocks set"
@@ -216,10 +272,15 @@ cmd_list() {
 			/tempblock:/ {
 				ip = ""; dir = ""; pk = 0; by = 0
 				for (i = 1; i <= NF; i++) {
-					if ($i == "daddr")   { ip = $(i + 1); dir = "out" }
-					if ($i == "saddr")   { ip = $(i + 1); dir = "in" }
+					if ($i == "daddr")   { dir = "out" }
+					if ($i == "saddr")   { dir = "in" }
 					if ($i == "packets") pk = $(i + 1)
 					if ($i == "bytes")   by = $(i + 1)
+					if ($i == "comment") {
+						ip = $(i + 1)
+						gsub(/"/, "", ip)
+						sub(/^tempblock:/, "", ip)
+					}
 				}
 				if (ip == "") next
 				if (!(ip in seen)) { seen[ip] = 1; order[++n] = ip }

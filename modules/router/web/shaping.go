@@ -64,8 +64,21 @@ func readTempblockChain(ctx context.Context) ([]byte, error) {
 //
 // The address comes from each rule's comment rather than from its match
 // expression, which buys two things: the parser touches one field instead of
-// walking nft's expression tree, and the two rules per address — one for each
-// direction — carry the same comment and so collapse to one entry for free.
+// walking nft's expression tree, and — for an exact address — the two rules
+// that address gets, one per direction, carry the same comment and collapse
+// to one map entry for free: both writes land on i.exact[addr], the second
+// one a same-rank no-op next to the first.
+//
+// That collapse is a property of the map write, not of the comment being
+// shared, and it does not extend to the CIDR branch below. A tempblocked
+// prefix appends to i.prefixes unconditionally, so its pair of rules —
+// same comment, same reasoning as the exact case — really does produce two
+// identical shapePrefix entries every time this function runs. Left as-is:
+// classify() takes the rank-max over i.prefixes, so a duplicate entry changes
+// no answer, and the whole index is rebuilt from scratch on every cache load
+// rather than accumulated, so the duplicate cannot grow across reads. Worth a
+// dedup only if this loop ever got expensive enough to notice, which a
+// handful of temp-blocked CIDRs per router does not.
 func (i *shapeIndex) addTempblockRules(raw []byte) {
 	var doc struct {
 		Nftables []struct {

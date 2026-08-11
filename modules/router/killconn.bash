@@ -162,7 +162,20 @@ fi
 # Two deletions in every case, because conntrack's -s and -d filter the
 # *original* tuple. A LAN-initiated NATed flow has original src=<lan>
 # dst=<peer>; an inbound-initiated one has them the other way round. One call
-# catches one of those, not both.
+# catches one of those, not both — for flows that originate on the LAN side,
+# which is every ordinary outbound conversation.
+#
+# It is NOT complete coverage of every possible flow direction. A
+# port-forwarded inbound connection is NATed the other way: its original
+# tuple has dst=<router's public address>, not dst=<lan-ip>, so neither of
+# these two calls (nor the peer-scoped pair above, nor the two in
+# `killconn <peer>`) will match it — `-d <lan-ip>` and `-s <lan-ip>` are both
+# blind to a flow whose original destination was never the LAN address in the
+# first place. Catching that case would need a third call filtered on the
+# router's own external address per forwarded port, which nothing here does.
+# Believed harmless on these routers today because neither runs a port
+# forward, but that is a fact about current configuration, not something this
+# tool enforces or checks.
 if [ -z "$peer" ]; then
 	delete -s "$from"
 	a="$deleted"
