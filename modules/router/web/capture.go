@@ -24,6 +24,10 @@ const (
 const (
 	stopReasonLimit = "reached the 200 MiB limit"
 	stopReasonEOF   = "capture ended"
+	// A write error and a clean end of capture are different events. A capture
+	// that died on a full disk must report that fact, not claim the capture
+	// simply ended.
+	stopReasonWrite = "capture stopped: cannot write the capture file"
 )
 
 // pcapByteOrder identifies a pcap stream from its first four bytes.
@@ -79,6 +83,11 @@ func pcapHeader(dst io.Writer, src io.Reader) (binary.ByteOrder, error) {
 // stops is the process being killed, which lands mid-record about as often as
 // not.
 //
+// count is advanced only after both the record header and payload have been
+// written successfully, so it always names a whole-record boundary. The caller
+// can truncate the file back to count's value if a write fails partway, and
+// the result will still be valid pcap.
+//
 // A short read is the ordinary end of a capture and not an error: whatever
 // reached disk is a valid file, and the caller has better context for saying
 // why the stream ended than this loop does.
@@ -102,10 +111,10 @@ func pcapRecords(dst io.Writer, src io.Reader, order binary.ByteOrder, limit uin
 			return stopReasonEOF
 		}
 		if _, err := dst.Write(header); err != nil {
-			return stopReasonEOF
+			return stopReasonWrite
 		}
 		if _, err := dst.Write(payload[:caplen]); err != nil {
-			return stopReasonEOF
+			return stopReasonWrite
 		}
 		written += pcapRecordHeaderLen + caplen
 		count.Store(written)

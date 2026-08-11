@@ -192,3 +192,63 @@ func TestPcapHeaderRejectsAStreamShorterThanTheHeader(t *testing.T) {
 		t.Fatal("pcapHeader accepted a two-byte stream")
 	}
 }
+
+// failingWriter errors on the Nth call to Write, counting from 1.
+// Writes before the failure succeed; the failure itself returns an error.
+type failingWriter struct {
+	writes int
+	fail   int
+}
+
+func (w *failingWriter) Write(p []byte) (int, error) {
+	w.writes++
+	if w.writes == w.fail {
+		return 0, bytes.ErrTooLarge // a write error
+	}
+	return len(p), nil
+}
+
+func TestPcapRecordsReportsAWriteFailure(t *testing.T) {
+	// Fail on the second write (the payload write of the first record).
+	stream := pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 50)
+	src := bytes.NewReader(stream)
+	dst := &failingWriter{fail: 2}
+	var count atomic.Uint64
+
+	order, err := pcapHeader(dst, src)
+	if err != nil {
+		t.Fatalf("pcapHeader: %v", err)
+	}
+	count.Store(pcapGlobalHeaderLen)
+	reason := pcapRecords(dst, src, order, 1<<20, &count)
+
+	if reason != stopReasonWrite {
+		t.Fatalf("reason = %q, want %q", reason, stopReasonWrite)
+	}
+}
+
+func TestPcapRecordsCountStaysOnARecordBoundaryWhenAWriteFails(t *testing.T) {
+	// A header write that succeeds followed by a payload write that fails.
+	// The count must not advance for the failed record, so it names the
+	// previous whole record boundary.
+	stream := pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 50, 50)
+	src := bytes.NewReader(stream)
+	dst := &failingWriter{fail: 4} // 1=global header, 2=first record header, 3=first payload, 4=second header
+	var count atomic.Uint64
+
+	order, err := pcapHeader(dst, src)
+	if err != nil {
+		t.Fatalf("pcapHeader: %v", err)
+	}
+	count.Store(pcapGlobalHeaderLen)
+	reason := pcapRecords(dst, src, order, 1<<20, &count)
+
+	if reason != stopReasonWrite {
+		t.Fatalf("reason = %q, want %q", reason, stopReasonWrite)
+	}
+	// Count must stay at the end of the first record (header + payload),
+	// not advance to include the second record header that succeeded.
+	if want := uint64(pcapGlobalHeaderLen + pcapRecordHeaderLen + 50); count.Load() != want {
+		t.Fatalf("count = %d, want %d (end of first whole record)", count.Load(), want)
+	}
+}
