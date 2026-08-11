@@ -35,7 +35,7 @@ readonly CHAIN="block"
 # whitelist NOPASSWD (see hosts/<router>/default.nix) — the absolute path is
 # used rather than a bare `nft` so the grant matches regardless of secure_path.
 nft() {
-	if [ "$(id -u)" -eq 0 ]; then
+	if [ "$(id -u)" -eq 0 ] || command nft list tables >/dev/null 2>&1; then
 		command nft "$@"
 	else
 		sudo -n /run/current-system/sw/bin/nft "$@"

@@ -231,6 +231,17 @@ in
 
       # Forwarding IPv4
       "net.ipv4.ip_forward" = 1;
+
+      # Conntrack tracks every flow regardless; this only asks it to keep the
+      # byte and packet totals it otherwise throws away. Both the
+      # host-flow-textfile collector (host-metrics.nix) and the mesh-only
+      # peers page (web.nix / web/peers.go) read conntrack's `bytes=` fields
+      # and depend on this being set — without it every line is skipped and a
+      # live device is indistinguishable from an idle one. Set here,
+      # unconditionally on the router, rather than gated on the o11y client
+      # like the collector is, since the peers page needs it regardless of
+      # whether o11y is enabled.
+      "net.netfilter.nf_conntrack_acct" = 1;
     }
     // lib.optionalAttrs config.networking.enableIPv6 {
       # Forwarding IPv6

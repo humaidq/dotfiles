@@ -140,6 +140,16 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 // peer. action names it for the journal; tool is the executable.
 func (s *peersServer) handleAction(action, tool string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Browsers send Sec-Fetch-Site on every request; a cross-site form POST
+		// carries "cross-site". Non-browser callers (curl over the mesh) send
+		// no such header, so absence is allowed and only an explicit
+		// cross-origin value is refused. This is the whole CSRF defence: the
+		// endpoint is otherwise unauthenticated by design.
+		if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
+			http.Error(w, "cross-site request refused", http.StatusForbidden)
+			return
+		}
+
 		device, ok := s.device(r)
 		if !ok {
 			http.NotFound(w, r)

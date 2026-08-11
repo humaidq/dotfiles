@@ -419,17 +419,51 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
 	if err != nil {
 		return fmt.Errorf("parse peers template: %w", err)
 	}
-	meshServer := &http.Server{
-		Addr:    validAddr,
-		Handler: newPeersServer(prefix, table, peersTmpl).mux(),
-	}
-	go func() {
-		log.Printf("serving peers page on http://%s", validAddr)
-		if err := meshServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("peers page disabled: %v", err)
-		}
-	}()
+	handler := newPeersServer(prefix, table, peersTmpl).mux()
+	go serveMeshWithRetry(validAddr, handler)
 	return nil
+}
+
+const (
+	// The mesh address lives on sifr0, assigned asynchronously by nebula.
+	// At boot the bind can fail with "cannot assign requested address"
+	// before nebula has finished bringing the interface up, even though
+	// router-web is already ordered after the nebula unit — "started" does
+	// not mean "address assigned". These bound retries give that race a
+	// minute to resolve itself instead of leaving the peers page dead until
+	// someone restarts the unit by hand.
+	meshListenAttempts   = 6
+	meshListenRetryDelay = 10 * time.Second
+)
+
+// serveMeshWithRetry binds the mesh listener, retrying a bounded number of
+// times when the bind itself fails. It runs in its own goroutine and never
+// exits the process and never touches the LAN listener: a mesh bind that
+// never succeeds just leaves the peers page disabled, logged once, at the
+// end.
+func serveMeshWithRetry(addr string, handler http.Handler) {
+	var listener net.Listener
+	var err error
+	for attempt := 1; attempt <= meshListenAttempts; attempt++ {
+		listener, err = net.Listen("tcp", addr)
+		if err == nil {
+			break
+		}
+		log.Printf("peers page: bind %s attempt %d/%d: %v", addr, attempt, meshListenAttempts, err)
+		if attempt < meshListenAttempts {
+			time.Sleep(meshListenRetryDelay)
+		}
+	}
+	if err != nil {
+		log.Printf("peers page disabled: %v", err)
+		return
+	}
+
+	log.Printf("serving peers page on http://%s", addr)
+	server := &http.Server{Handler: handler}
+	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+		log.Printf("peers page disabled: %v", err)
+	}
 }
 
 func main() {

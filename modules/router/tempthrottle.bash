@@ -30,7 +30,7 @@ readonly SET6="throttle6"
 # Same indirection as tempblock: direct when root, otherwise through the
 # fully-qualified nft that the router's sudo rules whitelist NOPASSWD.
 nft() {
-	if [ "$(id -u)" -eq 0 ]; then
+	if [ "$(id -u)" -eq 0 ] || command nft list tables >/dev/null 2>&1; then
 		command nft "$@"
 	else
 		sudo -n /run/current-system/sw/bin/nft "$@"

@@ -213,6 +213,26 @@ func TestActionRefusesZonedPeerAndLogsOneLine(t *testing.T) {
 	}
 }
 
+func TestActionRefusesCrossSiteRequest(t *testing.T) {
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/throttle",
+		strings.NewReader("peer=203.0.113.10"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, req)
+
+	if called {
+		t.Fatal("tool was invoked for a cross-site request")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+}
+
 func TestLANMuxHasNoPeersRoutes(t *testing.T) {
 	tmpl, err := template.New("index.html").Parse("landing")
 	if err != nil {

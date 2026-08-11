@@ -239,11 +239,6 @@ let
 in
 {
   config = lib.mkIf (cfg.enable && config.sifr.personal.o11y.client.enable) {
-    # Conntrack tracks every flow regardless; this only asks it to keep the
-    # byte and packet totals it otherwise throws away. Off by default, which is
-    # why `conntrack -L` prints no counters until this is set.
-    boot.kernel.sysctl."net.netfilter.nf_conntrack_acct" = 1;
-
     # A table of its own rather than a chain inside router-filter. It is gated
     # on the o11y client the same way the collector is, and keeping it separate
     # means the accounting can appear and disappear with that gate without

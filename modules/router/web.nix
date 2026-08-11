@@ -12,8 +12,13 @@ in
   config = lib.mkIf cfg.enable {
     systemd.services.router-web = {
       description = "Router landing page";
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
+      # The mesh address (cfg.meshAddress) lives on sifr0, assigned
+      # asynchronously by the nebula@sifr0 instance once it comes up. Ordering
+      # after it narrows, but does not eliminate, the race the retry loop in
+      # web/main.go's mesh listener is there to absorb — nebula being "started"
+      # per systemd does not guarantee the address is assigned yet.
+      after = [ "network-online.target" ] ++ lib.optional (cfg.meshAddress != null) "nebula@sifr0.service";
+      wants = [ "network-online.target" ] ++ lib.optional (cfg.meshAddress != null) "nebula@sifr0.service";
       wantedBy = [ "multi-user.target" ];
       path = with pkgs; [
         iproute2
