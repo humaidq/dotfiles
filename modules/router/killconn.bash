@@ -120,10 +120,11 @@ delete() {
 
 usage() {
 	cat >&2 <<'USAGE'
-killconn — tear down live connections to an address, without blocking it
+killconn — tear down live connections, without blocking anything
 
   killconn <peer>                      kill every LAN client's flows with <peer>
   killconn <peer> from <lan-ip>        kill only that device's flows with <peer>
+  killconn from <lan-ip>               kill every flow that device has
 
 Changes no firewall state, so the app may reconnect at once. To stop it coming
 back, use `tempblock add <peer>` — which calls this itself.
@@ -135,37 +136,54 @@ case "${1:-}" in
 -h | --help | help | "") usage 0 ;;
 esac
 
-peer="$1"
-shift
-validate "$peer"
-
+# `from` in first position is the device-wide form: no peer at all, kill
+# everything that device is holding. The other two forms lead with the peer, so
+# one look at $1 separates them.
+peer=""
 from=""
-if [ "$#" -gt 0 ]; then
-	[ "$1" = "from" ] || die "unexpected argument: $1"
+if [ "$1" = "from" ]; then
 	shift
 	[ "$#" -eq 1 ] || die "'from' takes exactly one address"
 	from="$1"
 	validate "$from"
+else
+	peer="$1"
+	shift
+	validate "$peer"
+	if [ "$#" -gt 0 ]; then
+		[ "$1" = "from" ] || die "unexpected argument: $1"
+		shift
+		[ "$#" -eq 1 ] || die "'from' takes exactly one address"
+		from="$1"
+		validate "$from"
+	fi
 fi
 
-# Two deletions in either case, because conntrack's -s and -d filter the
+# Two deletions in every case, because conntrack's -s and -d filter the
 # *original* tuple. A LAN-initiated NATed flow has original src=<lan>
 # dst=<peer>; an inbound-initiated one has them the other way round. One call
 # catches one of those, not both.
-if [ -n "$from" ]; then
+if [ -z "$peer" ]; then
+	delete -s "$from"
+	a="$deleted"
+	delete -d "$from"
+	b="$deleted"
+	scope="everything from $from"
+elif [ -n "$from" ]; then
 	delete -s "$from" -d "$peer"
 	a="$deleted"
 	delete -s "$peer" -d "$from"
 	b="$deleted"
+	scope="$peer from $from"
 else
 	delete -d "$peer"
 	a="$deleted"
 	delete -s "$peer"
 	b="$deleted"
+	scope="$peer"
 fi
 
 total=$((a + b))
-scope="$peer${from:+ from $from}"
 if [ "$total" -eq 0 ]; then
 	echo "no live flows: $scope"
 else
