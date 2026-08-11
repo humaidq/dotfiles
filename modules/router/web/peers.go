@@ -22,6 +22,7 @@ type peerRow struct {
 	Bytes    string
 	SharePct string
 	High     bool
+	Shape    string
 }
 
 type peersPageData struct {
@@ -41,6 +42,7 @@ type peersServer struct {
 	tmpl       *template.Template
 	indexTmpl  *template.Template
 	leasesPath string
+	shapes     *shapeCache
 	conntrack  func(context.Context) ([]byte, error)
 	runTool    func(name string, args ...string) (string, error)
 }
@@ -52,6 +54,7 @@ func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *templat
 		tmpl:       tmpl,
 		indexTmpl:  indexTmpl,
 		leasesPath: leasesPath,
+		shapes:     newShapeCache(),
 		conntrack:  readConntrack,
 		runTool:    runTool,
 	}
@@ -156,6 +159,13 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 		total += peer.Bytes
 	}
 
+	// How the router is already treating each peer. A nil cache (tests, or a
+	// router where the sets cannot be read) simply leaves the column blank.
+	var shapes *shapeIndex
+	if s.shapes != nil {
+		shapes = s.shapes.get(ctx)
+	}
+
 	data := peersPageData{Device: device.String(), Error: notice}
 	for _, peer := range peers {
 		share := 0.0
@@ -168,6 +178,7 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 			SharePct: fmt.Sprintf("%.1f", share),
 			High:     share >= 70,
 		}
+		row.Shape = shapes.classify(peer.Addr)
 		if info, found := s.asn.Lookup(peer.Addr); found {
 			row.ASN, row.Org, row.Country = info.Number, info.Org, info.Country
 		}

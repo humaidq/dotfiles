@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 var errFake = errors.New("conntrack unavailable")
@@ -20,7 +21,7 @@ var errFake = errors.New("conntrack unavailable")
 func testPeersServer(t *testing.T) *peersServer {
 	t.Helper()
 	tmpl, err := template.New("peers.html").Parse(
-		`{{.Device}}|{{range .Peers}}{{.Addr}},{{.ASN}},{{.Org}},{{.Country}},{{.SharePct}};{{end}}|{{.Error}}`)
+		`{{.Device}}|{{range .Peers}}{{.Addr}},{{.ASN}},{{.Org}},{{.Country}},{{.SharePct}},{{.Shape}};{{end}}|{{.Error}}`)
 	if err != nil {
 		t.Fatalf("parse template: %v", err)
 	}
@@ -332,5 +333,23 @@ func TestLANMuxHasNoIndexRoute(t *testing.T) {
 	landingMux(pageData{}, tmpl).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("LAN mux served a peers path with %d", rec.Code)
+	}
+}
+
+func TestPeersPageShowsShapingStatus(t *testing.T) {
+	server := testPeersServer(t)
+	server.shapes = &shapeCache{
+		ttl: time.Hour,
+		read: func(_ context.Context, set string) ([]byte, error) {
+			if set == "throttle4" {
+				return setDoc(`"203.0.113.10"`), nil
+			}
+			return nil, errors.New("absent")
+		},
+	}
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if !strings.Contains(rec.Body.String(), "throttled") {
+		t.Fatalf("already-throttled peer not marked in the page: %q", rec.Body.String())
 	}
 }
