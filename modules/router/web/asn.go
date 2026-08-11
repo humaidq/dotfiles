@@ -95,6 +95,7 @@ func (t *ASNTable) Lookup(addr netip.Addr) (ASNInfo, bool) {
 	if t == nil {
 		return ASNInfo{}, false
 	}
+	addr = addr.Unmap()
 	ranges := t.v6
 	if addr.Is4() {
 		ranges = t.v4

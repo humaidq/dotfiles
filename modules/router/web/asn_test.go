@@ -44,6 +44,7 @@ func TestASNLookup(t *testing.T) {
 		{"unmatched", "192.0.2.1", ASNInfo{}, false},
 		{"ipv6 in range", "2001:db8::1", ASNInfo{64498, "Example Six", "FR"}, true},
 		{"ipv6 unmatched", "2001:db9::1", ASNInfo{}, false},
+		{"ipv4-mapped ipv6 resolves as ipv4", "::ffff:203.0.113.10", ASNInfo{64496, "Example Hosting", "NL"}, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
