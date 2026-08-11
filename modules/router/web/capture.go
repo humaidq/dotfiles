@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -504,4 +505,55 @@ func (s *tcpdumpStream) Close() error {
 	// Non-zero because it was killed, which is how every capture ends.
 	_ = s.cmd.Wait()
 	return err
+}
+
+// sweep deletes captures nobody collected.
+//
+// Without it a capture started once and forgotten sits on the router's disk
+// until someone notices — and a capture is a file full of packet payloads,
+// which is not a thing to leave lying about indefinitely.
+//
+// now is a parameter rather than a call to time.Now so a test can age a file
+// without sleeping.
+func (m *captureManager) sweep(now time.Time) {
+	entries, err := os.ReadDir(m.dir)
+	if err != nil {
+		// The directory does not exist until the first capture, which is the
+		// ordinary state of a router nobody has captured on.
+		return
+	}
+	for _, item := range entries {
+		if item.IsDir() || filepath.Ext(item.Name()) != ".pcap" {
+			continue
+		}
+		device, err := netip.ParseAddr(strings.TrimSuffix(item.Name(), ".pcap"))
+		if err != nil {
+			// Not a name this wrote, so not a file this deletes.
+			continue
+		}
+		m.mu.Lock()
+		_, running := m.active[device]
+		m.mu.Unlock()
+		if running {
+			// A long capture on a quiet device can outlive the window while
+			// still being written to.
+			continue
+		}
+		info, err := item.Info()
+		if err != nil || now.Sub(info.ModTime()) < m.retain {
+			continue
+		}
+		if err := os.Remove(m.path(device)); err == nil {
+			log.Printf("capture swept device=%q age=%s bytes=%d",
+				device, now.Sub(info.ModTime()).Round(time.Minute), info.Size())
+		}
+	}
+}
+
+// sweepEvery runs the sweep until the process exits. Started once from
+// main.go; it holds no state of its own.
+func (m *captureManager) sweepEvery(interval time.Duration) {
+	for range time.Tick(interval) {
+		m.sweep(time.Now())
+	}
 }

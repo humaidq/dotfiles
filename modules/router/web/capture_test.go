@@ -654,3 +654,75 @@ func TestCapturePathIsBuiltFromTheParsedAddress(t *testing.T) {
 		t.Fatalf("path = %q, want %q", got, want)
 	}
 }
+
+func TestSweepRemovesCapturesPastTheRetentionWindow(t *testing.T) {
+	manager := testManager(t, nil)
+	stale := manager.path(netip.MustParseAddr("192.168.0.30"))
+	fresh := manager.path(netip.MustParseAddr("192.168.0.31"))
+	for _, path := range []string{stale, fresh} {
+		if err := os.WriteFile(path, []byte("pcap"), 0o600); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	old := time.Now().Add(-48 * time.Hour)
+	if err := os.Chtimes(stale, old, old); err != nil {
+		t.Fatalf("chtimes: %v", err)
+	}
+
+	manager.sweep(time.Now())
+
+	if _, err := os.Stat(stale); !os.IsNotExist(err) {
+		t.Fatal("sweep kept a capture older than the retention window")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Fatalf("sweep removed a capture inside the retention window: %v", err)
+	}
+}
+
+func TestSweepSkipsARunningCapture(t *testing.T) {
+	// A long capture on a quiet device can outlive the retention window while
+	// still being written. Deleting the file out from under it would leave a
+	// capture running with nowhere to land.
+	manager := testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100))
+	manager.retain = 0
+	if err := manager.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.Stop(testDevice) })
+
+	manager.sweep(time.Now().Add(time.Hour))
+
+	if _, err := os.Stat(manager.path(testDevice)); err != nil {
+		t.Fatalf("sweep removed a running capture's file: %v", err)
+	}
+}
+
+func TestSweepIgnoresFilesThatAreNotCaptures(t *testing.T) {
+	manager := testManager(t, nil)
+	other := filepath.Join(manager.dir, "notes.txt")
+	badName := filepath.Join(manager.dir, "not-an-address.pcap")
+	for _, path := range []string{other, badName} {
+		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+		old := time.Now().Add(-48 * time.Hour)
+		if err := os.Chtimes(path, old, old); err != nil {
+			t.Fatalf("chtimes: %v", err)
+		}
+	}
+
+	manager.sweep(time.Now())
+
+	for _, path := range []string{other, badName} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("sweep removed %s, which it does not own", path)
+		}
+	}
+}
+
+func TestSweepSurvivesAMissingDirectory(t *testing.T) {
+	// The directory does not exist until the first capture. A sweeper that
+	// panicked on that would take the whole process down at boot.
+	manager := newCaptureManager(filepath.Join(t.TempDir(), "absent"), "lan0")
+	manager.sweep(time.Now())
+}
