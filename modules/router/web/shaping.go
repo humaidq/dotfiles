@@ -28,6 +28,10 @@ var shapingSets = []struct {
 }{
 	{"imo4", shapeIMO}, {"imo6", shapeIMO},
 	{"throttle4", shapeThrottled}, {"throttle6", shapeThrottled},
+	// The imo estate on a day it is being dropped rather than shaped. Reported
+	// as blocked, not as the imo tier: on those days that is exactly what
+	// happens to its packets, and only one of the two pairs is ever populated.
+	{"imo_block4", shapeBlocked}, {"imo_block6", shapeBlocked},
 	{"doh_block4", shapeBlocked}, {"doh_block6", shapeBlocked},
 	{"remote_block4", shapeBlocked}, {"remote_block6", shapeBlocked},
 	{"local_block4", shapeBlocked}, {"local_block6", shapeBlocked},

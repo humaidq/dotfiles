@@ -183,10 +183,14 @@ let
           router-blocklists throttle4 throttle6
       '';
 
-  # Same generator again, third target. See the note on throttleList above:
-  # the file format and validation are identical and only the set names
-  # differ, because what happens to a matching packet is decided in the
-  # ruleset and in tc rather than here.
+  # Same generator again, third and fourth targets. See the note on
+  # throttleList above: the file format and validation are identical and only
+  # the set names differ, because what happens to a matching packet is decided
+  # in the ruleset and in tc rather than here.
+  #
+  # One source file, two destinations, because imo's estate is either shaped or
+  # dropped depending on the day and on the host — see imoPolicy. Which pair is
+  # populated is what carries that decision.
   imoList =
     pkgs.runCommand "nft-imo-list.nft"
       {
@@ -196,6 +200,62 @@ let
         python3 ${localBlocklistGen} ${./custom-imo-list.txt} "$out" \
           router-blocklists imo4 imo6
       '';
+
+  imoBlockList =
+    pkgs.runCommand "nft-imo-block-list.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-imo-list.txt} "$out" \
+          router-blocklists imo_block4 imo_block6
+      '';
+
+  # The two states imo-policy.service switches between, each a single file that
+  # fills one pair of sets and empties the other. One file rather than two `nft`
+  # calls because `nft -f` is one transaction: the estate is never in both pairs
+  # at once, and never briefly in neither.
+  imoThrottleState = pkgs.runCommand "nft-imo-state-throttle.nft" { } ''
+    cat ${imoList} > "$out"
+    printf 'flush set inet router-blocklists imo_block4\n' >> "$out"
+    printf 'flush set inet router-blocklists imo_block6\n' >> "$out"
+  '';
+
+  imoBlockState = pkgs.runCommand "nft-imo-state-block.nft" { } ''
+    cat ${imoBlockList} > "$out"
+    printf 'flush set inet router-blocklists imo4\n' >> "$out"
+    printf 'flush set inet router-blocklists imo6\n' >> "$out"
+  '';
+
+  # Prints the mode in force — "block" or "throttle" — for today, or for the
+  # day-of-month given as an argument. Split out of the service and exposed in
+  # systemPackages rather than inlined: a schedule you cannot interrogate for a
+  # date other than now is one you find out about by waiting for it.
+  #
+  # 10# forces base ten, otherwise "08" and "09" are invalid octal and the
+  # arithmetic fails on exactly two days of the month.
+  imoPolicyToday = pkgs.writeShellApplication {
+    name = "imo-policy-today";
+    runtimeInputs = [ pkgs.coreutils ];
+    text =
+      if cfg.imoPolicy == "alternate" then
+        ''
+          day=''${1:-$(date +%d)}
+
+          if [ $(( 10#$day % 2 )) -eq 1 ]; then
+            echo block
+          else
+            echo throttle
+          fi
+        ''
+      else
+        ''
+          # Fixed policy on this host, so the day is irrelevant and any
+          # argument is accepted and ignored — a caller checking next Tuesday
+          # gets the same true answer as one checking today.
+          echo "${cfg.imoPolicy}"
+        '';
+  };
 in
 {
 
@@ -251,16 +311,31 @@ in
           flags interval
         }
 
-        # Populated from custom-imo-list.txt by nft-blocklists-local. Marked
-        # 0x3 rather than 0x2 so tc can steer it into a class of its own: imo
-        # is rate capped and lossy on a schedule, not crippled outright the
-        # way a tunnel node is.
+        # Populated from custom-imo-list.txt by imo-policy, on the days that
+        # host is throttling rather than blocking. Marked 0x3 rather than 0x2
+        # so tc can steer it into a class of its own: imo is rate capped and
+        # lossy, not crippled outright the way a tunnel node is.
         set imo4 {
           type ipv4_addr
           flags interval
         }
 
         set imo6 {
+          type ipv6_addr
+          flags interval
+        }
+
+        # The other half of that switch: the same file, dropped instead of
+        # shaped. Exactly one of these two pairs holds the estate at any moment
+        # — see imo-policy.service. Both are declared unconditionally, so a
+        # host set to "throttle" simply leaves these empty and the drop rules
+        # below never match.
+        set imo_block4 {
+          type ipv4_addr
+          flags interval
+        }
+
+        set imo_block6 {
           type ipv6_addr
           flags interval
         }
@@ -293,12 +368,29 @@ in
           ip6 daddr @remote_block6 limit rate 60/minute burst 20 packets log prefix "nft-block-feed " comment "sample feed drops"
           ip daddr @local_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-local " comment "sample local-list drops"
           ip6 daddr @local_block6 limit rate 60/minute burst 20 packets log prefix "nft-block-local " comment "sample local-list drops"
+          ip daddr @imo_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-imo " comment "sample imo drops"
+          ip6 daddr @imo_block6 limit rate 60/minute burst 20 packets log prefix "nft-block-imo " comment "sample imo drops"
 
           # Blocks LAN clients from reaching listed IPs
           ip daddr @remote_block4 counter drop comment "block forwarded IPv4 destinations"
           ip6 daddr @remote_block6 counter drop comment "block forwarded IPv6 destinations"
           ip daddr @local_block4 counter drop comment "block forwarded IPv4 destinations (local list)"
           ip6 daddr @local_block6 counter drop comment "block forwarded IPv6 destinations (local list)"
+
+          # imo on a blocking day. Its own log prefix and its own counters
+          # rather than sharing the local list's, because this pair comes and
+          # goes on a schedule and the whole point of the counters is to answer
+          # "did the block actually bite today".
+          #
+          # This chain is priority -10 and forward_throttle is priority 0, so
+          # nothing has to be said here about the 0x3 marks: on a blocking day
+          # the packet is dropped before the mark rules are ever reached.
+          #
+          # daddr only and forward only, matching the local list above — the
+          # router's own output path is deliberately untouched, so imo remains
+          # reachable from the router itself for diagnostics.
+          ip daddr @imo_block4 counter drop comment "block forwarded IPv4 destinations (imo)"
+          ip6 daddr @imo_block6 counter drop comment "block forwarded IPv6 destinations (imo)"
         }
 
         # Marks both directions of a throttled conversation so the tc filters in
@@ -325,10 +417,17 @@ in
           # address that somehow appears in both lists resolves to the imo
           # tier — which is the weaker of the two and therefore the safer
           # outcome for a misfiled address.
-          ip daddr @imo4 counter meta mark set 0x3 comment "imo upload (IPv4)"
-          ip saddr @imo4 counter meta mark set 0x3 comment "imo download (IPv4)"
-          ip6 daddr @imo6 counter meta mark set 0x3 comment "imo upload (IPv6)"
-          ip6 saddr @imo6 counter meta mark set 0x3 comment "imo download (IPv6)"
+          #
+          # Absent entirely on a host that only ever blocks imo: there is no
+          # 1:30 class there for a mark to steer into, so these would set a
+          # mark that nothing reads, on packets the chain above has already
+          # dropped.
+          ${lib.optionalString (cfg.imoPolicy != "block") ''
+            ip daddr @imo4 counter meta mark set 0x3 comment "imo upload (IPv4)"
+            ip saddr @imo4 counter meta mark set 0x3 comment "imo download (IPv4)"
+            ip6 daddr @imo6 counter meta mark set 0x3 comment "imo upload (IPv6)"
+            ip6 saddr @imo6 counter meta mark set 0x3 comment "imo download (IPv6)"
+          ''}
         }
 
         chain forward_doh {
@@ -454,14 +553,95 @@ in
 
       path = [ pkgs.nftables ];
 
+      # imo's own lists are deliberately absent: which of its two set pairs is
+      # populated depends on the day, so it is imo-policy.service that writes
+      # them and this unit that pulls it. One writer per set.
       script = ''
         set -euo pipefail
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
         nft -f ${throttleList}
-        nft -f ${imoList}
       '';
     };
+
+    # Applies whichever of the two imo states is in force. Everything about
+    # this is arranged so the policy cannot be silently lost, because the state
+    # it maintains lives only in the kernel:
+    #
+    #   * boot — wantedBy multi-user.target, ordered after nftables;
+    #   * ruleset reload, which recreates the table with empty sets —
+    #     nft-blocklists-local is partOf nftables.service, so a reload restarts
+    #     it and it pulls this unit along;
+    #   * a midnight missed while the router was off — Persistent on the timer
+    #     below.
+    #
+    # RemainAfterExit is deliberately false, unlike nft-blocklists-local:
+    # systemd treats `start` on an already-active oneshot as a no-op, so
+    # leaving this one active would quietly stop the timer from ever
+    # re-applying it. It is the trap nft-blocklists-update is commented against
+    # above, and it matters more here, where the whole unit exists to be re-run.
+    systemd.services.imo-policy = {
+      description = "Apply today's imo policy (block or throttle)";
+      wantedBy = [
+        "multi-user.target"
+        "nft-blocklists-local.service"
+      ];
+      after = [
+        "nftables.service"
+        "nft-blocklists-local.service"
+      ];
+      wants = [ "nftables.service" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = false;
+      };
+
+      path = [
+        pkgs.nftables
+        imoPolicyToday
+      ];
+
+      script = ''
+        set -euo pipefail
+
+        mode=$(imo-policy-today)
+
+        case "$mode" in
+          block)
+            nft -f ${imoBlockState}
+            ;;
+          throttle)
+            nft -f ${imoThrottleState}
+            ;;
+          *)
+            # Unreachable unless imo-policy-today is changed and this is not.
+            # Failing loudly beats leaving the sets at yesterday's contents,
+            # which would look like a working policy for a whole day.
+            echo "imo-policy: unexpected mode from imo-policy-today: $mode" >&2
+            exit 1
+            ;;
+        esac
+
+        echo "imo-policy: $mode" >&2
+      '';
+    };
+
+    systemd.timers.imo-policy = {
+      description = "Re-evaluate the imo policy at the start of each day";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        # Local midnight — the routers run Asia/Dubai, and both this and the
+        # `date +%d` in imo-policy-today are local time, so the flip lands
+        # where a calendar says it should.
+        OnCalendar = "*-*-* 00:00:00";
+        Persistent = true;
+      };
+    };
+
+    # Exposed so the schedule can be checked for any date without waiting for
+    # it, e.g. `imo-policy-today 12`.
+    environment.systemPackages = [ imoPolicyToday ];
 
     systemd.services.nft-blocklists-update = {
       description = "Download and apply nftables blocklists";

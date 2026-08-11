@@ -23,6 +23,7 @@ type peerRow struct {
 	SharePct string
 	High     bool
 	Shape    string
+	Traffic  traffic
 }
 
 type peersPageData struct {
@@ -45,6 +46,9 @@ type peersServer struct {
 	shapes     *shapeCache
 	conntrack  func(context.Context) ([]byte, error)
 	runTool    func(name string, args ...string) (string, error)
+	// Names the traffic column. Its zero value is usable, so a caller that
+	// does not set it gets ports without flags or call markers.
+	namer namer
 }
 
 func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -179,6 +183,7 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 			High:     share >= 70,
 		}
 		row.Shape = shapes.classify(peer.Addr)
+		row.Traffic = s.namer.describe(peer)
 		if info, found := s.asn.Lookup(peer.Addr); found {
 			row.ASN, row.Org, row.Country = info.Number, info.Org, info.Country
 		}

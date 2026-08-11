@@ -9,36 +9,6 @@ let
   cfg = config.sifr.router;
   pppdService = "pppd-etisalat.service";
   inherit (cfg) throttle imoThrottle;
-
-  # Split out of the service so the schedule can be checked at any time
-  # without waiting for a boundary: `imo-loss-for 07:00` answers for 07:00.
-  # 10# forces base ten, otherwise "08" and "09" are invalid octal and the
-  # arithmetic fails at exactly two hours of the day.
-  imoLossFor = pkgs.writeShellApplication {
-    name = "imo-loss-for";
-    runtimeInputs = [ pkgs.coreutils ];
-    text = ''
-      now=''${1:-$(date +%H:%M)}
-
-      to_min() {
-        local hhmm="$1"
-        echo $(( 10#''${hhmm%%:*} * 60 + 10#''${hhmm##*:} ))
-      }
-
-      n=$(to_min "$now")
-
-      for w in ${lib.escapeShellArgs imoThrottle.peakWindows}; do
-        s=$(to_min "''${w%%-*}")
-        e=$(to_min "''${w##*-}")
-        if [ "$n" -ge "$s" ] && [ "$n" -lt "$e" ]; then
-          echo "${imoThrottle.peakLoss}"
-          exit 0
-        fi
-      done
-
-      echo "${imoThrottle.baseLoss}"
-    '';
-  };
 in
 {
   config = lib.mkIf cfg.enable {
@@ -145,22 +115,25 @@ in
             tc filter add dev "$dev" parent 1: protocol all prio 1 \
               handle 0x2 fw flowid 1:20
 
-            # imo class. Rate capped at every hour; only the loss varies, and
-            # the value written here is just a starting point —
-            # imo-throttle-schedule.service corrects it for the current time
-            # of day as soon as this unit finishes, and every half hour after.
+            # imo class. Rate capped and lossy at every hour of every day.
             #
             # No delay or jitter, unlike the throttled class above. Latency is
             # what makes a long-lived tunnel unusable; for imo the rate cap
             # and the loss are the whole mechanism.
-            tc class add dev "$dev" parent 1:1 classid 1:30 htb \
-              rate ${imoThrottle.rate} ceil ${imoThrottle.rate} prio 7
-            tc qdisc add dev "$dev" parent 1:30 handle 30: netem \
-              loss ${imoThrottle.baseLoss} \
-              limit 1000
+            #
+            # Not built at all on a host whose imoPolicy is "block": nothing
+            # there ever sets mark 0x3, so the class, its netem qdisc and the
+            # filter feeding it would sit empty forever.
+            ${lib.optionalString (cfg.imoPolicy != "block") ''
+              tc class add dev "$dev" parent 1:1 classid 1:30 htb \
+                rate ${imoThrottle.rate} ceil ${imoThrottle.rate} prio 7
+              tc qdisc add dev "$dev" parent 1:30 handle 30: netem \
+                loss ${imoThrottle.loss} \
+                limit 1000
 
-            tc filter add dev "$dev" parent 1: protocol all prio 1 \
-              handle 0x3 fw flowid 1:30
+              tc filter add dev "$dev" parent 1: protocol all prio 1 \
+                handle 0x3 fw flowid 1:30
+            ''}
           }
 
           # Upload: egress of the PPP uplink. "nat" recovers the real LAN source
@@ -174,80 +147,11 @@ in
         '';
       };
 
-      imo-throttle-schedule = {
-        description = "Apply the time-of-day loss value to the imo tc class";
-        # cake-sqm rebuilds the qdiscs from scratch whenever pppd flaps, which
-        # resets this class to baseLoss. Running after it means the correct
-        # value is restored immediately rather than at the next tick, and the
-        # timer below is then only a backstop.
-        after = [ "cake-sqm.service" ];
-        wantedBy = [ "cake-sqm.service" ];
-
-        path = [
-          pkgs.iproute2
-          imoLossFor
-        ];
-
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = false;
-        };
-
-        script = ''
-          set -euo pipefail
-
-          loss=$(imo-loss-for)
-
-          # `tc qdisc change` replaces the entire netem parameter set, so
-          # limit has to be restated every time rather than loss alone.
-          #
-          # Only the "not built yet" failures are tolerated below: the timer
-          # fires regardless of whether cake-sqm has built the 1:30 class and
-          # its netem qdisc yet, or whether the PPP device even exists yet,
-          # and those are expected on some ticks rather than an error. tc's
-          # own wording distinguishes these cases, so match on it rather than
-          # swallowing every failure: a missing device ("Cannot find
-          # device"), a missing htb root ("Failed to find specified qdisc"),
-          # a missing 1:30 class ("Specified class not found"), or a class
-          # that exists but has no netem attached yet ("Qdisc not found").
-          # Anything else (a typo'd handle, a permissions problem, a future
-          # refactor that changes parent/handle) fails the unit so it shows
-          # up via systemctl instead of silently never applying the loss
-          # value.
-          for dev in ${cfg.ppp} ${cfg.lan0}; do
-            if err=$(tc qdisc change dev "$dev" parent 1:30 handle 30: netem \
-                       loss "$loss" limit 1000 2>&1); then
-              continue
-            fi
-            case "$err" in
-              *"Cannot find device"* | *"Failed to find specified qdisc"* | *"Specified class not found"* | *"Qdisc not found"*)
-                echo "imo-throttle-schedule: $dev not ready yet: $err" >&2
-                ;;
-              *)
-                echo "imo-throttle-schedule: tc failed on $dev: $err" >&2
-                exit 1
-                ;;
-            esac
-          done
-        '';
-      };
+      # The imo loss value is fixed now, so cake-sqm writes the final number
+      # when it builds the class and nothing has to correct it afterwards.
+      # What varies by day is whether the estate is shaped or dropped at all,
+      # and that is set membership rather than a tc parameter — see
+      # imo-policy.service in ip-blocklist.nix.
     };
-
-    systemd.timers = lib.mkIf config.services.pppd.enable {
-      imo-throttle-schedule = {
-        description = "Re-evaluate the imo loss value every half hour";
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          # Half-hourly because the windows end at 11:30 and 21:30; an hourly
-          # tick would hold peak loss for thirty minutes too long.
-          OnCalendar = "*:00,30";
-          Persistent = true;
-        };
-      };
-    };
-
-    # Exposed the same way tools.nix exposes tempblock/tempthrottle, so the
-    # comment above pointing operators at `imo-loss-for` is actually true.
-    environment.systemPackages = [ imoLossFor ];
   };
 }

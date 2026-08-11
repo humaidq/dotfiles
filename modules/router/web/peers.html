@@ -14,6 +14,12 @@ span.shape { border-radius: 3px; padding: .1rem .4rem; font-size: .85em; }
 span.blocked { background: #d33; color: #fff; }
 span.throttled { background: #e88; color: #fff; }
 span.imo { background: #eb4; color: #333; }
+span.label { font-size: .85em; }
+code.port { font-size: .85em; color: #555; }
+/* A port the router drops LAN->WAN. Bordered rather than filled so it reads as
+   a note on the port and not as another status like the shape badges above. */
+code.port.suspect { color: #a00; font-weight: 600; border: 1px solid #a00; border-radius: 3px; padding: 0 .2rem; }
+span.more { font-size: .85em; color: #888; }
 button { padding: .25rem .6rem; cursor: pointer; }
 p.note { color: #666; }
 p.error { color: #a00; font-weight: 600; }
@@ -22,10 +28,11 @@ p.error { color: #a00; font-weight: 600; }
 <body>
 <h1>Peers for {{.Device}}</h1>
 <p class="note">Live connection table. A peer that has stopped is not listed, and an idle device shows nothing. History lives on the dashboard.</p>
+<p class="note">Traffic names the far end's port, not the payload: &ldquo;HTTPS&rdquo; means tcp/443 and nothing more. <span class="label">call</span> is different &mdash; it means the router matched the STUN signature on this conversation. A <code class="port suspect">red port</code> is one dropped LAN&rarr;WAN by the port blocklist.</p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 {{if .Peers}}
 <table>
-<tr><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th class="num">Share</th><th>Status</th><th>Actions</th></tr>
+<tr><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th class="num">Share</th><th>Traffic</th><th>Status</th><th>Actions</th></tr>
 {{range .Peers}}
 <tr{{if .High}} class="high"{{end}}>
 <td>{{.Addr}}</td>
@@ -34,6 +41,14 @@ p.error { color: #a00; font-weight: 600; }
 <td>{{.Country}}</td>
 <td class="num">{{.Bytes}}</td>
 <td class="num">{{.SharePct}}%</td>
+<td>
+{{- with .Traffic -}}
+{{if .Label}}<span class="label">{{.Label}}</span> {{end}}
+{{- range .Ports}}<code class="port{{if .Suspect}} suspect{{end}}">{{.Text}}</code> {{end}}
+{{- if .More}}<span class="more">+{{.More}}</span>{{end}}
+{{- if and (not .Label) (not .Ports)}}—{{end}}
+{{- end -}}
+</td>
 <td>{{if .Shape}}<span class="shape {{.Shape}}">{{.Shape}}</span>{{else}}—{{end}}</td>
 <td>
 <form method="post" action="/peers/{{$.Device}}/throttle" style="display:inline">

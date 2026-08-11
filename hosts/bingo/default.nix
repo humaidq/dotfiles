@@ -131,6 +131,12 @@
       # what this router actually owns.
       lanAddress = "192.168.50.1/24";
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      # Dropped outright on odd days of the month, shaped on even ones. Unlike
+      # bongo this site is not willing to refuse imo every day, and a permanent
+      # throttle does not hold either: once a call has gone peer to peer the
+      # packets never touch a listed address, so the shaped tier only ever bites
+      # call setup and the relayed leg.
+      imoPolicy = "alternate";
       dhcp = {
         rangeStart = "192.168.50.100";
         rangeEnd = "192.168.50.250";

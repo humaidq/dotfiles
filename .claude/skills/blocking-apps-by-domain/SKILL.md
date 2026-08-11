@@ -424,8 +424,9 @@ from a run:
   no DNS answer in the capture. That is `sg.bigo.overwall`'s
   `IBackupLbsConfig`. When a run's table shows every hostname as `DNS` with no
   `SNI` but the `IP` section is populated, the blocklist is working and the
-  app is winning anyway — go to `custom-imo-list.txt` as a throttled entry
-  (imo is throttled, not blocked outright — see `sifr.router.imoThrottle`),
+  app is winning anyway — go to `custom-imo-list.txt` (what that file's
+  addresses get is per-host and per-day, set by `sifr.router.imoPolicy`:
+  dropped on bongo, blocked on odd days and shaped on even ones on bingo),
   and prefer the operator's own AS (imo announces 27 prefixes from AS36131,
   PageBites) over individual addresses on shared clouds, which rotate.
 - **The packed-app case — the tool's original justification — remains

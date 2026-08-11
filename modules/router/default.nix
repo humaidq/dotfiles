@@ -136,34 +136,54 @@ in
         description = "Random packet loss applied to throttled addresses.";
       };
     };
-    # A second throttle tier, independent of `throttle` above. imo is rate
-    # capped at every hour of the day and made lossy only during the windows
-    # the household actually places calls. The reasoning, and the fact that
-    # this replaces an outright block that kept losing to re-homing, is in
-    # docs/superpowers/specs/2026-08-08-imo-throttle-tier-design.md.
+    # What the addresses in custom-imo-list.txt get. The two sites want
+    # different answers, hence a per-host option rather than a constant: one
+    # refuses imo outright, the other alternates by day. See
+    # docs/superpowers/specs/2026-08-11-imo-per-host-policy-design.md for why
+    # only the IP tier alternates while the DNS and port layers stay closed on
+    # both, and docs/superpowers/specs/2026-08-08-imo-throttle-tier-design.md
+    # for how the throttle tier came to exist at all.
+    imoPolicy = lib.mkOption {
+      type = lib.types.enum [
+        "throttle"
+        "block"
+        "alternate"
+      ];
+      default = "throttle";
+      description = ''
+        How the imo estate is treated on this router.
+
+        "throttle" marks it into the shaped tc class, "block" drops it at all
+        hours, and "alternate" blocks it on odd days of the month and throttles
+        it on even ones.
+
+        Day of month rather than a strict alternation from some epoch, because
+        it can be read off a calendar. The price is that the 31st and the 1st
+        are both odd, so seven times a year there are two block days in a row.
+
+        The default is "throttle" so that a router which sets nothing behaves
+        exactly as it did before this option existed.
+      '';
+    };
+    # A second throttle tier, independent of `throttle` above, applied whenever
+    # imoPolicy is throttling. Rate capped and lossy at every hour: unlike the
+    # tunnel tier there is no added latency, because for imo the cap and the
+    # loss are the whole mechanism.
     imoThrottle = {
       rate = lib.mkOption {
         type = lib.types.str;
         default = "384kbit";
         description = "Rate cap applied to imo addresses, each direction, at all hours.";
       };
-      baseLoss = lib.mkOption {
+      # Flat, where this was once a base value and a higher one during the
+      # windows the household places calls in. Nothing was left using the
+      # schedule once bongo moved to blocking outright and bingo went flat, and
+      # a half-hourly timer maintaining a value nothing reads is machinery that
+      # can only break. Git history has the windowed version.
+      loss = lib.mkOption {
         type = lib.types.str;
-        default = "0.3%";
-        description = "Packet loss applied to imo addresses outside the peak windows.";
-      };
-      peakLoss = lib.mkOption {
-        type = lib.types.str;
-        default = "25%";
-        description = "Packet loss applied to imo addresses inside the peak windows.";
-      };
-      peakWindows = lib.mkOption {
-        type = with lib.types; listOf str;
-        default = [
-          "07:00-11:30"
-          "15:30-21:30"
-        ];
-        description = "Local-time windows, each HH:MM-HH:MM, during which peakLoss applies instead of baseLoss.";
+        default = "3%";
+        description = "Packet loss applied to imo addresses, at all hours.";
       };
     };
 

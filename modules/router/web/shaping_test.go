@@ -17,6 +17,7 @@ func TestShapeIndexClassifies(t *testing.T) {
 		"throttle4":    setDoc(`"203.0.113.10"`),
 		"imo4":         setDoc(`"203.0.113.20"`),
 		"local_block4": setDoc(`"203.0.113.30",{"prefix":{"addr":"198.51.100.0","len":24}}`),
+		"imo_block4":   setDoc(`"203.0.113.40"`),
 		"throttle6":    setDoc(`"2001:db8::1"`),
 	})
 
@@ -24,6 +25,9 @@ func TestShapeIndexClassifies(t *testing.T) {
 		{"203.0.113.10", shapeThrottled},
 		{"203.0.113.20", shapeIMO},
 		{"203.0.113.30", shapeBlocked},
+		// The imo estate on a blocking day: dropped, so it must not read as
+		// the shaped imo tier.
+		{"203.0.113.40", shapeBlocked},
 		{"198.51.100.7", shapeBlocked},          // inside the blocked prefix
 		{"198.51.101.7", shapeNone},             // just outside it
 		{"203.0.113.99", shapeNone},             // in no set

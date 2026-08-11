@@ -7,6 +7,19 @@
 let
   cfg = config.sifr.router;
   routerWeb = pkgs.callPackage ./web/package.nix { };
+
+  # The tunnel transports dropped LAN->WAN, read from the same file the nft set
+  # is generated from so the peers page cannot drift from the firewall. Only
+  # used to flag a port visually, so a line this does not understand is skipped
+  # rather than fatal — the generator in ip-blocklist.nix is the authority on
+  # that file and already fails the build on a malformed entry.
+  suspectPorts =
+    let
+      lines = lib.splitString "\n" (builtins.readFile ./custom-port-blocklist.txt);
+      stripped = map (line: lib.head (lib.splitString "#" line)) lines;
+      matches = map (line: builtins.match "[[:space:]]*([0-9]+)[[:space:]]*" line) stripped;
+    in
+    map lib.head (lib.filter (match: match != null) matches);
 in
 {
   config = lib.mkIf cfg.enable {
@@ -17,8 +30,14 @@ in
       # after it narrows, but does not eliminate, the race the retry loop in
       # web/main.go's mesh listener is there to absorb — nebula being "started"
       # per systemd does not guarantee the address is assigned yet.
-      after = [ "network-online.target" ] ++ lib.optional (cfg.meshAddress != null) "nebula@sifr0.service";
-      wants = [ "network-online.target" ] ++ lib.optional (cfg.meshAddress != null) "nebula@sifr0.service";
+      after = [
+        "network-online.target"
+      ]
+      ++ lib.optional (cfg.meshAddress != null) "nebula@sifr0.service";
+      wants = [
+        "network-online.target"
+      ]
+      ++ lib.optional (cfg.meshAddress != null) "nebula@sifr0.service";
       wantedBy = [ "multi-user.target" ];
       path = with pkgs; [
         iproute2
@@ -51,6 +70,10 @@ in
           "ROUTER_LISTEN_LAN=${lib.head (lib.splitString "/" cfg.lanAddress)}:80"
           "ROUTER_LAN_CIDR=${cfg.lanAddress}"
           "ROUTER_IP2ASN_FILE=${./ip2asn-combined.tsv}"
+          # Both feed the peers page's traffic column: which ports to flag, and
+          # which conntrack mark means the qos chain recognised a call.
+          "ROUTER_SUSPECT_PORTS=${lib.concatStringsSep "," suspectPorts}"
+          "ROUTER_CALL_MARK=${toString cfg.qos.highPriorityMark}"
         ]
         ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
         ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80";

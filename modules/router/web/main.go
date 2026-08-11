@@ -424,7 +424,9 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
 		return fmt.Errorf("parse peers index template: %w", err)
 	}
 	leasesPath := os.Getenv("ROUTER_DHCP_LEASES_FILE")
-	handler := newPeersServer(prefix, table, peersTmpl, indexTmpl, leasesPath).mux()
+	peers := newPeersServer(prefix, table, peersTmpl, indexTmpl, leasesPath)
+	peers.namer = newNamerFromEnv()
+	handler := peers.mux()
 	go serveMeshWithRetry(validAddr, handler)
 	return nil
 }

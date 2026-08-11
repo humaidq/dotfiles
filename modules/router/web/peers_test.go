@@ -353,3 +353,52 @@ func TestPeersPageShowsShapingStatus(t *testing.T) {
 		t.Fatalf("already-throttled peer not marked in the page: %q", rec.Body.String())
 	}
 }
+
+// The other tests render a stub template, so nothing here would otherwise
+// notice a syntax error in the real peers.html — and a template that fails to
+// parse takes the whole peers page down at startup, not just one column.
+func TestRealTemplateRendersTrafficColumn(t *testing.T) {
+	tmpl, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	data := peersPageData{
+		Device: "192.168.0.10",
+		Peers: []peerRow{
+			{
+				Addr: "203.0.113.10", Bytes: "30.8 kB", SharePct: "80.0", High: true,
+				Traffic: traffic{
+					Label: "call",
+					Ports: []portChip{{Text: "udp/3478"}, {Text: "tcp/889", Suspect: true}},
+					More:  2,
+				},
+			},
+			// A peer with nothing recorded: the column must still render a cell.
+			{Addr: "203.0.113.20", Bytes: "1 kB", SharePct: "20.0"},
+		},
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, data); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	body := out.String()
+	for _, want := range []string{
+		`<span class="label">call</span>`,
+		`<code class="port">udp/3478</code>`,
+		`<code class="port suspect">tcp/889</code>`,
+		`<span class="more">+2</span>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("rendered page is missing %s\n%s", want, body)
+		}
+	}
+	// Every row keeps the same cell count, or the table skews from here down.
+	if got, want := strings.Count(body, "<tr"), 3; got != want {
+		t.Fatalf("got %d rows (including the header), want %d", got, want)
+	}
+	for _, row := range strings.Split(body, "<tr")[1:] {
+		if got := strings.Count(row, "<td"); got != 0 && got != 9 {
+			t.Fatalf("row has %d cells, want 9:\n%s", got, row)
+		}
+	}
+}

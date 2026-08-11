@@ -1,4 +1,4 @@
-# imo (com.imo.android.imoim) — throttled, not blocked.
+# imo (com.imo.android.imoim) — dropped or shaped, per host and per day.
 #
 # These addresses were blocked outright in custom-ip-blocklist.txt across
 # eleven documented runs. Every run had the same shape: a layer was blocked,
@@ -8,10 +8,29 @@
 # minute, a slow one is not, because nothing fails cleanly enough to trigger
 # failover.
 #
-# Matching traffic is rate capped at sifr.router.imoThrottle.rate at all
-# hours, and given sifr.router.imoThrottle.peakLoss during the call-peak
-# windows, baseLoss otherwise. Format is the same as every other list here:
-# one address or CIDR per line, comments free-form.
+# The throttle that answered that has since run into its own limit: once an
+# imo call has gone peer to peer the packets never touch an address on this
+# list, so shaping the estate only ever reaches call setup and the relayed
+# leg. So what happens to a matching packet is now a per-host decision,
+# sifr.router.imoPolicy:
+#
+#   block      — dropped at every hour. bongo.
+#   throttle   — rate capped at sifr.router.imoThrottle.rate and given
+#                sifr.router.imoThrottle.loss, at every hour.
+#   alternate  — blocked on odd days of the month, throttled on even ones.
+#                bingo. `imo-policy-today` on the router says which is in
+#                force, and takes a day of month to answer for any date.
+#
+# This file feeds both outcomes: imo-policy.service loads it into imo4/imo6
+# (marked 0x3, shaped by tc) or into imo_block4/imo_block6 (dropped in
+# forward_blocklists), never both. Format is the same as every other list
+# here: one address or CIDR per line, comments free-form.
+#
+# The DNS and port layers do not alternate. imo's hostnames stay sinkholed in
+# custom-blocklist.txt and its tunnel ports stay dropped in
+# custom-port-blocklist.txt, on both routers, every day — the app dials
+# hardcoded addresses regardless of what DNS answers, so lifting those on a
+# throttling day would buy it nothing it does not already have.
 
 # imo (com.imo.android.imoim): every prefix announced by AS36131, "IMO -
 # PageBites, Inc." — imo's own single-tenant AS, so unlike the Tencent and

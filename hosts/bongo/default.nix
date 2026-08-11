@@ -132,6 +132,10 @@
         "g.huma.id" = "10.10.0.12,10.20.0.250";
       };
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      # No shaped tier here: imo is dropped outright at every hour, and has
+      # been long enough that the throttle compromise bingo runs is not worth
+      # carrying at this site.
+      imoPolicy = "block";
       # Same gate as the secret above, so this does not reference a secret
       # that the client specialisation no longer declares.
       dhcp.hostsFile =
