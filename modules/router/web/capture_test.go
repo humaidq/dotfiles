@@ -209,10 +209,11 @@ func (w *failingWriter) Write(p []byte) (int, error) {
 }
 
 func TestPcapRecordsReportsAWriteFailure(t *testing.T) {
-	// Fail on the second write (the payload write of the first record).
+	// Write sequence for a one-record stream: 1=global header (from pcapHeader),
+	// 2=record header, 3=record payload. Fail on write #3 (the payload write).
 	stream := pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 50)
 	src := bytes.NewReader(stream)
-	dst := &failingWriter{fail: 2}
+	dst := &failingWriter{fail: 3}
 	var count atomic.Uint64
 
 	order, err := pcapHeader(dst, src)
@@ -228,12 +229,15 @@ func TestPcapRecordsReportsAWriteFailure(t *testing.T) {
 }
 
 func TestPcapRecordsCountStaysOnARecordBoundaryWhenAWriteFails(t *testing.T) {
-	// A header write that succeeds followed by a payload write that fails.
-	// The count must not advance for the failed record, so it names the
-	// previous whole record boundary.
+	// Write sequence for a two-record stream: 1=global header (from pcapHeader),
+	// 2=record 1 header, 3=record 1 payload, 4=record 2 header, 5=record 2 payload.
+	// Fail on write #5 (record 2's payload). The record 2 header write succeeds,
+	// but the payload write fails, leaving a header on disk without its payload.
+	// The count must not advance for the failed record, staying at the boundary
+	// after record 1 (header + payload).
 	stream := pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 50, 50)
 	src := bytes.NewReader(stream)
-	dst := &failingWriter{fail: 4} // 1=global header, 2=first record header, 3=first payload, 4=second header
+	dst := &failingWriter{fail: 5}
 	var count atomic.Uint64
 
 	order, err := pcapHeader(dst, src)
@@ -246,8 +250,8 @@ func TestPcapRecordsCountStaysOnARecordBoundaryWhenAWriteFails(t *testing.T) {
 	if reason != stopReasonWrite {
 		t.Fatalf("reason = %q, want %q", reason, stopReasonWrite)
 	}
-	// Count must stay at the end of the first record (header + payload),
-	// not advance to include the second record header that succeeded.
+	// Count must stay at the end of the first whole record (header + payload),
+	// not advance for record 2 whose payload write failed.
 	if want := uint64(pcapGlobalHeaderLen + pcapRecordHeaderLen + 50); count.Load() != want {
 		t.Fatalf("count = %d, want %d (end of first whole record)", count.Load(), want)
 	}
