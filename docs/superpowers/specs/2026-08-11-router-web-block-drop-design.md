@@ -1,6 +1,6 @@
 # Blocking that actually blocks, and a drop button
 
-Status: design, approved. Nothing below is built yet.
+Status: implemented. Built across `3531b82..b299ffc`.
 
 ## Why
 
@@ -52,7 +52,7 @@ Three units, each with one job:
 |---|---|
 | `killconn` | Remove live conntrack entries for an address. Touches no firewall state. |
 | `tempblock` | Install and remove the drop rules. Calls `killconn` once the rules are in. |
-| `router-web` | Present three buttons; run one of the tools; report what happened. |
+| `router-web` | Present the buttons (throttle, block, drop, drop all); run one of the tools; report what happened. |
 
 `killconn` exists as its own tool rather than as a `tempblock` subcommand for
 two reasons. It is genuinely a different operation — it changes nothing
