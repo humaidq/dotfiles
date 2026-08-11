@@ -366,6 +366,72 @@ func landingMux(config pageData, tmpl *template.Template) *http.ServeMux {
 	return mux
 }
 
+// meshListenAddr validates that the mesh listen address names a specific
+// interface address. A wildcard bind would accept connections on every
+// interface including the LAN, which would defeat the entire reason the peers
+// routes live on a separate listener.
+func meshListenAddr(raw string) (string, error) {
+	host, port, err := net.SplitHostPort(raw)
+	if err != nil {
+		return "", fmt.Errorf("not host:port: %w", err)
+	}
+	if host == "" {
+		return "", fmt.Errorf("wildcard address: the peers routes must bind one interface address, not every interface")
+	}
+	addr, err := netip.ParseAddr(host)
+	if err != nil {
+		return "", fmt.Errorf("host %q is not an IP address: %w", host, err)
+	}
+	if addr.IsUnspecified() {
+		return "", fmt.Errorf("wildcard address %q: the peers routes must bind one interface address, not every interface", host)
+	}
+	if port == "" {
+		return "", fmt.Errorf("missing port")
+	}
+	return raw, nil
+}
+
+// startMeshServer validates configuration and starts the peers listener in
+// its own goroutine. Failures are returned rather than fatal: no peers
+// listener means no firewall mutations, which already fails closed in the way
+// that matters, and taking the LAN landing page down over a mesh
+// misconfiguration would turn a bind mistake into a full outage.
+func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
+	validAddr, err := meshListenAddr(meshAddr)
+	if err != nil {
+		return fmt.Errorf("invalid ROUTER_LISTEN_MESH %q: %w", meshAddr, err)
+	}
+	prefix, err := netip.ParsePrefix(lanCIDR)
+	if err != nil {
+		return fmt.Errorf("ROUTER_LAN_CIDR %q: %w", lanCIDR, err)
+	}
+	var table *ASNTable
+	if asnPath != "" {
+		table, err = LoadASNTable(asnPath)
+		if err != nil {
+			// Degrade rather than fail: attribution is the nice-to-have, the
+			// peer list is the point.
+			log.Printf("ip2asn table unavailable, peers will show unknown ASNs: %v", err)
+			table = nil
+		}
+	}
+	peersTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers.html"))
+	if err != nil {
+		return fmt.Errorf("parse peers template: %w", err)
+	}
+	meshServer := &http.Server{
+		Addr:    validAddr,
+		Handler: newPeersServer(prefix, table, peersTmpl).mux(),
+	}
+	go func() {
+		log.Printf("serving peers page on http://%s", validAddr)
+		if err := meshServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("peers page disabled: %v", err)
+		}
+	}()
+	return nil
+}
+
 func main() {
 	root := flag.String("root", ".", "directory containing static files")
 	addr := flag.String("addr", ":80", "listen address")
@@ -394,44 +460,22 @@ func main() {
 
 	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl)}
 
-	errs := make(chan error, 2)
+	lanErrs := make(chan error, 1)
 	go func() {
 		log.Printf("serving landing page on http://%s", lanAddr)
-		errs <- lanServer.ListenAndServe()
+		lanErrs <- lanServer.ListenAndServe()
 	}()
 
 	// The peers routes exist only when a mesh address is configured. A router
-	// without one behaves exactly as it did before this feature.
+	// without one behaves exactly as it did before this feature. A mesh
+	// startup failure is logged, never fatal: see startMeshServer.
 	if meshAddr != "" && lanCIDR != "" {
-		prefix, err := netip.ParsePrefix(lanCIDR)
-		if err != nil {
-			log.Fatalf("ROUTER_LAN_CIDR %q: %v", lanCIDR, err)
+		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot); err != nil {
+			log.Printf("peers page disabled: %v", err)
 		}
-		var table *ASNTable
-		if asnPath != "" {
-			table, err = LoadASNTable(asnPath)
-			if err != nil {
-				// Degrade rather than fail: attribution is the nice-to-have,
-				// the peer list is the point.
-				log.Printf("ip2asn table unavailable, peers will show unknown ASNs: %v", err)
-				table = nil
-			}
-		}
-		peersTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers.html"))
-		if err != nil {
-			log.Fatalf("parse peers template: %v", err)
-		}
-		meshServer := &http.Server{
-			Addr:    meshAddr,
-			Handler: newPeersServer(prefix, table, peersTmpl).mux(),
-		}
-		go func() {
-			log.Printf("serving peers page on http://%s", meshAddr)
-			errs <- meshServer.ListenAndServe()
-		}()
 	}
 
-	if err := <-errs; err != nil && err != http.ErrServerClosed {
+	if err := <-lanErrs; err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server failed: %v", err)
 	}
 }

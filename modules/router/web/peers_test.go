@@ -228,3 +228,31 @@ func TestLANMuxHasNoPeersRoutes(t *testing.T) {
 		}
 	}
 }
+
+func TestMeshListenAddrRejectsWildcard(t *testing.T) {
+	for _, raw := range []string{":80", "0.0.0.0:80", "[::]:80"} {
+		if _, err := meshListenAddr(raw); err == nil {
+			t.Fatalf("meshListenAddr(%q) accepted a wildcard address", raw)
+		}
+	}
+}
+
+func TestMeshListenAddrAcceptsSpecificAddress(t *testing.T) {
+	for _, raw := range []string{"192.168.0.10:80", "[2001:db8::1]:80"} {
+		got, err := meshListenAddr(raw)
+		if err != nil {
+			t.Fatalf("meshListenAddr(%q) rejected a specific address: %v", raw, err)
+		}
+		if got != raw {
+			t.Fatalf("meshListenAddr(%q) = %q, want it returned unchanged", raw, got)
+		}
+	}
+}
+
+func TestMeshListenAddrRejectsMalformed(t *testing.T) {
+	for _, raw := range []string{"", "notanaddress", "192.168.0.10", "host.example:80"} {
+		if _, err := meshListenAddr(raw); err == nil {
+			t.Fatalf("meshListenAddr(%q) accepted malformed input", raw)
+		}
+	}
+}
