@@ -15,6 +15,13 @@ span.blocked { background: #d33; color: #fff; }
 span.throttled { background: #e88; color: #fff; }
 span.imo { background: #eb4; color: #333; }
 span.label { font-size: .85em; }
+/* The call marker is filled green rather than left as plain text: it is the one
+   label here derived from the payload signature rather than from a port number,
+   and the point of the colour is that a call can be picked out of a long table
+   at a glance. Green because it marks recognised traffic, not a problem — the
+   red and orange badges in the Status column mean something is being acted on. */
+span.label.call { background: #2a7d4f; color: #fff; border-radius: 3px; padding: .1rem .4rem; }
+span.dir { display: block; font-size: .8em; color: #666; font-variant-numeric: tabular-nums; }
 code.port { font-size: .85em; color: #555; }
 /* A port the router drops LAN->WAN. Bordered rather than filled so it reads as
    a note on the port and not as another status like the shape badges above. */
@@ -28,7 +35,8 @@ p.error { color: #a00; font-weight: 600; }
 <body>
 <h1>Peers for {{.Device}}</h1>
 <p class="note">Live connection table. A peer that has stopped is not listed, and an idle device shows nothing. History lives on the dashboard.</p>
-<p class="note">Traffic names the far end's port, not the payload: &ldquo;HTTPS&rdquo; means tcp/443 and nothing more. <span class="label">call</span> is different &mdash; it means the router matched the STUN signature on this conversation. A <code class="port suspect">red port</code> is one dropped LAN&rarr;WAN by the port blocklist.</p>
+<p class="note">Bytes are per peer for the life of each connection, split by direction from this device: &uarr; sent, &darr; received.</p>
+<p class="note">Traffic names the far end's port, not the payload: &ldquo;HTTPS&rdquo; means tcp/443 and nothing more. <span class="label call">call</span> is different &mdash; it means the router matched the STUN signature on this conversation. A <code class="port suspect">red port</code> is one dropped LAN&rarr;WAN by the port blocklist.</p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 {{if .Peers}}
 <table>
@@ -39,11 +47,11 @@ p.error { color: #a00; font-weight: 600; }
 <td>{{if .ASN}}AS{{.ASN}}{{else}}—{{end}}</td>
 <td>{{if .Org}}{{.Org}}{{else}}unknown{{end}}</td>
 <td>{{.Country}}</td>
-<td class="num">{{.Bytes}}</td>
+<td class="num">{{.Bytes}}<span class="dir">&uarr; {{.Up}} &nbsp;&darr; {{.Down}}</span></td>
 <td class="num">{{.SharePct}}%</td>
 <td>
 {{- with .Traffic -}}
-{{if .Label}}<span class="label">{{.Label}}</span> {{end}}
+{{if .Label}}<span class="label{{if .Call}} call{{end}}">{{.Label}}</span> {{end}}
 {{- range .Ports}}<code class="port{{if .Suspect}} suspect{{end}}">{{.Text}}</code> {{end}}
 {{- if .More}}<span class="more">+{{.More}}</span>{{end}}
 {{- if and (not .Label) (not .Ports)}}—{{end}}

@@ -18,6 +18,11 @@ import (
 // disagree with it.
 type traffic struct {
 	Label string
+	// Whether Label is the call marker rather than a port name. Carried as its
+	// own field so the template can style it differently without matching on
+	// the label text, and so a future label containing a slash or a space
+	// cannot become a broken CSS class.
+	Call  bool
 	Ports []portChip
 	// How many further ports were seen beyond the ones in Ports. Rendered as
 	// "+N" rather than dropped silently, because a peer spraying twenty ports
@@ -144,7 +149,7 @@ func (n namer) describe(peer Peer) traffic {
 		out.Label = serviceLabels[peer.Ports[0].portKey]
 	}
 	if peer.HasMark(n.callMark) && !notCall[out.Label] {
-		out.Label = callLabel
+		out.Label, out.Call = callLabel, true
 	}
 	return out
 }

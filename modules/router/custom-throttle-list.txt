@@ -649,3 +649,52 @@
 # a fifth address appears, the question is worth asking again rather than
 # assuming the answer still holds.
 199.244.102.198
+
+# OVH Sp. z o. o., OVH-DEDICATED-FO, 51.75.42.0/26 — "Failover IPs", a LEGACY
+# inetnum registered PL, and a third OVH inetnum for the same client that the
+# 51.75.168.2 and 51.75.39.84 entries above already record in this /16.
+#
+# The entry worth reading for the transport rather than the address: this is the
+# cleartext-HTTP mode the note above 199.244.102.198 warns a port-based rule will
+# miss. It is a single established session on tcp/80 that tshark dissects as real
+# HTTP, so nothing about the port or the protocol looks out of place. What gives
+# it away is the content of the requests — POST / with `Host:` set to the bare
+# address rather than any name, `Content-Type: image/jpeg` alongside
+# `Content-Length: 0` so no JPEG is ever actually sent, the payload carried in a
+# `Cookie:` header instead of a body, and every response coming back as chunked
+# application/octet-stream. Several hundred identical requests to `/`, roughly
+# eight to one inbound at about 570 kbit/s, which is a tunnel carrying browsing.
+#
+# It also camouflages against a casual check, which is the part worth recording:
+# probed directly it answers tcp/80 with `Server: AkamaiGHost` and a 400 for any
+# Host header, so a whois-plus-banner glance reads it as CDN edge. It is not —
+# neighbouring addresses in the same /26 answer as ordinary Apache or not at all,
+# so the banner is specific to this host rather than something on the path. tcp/22
+# and tcp/443 accept connections but never present a banner or complete a TLS
+# handshake even with SNI, which is a listener waiting for its own client.
+# No name has ever resolved to it on either site's resolver.
+#
+# AS16276 now holds twelve addresses in this file across several inetnums, far
+# more than any other hoster here, and the four-address note further up is stale
+# at that count. An AS-wide rule is worth putting to the user again on that basis
+# alone; kept as a /32 for now, consistent with the standing decision.
+51.75.42.29
+
+# DigitalOcean DO-13, 144.126.192.0/18, and where the client above went once the
+# OVH address was shaped — opened within minutes of it, same session, no lookup
+# for the peer on either site's resolver.
+#
+# Read this one together with the entry above rather than on its own, because the
+# pair is the useful record: the same client ran tcp/22 dissecting as SSH, then
+# cleartext HTTP on tcp/80 with the payload in a Cookie header, then raw UDP on an
+# arbitrary high port, inside about half an hour. Three transports and three
+# hosters, so neither a port rule nor a per-provider rule would have followed it
+# across even one of those moves. Roughly two to one inbound here, lower than the
+# HTTP leg because shaping was already on it by the time this was sampled.
+#
+# /32 only: 144.126.192.0/18 is general-purpose cloud full of unrelated tenants,
+# and DO-13 addresses in this file have consistently been kept to /32 for that
+# reason. What is worth watching is the rotation rate on this client rather than
+# any of the individual addresses — if it keeps moving this fast, address-level
+# shaping is losing and a per-device egress policy is the honest next lever.
+144.126.236.192

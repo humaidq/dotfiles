@@ -109,3 +109,18 @@ func TestNamerEmptyPeer(t *testing.T) {
 		t.Fatalf("a peer with no recorded ports produced %+v, want an empty column", got)
 	}
 }
+
+func TestNamerMarksCallForStyling(t *testing.T) {
+	// The template styles on this flag rather than on the label text, so it has
+	// to be set exactly when the label is the call marker and never otherwise.
+	n := namer{callMark: 2}
+	if got := n.describe(peerWith([]uint64{2}, use("udp", 50121, 10))); !got.Call {
+		t.Fatal("a call was not flagged for styling")
+	}
+	if got := n.describe(peerWith(nil, use("tcp", 443, 10))); got.Call {
+		t.Fatal("ordinary traffic was flagged as a call")
+	}
+	if got := n.describe(peerWith([]uint64{2}, use("tcp", 53, 10))); got.Call {
+		t.Fatal("marked DNS was flagged as a call")
+	}
+}

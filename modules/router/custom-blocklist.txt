@@ -2614,3 +2614,28 @@ mask-h2.icloud.com
 # Wildcard for the same reason: a throwaway two-word .net-style zone with no
 # legitimate tenant, where subdomains are the expected next move.
 *.republicrocket.com
+
+# SHAREit (com.lenovo.anyshare.gps) — backend zone, not a brand domain, which is
+# why the name is worth writing down: nothing about "dalyfeds" points at the app
+# and a search for it returns nothing useful.
+#
+# Attribution is from the apex itself rather than inference. It serves a page
+# titled "H5 Center" whose obfuscated bundle carries the string `shareitBridge`
+# alongside `/fe-H5Home/` and `__FEST__`, which is SHAREit's webview JS bridge
+# and front-end stack. The subdomains back that up as live backend rather than
+# parking: offline-pkg-api answers from an AWS `elb` and sz-loc from `envoy`,
+# both 404 to a bare GET, while the apex is a static site on S3 behind
+# CloudFront. Registered 2023-12-28 through Name.com behind Domain Protection
+# Services, delegated to VIP7/VIP8.ALIDNS.COM — Alibaba DNS, consistent with the
+# operator rather than with the Akamai edge the subdomains resolve through.
+#
+# Name-only is the correct lever here and an address entry would be wrong: the
+# hostnames resolve into Akamai edgesuite and CloudFront, so blocking any address
+# behind them would take collateral across the whole house for unrelated
+# services. The wildcard costs nothing by comparison — only the operator's zone
+# is affected.
+#
+# Wildcard rather than exact because the three hostnames seen so far
+# (mcds, offline-pkg-api, sz-loc) are clearly a naming scheme with more behind
+# it, and the apex has no legitimate tenant to protect.
+*.dalyfeds.com

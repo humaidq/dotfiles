@@ -20,6 +20,8 @@ type peerRow struct {
 	Org      string
 	Country  string
 	Bytes    string
+	Up       string
+	Down     string
 	SharePct string
 	High     bool
 	Shape    string
@@ -33,8 +35,28 @@ type peersPageData struct {
 }
 
 type indexPageData struct {
-	Leases []lease
-	Error  string
+	Leases   []lease
+	Priority []priorityRow
+	Error    string
+	// Set when the connection table could not be read. Kept apart from Error,
+	// which is about the lease file: one failing must not make the page claim
+	// the other is empty.
+	PriorityError string
+}
+
+// priorityRow is one conversation the router is currently prioritising,
+// attributed to the device holding it.
+type priorityRow struct {
+	Device     string
+	DeviceName string
+	Peer       string
+	ASN        uint32
+	Org        string
+	Country    string
+	Bytes      string
+	Up         string
+	Down       string
+	Traffic    traffic
 }
 
 type peersServer struct {
@@ -89,11 +111,65 @@ func (s *peersServer) handleIndex(w http.ResponseWriter, r *http.Request) {
 		data.Error = "Cannot read the DHCP lease file, so no devices can be listed. A peers page is still reachable directly at /peers/<address>."
 	}
 	data.Leases = leases
+	data.Priority, data.PriorityError = s.priorityNow(r.Context(), leases)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.indexTmpl.Execute(w, data); err != nil {
 		log.Printf("peers index: render: %v", err)
 	}
+}
+
+// priorityNow lists every conversation on the LAN currently carrying the
+// router's high-priority conntrack mark, newest state each time the page is
+// loaded. It answers "what is being prioritised right now, anywhere on this
+// network" without opening each device's page in turn.
+//
+// Returns a notice rather than an error: the device list is the page's job and
+// must survive an unreadable connection table. An empty result with no notice
+// genuinely means nothing is prioritised.
+func (s *peersServer) priorityNow(ctx context.Context, leases []lease) ([]priorityRow, string) {
+	if s.namer.callMark == 0 {
+		// No mark configured, so there is nothing to collect and an empty
+		// table would be a claim rather than an answer.
+		return nil, ""
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, conntrackTimeout)
+	defer cancel()
+
+	raw, err := s.conntrack(ctx)
+	if err != nil {
+		log.Printf("peers index: read conntrack: %v", err)
+		return nil, "Cannot read the connection table, so prioritised traffic cannot be listed. The device list below is unaffected."
+	}
+	marked, err := parseMarkedFlows(strings.NewReader(string(raw)), s.lanNet, s.namer.callMark)
+	if err != nil {
+		log.Printf("peers index: parse conntrack: %v", err)
+		return nil, "Cannot parse the connection table, so prioritised traffic cannot be listed. The device list below is unaffected."
+	}
+
+	names := map[netip.Addr]string{}
+	for _, entry := range leases {
+		names[entry.Addr] = entry.Name
+	}
+
+	rows := make([]priorityRow, 0, len(marked))
+	for _, conv := range marked {
+		row := priorityRow{
+			Device:     conv.Device.String(),
+			DeviceName: names[conv.Device],
+			Peer:       conv.Peer.Addr.String(),
+			Bytes:      formatBytes(conv.Peer.Bytes),
+			Up:         formatBytes(conv.Peer.Up),
+			Down:       formatBytes(conv.Peer.Down),
+			Traffic:    s.namer.describe(conv.Peer),
+		}
+		if info, found := s.asn.Lookup(conv.Peer.Addr); found {
+			row.ASN, row.Org, row.Country = info.Number, info.Org, info.Country
+		}
+		rows = append(rows, row)
+	}
+	return rows, ""
 }
 
 // runTool invokes one of the router's shell tools and returns its combined
@@ -179,6 +255,8 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 		row := peerRow{
 			Addr:     peer.Addr.String(),
 			Bytes:    formatBytes(peer.Bytes),
+			Up:       formatBytes(peer.Up),
+			Down:     formatBytes(peer.Down),
 			SharePct: fmt.Sprintf("%.1f", share),
 			High:     share >= 70,
 		}

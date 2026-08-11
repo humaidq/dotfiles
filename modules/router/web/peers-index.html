@@ -6,15 +6,54 @@
 <style>
 body { font-family: system-ui, sans-serif; margin: 2rem; }
 table { border-collapse: collapse; width: 100%; max-width: 44rem; }
+table.priority { max-width: none; }
 th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #ddd; }
 th { font-weight: 600; }
 td.name { color: #666; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
 p.note { color: #666; }
 p.error { color: #a00; font-weight: 600; }
+span.label { font-size: .85em; }
+/* Same green, and for the same reason, as the call marker on a peers page. */
+span.label.call { background: #2a7d4f; color: #fff; border-radius: 3px; padding: .1rem .4rem; }
+code.port { font-size: .85em; color: #555; }
+code.port.suspect { color: #a00; font-weight: 600; border: 1px solid #a00; border-radius: 3px; padding: 0 .2rem; }
+span.more { font-size: .85em; color: #888; }
+span.dir { display: block; font-size: .8em; color: #666; font-variant-numeric: tabular-nums; }
+span.devname { color: #666; }
 </style>
 </head>
 <body>
 <h1>Devices</h1>
+
+<h2>Prioritised now</h2>
+<p class="note">Every conversation on the LAN the router is currently putting in the priority queue, whichever device is holding it. <span class="label call">call</span> means the STUN signature matched the payload; the rest are here because their port is on the high-priority list. Live &mdash; reload to resample.</p>
+{{if .PriorityError}}<p class="error">{{.PriorityError}}</p>{{end}}
+{{if .Priority}}
+<table class="priority">
+<tr><th>Device</th><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th>Traffic</th></tr>
+{{range .Priority}}
+<tr>
+<td><a href="/peers/{{.Device}}">{{.Device}}</a>{{if .DeviceName}} <span class="devname">{{.DeviceName}}</span>{{end}}</td>
+<td>{{.Peer}}</td>
+<td>{{if .ASN}}AS{{.ASN}}{{else}}—{{end}}</td>
+<td>{{if .Org}}{{.Org}}{{else}}unknown{{end}}</td>
+<td>{{.Country}}</td>
+<td class="num">{{.Bytes}}<span class="dir">&uarr; {{.Up}} &nbsp;&darr; {{.Down}}</span></td>
+<td>
+{{- with .Traffic -}}
+{{if .Label}}<span class="label{{if .Call}} call{{end}}">{{.Label}}</span> {{end}}
+{{- range .Ports}}<code class="port{{if .Suspect}} suspect{{end}}">{{.Text}}</code> {{end}}
+{{- if .More}}<span class="more">+{{.More}}</span>{{end}}
+{{- if and (not .Label) (not .Ports)}}—{{end}}
+{{- end -}}
+</td>
+</tr>
+{{end}}
+</table>
+{{else}}{{if not .PriorityError}}<p>Nothing is being prioritised right now.</p>{{end}}{{end}}
+
+<h2>All devices</h2>
 <p class="note">Current DHCP leases. Pick one to see the peers it is talking to right now, and to throttle or block any of them.</p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 {{if .Leases}}

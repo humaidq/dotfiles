@@ -31,7 +31,7 @@ func testPeersServer(t *testing.T) *peersServer {
 		t.Fatalf("LoadASNTable: %v", err)
 	}
 	indexTmpl, err := template.New("peers-index.html").Parse(
-		`{{range .Leases}}{{.Addr}}={{.Name}};{{end}}|{{.Error}}`)
+		`{{range .Leases}}{{.Addr}}={{.Name}};{{end}}|{{.Error}}|{{.PriorityError}}`)
 	if err != nil {
 		t.Fatalf("parse index template: %v", err)
 	}
@@ -366,9 +366,10 @@ func TestRealTemplateRendersTrafficColumn(t *testing.T) {
 		Device: "192.168.0.10",
 		Peers: []peerRow{
 			{
-				Addr: "203.0.113.10", Bytes: "30.8 kB", SharePct: "80.0", High: true,
+				Addr: "203.0.113.10", Bytes: "30.8 kB", Up: "1.2 kB", Down: "29.6 kB",
+				SharePct: "80.0", High: true,
 				Traffic: traffic{
-					Label: "call",
+					Label: "call", Call: true,
 					Ports: []portChip{{Text: "udp/3478"}, {Text: "tcp/889", Suspect: true}},
 					More:  2,
 				},
@@ -383,7 +384,8 @@ func TestRealTemplateRendersTrafficColumn(t *testing.T) {
 	}
 	body := out.String()
 	for _, want := range []string{
-		`<span class="label">call</span>`,
+		`<span class="label call">call</span>`,
+		`&uarr; 1.2 kB &nbsp;&darr; 29.6 kB`,
 		`<code class="port">udp/3478</code>`,
 		`<code class="port suspect">tcp/889</code>`,
 		`<span class="more">+2</span>`,
@@ -400,5 +402,118 @@ func TestRealTemplateRendersTrafficColumn(t *testing.T) {
 		if got := strings.Count(row, "<td"); got != 0 && got != 9 {
 			t.Fatalf("row has %d cells, want 9:\n%s", got, row)
 		}
+	}
+}
+
+func TestIndexListsPrioritisedConversations(t *testing.T) {
+	server := testPeersServer(t)
+	server.namer = namer{callMark: 2}
+	server.conntrack = func(context.Context) ([]byte, error) {
+		return []byte(markedFixture), nil
+	}
+	server.indexTmpl = template.Must(template.New("peers-index.html").Parse(
+		`{{range .Priority}}{{.Device}}/{{.DeviceName}}>{{.Peer}}:{{.Traffic.Label}},{{.Bytes}},{{.Up}},{{.Down}};{{end}}|{{.PriorityError}}`))
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	body := rec.Body.String()
+
+	// The device's lease name is carried through, so the row is readable
+	// without cross-referencing the table below it.
+	if !strings.Contains(body, "192.168.0.10/device-a>203.0.113.10:call,18.6 KiB,8.6 KiB,10.0 KiB;") {
+		t.Fatalf("prioritised call missing or malformed: %q", body)
+	}
+	// A device with no hostname still appears, with an empty name.
+	if !strings.Contains(body, "192.168.0.20/>203.0.113.20:call") {
+		t.Fatalf("unnamed device missing from the prioritised list: %q", body)
+	}
+	// Marked DNS is listed, but as DoT rather than as a call.
+	if !strings.Contains(body, "203.0.113.30:DoT") {
+		t.Fatalf("marked DoT should be listed under its own label: %q", body)
+	}
+}
+
+func TestIndexSurvivesUnreadableConntrack(t *testing.T) {
+	server := testPeersServer(t)
+	server.namer = namer{callMark: 2}
+	server.conntrack = func(context.Context) ([]byte, error) { return nil, errFake }
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 — the device list must survive a dead connection table", rec.Code)
+	}
+	// The lease list is still there, and the failure is reported rather than
+	// rendered as "nothing is prioritised".
+	body := rec.Body.String()
+	if !strings.Contains(body, "192.168.0.10=device-a") {
+		t.Fatalf("lease list lost when conntrack failed: %q", body)
+	}
+	if !strings.Contains(body, "Cannot read the connection table") {
+		t.Fatalf("no notice shown for an unreadable connection table: %q", body)
+	}
+}
+
+func TestIndexWithoutCallMarkCollectsNothing(t *testing.T) {
+	// The zero namer is what a router that passes no ROUTER_CALL_MARK gets.
+	// It must not read conntrack at all, rather than reading it and finding
+	// nothing.
+	server := testPeersServer(t)
+	called := false
+	server.conntrack = func(context.Context) ([]byte, error) {
+		called = true
+		return []byte(markedFixture), nil
+	}
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	if called {
+		t.Fatal("conntrack was read even though no priority mark is configured")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+}
+
+// The stub templates elsewhere would not catch a syntax error in the real
+// index, and a template that fails to parse takes the whole peers page down.
+func TestRealIndexTemplateRendersPriority(t *testing.T) {
+	tmpl, err := template.ParseFiles("peers-index.html")
+	if err != nil {
+		t.Fatalf("parse peers-index.html: %v", err)
+	}
+	data := indexPageData{
+		Leases: []lease{{Addr: netip.MustParseAddr("192.168.0.10"), Name: "device-a"}},
+		Priority: []priorityRow{{
+			Device: "192.168.0.10", DeviceName: "device-a", Peer: "203.0.113.10",
+			ASN: 64496, Org: "Example Hosting", Country: "NL",
+			Bytes: "18.6 KiB", Up: "8.6 KiB", Down: "10.0 KiB",
+			Traffic: traffic{Label: "call", Call: true, Ports: []portChip{{Text: "udp/3478"}}},
+		}},
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, data); err != nil {
+		t.Fatalf("execute peers-index.html: %v", err)
+	}
+	body := out.String()
+	for _, want := range []string{
+		`<span class="label call">call</span>`,
+		`<a href="/peers/192.168.0.10">192.168.0.10</a>`,
+		`&uarr; 8.6 KiB &nbsp;&darr; 10.0 KiB`,
+		`<code class="port">udp/3478</code>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("rendered index is missing %s\n%s", want, body)
+		}
+	}
+}
+
+func TestRealIndexTemplateSaysWhenNothingIsPrioritised(t *testing.T) {
+	tmpl := template.Must(template.ParseFiles("peers-index.html"))
+	var out strings.Builder
+	if err := tmpl.Execute(&out, indexPageData{}); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if !strings.Contains(out.String(), "Nothing is being prioritised right now") {
+		t.Fatalf("an empty priority list must say so:\n%s", out.String())
 	}
 }
