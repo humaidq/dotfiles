@@ -212,3 +212,19 @@ func TestActionRefusesZonedPeerAndLogsOneLine(t *testing.T) {
 		t.Fatalf("attacker text reached the log unescaped:\n%s", buf.String())
 	}
 }
+
+func TestLANMuxHasNoPeersRoutes(t *testing.T) {
+	tmpl, err := template.New("index.html").Parse("landing")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	lan := landingMux(pageData{}, tmpl)
+
+	for _, path := range []string{"/peers/192.168.0.10", "/peers/192.168.0.10/throttle"} {
+		rec := httptest.NewRecorder()
+		lan.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("LAN mux served %s with %d; peers routes must be mesh-only", path, rec.Code)
+		}
+	}
+}

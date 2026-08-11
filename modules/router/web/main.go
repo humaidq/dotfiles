@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -345,6 +346,26 @@ func loadConfig() pageData {
 	}
 }
 
+// landingMux serves the LAN landing page and nothing else. Kept separate from
+// the peers mux so that a route added here cannot become mesh-only by
+// accident, and a peers route cannot become LAN-reachable by forgetting a
+// check.
+func landingMux(config pageData, tmpl *template.Template) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if err := tmpl.Execute(w, readSystemState(config)); err != nil {
+			log.Printf("render template: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+	})
+	return mux
+}
+
 func main() {
 	root := flag.String("root", ".", "directory containing static files")
 	addr := flag.String("addr", ":80", "listen address")
@@ -366,27 +387,51 @@ func main() {
 		log.Fatalf("parse template %s: %v", indexPath, err)
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
+	lanAddr := getenvDefault("ROUTER_LISTEN_LAN", *addr)
+	meshAddr := os.Getenv("ROUTER_LISTEN_MESH")
+	asnPath := os.Getenv("ROUTER_IP2ASN_FILE")
+	lanCIDR := os.Getenv("ROUTER_LAN_CIDR")
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := tmpl.Execute(w, readSystemState(config)); err != nil {
-			log.Printf("render template: %v", err)
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-		}
-	})
+	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl)}
 
-	server := &http.Server{
-		Addr:    *addr,
-		Handler: mux,
+	errs := make(chan error, 2)
+	go func() {
+		log.Printf("serving landing page on http://%s", lanAddr)
+		errs <- lanServer.ListenAndServe()
+	}()
+
+	// The peers routes exist only when a mesh address is configured. A router
+	// without one behaves exactly as it did before this feature.
+	if meshAddr != "" && lanCIDR != "" {
+		prefix, err := netip.ParsePrefix(lanCIDR)
+		if err != nil {
+			log.Fatalf("ROUTER_LAN_CIDR %q: %v", lanCIDR, err)
+		}
+		var table *ASNTable
+		if asnPath != "" {
+			table, err = LoadASNTable(asnPath)
+			if err != nil {
+				// Degrade rather than fail: attribution is the nice-to-have,
+				// the peer list is the point.
+				log.Printf("ip2asn table unavailable, peers will show unknown ASNs: %v", err)
+				table = nil
+			}
+		}
+		peersTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers.html"))
+		if err != nil {
+			log.Fatalf("parse peers template: %v", err)
+		}
+		meshServer := &http.Server{
+			Addr:    meshAddr,
+			Handler: newPeersServer(prefix, table, peersTmpl).mux(),
+		}
+		go func() {
+			log.Printf("serving peers page on http://%s", meshAddr)
+			errs <- meshServer.ListenAndServe()
+		}()
 	}
 
-	log.Printf("serving %s on http://%s", staticRoot, *addr)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := <-errs; err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server failed: %v", err)
 	}
 }
