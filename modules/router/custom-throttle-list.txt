@@ -439,3 +439,106 @@
 # than going to zero the way the two OVH predecessors did, so this looks like a
 # second channel opening beside the first rather than a clean handover.
 51.195.99.180
+# A second handset carrying the same client, found 2026-08-11 while watching the
+# first. It had been sitting under that device's TikTok traffic all morning and
+# only surfaced when the video stopped: DigitalOcean 68.183.0.0/16, 70% of the
+# device, roughly two to one inbound.
+#
+# The tell that ties the two handsets together is the STUN pair already blocked
+# in custom-blocklist.txt — stun.voip.blackberry.com and stun.nextcloud.com.
+# That note records them as queried "only at the site running the tunnel client,
+# and by the handsets carrying it"; both devices here probe both names, so this
+# is one client on two phones rather than two unrelated findings.
+#
+# Fronted rather than raw this time: a ClientHello carrying SNI
+# breakthinkprofile.net but no server Certificate in reply, so TLS-shaped and
+# not TLS. No device on either site has ever resolved that name — it exists in
+# SNI only and the address was dialled directly — which is why the companion
+# entry in custom-blocklist.txt closes a path nothing currently walks.
+#
+# Worth reading with the four OVH/DO entries above: on the first handset this
+# client has used UDP 46880, UDP 53904, TCP 22 and UDP 55199 in one morning, and
+# now TCP 443 on the second. The transport moves as freely as the address, so
+# the port-based reasoning that closed imo in custom-port-blocklist.txt does not
+# transfer to this family — there is no fixed transport to take, and the fourth
+# one is 443.
+68.183.242.208
+
+# Both of the above were abandoned within minutes of being shaped — the
+# DigitalOcean one went to zero packets in about six. These two are where the
+# two handsets went next, in the same round.
+#
+# 178.128.4.86 is the more useful of the pair to have on record, because of what
+# it carries: 275 HTTP POSTs to Host: republicrocket.com on port 80, no
+# User-Agent, six to one inbound. Cleartext HTTP with the payload in the body,
+# which is a transport nothing else in this file uses and which no port rule can
+# take — 80 is not blockable here. The zone is in custom-blocklist.txt; like the
+# breakthinkprofile.net entry it closes a path nothing walks, since no device on
+# either site has ever resolved the name.
+#
+# 157.15.20.173 is in APNIC-ERX 157.15.0.0/16 and was already open as a second
+# channel on that handset in the previous round before it became the primary, so
+# this client opens its replacement before it needs it rather than after.
+#
+# Read the whole run together rather than address by address. In one morning:
+# four handsets — identified by the STUN pair in custom-blocklist.txt, which is
+# what ties them to one client — seven transports (UDP 46880, UDP 53904, TCP 22
+# as SSH, UDP 55199, TCP 443 fronted, TCP 80 cleartext, UDP 55745), and eight
+# addresses across OVH France, OVH UK, OVH Germany, four DigitalOcean ranges and
+# this APNIC allocation. Five of six shaped addresses were abandoned within
+# minutes, and one handset's STUN queries resumed at the hour its throttle had
+# ground it down, so the shaping is what prompts the next move.
+#
+# Recorded plainly because the file is the argument: address-by-address does not
+# converge on this client, and a later reader deciding whether to keep adding
+# rows here should see that it was already understood at row eight.
+178.128.4.86
+157.15.20.173
+
+# The round after, and the one that changed the shape of the problem rather than
+# adding two more rows.
+#
+# 157.245.20.53 runs on tcp/21 and is FTP in name only: a dissector will label
+# forty thousand frames as FTP off the port alone, but there is no command and
+# no response code anywhere in it, just payload from the first byte. Nearly
+# fourteen to one inbound at 1.33 Mbit/s, the fastest this client has managed
+# today. 157.245.0.0/16 has produced two before — 157.245.194.245, the tcp/553
+# entry noted near the top of this file as 264 MB in one session, and
+# 157.245.194.248.
+#
+# 57.129.111.40 is on a fifth handset. Its whois reads RIPE-ERX-57, which says
+# nothing; 57.128.0.0/10 is OVH, so this is the OVH family again and not a new
+# provider.
+#
+# Two things here are worth more than the addresses. The client is now on five
+# handsets rather than one, all tied together by the STUN pair in
+# custom-blocklist.txt, and one of them is the same device already carrying imo.
+# And it has stopped doing clean handovers: the two addresses shaped in the
+# previous round were still carrying 319 kB and 57 kB while these two ran
+# alongside, where every earlier rotation went to zero. Shaping one channel no
+# longer moves the client off it; it opens another.
+157.245.20.53
+57.129.111.40
+
+# One address, and every prior node abandoned at once. In the round after the
+# two above went in, 51.195.99.180, 157.245.20.53, 57.129.111.40 and
+# 178.128.4.86 all read zero packets in the same capture, and two of the
+# handsets turned up together on this one — Huawei Cloud IE POP, 101.46.32.0/20,
+# on adjacent ports 25780 and 25787.
+#
+# Two LAN devices on one foreign host is normally the vendor-relay shape that
+# this file's camera notes warn against reading as two tunnels. It is not that
+# here, and the distinction is worth writing down: a relay session belongs to a
+# vendor with a name behind it, and the quiet device queries that one name and
+# nothing else. These two are the handsets already tied to the client by the
+# STUN pair, the host is rented compute rather than a vendor's own fleet, and
+# what they are sending is HTTP POSTs to / with no Host header and no
+# User-Agent at all — barer than the republicrocket.com channel above, which at
+# least named a host.
+#
+# Share is 29% and 35% rather than the whole of either device, which is lower
+# than most entries here. It is recorded anyway because the simultaneous
+# abandonment of four addresses is the evidence, not the share: this is where
+# everything went, and the devices are simply doing more of their ordinary
+# traffic alongside it than they were this morning.
+101.46.36.116

@@ -13,6 +13,14 @@ in
   };
   config = lib.mkIf cfg.enable {
     services.alloy.enable = true;
+
+    # Created here rather than beside the one writer in modules/router, so that
+    # the collector configured below always has a directory to read. A missing
+    # one is not benign: node_exporter reports it as a collector error on every
+    # scrape, on every host that never writes a textfile.
+    systemd.tmpfiles.rules = [
+      "d /var/lib/prometheus-node-exporter-text-files 0755 root root -"
+    ];
     # When it fails to send log, it doesn't quit. It usually takes a few
     # seconds to successfully send logs. 8 seconds should be enough.
     systemd.services.alloy = {
@@ -44,8 +52,16 @@ in
             }
           }
 
+          // The textfile collector is enabled on every client, not just the
+          // routers that currently write to it. An empty directory yields no
+          // metrics and costs nothing, whereas gating it here would mean the
+          // one module that needs it could not turn it on without reaching
+          // into this file.
           prometheus.exporter.unix "default" {
-            enable_collectors = ["systemd"]
+            enable_collectors = ["systemd", "textfile"]
+            textfile {
+              directory = "/var/lib/prometheus-node-exporter-text-files"
+            }
           }
           prometheus.scrape "default" {
             targets = prometheus.exporter.unix.default.targets

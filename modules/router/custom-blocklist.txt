@@ -2565,3 +2565,32 @@ nlb-0oihvq70lz6v3c6vn7.ap-southeast-1.nlb.aliyuncsslbintl.com
 # slow Safari loads rather than a clear notice would be the symptom if not.
 mask.icloud.com
 mask-h2.icloud.com
+
+# Tunnel front, 2026-08-11. Seen as the SNI on a fronted session from the second
+# handset carrying the tunnel client — a ClientHello naming it, no server
+# Certificate in reply, 70% of that device and roughly two to one inbound to
+# DigitalOcean 68.183.242.208, which is in custom-throttle-list.txt.
+#
+# Recorded with its limits stated: this entry is not what stops the observed
+# session. No device on either site has ever queried the name — 24h of both
+# resolvers, nothing — because the app dials the address directly and carries
+# the hostname only in SNI, the same mechanism the downstext.com entry above
+# documents. The throttle on the address is what bites; this closes the
+# resolving path in case another device ever takes the ordinary route.
+#
+# Wildcard rather than exact: the zone is a throwaway three-word .net of the
+# same shape as the fireplacetail / twilighttrekway / streamingcloth pools
+# above, so it has no legitimate tenant to protect and subdomains are the
+# expected next move rather than a risk.
+*.breakthinkprofile.net
+
+# Second front from the same client, 2026-08-11, on a third handset. This one
+# carries in cleartext: 275 HTTP POSTs to Host: republicrocket.com on port 80 to
+# DigitalOcean 178.128.4.86, no User-Agent, payload in the body rather than a
+# Cookie. Same limits as the entry above — never resolved by any device on
+# either site in 24h, so the Host header is the only place the name appears and
+# the throttle on the address is what actually bites.
+#
+# Wildcard for the same reason: a throwaway two-word .net-style zone with no
+# legitimate tenant, where subdomains are the expected next move.
+*.republicrocket.com

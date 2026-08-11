@@ -12,6 +12,7 @@ in
   imports = [
     ./dns.nix
     ./qos.nix
+    ./qos-metrics.nix
     ./pppd.nix
     ./client-mode.nix
     ./ip-blocklist.nix
@@ -177,6 +178,15 @@ in
         type = lib.types.str;
         default = "cs5";
         description = "DSCP class applied to high-priority traffic.";
+      };
+      prioritiseWebRTC = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Mark WebRTC conversations high-priority by matching the STUN magic
+          cookie in the UDP payload. Catches video calls (Teams, Slack, Meet)
+          regardless of which ports or relay addresses they negotiate.
+        '';
       };
       lowPriorityPorts = lib.mkOption {
         type = with lib.types; listOf port;
@@ -371,26 +381,108 @@ in
               oifname "${cfg.ppp}" tcp flags syn tcp option maxseg size set rt mtu comment "Clamp MSS for PPPoE WAN"
             }
 
+            # Classification and DSCP application are deliberately separated
+            # below. Every rule in the first half only ever writes a ct mark;
+            # the DSCP rules at the bottom translate the final mark into a
+            # diffserv codepoint for CAKE. Keeping them apart is what lets the
+            # classifiers be independently optional — folding the dscp rules
+            # back into the highPriorityPorts block would mean a host that
+            # enables prioritiseWebRTC without setting any high-priority ports
+            # marks its conntrack entries and then never acts on them.
+            #
+            # ct mark rather than meta mark throughout, and not just as a
+            # matter of taste: the mark lives on the conntrack entry, so it is
+            # set once by whichever packet matches and then applies to every
+            # later packet of the same conversation in both directions. That
+            # is load-bearing for the WebRTC rule below. It is also a
+            # different namespace from the meta marks that forward_throttle in
+            # ip-blocklist.nix writes (0x2/0x3 for the tc fw filters), so the
+            # two schemes cannot collide despite the overlapping numbers.
             chain qos-mark {
               type filter hook forward priority mangle; policy accept;
 
+              # Bleach DSCP arriving from the WAN before anything below can act
+              # on it. Without this the download shaper honours whatever
+              # codepoint the remote sender chose: the diffserv4 classifier on
+              # the lan0 egress qdisc reads the DSCP on the packet, and nothing
+              # else in this chain overwrites a codepoint on a flow it has not
+              # itself classified. A CDN marking bulk video AF41 would land in
+              # the Video tin, and anything marking EF or CS5 would share the
+              # Voice tin with real calls. Remote senders do not get to pick
+              # which queue they sit in on this link.
+              #
+              # Safe to do wholesale only because every classifier below keys
+              # off ct mark, which is set from the local port lists and the
+              # STUN signature rather than from the incoming codepoint — so a
+              # download that this router considers high-priority is re-marked
+              # further down regardless of having just been bleached here.
+              #
+              # cs0 rather than a `dscp set 0` on the whole tos byte: ECN lives
+              # in the low two bits of the same field and CAKE reads it, so
+              # zeroing the byte would disable ECN signalling for every
+              # forwarded flow.
+              iifname "${cfg.ppp}" meta nfproto ipv4 counter ip dscp set cs0 comment "Bleach DSCP arriving from WAN (IPv4)"
+              iifname "${cfg.ppp}" meta nfproto ipv6 counter ip6 dscp set cs0 comment "Bleach DSCP arriving from WAN (IPv6)"
+
               ${lib.optionalString (cfg.qos.highPriorityPorts != [ ]) ''
-                tcp sport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP source ports"
-                tcp dport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP destination ports"
-                udp sport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority UDP source ports"
-                udp dport { ${formatPorts cfg.qos.highPriorityPorts} } ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority UDP destination ports"
-                ct mark ${toString cfg.qos.highPriorityMark} ip dscp set ${cfg.qos.highPriorityDscp} comment "Prioritise marked IPv4 traffic"
-                ct mark ${toString cfg.qos.highPriorityMark} ip6 dscp set ${cfg.qos.highPriorityDscp} comment "Prioritise marked IPv6 traffic"
+                tcp sport { ${formatPorts cfg.qos.highPriorityPorts} } counter ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP source ports"
+                tcp dport { ${formatPorts cfg.qos.highPriorityPorts} } counter ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP destination ports"
+                udp sport { ${formatPorts cfg.qos.highPriorityPorts} } counter ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority UDP source ports"
+                udp dport { ${formatPorts cfg.qos.highPriorityPorts} } counter ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority UDP destination ports"
+              ''}
+
+              # Catches calls (Teams, Slack, Meet, and anything else built on
+              # WebRTC) without needing to know their ports or addresses,
+              # neither of which are stable.
+              #
+              # @th is the transport header, so the offset counts from the
+              # start of the UDP header: 64 bits of header then the STUN magic
+              # cookie at payload bytes 4-7, hence bit 96 for 32 bits. The
+              # cookie is a fixed constant every STUN message carries, which
+              # makes this a payload signature rather than a port guess.
+              #
+              # Only the ICE negotiation carries the cookie — the SRTP media
+              # that follows on the same 5-tuple does not, and would be
+              # unmatchable on its own. Setting a ct mark rather than a packet
+              # mark is what bridges that: the binding request marks the
+              # conntrack entry and every media packet afterwards inherits it.
+              # ICE consent freshness re-sends a binding request every few
+              # seconds, so the mark is refreshed for the life of the call.
+              #
+              # Placed after the high-priority port rules and before the
+              # low-priority ones so that the existing precedence is
+              # unchanged: an explicit low-priority port still overrides, and
+              # a bulk protocol that happens to speak STUN stays demoted.
+              #
+              # Counted because a payload match at a fixed offset is the kind
+              # of rule that silently stops matching — a zero counter here
+              # means the signature is wrong, not that nobody made a call.
+              ${lib.optionalString cfg.qos.prioritiseWebRTC ''
+                meta l4proto udp @th,96,32 0x2112a442 counter ct mark set ${toString cfg.qos.highPriorityMark} comment "Prioritise STUN/ICE (WebRTC) conversations"
               ''}
 
               ${lib.optionalString (cfg.qos.lowPriorityPorts != [ ]) ''
-                tcp sport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority TCP source ports"
-                tcp dport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority TCP destination ports"
-                udp sport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP source ports"
-                udp dport { ${formatPorts cfg.qos.lowPriorityPorts} } ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP destination ports"
-                ct mark ${toString cfg.qos.lowPriorityMark} ip dscp set ${cfg.qos.lowPriorityDscp} comment "Deprioritise marked IPv4 traffic"
-                ct mark ${toString cfg.qos.lowPriorityMark} ip6 dscp set ${cfg.qos.lowPriorityDscp} comment "Deprioritise marked IPv6 traffic"
+                tcp sport { ${formatPorts cfg.qos.lowPriorityPorts} } counter ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority TCP source ports"
+                tcp dport { ${formatPorts cfg.qos.lowPriorityPorts} } counter ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority TCP destination ports"
+                udp sport { ${formatPorts cfg.qos.lowPriorityPorts} } counter ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP source ports"
+                udp dport { ${formatPorts cfg.qos.lowPriorityPorts} } counter ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP destination ports"
               ''}
+
+              # Translate the settled ct mark into DSCP for CAKE's diffserv4
+              # classifier. Unconditional: the rules are inert when nothing
+              # upstream has set a mark.
+              #
+              # The `meta nfproto` matches are redundant as matches — nft
+              # derives the same dependency from the `ip`/`ip6` expression on
+              # its own — but not as placement. The implicit version is
+              # inserted where the family expression appears, which is after
+              # the counter, so without these the v4 and v6 counters would each
+              # tally both families and every number here would read double.
+              # Same reason for the pair on the bleach rules above.
+              ct mark ${toString cfg.qos.highPriorityMark} meta nfproto ipv4 counter ip dscp set ${cfg.qos.highPriorityDscp} comment "Prioritise marked IPv4 traffic"
+              ct mark ${toString cfg.qos.highPriorityMark} meta nfproto ipv6 counter ip6 dscp set ${cfg.qos.highPriorityDscp} comment "Prioritise marked IPv6 traffic"
+              ct mark ${toString cfg.qos.lowPriorityMark} meta nfproto ipv4 counter ip dscp set ${cfg.qos.lowPriorityDscp} comment "Deprioritise marked IPv4 traffic"
+              ct mark ${toString cfg.qos.lowPriorityMark} meta nfproto ipv6 counter ip6 dscp set ${cfg.qos.lowPriorityDscp} comment "Deprioritise marked IPv6 traffic"
             }
 
             chain early-forward {
