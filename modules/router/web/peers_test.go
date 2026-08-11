@@ -624,12 +624,30 @@ func TestActionDropAllIgnoresASubmittedPeer(t *testing.T) {
 
 func TestActionDropAllRefusesANonLANDevice(t *testing.T) {
 	// The peer guard does not apply to this route, so the device guard is the
-	// only thing standing between it and an arbitrary address.
+	// only thing standing between it and an arbitrary address. Asserting 404
+	// on the out-of-LAN address alone would also pass if the /drop-all route
+	// were never registered at all — any unrouted path 404s. So this first
+	// proves the route is live and working for an in-LAN device, then checks
+	// the out-of-LAN address is rejected and never reaches the tool. Only
+	// with the first half established does the second half's 404 mean the
+	// device guard, specifically, did the rejecting.
 	server := testPeersServer(t)
 	called := false
-	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	server.runTool = func(string, ...string) (string, error) { called = true; return "ok", nil }
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/peers/203.0.113.10/drop-all", nil)
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303 — the route must work for an in-LAN device", rec.Code)
+	}
+	if !called {
+		t.Fatal("killconn was not run for an in-LAN device")
+	}
+
+	called = false
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodPost, "/peers/203.0.113.10/drop-all", nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	server.mux().ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
@@ -679,6 +697,53 @@ func TestActionDropAllLogsWithoutAPeer(t *testing.T) {
 	}
 	if strings.Contains(line, "invalid IP") {
 		t.Fatalf("zero address leaked into the journal: %q", line)
+	}
+}
+
+func TestRealTemplateRendersAllThreeActions(t *testing.T) {
+	tmpl, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{
+		Device: "192.168.0.10",
+		Peers:  []peerRow{{Addr: "203.0.113.10", Bytes: "1 kB", SharePct: "100.0"}},
+	}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	body := out.String()
+	for _, want := range []string{
+		`action="/peers/192.168.0.10/drop"`,
+		`action="/peers/192.168.0.10/throttle"`,
+		`action="/peers/192.168.0.10/block"`,
+		`action="/peers/192.168.0.10/drop-all"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("rendered page is missing %s\n%s", want, body)
+		}
+	}
+	// Each per-row form carries the peer, or the button posts an empty address.
+	// drop-all is not among them: it is device-wide and must not carry one.
+	if got, want := strings.Count(body, `name="peer" value="203.0.113.10"`), 3; got != want {
+		t.Fatalf("%d forms carry the peer address, want %d", got, want)
+	}
+}
+
+func TestDropAllRendersWithNoPeers(t *testing.T) {
+	// The button is the device's, not the table's. An idle device renders "No
+	// current peers." and no table at all, and the button has to survive that —
+	// a device with nothing listed is exactly when you want to reset it.
+	tmpl, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{Device: "192.168.0.10"}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	if !strings.Contains(out.String(), `action="/peers/192.168.0.10/drop-all"`) {
+		t.Fatalf("drop-all button absent from an empty page:\n%s", out.String())
 	}
 }
 

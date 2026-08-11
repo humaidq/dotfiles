@@ -28,6 +28,7 @@ code.port { font-size: .85em; color: #555; }
 code.port.suspect { color: #a00; font-weight: 600; border: 1px solid #a00; border-radius: 3px; padding: 0 .2rem; }
 span.more { font-size: .85em; color: #888; }
 button { padding: .25rem .6rem; cursor: pointer; }
+form.device button { background: #fff0f0; border: 1px solid #d33; color: #a00; font-weight: 600; }
 p.note { color: #666; }
 p.error { color: #a00; font-weight: 600; }
 </style>
@@ -37,7 +38,12 @@ p.error { color: #a00; font-weight: 600; }
 <p class="note">Live connection table. A peer that has stopped is not listed, and an idle device shows nothing. History lives on the dashboard.</p>
 <p class="note">Bytes are per peer for the life of each connection, split by direction from this device: &uarr; sent, &darr; received.</p>
 <p class="note">Traffic names the far end's port, not the payload: &ldquo;HTTPS&rdquo; means tcp/443 and nothing more. <span class="label call">call</span> is different &mdash; it means the router matched the STUN signature on this conversation. A <code class="port suspect">red port</code> is one dropped LAN&rarr;WAN by the port blocklist.</p>
+<p class="note"><strong>drop</strong> ends this device&rsquo;s current connections to the peer and nothing more &mdash; the app may reconnect at once. <strong>block</strong> also stops it coming back, in both directions, for every device, until the router reboots.</p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+<form class="device" method="post" action="/peers/{{.Device}}/drop-all" style="margin: 0 0 1rem">
+<button type="submit">drop all connections</button>
+</form>
+<p class="note">Ends every connection this device has, to every peer at once, and blocks nothing. Its apps reconnect from scratch.</p>
 {{if .Peers}}
 <table>
 <tr><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th class="num">Share</th><th>Traffic</th><th>Status</th><th>Actions</th></tr>
@@ -59,6 +65,10 @@ p.error { color: #a00; font-weight: 600; }
 </td>
 <td>{{if .Shape}}<span class="shape {{.Shape}}">{{.Shape}}</span>{{else}}—{{end}}</td>
 <td>
+<form method="post" action="/peers/{{$.Device}}/drop" style="display:inline">
+<input type="hidden" name="peer" value="{{.Addr}}">
+<button type="submit">drop</button>
+</form>
 <form method="post" action="/peers/{{$.Device}}/throttle" style="display:inline">
 <input type="hidden" name="peer" value="{{.Addr}}">
 <button type="submit">throttle</button>
