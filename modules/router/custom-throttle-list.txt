@@ -605,3 +605,47 @@
 # a client defeating the shaper — check the set is populated before concluding
 # anything about the client.
 45.78.195.206
+
+# The cleanest single reading of this client anywhere in this file, and worth
+# keeping for that reason: in a five-minute window it was the handset's *only*
+# peer. Not a dominant share — 100.0%, with no second address of any kind, so
+# name resolution was going through it too.
+#
+# Scaleway instance in Warsaw (rDNS 209-75-115-151.instances.scw.cloud), tcp/22,
+# and genuinely SSH rather than something merely wearing the port — the
+# dissector reads 36830 frames of the protocol. Fourteen to one inbound, which
+# is browsing carried over a tunnel and not administration of anything.
+#
+# 151.115.52.76 further up is in the same /16, so this is the second Scaleway
+# address the client has used. Kept as a /32: 151.115.0.0/17 is SCALEWAY-WAW,
+# general-purpose instances full of unrelated tenants.
+#
+# No SSH version banner was captured, unlike the forged PuTTY/OpenSSH strings
+# noted further up — the session predated the capture window rather than being
+# negotiated inside it. Do not read the absence as a different tool.
+151.115.75.209
+# The round after the Scaleway address above was shaped, and the useful part is
+# what the handset did *not* do: it stayed on the shaped address rather than
+# rotating off it, dropping from 100% of the device to 47% and from 35 MB to
+# 2.4 MB — 63 kbit/s, i.e. the cap doing its job — and opened this alongside it
+# instead. 54.38.155.41, already in this file from 2026-08-06, came back in the
+# same round at 20 kbit/s. Both shaped, both still connected, neither replaced.
+# That is the behaviour this whole file is betting on.
+#
+# This one is SSH again — SSHv2 in the dissector on tcp/22, near-symmetric, no
+# resolver line ever. What makes it worth more than another row: 199.244.102.0/24
+# has now produced four addresses, with .118, .203 and .81 already above. Four
+# of one /24 across separate days is the strongest range evidence in this file,
+# stronger than the OVH and Hetzner cases that are only spread across inetnums.
+# The whois is unusually bare for a hoster, too — an ARIN-to-RIPE transferred
+# 199.244.100.0/22 registered 2023-11-06 with no netname, no org and no customer
+# object, where a general-purpose cloud always identifies itself (CLOUD-NBG1,
+# PCI-UK1, DO-13). So the usual "unrelated tenants" objection to a range rule is
+# weaker here than anywhere else in this file.
+#
+# Both the /24 and the whole /22 were put to the user at this point and address-
+# only was chosen, same as the AS16276 decision recorded further up. Noted so a
+# later reader can see the wider rule was live and declined, not overlooked — if
+# a fifth address appears, the question is worth asking again rather than
+# assuming the answer still holds.
+199.244.102.198
