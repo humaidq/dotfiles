@@ -56,22 +56,66 @@ validate() {
 	esac
 }
 
-# Run one deletion and print how many entries went.
+# delete() reports its count through this global rather than on stdout.
+# It used to be `count="$(delete ...)"`, but a `die` called from inside a
+# command substitution only kills that subshell — the parent script would
+# have sailed on with an empty string standing in for the count, and
+# `total=$((a + b))` either explodes or, worse, quietly does the wrong
+# arithmetic. Routing the result through a variable the caller reads after
+# the call means `die` below actually stops the script.
+deleted=0
+
+# Run one deletion and set $deleted to how many entries went.
 #
-# conntrack -D writes the deleted entries to stdout and an "N flow entries have
-# been deleted." summary to stderr, and exits 1 when N is zero. Zero is the
-# normal answer for an idle peer, not a failure, so the status is swallowed and
-# the count comes from the summary — which also means a caller sees "0" rather
-# than a script that died under set -e.
+# conntrack's own summary line, written to stderr, looks like one of:
+#
+#   conntrack v1.4.6 (conntrack-tools): 3 flow entries have been deleted.
+#   conntrack v1.4.6 (conntrack-tools): 0 flow entries have been deleted.
+#
+# and appears on BOTH of `-D`'s exit paths (0 when something matched, 1 when
+# nothing did) — it's only missing when conntrack never got to report at
+# all, e.g. sudo rejects the call or netlink returns EPERM. The count is not
+# $1: the version banner shifts every field over, so field position is read
+# relative to the fixed words "flow entries" instead, which survives a
+# conntrack-tools version that rewords the banner around them.
+#
+# That gives two ways to read the outcome, and only one of them is a real
+# failure:
+#   * the summary is present            -> legitimate result, take the count
+#     (this covers zero matched, which is the normal answer for an idle peer,
+#     not a failure — a caller should see "0", not a script that died);
+#   * the summary is absent             -> conntrack didn't run to
+#     completion, so whatever text came back (a sudo password prompt, a
+#     permission error) is a real fault, not a report, and gets surfaced
+#     instead of silently counted as zero.
+# Exit status alone can't stand in for this: it's 1 on the ordinary "nothing
+# matched" case too, so treating "nonzero exit" as failure would turn every
+# idle peer into a false alarm.
 #
 # 2>&1 >/dev/null in that order: stderr goes to the capture, then stdout is
 # discarded. Reversed, both would be discarded.
 delete() {
-	local output count
-	output="$(ct -D "$@" 2>&1 >/dev/null)" || true
-	count="$(printf '%s\n' "$output" |
-		awk '/flow entries have been deleted/ { print $1; exit }')"
-	printf '%s' "${count:-0}"
+	local output status count
+	status=0
+	output="$(ct -D "$@" 2>&1 >/dev/null)" || status=$?
+
+	if [[ "$output" == *"flow entries have been deleted"* ]]; then
+		count="$(printf '%s\n' "$output" | awk '
+			{
+				for (i = 1; i <= NF; i++)
+					if ($i == "flow" && $(i + 1) == "entries") { print $(i - 1); exit }
+			}')"
+		# Belt and braces: if the banner ever changes shape enough that the
+		# positional read above misses, fail loudly rather than hand back a
+		# non-numeric value that breaks the arithmetic at the call site.
+		case "$count" in
+		'' | *[!0-9]*) die "could not parse conntrack's summary: $output" ;;
+		esac
+		deleted="$count"
+		return 0
+	fi
+
+	die "conntrack -D failed: ${output:-exit status $status}"
 }
 
 usage() {
@@ -109,11 +153,15 @@ fi
 # dst=<peer>; an inbound-initiated one has them the other way round. One call
 # catches one of those, not both.
 if [ -n "$from" ]; then
-	a="$(delete -s "$from" -d "$peer")"
-	b="$(delete -s "$peer" -d "$from")"
+	delete -s "$from" -d "$peer"
+	a="$deleted"
+	delete -s "$peer" -d "$from"
+	b="$deleted"
 else
-	a="$(delete -d "$peer")"
-	b="$(delete -s "$peer")"
+	delete -d "$peer"
+	a="$deleted"
+	delete -s "$peer"
+	b="$deleted"
 fi
 
 total=$((a + b))
