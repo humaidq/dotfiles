@@ -16,6 +16,12 @@ func isPublicAddr(addr netip.Addr) bool {
 	if !addr.IsValid() {
 		return false
 	}
+	// A zone identifier scopes an address to a local link, so it can never
+	// belong to an internet peer. It is also unbounded attacker-controlled
+	// text that survives into String(), which is a log-forgery vector.
+	if addr.Zone() != "" {
+		return false
+	}
 	addr = addr.Unmap()
 	switch {
 	case addr.IsPrivate(),

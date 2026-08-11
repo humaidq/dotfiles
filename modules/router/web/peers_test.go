@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -168,15 +169,46 @@ func TestActionLogsToJournal(t *testing.T) {
 	for _, want := range []string{
 		"peer-action",
 		"action=throttle",
-		"peer=203.0.113.10",
+		`peer="203.0.113.10"`,
 		"asn=64496",
 		`org="Example Hosting"`,
 		"cc=NL",
-		"device=192.168.0.10",
-		"result=ok",
+		`device="192.168.0.10"`,
+		`result="ok"`,
 	} {
 		if !strings.Contains(line, want) {
 			t.Fatalf("log line missing %q: %s", want, line)
 		}
+	}
+}
+
+func TestActionRefusesZonedPeerAndLogsOneLine(t *testing.T) {
+	var buf strings.Builder
+	log.SetOutput(&buf)
+	log.SetFlags(0)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) {
+		called = true
+		return "", nil
+	}
+
+	form := url.Values{"peer": {"2001:db8::1%evil\nFORGED peer-action action=block"}}
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/throttle",
+		strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, req)
+
+	if called {
+		t.Fatal("tool was invoked for a zoned address")
+	}
+	if got := strings.Count(strings.TrimRight(buf.String(), "\n"), "\n"); got != 0 {
+		t.Fatalf("log emitted %d extra newlines; a single action must produce a single line:\n%s", got, buf.String())
+	}
+	if strings.Contains(buf.String(), "FORGED") && !strings.Contains(buf.String(), `\n`) {
+		t.Fatalf("attacker text reached the log unescaped:\n%s", buf.String())
 	}
 }

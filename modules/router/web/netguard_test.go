@@ -29,6 +29,7 @@ func TestIsPublicAddr(t *testing.T) {
 		{"255.255.255.255", false},
 		{"100.63.255.255", true},
 		{"100.128.0.1", true},
+		{"2001:db8::1%eth0", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.addr, func(t *testing.T) {

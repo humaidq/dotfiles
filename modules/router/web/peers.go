@@ -179,6 +179,6 @@ func (s *peersServer) handleAction(action, tool string) http.HandlerFunc {
 // own ages badly, and the reason is what is wanted months later.
 func (s *peersServer) logAction(action string, peer, device netip.Addr, result string) {
 	info, _ := s.asn.Lookup(peer)
-	log.Printf("peer-action action=%s peer=%s asn=%d org=%q cc=%s device=%s result=%s",
+	log.Printf("peer-action action=%s peer=%q asn=%d org=%q cc=%s device=%q result=%q",
 		action, peer, info.Number, info.Org, info.Country, device, result)
 }
