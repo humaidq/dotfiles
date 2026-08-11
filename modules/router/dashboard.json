@@ -5241,6 +5241,11 @@
                       "title": "Filter the Inspection tab to this device",
                       "url": "/d/2030cf20-20b4-4a59-91a3-0dfaba7b528a/?var-network=${network}&var-host=${__field.labels.client_ip}&${__url_time_range}",
                       "targetBlank": false
+                    },
+                    {
+                      "title": "Peers and actions on the router (mesh only)",
+                      "url": "http://${network}.s.alq.ae/peers/${__field.labels.client_ip}",
+                      "targetBlank": true
                     }
                   ]
                 },
@@ -5661,6 +5666,11 @@
                       "title": "Filter the Inspection tab to this device",
                       "url": "/d/2030cf20-20b4-4a59-91a3-0dfaba7b528a/?var-network=${network}&var-host=${__field.labels.client}&${__url_time_range}",
                       "targetBlank": false
+                    },
+                    {
+                      "title": "Peers and actions on the router (mesh only)",
+                      "url": "http://${network}.s.alq.ae/peers/${__field.labels.client}",
+                      "targetBlank": true
                     }
                   ]
                 },
@@ -5760,6 +5770,11 @@
                       "title": "Filter the Inspection tab to this device",
                       "url": "/d/2030cf20-20b4-4a59-91a3-0dfaba7b528a/?var-network=${network}&var-host=${__field.labels.client}&${__url_time_range}",
                       "targetBlank": false
+                    },
+                    {
+                      "title": "Peers and actions on the router (mesh only)",
+                      "url": "http://${network}.s.alq.ae/peers/${__field.labels.client}",
+                      "targetBlank": true
                     }
                   ]
                 },
@@ -5877,6 +5892,11 @@
                       "title": "Filter the Inspection tab to this device",
                       "url": "/d/2030cf20-20b4-4a59-91a3-0dfaba7b528a/?var-network=${network}&var-host=${__field.labels.client}&${__url_time_range}",
                       "targetBlank": false
+                    },
+                    {
+                      "title": "Peers and actions on the router (mesh only)",
+                      "url": "http://${network}.s.alq.ae/peers/${__field.labels.client}",
+                      "targetBlank": true
                     }
                   ]
                 },
