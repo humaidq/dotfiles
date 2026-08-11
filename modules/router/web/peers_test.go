@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -787,5 +789,239 @@ func TestActionInvalidatesTheShapeCacheOnlyWhenItChangedSomething(t *testing.T) 
 				t.Fatalf("throttle4 read %d times, want %d", reads, tc.want)
 			}
 		})
+	}
+}
+
+// testPeersServerWithCaptures is testPeersServer with a capture manager whose
+// captures come from a canned stream rather than a real interface.
+func testPeersServerWithCaptures(t *testing.T) *peersServer {
+	t.Helper()
+	server := testPeersServer(t)
+	server.captures = testManager(t, pcapStream(t, binary.LittleEndian, 0xa1b2c3d4, 100, 100))
+	return server
+}
+
+func postForm(path string) *http.Request {
+	req := httptest.NewRequest(http.MethodPost, path, nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req
+}
+
+func TestCaptureStartRouteRedirectsToThePage(t *testing.T) {
+	server := testPeersServerWithCaptures(t)
+	t.Cleanup(func() { _ = server.captures.Stop(testDevice) })
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, postForm("/peers/192.168.0.10/capture/start"))
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303\n%s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Location"); got != "/peers/192.168.0.10" {
+		t.Fatalf("Location = %q, want /peers/192.168.0.10", got)
+	}
+	if state := server.captures.Get(testDevice).State; state != captureRunning {
+		t.Fatalf("state = %q, want %q", state, captureRunning)
+	}
+}
+
+func TestCaptureStopRouteRedirectsToTheDownload(t *testing.T) {
+	// One click stops and downloads: the redirect target is the file, not the
+	// page. The file stays on disk so a cancelled download is still there.
+	server := testPeersServerWithCaptures(t)
+	if err := server.captures.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, postForm("/peers/192.168.0.10/capture/stop"))
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303\n%s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Location"); got != "/peers/192.168.0.10/capture.pcap" {
+		t.Fatalf("Location = %q, want /peers/192.168.0.10/capture.pcap", got)
+	}
+}
+
+func TestCaptureDownloadServesThePcapAsAnAttachment(t *testing.T) {
+	server := testPeersServerWithCaptures(t)
+	if err := server.captures.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if err := server.captures.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200\n%s", rec.Code, rec.Body.String())
+	}
+	disposition := rec.Header().Get("Content-Disposition")
+	if !strings.HasPrefix(disposition, `attachment; filename="192.168.0.10-`) {
+		t.Fatalf("Content-Disposition = %q, want an attachment named after the device", disposition)
+	}
+	if !strings.HasSuffix(disposition, `.pcap"`) {
+		t.Fatalf("Content-Disposition = %q, want a .pcap filename", disposition)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/vnd.tcpdump.pcap" {
+		t.Fatalf("Content-Type = %q, want application/vnd.tcpdump.pcap", got)
+	}
+	if rec.Body.Len() < pcapGlobalHeaderLen {
+		t.Fatalf("body is %d bytes, want at least a pcap header", rec.Body.Len())
+	}
+}
+
+func TestCaptureDownloadOfNothingIs404(t *testing.T) {
+	rec := httptest.NewRecorder()
+	testPeersServerWithCaptures(t).mux().ServeHTTP(rec,
+		httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+}
+
+func TestCaptureDiscardRouteReturnsToThePage(t *testing.T) {
+	server := testPeersServerWithCaptures(t)
+	if err := server.captures.Start(testDevice); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if err := server.captures.Stop(testDevice); err != nil {
+		t.Fatalf("Stop: %v", err)
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, postForm("/peers/192.168.0.10/capture/discard"))
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303\n%s", rec.Code, rec.Body.String())
+	}
+	if state := server.captures.Get(testDevice).State; state != captureIdle {
+		t.Fatalf("state = %q, want %q", state, captureIdle)
+	}
+}
+
+func TestCaptureRoutesRefuseCrossSiteRequests(t *testing.T) {
+	for _, path := range []string{
+		"/peers/192.168.0.10/capture/start",
+		"/peers/192.168.0.10/capture/stop",
+		"/peers/192.168.0.10/capture/discard",
+	} {
+		t.Run(path, func(t *testing.T) {
+			req := postForm(path)
+			req.Header.Set("Sec-Fetch-Site", "cross-site")
+			rec := httptest.NewRecorder()
+			testPeersServerWithCaptures(t).mux().ServeHTTP(rec, req)
+			if rec.Code != http.StatusForbidden {
+				t.Fatalf("status = %d, want 403", rec.Code)
+			}
+		})
+	}
+}
+
+func TestCaptureDownloadRefusesCrossSiteRequests(t *testing.T) {
+	// A capture is packet payloads. The download gets the same guard as the
+	// buttons rather than a weaker one because it is a GET.
+	req := httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10/capture.pcap", nil)
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	rec := httptest.NewRecorder()
+	testPeersServerWithCaptures(t).mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+}
+
+func TestCaptureRoutesRefuseADeviceOutsideTheLAN(t *testing.T) {
+	for _, path := range []string{
+		"/peers/203.0.113.10/capture/start",
+		"/peers/203.0.113.10/capture/stop",
+		"/peers/203.0.113.10/capture/discard",
+	} {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			testPeersServerWithCaptures(t).mux().ServeHTTP(rec, postForm(path))
+			if rec.Code != http.StatusNotFound {
+				t.Fatalf("status = %d, want 404", rec.Code)
+			}
+		})
+	}
+	rec := httptest.NewRecorder()
+	testPeersServerWithCaptures(t).mux().ServeHTTP(rec,
+		httptest.NewRequest(http.MethodGet, "/peers/203.0.113.10/capture.pcap", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("download status = %d, want 404", rec.Code)
+	}
+}
+
+func TestCaptureStartFailureRendersTheNoticeNotAnError(t *testing.T) {
+	// A failed start must leave the peers page working: the device's peers are
+	// the reason the operator is on this page at all.
+	server := testPeersServer(t)
+	server.captures = newCaptureManager(t.TempDir(), "lan0")
+	server.captures.start = func(context.Context, string, netip.Addr) (io.ReadCloser, error) {
+		return nil, errors.New("tcpdump not found")
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, postForm("/peers/192.168.0.10/capture/start"))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 with a notice", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "tcpdump not found") {
+		t.Fatalf("notice missing from the page: %q", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "203.0.113.10") {
+		t.Fatalf("peer table missing from a page that failed to start a capture: %q", rec.Body.String())
+	}
+}
+
+func TestCaptureRoutesAbsentWithoutAManager(t *testing.T) {
+	// A router with no capture directory configured behaves exactly as it did
+	// before this feature.
+	server := testPeersServer(t)
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, postForm("/peers/192.168.0.10/capture/start"))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+}
+
+func TestLANMuxHasNoCaptureRoutes(t *testing.T) {
+	// The capture routes are mesh-only, like every other peers route.
+	config := loadConfig()
+	tmpl := template.Must(template.New("index").Parse("landing"))
+	lan := landingMux(config, tmpl)
+	for _, path := range []string{
+		"/peers/192.168.0.10/capture/start",
+		"/peers/192.168.0.10/capture.pcap",
+	} {
+		rec := httptest.NewRecorder()
+		lan.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("landing mux answered %s with %d, want 404", path, rec.Code)
+		}
+	}
+}
+
+func TestCaptureActionsAreLogged(t *testing.T) {
+	var out strings.Builder
+	log.SetOutput(&out)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	server := testPeersServerWithCaptures(t)
+	server.mux().ServeHTTP(httptest.NewRecorder(), postForm("/peers/192.168.0.10/capture/start"))
+	server.mux().ServeHTTP(httptest.NewRecorder(), postForm("/peers/192.168.0.10/capture/stop"))
+
+	body := out.String()
+	for _, want := range []string{
+		`action=capture-start peer="-" device="192.168.0.10" result="ok"`,
+		`action=capture-stop peer="-" device="192.168.0.10" result="ok"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("journal is missing %s\n%s", want, body)
+		}
 	}
 }

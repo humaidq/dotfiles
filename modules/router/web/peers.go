@@ -32,6 +32,9 @@ type peersPageData struct {
 	Device string
 	Peers  []peerRow
 	Error  string
+	// What this device's capture slot is doing. Zero when no capture
+	// directory is configured, which the template reads as "no banner".
+	Capture captureSlot
 }
 
 type indexPageData struct {
@@ -71,6 +74,10 @@ type peersServer struct {
 	// Names the traffic column. Its zero value is usable, so a caller that
 	// does not set it gets ports without flags or call markers.
 	namer namer
+	// Set by main.go when a capture directory is configured. Nil disables the
+	// feature: no routes, no banner, and the page behaves exactly as it did
+	// before captures existed.
+	captures *captureManager
 }
 
 func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -239,6 +246,14 @@ func (s *peersServer) mux() *http.ServeMux {
 			return []string{"from", device.String()}
 		},
 	}))
+	// Absent unless a capture directory is configured, so a router without one
+	// answers 404 here exactly as it did before this feature.
+	if s.captures != nil {
+		mux.HandleFunc("POST /peers/{device}/capture/start", s.handleCaptureStart)
+		mux.HandleFunc("POST /peers/{device}/capture/stop", s.handleCaptureStop)
+		mux.HandleFunc("POST /peers/{device}/capture/discard", s.handleCaptureDiscard)
+		mux.HandleFunc("GET /peers/{device}/capture.pcap", s.handleCaptureDownload)
+	}
 	return mux
 }
 
@@ -296,6 +311,9 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	}
 
 	data := peersPageData{Device: device.String(), Error: notice}
+	if s.captures != nil {
+		data.Capture = s.captures.Get(device)
+	}
 	for _, peer := range peers {
 		share := 0.0
 		if total > 0 {
@@ -323,17 +341,31 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	}
 }
 
+// sameOrigin refuses a cross-site request, answering it and reporting false.
+//
+// Browsers send Sec-Fetch-Site on every request, and a cross-site form POST
+// carries "cross-site". Non-browser callers (curl over the mesh) send no such
+// header, so absence is allowed and only an explicit cross-origin value is
+// refused. This is the whole CSRF defence: these endpoints are otherwise
+// unauthenticated by design.
+//
+// Shared rather than repeated per handler. Copied into each of the seven
+// routes that need it, one copy would eventually drift — and on these routes
+// that means an unauthenticated firewall mutation or a capture handed to
+// another origin.
+func sameOrigin(w http.ResponseWriter, r *http.Request) bool {
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
+		http.Error(w, "cross-site request refused", http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
 // handleAction returns a handler that runs one of the router's tools against a
 // peer.
 func (s *peersServer) handleAction(action peerAction) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Browsers send Sec-Fetch-Site on every request; a cross-site form POST
-		// carries "cross-site". Non-browser callers (curl over the mesh) send
-		// no such header, so absence is allowed and only an explicit
-		// cross-origin value is refused. This is the whole CSRF defence: the
-		// endpoint is otherwise unauthenticated by design.
-		if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
-			http.Error(w, "cross-site request refused", http.StatusForbidden)
+		if !sameOrigin(w, r) {
 			return
 		}
 
@@ -401,4 +433,97 @@ func (s *peersServer) logAction(action string, peer, device netip.Addr, result s
 	info, _ := s.asn.Lookup(peer)
 	log.Printf("peer-action action=%s peer=%q asn=%d org=%q cc=%s device=%q result=%q",
 		action, peer, info.Number, info.Org, info.Country, device, result)
+}
+
+// captureRequest applies the two guards every capture route needs: the CSRF
+// check, and the {device} check that keeps the route from being pointed at an
+// address outside the LAN. It answers the request itself when either fails.
+func (s *peersServer) captureRequest(w http.ResponseWriter, r *http.Request) (netip.Addr, bool) {
+	if !sameOrigin(w, r) {
+		return netip.Addr{}, false
+	}
+	device, ok := s.device(r)
+	if !ok {
+		http.NotFound(w, r)
+		return netip.Addr{}, false
+	}
+	return device, true
+}
+
+// captureResult renders an action's outcome for the journal.
+func captureResult(err error) string {
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	return "ok"
+}
+
+func (s *peersServer) handleCaptureStart(w http.ResponseWriter, r *http.Request) {
+	device, ok := s.captureRequest(w, r)
+	if !ok {
+		return
+	}
+	err := s.captures.Start(device)
+	s.logAction("capture-start", netip.Addr{}, device, captureResult(err))
+	if err != nil {
+		// Rendered rather than returned as an error status: the device's peers
+		// are why the operator is on this page, and a capture that would not
+		// start must not take them away.
+		s.render(w, r, device, "Cannot start a capture: "+err.Error())
+		return
+	}
+	http.Redirect(w, r, "/peers/"+device.String(), http.StatusSeeOther)
+}
+
+// handleCaptureStop ends the capture and sends the browser to the download, so
+// one click both stops and collects. The file stays on disk either way, so a
+// download that fails or is cancelled has not lost the capture.
+func (s *peersServer) handleCaptureStop(w http.ResponseWriter, r *http.Request) {
+	device, ok := s.captureRequest(w, r)
+	if !ok {
+		return
+	}
+	err := s.captures.Stop(device)
+	s.logAction("capture-stop", netip.Addr{}, device, captureResult(err))
+	if err != nil {
+		s.render(w, r, device, "Cannot stop the capture: "+err.Error())
+		return
+	}
+	http.Redirect(w, r, "/peers/"+device.String()+"/capture.pcap", http.StatusSeeOther)
+}
+
+func (s *peersServer) handleCaptureDiscard(w http.ResponseWriter, r *http.Request) {
+	device, ok := s.captureRequest(w, r)
+	if !ok {
+		return
+	}
+	err := s.captures.Discard(device)
+	s.logAction("capture-discard", netip.Addr{}, device, captureResult(err))
+	if err != nil {
+		s.render(w, r, device, "Cannot discard the capture: "+err.Error())
+		return
+	}
+	http.Redirect(w, r, "/peers/"+device.String(), http.StatusSeeOther)
+}
+
+func (s *peersServer) handleCaptureDownload(w http.ResponseWriter, r *http.Request) {
+	device, ok := s.captureRequest(w, r)
+	if !ok {
+		return
+	}
+	file, info, err := s.captures.Open(device)
+	if err != nil {
+		http.Error(w, "no capture to download", http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+
+	// Named for the device and the time it stopped, because a directory of
+	// files called capture.pcap is a directory nobody can read later. No
+	// quoting needed: both halves come from a parsed address and a formatted
+	// time, neither of which can carry a quote.
+	name := fmt.Sprintf("%s-%s.pcap", device, info.ModTime().Format("20060102-1504"))
+	w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	http.ServeContent(w, r, name, info.ModTime(), file)
 }
