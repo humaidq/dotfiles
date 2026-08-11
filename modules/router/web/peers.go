@@ -182,14 +182,63 @@ func runTool(name string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
+// peerAction is one button on the peers page. Kept as data rather than as three
+// near-identical handlers so the CSRF check, the address guards and the journal
+// line stay written once — a route that forgot one of them would be an
+// unauthenticated firewall mutation.
+type peerAction struct {
+	// name labels the action in the journal.
+	name string
+	tool string
+	// argv builds the command line. A function rather than a fixed prefix
+	// because killconn takes the device as well as the peer, and the other two
+	// would otherwise carry a parameter they never use.
+	argv func(peer, device netip.Addr) []string
+	// invalidate says whether this action changes what shaping.go reads.
+	// killconn touches no firewall state, and invalidating for it would force a
+	// re-read of feeds running to tens of thousands of elements — the cost the
+	// cache exists to avoid.
+	invalidate bool
+	// peerless marks an action on the device as a whole. The peer form field is
+	// not read and argv receives the zero Addr. The public-address guard is
+	// skipped because there is no peer to guard — the {device} check is what
+	// keeps the route from being pointed anywhere else.
+	peerless bool
+}
+
+func addPeer(peer, _ netip.Addr) []string { return []string{"add", peer.String()} }
+
 func (s *peersServer) mux() *http.ServeMux {
 	mux := http.NewServeMux()
 	if s.indexTmpl != nil {
 		mux.HandleFunc("GET /{$}", s.handleIndex)
 	}
 	mux.HandleFunc("GET /peers/{device}", s.handlePage)
-	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction("throttle", "tempthrottle"))
-	mux.HandleFunc("POST /peers/{device}/block", s.handleAction("block", "tempblock"))
+	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction(peerAction{
+		name: "throttle", tool: "tempthrottle", argv: addPeer, invalidate: true,
+	}))
+	mux.HandleFunc("POST /peers/{device}/block", s.handleAction(peerAction{
+		name: "block", tool: "tempblock", argv: addPeer, invalidate: true,
+	}))
+	// Scoped to the device whose page this was posted from: the row is that
+	// device's connection, and cutting another device's flows to the same peer
+	// is more than the button implies. The unscoped form stays available from
+	// the CLI.
+	mux.HandleFunc("POST /peers/{device}/drop", s.handleAction(peerAction{
+		name: "drop", tool: "killconn",
+		argv: func(peer, device netip.Addr) []string {
+			return []string{peer.String(), "from", device.String()}
+		},
+	}))
+	// The whole device at once. An app whose session survives one endpoint
+	// dying does not survive its entire flow table going, which is what
+	// "make it reconnect" actually takes.
+	mux.HandleFunc("POST /peers/{device}/drop-all", s.handleAction(peerAction{
+		name: "drop-all", tool: "killconn", peerless: true,
+		argv: func(_, device netip.Addr) []string {
+			return []string{"from", device.String()}
+		},
+	}))
 	return mux
 }
 
@@ -275,8 +324,8 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 }
 
 // handleAction returns a handler that runs one of the router's tools against a
-// peer. action names it for the journal; tool is the executable.
-func (s *peersServer) handleAction(action, tool string) http.HandlerFunc {
+// peer.
+func (s *peersServer) handleAction(action peerAction) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Browsers send Sec-Fetch-Site on every request; a cross-site form POST
 		// carries "cross-site". Non-browser callers (curl over the mesh) send
@@ -293,30 +342,46 @@ func (s *peersServer) handleAction(action, tool string) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		peer, err := netip.ParseAddr(r.PostFormValue("peer"))
-		if err != nil {
-			http.Error(w, "unparseable peer address", http.StatusBadRequest)
-			return
-		}
-		peer = peer.Unmap()
-		if !isPublicAddr(peer) {
-			// Refused before the tool is invoked: shaping the gateway or
-			// another LAN device is hard to undo from the far side of it.
-			s.logAction(action, peer, device, "refused: not a public address")
-			http.Error(w, "peer must be a public address", http.StatusBadRequest)
-			return
+		// A peerless action operates on the device as a whole, so there is no
+		// form field to read and nothing for the address guard below to guard.
+		// peer stays the zero Addr, which argv ignores and logAction renders
+		// as "-".
+		var peer netip.Addr
+		if !action.peerless {
+			parsed, err := netip.ParseAddr(r.PostFormValue("peer"))
+			if err != nil {
+				http.Error(w, "unparseable peer address", http.StatusBadRequest)
+				return
+			}
+			peer = parsed.Unmap()
+			if !isPublicAddr(peer) {
+				// Refused before the tool is invoked: shaping the gateway or
+				// another LAN device is hard to undo from the far side of it.
+				// Applied to drop as well, where it is a weaker requirement —
+				// killing a flow is recoverable in a way firewalling one is not
+				// — because an inconsistent rule between adjacent buttons is
+				// worse than a strict one.
+				s.logAction(action.name, peer, device, "refused: not a public address")
+				http.Error(w, "peer must be a public address", http.StatusBadRequest)
+				return
+			}
 		}
 
-		output, runErr := s.runTool(tool, "add", peer.String())
+		output, runErr := s.runTool(action.tool, action.argv(peer, device)...)
 		result := "ok"
 		if runErr != nil {
 			result = fmt.Sprintf("error: %v: %s", runErr, output)
 		}
-		s.logAction(action, peer, device, result)
+		s.logAction(action.name, peer, device, result)
 
 		if runErr != nil {
-			http.Error(w, fmt.Sprintf("%s failed: %s", tool, output), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("%s failed: %s", action.tool, output), http.StatusInternalServerError)
 			return
+		}
+		// Before the redirect, or the page it lands on is served from an index
+		// up to a TTL old and the peer still reads as untouched.
+		if action.invalidate && s.shapes != nil {
+			s.shapes.invalidate()
 		}
 		http.Redirect(w, r, "/peers/"+device.String(), http.StatusSeeOther)
 	}
@@ -326,6 +391,13 @@ func (s *peersServer) handleAction(action, tool string) http.HandlerFunc {
 // share-bearing device and outcome are included deliberately: an address on its
 // own ages badly, and the reason is what is wanted months later.
 func (s *peersServer) logAction(action string, peer, device netip.Addr, result string) {
+	// A device-wide action has no peer. Rendered as "-" rather than left to
+	// print the zero Addr's "invalid IP", which reads like a rejected request
+	// in a log people grep months later.
+	if !peer.IsValid() {
+		log.Printf("peer-action action=%s peer=\"-\" device=%q result=%q", action, device, result)
+		return
+	}
 	info, _ := s.asn.Lookup(peer)
 	log.Printf("peer-action action=%s peer=%q asn=%d org=%q cc=%s device=%q result=%q",
 		action, peer, info.Number, info.Org, info.Country, device, result)

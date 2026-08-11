@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -515,5 +516,211 @@ func TestRealIndexTemplateSaysWhenNothingIsPrioritised(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Nothing is being prioritised right now") {
 		t.Fatalf("an empty priority list must say so:\n%s", out.String())
+	}
+}
+
+func TestActionDropsPeerScopedToTheDevice(t *testing.T) {
+	server := testPeersServer(t)
+	var gotName string
+	var gotArgs []string
+	server.runTool = func(name string, args ...string) (string, error) {
+		gotName, gotArgs = name, args
+		return "killed 3 flow(s): 203.0.113.10 from 192.168.0.10", nil
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop",
+		strings.NewReader("peer=203.0.113.10"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rec.Code)
+	}
+	want := []string{"203.0.113.10", "from", "192.168.0.10"}
+	if gotName != "killconn" || !slices.Equal(gotArgs, want) {
+		t.Fatalf("ran %s %v, want killconn %v", gotName, gotArgs, want)
+	}
+}
+
+func TestActionDropRefusesNonPublicPeer(t *testing.T) {
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop",
+		strings.NewReader("peer=192.168.0.1"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+	if called {
+		t.Fatal("killconn was run against a non-public address")
+	}
+}
+
+func TestActionDropRefusesCrossSiteRequest(t *testing.T) {
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop",
+		strings.NewReader("peer=203.0.113.10"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+	if called {
+		t.Fatal("killconn was run for a cross-site POST")
+	}
+}
+
+func TestActionDropsEveryFlowForTheDevice(t *testing.T) {
+	server := testPeersServer(t)
+	var gotName string
+	var gotArgs []string
+	server.runTool = func(name string, args ...string) (string, error) {
+		gotName, gotArgs = name, args
+		return "killed 12 flow(s): everything from 192.168.0.10", nil
+	}
+
+	rec := httptest.NewRecorder()
+	// No peer field at all: this action is about the device.
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rec.Code)
+	}
+	want := []string{"from", "192.168.0.10"}
+	if gotName != "killconn" || !slices.Equal(gotArgs, want) {
+		t.Fatalf("ran %s %v, want killconn %v", gotName, gotArgs, want)
+	}
+}
+
+func TestActionDropAllIgnoresASubmittedPeer(t *testing.T) {
+	// The route is device-wide by construction. A peer field posted to it — by
+	// a stale form or by hand — must not narrow or redirect the action, or the
+	// button would silently do something other than what it says.
+	server := testPeersServer(t)
+	var gotArgs []string
+	server.runTool = func(_ string, args ...string) (string, error) {
+		gotArgs = args
+		return "", nil
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all",
+		strings.NewReader("peer=203.0.113.10"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+	if !slices.Equal(gotArgs, []string{"from", "192.168.0.10"}) {
+		t.Fatalf("ran killconn %v, want [from 192.168.0.10]", gotArgs)
+	}
+}
+
+func TestActionDropAllRefusesANonLANDevice(t *testing.T) {
+	// The peer guard does not apply to this route, so the device guard is the
+	// only thing standing between it and an arbitrary address.
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/203.0.113.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+	if called {
+		t.Fatal("killconn was run against an address outside the LAN")
+	}
+}
+
+func TestActionDropAllRefusesCrossSiteRequest(t *testing.T) {
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+	if called {
+		t.Fatal("killconn was run for a cross-site POST")
+	}
+}
+
+func TestActionDropAllLogsWithoutAPeer(t *testing.T) {
+	// Follows TestActionLogsToJournal's capture idiom (strings.Builder,
+	// t.Cleanup) rather than the bytes.Buffer/defer form, so the two tests
+	// don't disagree about how to borrow the global logger.
+	var buf strings.Builder
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	server := testPeersServer(t)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+
+	line := buf.String()
+	for _, want := range []string{`action=drop-all`, `peer="-"`, `device="192.168.0.10"`, `result="ok"`} {
+		if !strings.Contains(line, want) {
+			t.Fatalf("journal line is missing %s: %q", want, line)
+		}
+	}
+	if strings.Contains(line, "invalid IP") {
+		t.Fatalf("zero address leaked into the journal: %q", line)
+	}
+}
+
+func TestActionInvalidatesTheShapeCacheOnlyWhenItChangedSomething(t *testing.T) {
+	// killconn touches no firewall state, so invalidating for it would force a
+	// needless re-read of feeds running to tens of thousands of elements.
+	for _, tc := range []struct {
+		path string
+		want int
+	}{
+		{"/peers/192.168.0.10/block", 2},
+		{"/peers/192.168.0.10/throttle", 2},
+		{"/peers/192.168.0.10/drop", 1},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			reads := 0
+			server := testPeersServer(t)
+			server.shapes = &shapeCache{
+				ttl: time.Hour,
+				read: func(_ context.Context, set string) ([]byte, error) {
+					if set == "throttle4" {
+						reads++
+					}
+					return nil, errors.New("absent")
+				},
+			}
+			// Prime the cache so the count below measures re-reads.
+			server.shapes.get(context.Background())
+
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, tc.path,
+				strings.NewReader("peer=203.0.113.10"))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.mux().ServeHTTP(rec, req)
+			if rec.Code != http.StatusSeeOther {
+				t.Fatalf("status = %d, want 303", rec.Code)
+			}
+
+			server.shapes.get(context.Background())
+			if reads != tc.want {
+				t.Fatalf("throttle4 read %d times, want %d", reads, tc.want)
+			}
+		})
 	}
 }
