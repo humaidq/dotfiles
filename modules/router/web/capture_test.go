@@ -698,6 +698,10 @@ func TestSweepSkipsARunningCapture(t *testing.T) {
 }
 
 func TestSweepIgnoresFilesThatAreNotCaptures(t *testing.T) {
+	// Sweep removes only files with valid IP addresses as names. The parse
+	// check is what guards against deleting unrelated files. The extension
+	// check is an early-out for performance; it does not solely prevent
+	// deletion of non-capture files.
 	manager := testManager(t, nil)
 	other := filepath.Join(manager.dir, "notes.txt")
 	badName := filepath.Join(manager.dir, "not-an-address.pcap")

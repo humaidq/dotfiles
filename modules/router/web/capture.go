@@ -524,6 +524,8 @@ func (m *captureManager) sweep(now time.Time) {
 	}
 	for _, item := range entries {
 		if item.IsDir() || filepath.Ext(item.Name()) != ".pcap" {
+			// Early-out on unrelated files. The parse check below is what
+			// prevents deletion of captures that are not named <IP>.pcap.
 			continue
 		}
 		device, err := netip.ParseAddr(strings.TrimSuffix(item.Name(), ".pcap"))
@@ -543,7 +545,10 @@ func (m *captureManager) sweep(now time.Time) {
 		if err != nil || now.Sub(info.ModTime()) < m.retain {
 			continue
 		}
-		if err := os.Remove(m.path(device)); err == nil {
+		// Delete the file we actually found, not a path rebuilt from its name.
+		// The file whose age was measured must be the file that is deleted.
+		target := filepath.Join(m.dir, item.Name())
+		if err := os.Remove(target); err == nil {
 			log.Printf("capture swept device=%q age=%s bytes=%d",
 				device, now.Sub(info.ModTime()).Round(time.Minute), info.Size())
 		}
@@ -551,7 +556,8 @@ func (m *captureManager) sweep(now time.Time) {
 }
 
 // sweepEvery runs the sweep until the process exits. Started once from
-// main.go; it holds no state of its own.
+// main.go; it holds no state of its own. The ticker is intentionally never
+// stopped because the sweep runs for the process's lifetime.
 func (m *captureManager) sweepEvery(interval time.Duration) {
 	for range time.Tick(interval) {
 		m.sweep(time.Now())
