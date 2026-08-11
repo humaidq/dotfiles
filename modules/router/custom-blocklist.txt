@@ -31,6 +31,21 @@ d3qvtqqyw2p8t4.cloudfront.net
 *.vip
 *.click
 *.kp
+# Iran's ccTLD, added 2026-08-11 alongside *.kp above. Checked before adding:
+# across every name this network has resolved in the last 30 days — 19548 of
+# them — not one ends in .ir, so this costs nothing that is actually in use.
+#
+# Read the limit of it: this is a name-layer entry only. Iranian-hosted
+# addresses remain reachable directly, and the tunnel clients tracked in
+# custom-throttle-list.txt dial their nodes by address without ever issuing a
+# lookup, so nothing here closes that path. Do not record this entry as having
+# done so — an IP-level rule is the only thing that would.
+#
+# A deliberate policy block, not a finding derived from traffic — same basis as
+# *.kp above, and it stands whether or not any .ir name ever turns up in a
+# capture. Recorded so a later reader does not go looking for the evidence that
+# justified it and conclude the entry was a mistake when none is found.
+*.ir
 
 # Other junk sites
 *.onlinejobs.ph
@@ -300,14 +315,62 @@ bigbigbig.club
 # TikTok live streaming. Anchored on the webcast/pull-/push- prefixes so the
 # rest of the app keeps working: the same CDN zones also serve thumbnails
 # (p16-*), video (v19.tiktokcdn.com) and the web app (lf16-*, v16-webapp).
+# One exception to that, added later and set out in full below: p16-webcast and
+# its siblings are the live asset CDN, so the `webcast` infix is blocked even
+# under the p16-/sf16-/lf16- prefixes this line otherwise protects.
 # The .wsdvs.com and .worldfcdn.com names are the CNAME targets of the live
 # edges, blocked in case a client queries them directly.
 live.tiktok.com
 /^webcast[^.]*\.(?:[^.]+\.)*tiktok\.com$/
 /^webcast[^.]*\.tiktokv\.(?:com|eu|us|jp)$/
-/^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokrow-cdn\.com|ttlivecdn\.com|qlivecdn\.com)$/
+/^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokcdn-eu\.com|tiktokrow-cdn\.com|ttlivecdn\.com|qlivecdn\.com)$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*tiktokv\.com$/
 /^(?:pull|push)-[^.]+\.(?:[^.]+\.)*(?:wsdvs\.com|worldfcdn2?\.com)$/
+
+# The webcast asset CDN, which the patterns above miss because they anchor
+# `webcast` at the START of the label and here it is an infix behind an ordinary
+# CDN prefix: p16-webcast.tiktokcdn.com. It had been resolving the whole time —
+# 317 answers in the last 30 days, never once blocked — so the live block was
+# leaking its gift, badge and avatar assets while the media plane was shut.
+#
+# It is a family rather than one host. Every name under it that this network has
+# ever resolved: p16-webcast, p19-webcast, sf16-webcast, sf19-webcast,
+# lf16-webcast, plus the regional p16-webcast-row-useast5 and p16-webcast-no,
+# spread across tiktokcdn.com, tiktokcdn-us.com and tiktokcdn-eu.com.
+#
+# Finding p16-webcast-no under tiktokcdn-eu.com is also what showed that zone was
+# missing from the pull-/push- pattern above, which listed the other five CDN
+# zones but not the EU one. It has been added there. No pull-/push- name under
+# tiktokcdn-eu.com has actually been seen here, so that half is precautionary
+# rather than observed — but a pull-/push- prefix in a TikTok CDN zone is live by
+# definition, which is the same reasoning the other five zones already rest on.
+#
+# Anchored on `webcast` anywhere in the first label and NOT on the p16- prefix,
+# which is the whole point of the note at the top of this section: p16-* is also
+# the thumbnail namespace and must keep working. Checked against every name this
+# network has ever resolved — 19548 of them — the pattern matches exactly the
+# eight webcast hosts above and nothing else, while 236 sibling p16-/sf16-/lf16-
+# names go untouched. The leading `[^.]*` does not require the hyphen, so a bare
+# webcast.tiktokcdn.com would be caught too; on today's data that is identical
+# to requiring it, and it costs nothing to not have to revisit this.
+/^[^.]*webcast[^.]*\.(?:[^.]+\.)*(?:tiktokcdn\.com|tiktokcdn-us\.com|tiktokcdn-eu\.com|tiktokrow-cdn\.com|ttlivecdn\.com|qlivecdn\.com)$/
+
+# Two more routes to the same plane, found in the same pass and listed here so
+# the gap is not reopened by assuming the pattern above closed everything.
+#
+# byteoversea.com is ByteDance's own overseas zone; only webcast.byteoversea.com
+# and webcast-va.byteoversea.com have ever appeared under it here. Anchored on
+# the webcast prefix rather than wildcarded, since the zone itself is general.
+/^webcast[^.]*\.byteoversea\.com$/
+# The Akamai CNAME target carrying tiktokv.com as a middle label, the same shape
+# the note below already describes for pull-flv-f11-sg01: the short name is
+# blocked and the long one is not, and they are the same endpoint.
+/^webcast[^.]*\.tiktokv\.com\.(?:[^.]+\.)*(?:akadns\.net|edgekey\.net|edgesuite\.net)$/
+# The webcast QUIC proxy. An exact host, not a pattern: byteglb.com is a general
+# load-balancer zone also carrying image-cache, video-cache, frontier and the
+# plain quic-core-proxy names, none of which may be touched. Same treatment
+# bytelb.com gets further down.
+direct-http.quic-webcast-proxy-gcpsg-dr-v3-s.gcpsg.byteglb.com
 
 # The RTC signalling plane, which the webcast and pull-/push- patterns above do
 # not reach — they were resolving normally long after the rest of TikTok live

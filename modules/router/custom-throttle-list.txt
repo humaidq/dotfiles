@@ -698,3 +698,367 @@
 # any of the individual addresses — if it keeps moving this fast, address-level
 # shaping is losing and a per-device egress policy is the honest next lever.
 144.126.236.192
+
+# Sixty-nine addresses from one evening's inspection round, 2026-08-11 between
+# 17:55 and 19:34, handed over one or two at a time as each was dropped live and
+# the client moved. There is no per-address capture note for these the way there
+# is for the entries above — the round was worked by drop-and-watch rather than
+# by writing up each node, so what is recorded here is the mapping and what it
+# repeats. Read them as one continuous rotation, not sixty-nine findings — and
+# note that thirteen of the sixty-six are the DigitalOcean fan-out near the end
+# of this block, which rests on a different kind of evidence entirely.
+#
+# Seven hosters are new to this file — UK2NET, the bare AS401776, Oracle Cloud,
+# BCUBE, WYBT-NET, Hostinger and Voxility. Everything else lands in a range
+# already here, so the pool is mostly being cycled rather than grown. But the
+# new-hoster count climbed steadily all evening, which qualifies the "no new
+# supply" reading this note started with. Oracle is the one that changes
+# anything, for the always-free reason set out against 144.24.170.223 below.
+#
+# Counts across the whole file after this round — DigitalOcean 61, OVH 28,
+# Linode-under-Akamai 20, IONOS 20, Hetzner 12, Scaleway/Online 11, AltusHost 10.
+# These counts were recomputed against the file rather than tallied by hand, and
+# two earlier revisions of this line were wrong in both directions — check the
+# same way before quoting them.
+# The "AS16276 now holds twelve addresses" note above 51.75.42.29 is stale at
+# twenty-seven; it was already the strongest AS-wide case in the file and is now
+# more than twice the size it was when that was written.
+#
+# Scaleway / Online SAS, AS12876. Eight addresses in one evening across three of
+# its ranges — four in 51.15.0.0/16, three in 51.158.0.0/16 and one in
+# 151.115.0.0/17 — which is the most of any hoster this round bar DigitalOcean,
+# and DigitalOcean's lead comes almost entirely from the twelve-address fan-out
+# further down rather than from carried sessions.
+#
+# Counting 51.15.69.147 from an earlier day, 51.15.0.0/16 alone now holds five.
+# That is the largest single /16 concentration in the file, ahead of the OVH and
+# Hetzner cases the notes above single out. It still does not make a range case:
+# Online SAS is general-purpose hosting and a /16 is 65536 addresses of other
+# people's instances, so the count says where the client shops, not what can be
+# taken.
+51.15.85.57
+51.15.54.4
+51.15.45.15
+51.15.91.220
+51.158.242.175
+51.158.235.31
+51.158.117.140
+# Second in 51.158.235.0/24, the first /24-level repeat at Scaleway. Worth no
+# more than the count: 51.158.0.0/16 has now given up four addresses and two of
+# them landing in one /24 is what four draws from a /16 will occasionally do.
+# Not comparable to the 144.225.91.0/24 or 163.5.38.0/24 cases, where the
+# containing allocation is small enough for the coincidence to mean something.
+51.158.235.229
+# And SCALEWAY-WAW again, one /24 from 151.115.75.209 — the "cleanest single
+# reading" entry above, where this client was a handset's only peer at 100%.
+# Third in 151.115.0.0/17, so Warsaw is now a range the client returns to rather
+# than a one-off. Still a /32: general-purpose instances, unrelated tenants.
+151.115.76.240
+# OVH, AS16276, across eight more of its ranges. 146.59.179.0/24 gave up two in
+# the same evening — .220 at 17:16 and .201 at 18:47 — which is the only /24
+# here to repeat inside one round. 178.32.0.0/15 is new to the file entirely,
+# where the other four are /16s the client had already used, so OVH is still
+# supplying fresh ranges as well as fresh hosts inside old ones.
+91.134.103.70
+146.59.179.220
+146.59.179.201
+198.244.143.242
+51.68.166.84
+178.32.108.118
+# Fourth in 54.36.0.0/14 — .198.163, .50.229 and .155.41 are all above, and the
+# last of those came back in a later round rather than being abandoned. Of the
+# six OVH additions this round, this is the only one in a range the client has
+# used three times before.
+54.38.151.115
+# Second address in 51.75.42.0/26, the OVH-DEDICATED-FO "Failover IPs" inetnum
+# that 51.75.42.29 sits in — see the long note there for the AkamaiGHost banner
+# that host uses as camouflage, and check this one the same way before trusting
+# any whois-plus-banner reading of it.
+#
+# This is the tightest range repeat in the file by a wide margin, and worth
+# separating from the /16-level counts above for that reason: a /26 is 64
+# addresses, where the OVH, Hetzner and Scaleway repeats elsewhere are spread
+# across /15s and /16s holding tens of thousands. Two of sixty-four in a LEGACY
+# failover block is a different kind of evidence from two of a /16.
+#
+# Kept as a /32 under the standing decision. Noted because if a third address
+# appears in this /26 it is a stronger case than the 199.244.100.0/22 — the
+# block is small enough that collateral is bounded and inspectable, which is
+# exactly what the "unrelated tenants" objection turns on everywhere else.
+51.75.42.17
+# Fifth in 46.105.0.0/16, after .58.71, .59.176, .61.36 and .44.228 above. That
+# makes it the OVH range this client has used most.
+46.105.45.130
+# IONOS, AS8560. The first three land as the third address in a /24 this client
+# has used twice before — 217.160.34.79 beside .78 and .122, 217.160.102.102
+# beside .24 and .109, 217.160.104.227 beside .239 and .143. Three /24s each
+# reaching three occupants is the tightest repeat pattern of any hoster in this
+# round, though all three sit inside one IONOS inetnum (217.160.89.0 -
+# 217.160.110.255) rather than being independent allocations.
+217.160.34.79
+217.160.102.102
+217.160.104.227
+# IONOS's US-facing space rather than the 217.160.0.0/16 the other three sit in
+# — same AS8560, different continent. First 74.208.x anywhere in this file.
+74.208.22.219
+# Fourth in 217.160.34.0/24 — .78, .122 and tonight's .79 are the others. That
+# equals the 199.244.102.0/24 count the file calls its strongest range evidence,
+# and it is worth being explicit that the two are not comparable despite the
+# matching number: 217.160.34.0/24 sits inside IONOS's 217.160.33.0 -
+# 217.160.39.255 inetnum, a named block of a large European hoster full of
+# unrelated customers, where 199.244.102.0/24 is a bare transferred allocation
+# with no netname, no org and no customer object behind it. Same count, entirely
+# different collateral. Counting alone does not make a range case.
+217.160.34.49
+# Linode under Akamai, AS63949. 172.239.0.0/16 now holds three with 172.239.10.154
+# above; 172.105.193.237 is the second in its range beside 172.105.74.225.
+172.239.15.237
+172.239.9.46
+172.105.193.237
+# Fourth in 172.232.0.0/16 after .148.22, .212.49 and .214.59. Counting the
+# 172.233-172.239 entries above, Linode's 172.232.0.0/13 has now given up twelve
+# addresses across the file, which is more than any other single aggregate here
+# — ahead of the OVH inetnums that get more commentary. It stays a /32 case
+# regardless: a /13 is four million addresses of general-purpose cloud, so the
+# count says the client likes Linode, not that the range is attributable.
+172.232.205.65
+# Linode's older 172.104/172.105 space, which is separate from the /13 above.
+# 172.104.51.35, 172.105.74.225 and tonight's 172.105.193.237 are the others, so
+# that block has four. Sixteen addresses across Linode's 172.x space now, and
+# twenty for AS63949 across the file — third behind DigitalOcean's 45 and OVH's
+# 27, and closer to OVH than the running commentary suggests, since the OVH
+# nodes got written up at length and the Linode ones mostly did not.
+172.104.246.62
+# Hetzner, AS24940. 37.27.0.0/16 (HEL1) is a new inetnum for this client, its
+# fifth; 89.167.0.0/17 is a repeat, with 89.167.61.113 already above; and
+# 46.224.0.0/15 is new again. Six Hetzner ranges are now in play, which puts it
+# level with OVH for spread even though it is well behind on address count —
+# this client does not concentrate at Hetzner the way it does at DigitalOcean.
+37.27.15.151
+89.167.12.196
+46.224.91.79
+# Second in 37.27.0.0/16, hours after the first. That range was called new to
+# this client earlier tonight and has now repeated within the same round, which
+# is the shape 146.59.179.0/24 showed at OVH.
+37.27.25.51
+# DigitalOcean, AS14061, ten more ranges — this is the provider the client
+# returns to most, by a wide margin, in this round as in the file overall.
+# 139.59.1.127 is the second in 139.59.0.0/16 after 139.59.59.242, the tcp/554
+# entry above, and 209.38.107.244 the second in 209.38.0.0/16 after
+# 209.38.19.101.
+143.244.186.128
+143.110.245.185
+139.59.1.127
+209.38.107.244
+# Third in 139.59.0.0/16, after .59.242 and the .1.127 added earlier tonight.
+139.59.192.64
+# 138.68.0.0/16 is the one range in this round that also appears in the SailfishX
+# block near the top of this file — 138.68.74.158, the udp/443 WireGuard-shaped
+# node. Do NOT read that as the two being the same thing: SailfishX is an
+# off-the-shelf commercial VPN on a handset outside the STUN group, it does not
+# rotate, and DigitalOcean /16s are large enough that two unrelated customers
+# landing in one is unremarkable. Recorded only so the coincidence is not
+# rediscovered later and mistaken for a link.
+138.68.200.35
+# 165.227.0.0/16, new to the file. Not to be confused with 165.22.0.0/16, which
+# has given up two above — different DigitalOcean allocations despite the
+# similar-looking first two octets.
+165.227.227.247
+# Second in 46.101.0.0/16 after 46.101.64.147.
+46.101.161.149
+# 167.71.0.0/16, new to the file. Eight DigitalOcean ranges this round.
+167.71.11.139
+# Third in 178.128.0.0/16, after .44.164 and .4.86 — the latter being the node
+# that carried the cleartext HTTP channel to republicrocket.com, so this is a
+# range the client has returned to across several days rather than one evening.
+178.128.22.159
+# Second in 167.172.0.0/16 after 167.172.251.49. Ten DigitalOcean ranges in one
+# round, of which four were new to the file — 143.244, 143.110, 165.227 and
+# 167.71 — and six were ranges the client had already used. So it is drawing on
+# known DigitalOcean space more often than not, though not as heavily as a first
+# read of the repeats suggests. Checked against the committed file rather than
+# counted by eye, which corrected this note from "two of ten".
+167.172.86.120
+
+# A fan-out, and the one block in this round whose evidence is a different kind
+# from everything above it. Read the distinction before treating these as
+# equivalent rows.
+#
+# Twelve DigitalOcean addresses seen in a single view, every one with byte counts
+# identical to the decimal — 272 B out, 92 B in — all on tcp/20107, all at 0.0%
+# of the device. That is not traffic. 272 bytes is a connection opened and
+# nothing sent through it, repeated across a dozen hosts on one port.
+#
+# So the justification here is NOT the whole-of-device share that every entry
+# above rests on; none of these carried anything. It is that they are the pool: a
+# client fanning out to twelve rented hosts on one uncommon port, in one moment,
+# is enumerating candidate nodes, and the pool is what this file has been trying
+# to reach address by address all evening. Shaping a node before it is used is
+# the only version of this that gets ahead of the rotation rather than following
+# it.
+#
+# The weakness is the mirror of that strength, and belongs on the record: a
+# fan-out of bare handshakes is consistent with a node list, but a 272-byte probe
+# carries no payload to characterise, no direction ratio, no TLS and so no SNI.
+# Nothing in the flows themselves distinguishes these from any other software
+# that sweeps a port across a provider. What ties them to this client is the
+# moment they appeared in and the fact that tcp/20107 matches nothing else on the
+# network — circumstantial, and weaker per-address than the entries above, though
+# the uniformity across twelve hosts is hard to read another way.
+#
+# If any of these later turns up carrying a real session, say so against it: that
+# would convert the whole block from inference to observation, and would also be
+# the first direct evidence anywhere in this file of how the client picks its
+# next node.
+#
+# All twelve are AS14061 and all are /32s, consistent with the rest of the file.
+107.170.232.66
+134.199.231.67
+138.197.87.175
+143.198.57.217
+146.190.132.199
+159.203.98.143
+159.223.17.75
+167.71.20.65
+167.99.125.77
+167.172.99.160
+198.199.104.153
+206.189.239.221
+# Second in 146.190.0.0/16, alongside the .132.199 in the fan-out above. Listed
+# separately because it came in on its own rather than as part of that view, so
+# whether it shares the probe shape or was carrying something is not recorded.
+146.190.31.189
+# AltusHost, AS51430, and the second address in 185.10.58.0/24 after
+# 185.10.58.188. AltusHost has now given up ten across several days and remains
+# the one hoster in the pool that looks held rather than rented ad hoc.
+185.10.58.249
+#
+# ON2644819-NET, AS214623 — and the one address in this round that is a decision
+# rather than a row. It is the second in 199.244.103.0/24 after 199.244.103.182
+# and the SIXTH in the transferred 199.244.100.0/22, which also holds .102.118,
+# .102.203, .102.81 and .102.198.
+#
+# The note above 199.244.102.198 recorded that both the /24 and the whole /22
+# were put to the user, address-only was chosen, and that "if a fifth address
+# appears, the question is worth asking again rather than assuming the answer
+# still holds". A fifth and a sixth have now appeared. That note also sets out
+# why the usual objection is weakest here: the /22 is an ARIN-to-RIPE transfer
+# registered 2023-11-06 with no netname, no org and no customer object, where
+# every general-purpose cloud in this file identifies itself.
+#
+# It was raised with the user on that basis at the sixth address, and /32 was
+# chosen again — the third time the wider rule has been declined, after the
+# AS16276 and 199.244.102.0/24 decisions above. The instruction covered this
+# whole round, not just this address, so read every entry in this block as an
+# explicit /32 rather than a default one. The trigger has now fired and been
+# answered; a later reader should treat the standing decision as settled unless
+# something other than the address count changes.
+199.244.103.248
+# And a seventh, later the same evening: third in 199.244.103.0/24, which now
+# has as many addresses as 199.244.102.0/24 did when the range case was first
+# written up. Added as a /32 under the decision recorded immediately above and
+# not re-raised — the count is the one thing that ruling already accounts for.
+199.244.103.251
+#
+# The seven hosters new to this file, all left as /32s:
+#
+# UK2NET, AS13213 (GB). Two addresses now, in 82.163.78.0/23 and
+# 107.182.224.0/20 — two separate allocations of the same AS rather than a
+# repeat within one range, which is a weaker signal than the 163.5.38.0/24 case
+# below. The "one address, so not a pattern" this note originally carried is
+# superseded, but the conclusion is not: AS13213 announces 388 prefixes, an
+# ordinary ISP footprint, so the AS is still the wrong unit to reason about and
+# two addresses across it does not change that.
+82.163.79.67
+107.182.236.121
+# AS401776, 163.5.38.0/24. ARIN carries it as a bare "AS-CUSTOMER" with no
+# netname behind it, which says nothing either way about what else lives there.
+#
+# CORRECTION, same evening: this block originally read "one address apiece is
+# not a pattern". That held for about an hour. 163.5.38.0/24 has now given up a
+# second address, which puts this /24 among the tighter repeats in the round
+# despite the hoster being new to the file — two of two in a single /24, where
+# the OVH and Hetzner cases are spread across whole /16s.
+#
+# The AS is still the wrong lever: AS401776 announces 18 scattered /24s, which is
+# the reseller footprint that custom-ip-blocklist.txt already declines to block
+# wholesale for the imo hosting group, on the grounds that scattered /24s mean
+# many unrelated customers rather than one operator. The /24 itself is the
+# arguable unit here, and it has the same bare-registration profile as the
+# 199.244.100.0/22 case above. Kept as /32s under the standing decision; noted
+# because if a third appears this is the strongest small-range case in the file
+# after that /22.
+163.5.38.211
+163.5.38.170
+#
+# BCUBE-AS, AS56478 (GB), in 143.58.128.0 - 143.58.239.255. One address.
+143.58.203.34
+#
+# Second address in 144.225.91.0/24, joining 144.225.91.11 near the top of this
+# file — the one presenting the fabricated SNI status-29.shop-51.stacksnippets.
+# net, a name that resolves nowhere while the real stacksnippets.net is a Stack
+# Overflow property. That note attributed the /24 to Ace Data Centers / IPXO
+# leased space, which was right about the leasing and wrong about it being a
+# dead end.
+#
+# Resolved live rather than from ip2asn-combined.tsv, which has no row for it at
+# all and reads "not routed" for the whole 144.222-144.225 span — a reminder that
+# a miss in that table means the snapshot is stale, not that an address is
+# unrouted. Both addresses originate from AS402267, HADOOPSKY - Hadoopsky LLC
+# (US), announcing 144.225.91.0/24, ARIN-registered 2025-04-07.
+#
+# This is the strongest AS-level case in the file, on the file's own criteria.
+# AS402267 announces SIX /24s in total — 144.225.91.0/24, 31.77.214.0/24,
+# 162.141.36.0/24, 162.141.125.0/24, 217.65.70.0/24 and 87.83.87.0/24, 1536
+# addresses altogether. That is not a reseller footprint like AS401776's 18
+# scattered /24s and it is nothing like a general-purpose cloud; it is small
+# enough to inspect end to end, which is precisely what the "unrelated tenants"
+# objection has rested on everywhere else in this file. Combined with a host
+# here already caught fabricating an SNI, the case for taking the /24 — or all
+# six — is better than the 199.244.100.0/22 and better than the 51.75.42.0/26.
+#
+# Kept as a /32 under the standing decision, and NOT re-raised as a question,
+# but recorded at length because this is the one entry tonight where the wider
+# rule would be defensible on evidence rather than on address count.
+144.225.91.190
+#
+# Voxility, AS3223 (GB), in 5.254.50.0 - 5.254.127.255. One address.
+#
+# Voxility is IP transit and DDoS-protected hosting whose space is heavily
+# sublet downstream, so the AS name identifies the carrier rather than the
+# occupant — closer in kind to the IPXO-leased 144.225.91.0/24 above than to a
+# cloud like DigitalOcean where the tenant rents directly. That cuts both ways:
+# it is the sort of provider chosen when a host needs to be hard to remove,
+# which is mildly corroborating, and it also means neighbouring addresses belong
+# to unrelated downstream customers, which makes anything wider than a /32 wrong
+# here regardless of how many addresses accumulate.
+5.254.51.82
+#
+# Hostinger, AS47583 (CY), in 72.60.0.0 - 72.62.95.255 — their VPS space. One
+# address, /32.
+#
+# Read alongside custom-ip-blocklist.txt, which already names Hostinger and
+# deliberately does NOT block it: 2.57.91.91 and the 145.79.24/29 addresses were
+# rejected there for sitting behind Hostinger's shared hcdn edge, where a /32
+# would land on arbitrary co-tenants. That is not this. A rented VPS instance is
+# a single tenant by definition, which is the same distinction that lets
+# DigitalOcean and Hetzner droplets appear here while their shared services do
+# not. The two entries are consistent, not contradictory.
+72.60.133.188
+#
+# WYBT-NET, AS59645 (DE), in 195.191.196.0/23. One address. The whois descr is
+# a joke string rather than a company name, which is not evidence of anything by
+# itself — plenty of small European hosters write their RIPE objects that way —
+# but it does mean there is no organisation name here to correlate against, the
+# same dead end as AS401776 above.
+195.191.196.45
+#
+# Oracle Cloud, AS31898 ORACLE-BMC-31898, in 144.24.0.0 - 144.25.103.255. The
+# first Oracle address anywhere in this file, and the only major cloud in the
+# round that had not appeared before. Worth naming rather than filing as another
+# row: Oracle's always-free ARM tier makes a permanent instance cost nothing,
+# which is a different supply model from the rented-by-the-month hosts that make
+# up the rest of this pool, and a client that has found it has no reason to stop.
+# /32 only — this is general-purpose cloud, as full of unrelated tenants as
+# DigitalOcean or Hetzner.
+144.24.170.223
