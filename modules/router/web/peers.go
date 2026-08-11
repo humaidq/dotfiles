@@ -30,21 +30,62 @@ type peersPageData struct {
 	Error  string
 }
 
-type peersServer struct {
-	lanNet    netip.Prefix
-	asn       *ASNTable
-	tmpl      *template.Template
-	conntrack func(context.Context) ([]byte, error)
-	runTool   func(name string, args ...string) (string, error)
+type indexPageData struct {
+	Leases []lease
+	Error  string
 }
 
-func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl *template.Template) *peersServer {
+type peersServer struct {
+	lanNet     netip.Prefix
+	asn        *ASNTable
+	tmpl       *template.Template
+	indexTmpl  *template.Template
+	leasesPath string
+	conntrack  func(context.Context) ([]byte, error)
+	runTool    func(name string, args ...string) (string, error)
+}
+
+func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
 	return &peersServer{
-		lanNet:    lanNet,
-		asn:       asn,
-		tmpl:      tmpl,
-		conntrack: readConntrack,
-		runTool:   runTool,
+		lanNet:     lanNet,
+		asn:        asn,
+		tmpl:       tmpl,
+		indexTmpl:  indexTmpl,
+		leasesPath: leasesPath,
+		conntrack:  readConntrack,
+		runTool:    runTool,
+	}
+}
+
+// handleIndex lists the devices currently holding a DHCP lease, each linking to
+// its peers page. It is the entry point for the whole feature: without it the
+// mesh address answers 404 at the root and the operator has to already know a
+// device address to get anywhere.
+//
+// A missing or unreadable lease file renders the page with a notice rather than
+// failing it. The peers pages remain reachable by address, so a broken index is
+// an inconvenience and not an outage.
+func (s *peersServer) handleIndex(w http.ResponseWriter, r *http.Request) {
+	// Registered as "GET /{$}", which matches the root and nothing else, so a
+	// request for any other path never reaches this handler. The check is kept
+	// as a guard in case that pattern is ever loosened to "GET /", which would
+	// silently make this the catch-all for the whole mux.
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	var data indexPageData
+	leases, err := readLeases(s.leasesPath, s.lanNet)
+	if err != nil {
+		log.Printf("peers index: read leases from %q: %v", s.leasesPath, err)
+		data.Error = "Cannot read the DHCP lease file, so no devices can be listed. A peers page is still reachable directly at /peers/<address>."
+	}
+	data.Leases = leases
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.indexTmpl.Execute(w, data); err != nil {
+		log.Printf("peers index: render: %v", err)
 	}
 }
 
@@ -60,6 +101,9 @@ func runTool(name string, args ...string) (string, error) {
 
 func (s *peersServer) mux() *http.ServeMux {
 	mux := http.NewServeMux()
+	if s.indexTmpl != nil {
+		mux.HandleFunc("GET /{$}", s.handleIndex)
+	}
 	mux.HandleFunc("GET /peers/{device}", s.handlePage)
 	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction("throttle", "tempthrottle"))
 	mux.HandleFunc("POST /peers/{device}/block", s.handleAction("block", "tempblock"))

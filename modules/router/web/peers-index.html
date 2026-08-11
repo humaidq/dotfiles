@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Devices — peers</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 2rem; }
+table { border-collapse: collapse; width: 100%; max-width: 44rem; }
+th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #ddd; }
+th { font-weight: 600; }
+td.name { color: #666; }
+p.note { color: #666; }
+p.error { color: #a00; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Devices</h1>
+<p class="note">Current DHCP leases. Pick one to see the peers it is talking to right now, and to throttle or block any of them.</p>
+{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+{{if .Leases}}
+<table>
+<tr><th>Address</th><th>Name</th></tr>
+{{range .Leases}}
+<tr>
+<td><a href="/peers/{{.Addr}}">{{.Addr}}</a></td>
+<td class="name">{{if .Name}}{{.Name}}{{else}}—{{end}}</td>
+</tr>
+{{end}}
+</table>
+{{else}}
+<p>No current leases.</p>
+{{end}}
+</body>
+</html>

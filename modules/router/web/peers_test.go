@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -28,7 +29,14 @@ func testPeersServer(t *testing.T) *peersServer {
 	if err != nil {
 		t.Fatalf("LoadASNTable: %v", err)
 	}
-	server := newPeersServer(netip.MustParsePrefix("192.168.0.0/24"), table, tmpl)
+	indexTmpl, err := template.New("peers-index.html").Parse(
+		`{{range .Leases}}{{.Addr}}={{.Name}};{{end}}|{{.Error}}`)
+	if err != nil {
+		t.Fatalf("parse index template: %v", err)
+	}
+	leases := writeLeases(t, "1 aa:bb:cc:dd:ee:01 192.168.0.10 device-a 01:aa\n"+
+		"2 aa:bb:cc:dd:ee:02 192.168.0.20 * 01:bb\n")
+	server := newPeersServer(netip.MustParsePrefix("192.168.0.0/24"), table, tmpl, indexTmpl, leases)
 	server.conntrack = func(context.Context) ([]byte, error) {
 		return []byte(conntrackFixture), nil
 	}
@@ -274,5 +282,55 @@ func TestMeshListenAddrRejectsMalformed(t *testing.T) {
 		if _, err := meshListenAddr(raw); err == nil {
 			t.Fatalf("meshListenAddr(%q) accepted malformed input", raw)
 		}
+	}
+}
+
+func TestIndexListsLeasesWithLinks(t *testing.T) {
+	rec := httptest.NewRecorder()
+	testPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "192.168.0.10=device-a") {
+		t.Fatalf("named lease missing from index: %q", body)
+	}
+	if !strings.Contains(body, "192.168.0.20=;") {
+		t.Fatalf("unnamed lease should render with an empty name: %q", body)
+	}
+}
+
+func TestIndexReportsUnreadableLeaseFile(t *testing.T) {
+	server := testPeersServer(t)
+	server.leasesPath = filepath.Join(t.TempDir(), "absent")
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 — a missing lease file must not fail the page", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Cannot read the DHCP lease file") {
+		t.Fatalf("no notice shown for an unreadable lease file: %q", rec.Body.String())
+	}
+}
+
+func TestIndexDoesNotSwallowOtherPaths(t *testing.T) {
+	rec := httptest.NewRecorder()
+	testPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/nonsense", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404 — the index must not act as a catch-all", rec.Code)
+	}
+}
+
+func TestLANMuxHasNoIndexRoute(t *testing.T) {
+	tmpl, err := template.New("index.html").Parse("landing")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	landingMux(pageData{}, tmpl).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("LAN mux served a peers path with %d", rec.Code)
 	}
 }

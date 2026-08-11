@@ -10,5 +10,6 @@ buildGoModule {
   postInstall = ''
     install -Dm644 ${./index.html} "$out/share/router-web/index.html"
     install -Dm644 ${./peers.html} "$out/share/router-web/peers.html"
+    install -Dm644 ${./peers-index.html} "$out/share/router-web/peers-index.html"
   '';
 }
