@@ -1187,7 +1187,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(node_network_receive_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(node_network_receive_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -1274,7 +1274,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(node_network_transmit_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(node_network_transmit_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -1361,7 +1361,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(node_network_receive_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) + sum(rate(node_network_transmit_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum(rate(node_network_receive_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) + sum(rate(node_network_transmit_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -1448,7 +1448,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(node_network_receive_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) + sum(rate(node_network_transmit_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) + sum(rate(node_network_receive_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) + sum(rate(node_network_transmit_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum(rate(node_network_receive_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) + sum(rate(node_network_transmit_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) + sum(rate(node_network_receive_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) + sum(rate(node_network_transmit_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -1538,7 +1538,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_receive_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) * 8",
+                        "expr": "sum by (device) (rate(node_network_receive_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Rx {{device}}",
@@ -1562,7 +1562,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_transmit_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval])) * 8",
+                        "expr": "sum by (device) (rate(node_network_transmit_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Tx {{device}}",
@@ -1699,7 +1699,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "(node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"} > bool 0) * (rate(node_network_receive_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]) / node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"})",
+                        "expr": "(node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"} > bool 0) * (rate(node_network_receive_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]) / node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"})",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Rx {{device}}",
@@ -1723,7 +1723,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "(node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"} > bool 0) * (rate(node_network_transmit_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]) / node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"})",
+                        "expr": "(node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"} > bool 0) * (rate(node_network_transmit_bytes_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]) / node_network_speed_bytes{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"})",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Tx {{device}}",
@@ -1860,7 +1860,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_receive_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum by (device) (rate(node_network_receive_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Rx {{device}}",
@@ -1884,7 +1884,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_transmit_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum by (device) (rate(node_network_transmit_packets_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Tx {{device}}",
@@ -2021,7 +2021,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_receive_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum by (device) (rate(node_network_receive_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Rx errors {{device}}",
@@ -2045,7 +2045,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_transmit_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum by (device) (rate(node_network_transmit_errs_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Tx errors {{device}}",
@@ -2069,7 +2069,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_receive_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum by (device) (rate(node_network_receive_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Rx drops {{device}}",
@@ -2093,7 +2093,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum by (device) (rate(node_network_transmit_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[$__rate_interval]))",
+                        "expr": "sum by (device) (rate(node_network_transmit_drop_total{instance=\"${node:raw}\", device=~\"^${interface:raw}$\", device!~\"lo|veth.*|docker.*\"}[5m]))",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "Tx drops {{device}}",
@@ -2810,7 +2810,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_tin_sent_bytes_total{instance=\"${node:raw}\"}[$__rate_interval]) * 8",
+                        "expr": "rate(router_qos_tin_sent_bytes_total{instance=\"${node:raw}\"}[5m]) * 8",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -2902,7 +2902,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_tin_drops_total{instance=\"${node:raw}\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_tin_drops_total{instance=\"${node:raw}\"}[5m])",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -2925,7 +2925,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_tin_ecn_marks_total{instance=\"${node:raw}\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_tin_ecn_marks_total{instance=\"${node:raw}\"}[5m])",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -3165,7 +3165,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_tin_sent_bytes_total{instance=\"${node:raw}\"}[$__rate_interval]) * 8",
+                        "expr": "rate(router_qos_tin_sent_bytes_total{instance=\"${node:raw}\"}[5m]) * 8",
                         "format": "time_series",
                         "instant": false,
                         "range": true,
@@ -3400,7 +3400,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\"}[$__rate_interval]) * 8",
+                        "expr": "rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\"}[5m]) * 8",
                         "format": "time_series",
                         "instant": false,
                         "range": true,
@@ -3424,7 +3424,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_class_drops_total{instance=\"${node:raw}\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_class_drops_total{instance=\"${node:raw}\"}[5m])",
                         "format": "time_series",
                         "instant": false,
                         "range": true,
@@ -3542,7 +3542,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}[5m])",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -3565,7 +3565,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_rule_bytes_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}[$__rate_interval]) * 8",
+                        "expr": "rate(router_qos_rule_bytes_total{instance=\"${node:raw}\", chain!=\"forward_throttle\"}[5m]) * 8",
                         "format": "table",
                         "instant": true,
                         "range": false
@@ -3746,7 +3746,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device!=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -3833,7 +3833,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -3920,7 +3920,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device!=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -4007,7 +4007,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": true,
                         "legendFormat": "",
@@ -4094,7 +4094,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device!=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "download",
@@ -4118,7 +4118,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"throttle\", device=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "upload",
@@ -4324,7 +4324,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device!=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device!=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "download",
@@ -4348,7 +4348,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device=\"ppp0\"}[$__rate_interval])) * 8",
+                        "expr": "sum(rate(router_qos_class_sent_bytes_total{instance=\"${node:raw}\", class=\"imo\", device=\"ppp0\"}[5m])) * 8",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "upload",
@@ -4554,7 +4554,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_class_drops_total{instance=\"${node:raw}\", class=~\"throttle|imo\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_class_drops_total{instance=\"${node:raw}\", class=~\"throttle|imo\"}[5m])",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "{{class}} / {{device}}",
@@ -4672,7 +4672,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_class_overlimits_total{instance=\"${node:raw}\", class=~\"throttle|imo\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_class_overlimits_total{instance=\"${node:raw}\", class=~\"throttle|imo\"}[5m])",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "{{class}} / {{device}}",
@@ -4906,7 +4906,7 @@
                       "spec": {
                         "editorMode": "code",
                         "exemplar": false,
-                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\", chain=\"forward_throttle\"}[$__rate_interval])",
+                        "expr": "rate(router_qos_rule_packets_total{instance=\"${node:raw}\", chain=\"forward_throttle\"}[5m])",
                         "format": "time_series",
                         "instant": false,
                         "legendFormat": "{{rule}}",
@@ -4993,6 +4993,572 @@
                     ]
                   },
                   "unit": "pps"
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-200": {
+        "kind": "Panel",
+        "spec": {
+          "id": 200,
+          "title": "VPN indicators — $network / ${host:text}",
+          "description": "Counts over the selected range. Any non-zero value is worth reading the detail panels for; none of these are normal for a device with no VPN, proxy or tunnel app installed.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `question_name=stun\\.`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
+                        "legendFormat": "STUN discovery",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*doh`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
+                        "legendFormat": "Resolver bypass (doh)",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*vpn`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
+                        "legendFormat": "VPN list hits",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "C",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*custom`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
+                        "legendFormat": "Curated list hits (custom)",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "D",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "auto",
+                "wideLayout": true
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "decimals": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "value": 1,
+                        "color": "orange"
+                      },
+                      {
+                        "value": 25,
+                        "color": "red"
+                      }
+                    ]
+                  },
+                  "mappings": []
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-201": {
+        "kind": "Panel",
+        "spec": {
+          "id": 201,
+          "title": "Devices ranked by VPN indicators — $network",
+          "description": "Deliberately NOT filtered by the host picker — this is the panel that tells you which host to pick. Combines all four indicators into one count per device.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "topk(20,\n  sum by (client_names, client_ip) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |~ `question_name=stun\\.|response_reason=BLOCKED \\([^)]*(doh|vpn|custom)`\n      | logfmt\n      | __error__ = \"\"\n      | client_ip != \"\"\n      [$__range]\n    )\n  )\n)",
+                        "legendFormat": "{{client_names}} · {{client_ip}}",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "filterable": true,
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "value": 1,
+                        "color": "orange"
+                      },
+                      {
+                        "value": 25,
+                        "color": "red"
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-202": {
+        "kind": "Panel",
+        "spec": {
+          "id": 202,
+          "title": "Bypass attempts over time — ${host:text}",
+          "description": "The same four indicators as a rate. A tunnel client that has just lost its node shows a burst of discovery here.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `question_name=stun\\.`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__interval]\n  )\n)",
+                        "legendFormat": "STUN discovery",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*doh`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__interval]\n  )\n)",
+                        "legendFormat": "Resolver bypass (doh)",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "B",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*vpn`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__interval]\n  )\n)",
+                        "legendFormat": "VPN list hits",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "C",
+                    "hidden": false
+                  }
+                },
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*custom`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__interval]\n  )\n)",
+                        "legendFormat": "Curated list hits (custom)",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "D",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [
+                    "sum"
+                  ],
+                  "displayMode": "table",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "custom": {
+                    "drawStyle": "bars",
+                    "fillOpacity": 60,
+                    "lineWidth": 1,
+                    "stacking": {
+                      "mode": "normal",
+                      "group": "A"
+                    },
+                    "axisPlacement": "auto"
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "mappings": []
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-203": {
+        "kind": "Panel",
+        "spec": {
+          "id": 203,
+          "title": "Top blocked names — ${host:text}",
+          "description": "What the selected device is being denied. Tunnel and imo control-plane names surface here before any traffic-side signal exists.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "topk(25,\n  sum by (question_name) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |= \"response_reason=BLOCKED\"\n      | logfmt\n      | __error__ = \"\"\n      | client_ip =~ \"^${host:raw}$\"\n      | question_name != \"\"\n      [$__range]\n    )\n  )\n)",
+                        "legendFormat": "{{question_name}}",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "table",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "filterable": true,
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              }
+            }
+          }
+        }
+      },
+      "panel-204": {
+        "kind": "Panel",
+        "spec": {
+          "id": 204,
+          "title": "DNS query rate — ${host:text}",
+          "description": "Total resolver activity for the device. A handset that keeps moving traffic while this falls to near zero is reaching addresses it never looked up, which is the shape of a tunnel dialling a cached endpoint.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "loki",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "cdy9o5iluz3swd"
+                      },
+                      "spec": {
+                        "direction": "backward",
+                        "editorMode": "code",
+                        "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__interval]\n  )\n)",
+                        "legendFormat": "queries",
+                        "queryType": "range"
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "timeseries",
+            "version": "13.0.3",
+            "spec": {
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": false
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "short",
+                  "custom": {
+                    "drawStyle": "line",
+                    "fillOpacity": 20,
+                    "lineWidth": 1,
+                    "showPoints": "never",
+                    "axisPlacement": "auto"
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "mappings": []
                 },
                 "overrides": []
               }
@@ -5634,6 +6200,84 @@
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-129"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "kind": "TabsLayoutTab",
+            "spec": {
+              "title": "Inspection",
+              "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                  "items": [
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 24,
+                        "height": 5,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-200"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 5,
+                        "width": 12,
+                        "height": 9,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-201"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 5,
+                        "width": 12,
+                        "height": 9,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-203"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 14,
+                        "width": 12,
+                        "height": 8,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-202"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 14,
+                        "width": 12,
+                        "height": 8,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-204"
                         }
                       }
                     }
