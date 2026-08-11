@@ -5026,7 +5026,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `question_name=stun\\.`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "STUN discovery",
-                        "queryType": "instant"
+                        "queryType": "range"
                       }
                     },
                     "refId": "A",
@@ -5048,7 +5048,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*doh`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "Resolver bypass (doh)",
-                        "queryType": "instant"
+                        "queryType": "range"
                       }
                     },
                     "refId": "B",
@@ -5070,7 +5070,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*vpn`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "VPN list hits",
-                        "queryType": "instant"
+                        "queryType": "range"
                       }
                     },
                     "refId": "C",
@@ -5092,7 +5092,7 @@
                         "editorMode": "code",
                         "expr": "sum(\n  count_over_time(\n    {nodename=\"$network\"}\n    |= \"query resolved\"\n    |~ `response_reason=BLOCKED \\([^)]*custom`\n    | logfmt\n    | __error__ = \"\"\n    | client_ip =~ \"^${host:raw}$\"\n    [$__range]\n  )\n)",
                         "legendFormat": "Curated list hits (custom)",
-                        "queryType": "instant"
+                        "queryType": "range"
                       }
                     },
                     "refId": "D",
@@ -5177,9 +5177,9 @@
                       "spec": {
                         "direction": "backward",
                         "editorMode": "code",
-                        "expr": "sort_desc(\n  sum by (client_names, client_ip) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |~ `question_name=stun\\.|response_reason=BLOCKED \\([^)]*(doh|vpn|custom)`\n      | logfmt\n      | __error__ = \"\"\n      | client_ip != \"\"\n      [$__range]\n    )\n  )\n)",
+                        "expr": "topk(\n  20,\n  sum by (client_names, client_ip) (\n    count_over_time(\n      {nodename=\"$network\"}\n      |= \"query resolved\"\n      |~ `question_name=stun\\.|response_reason=BLOCKED \\([^)]*(doh|vpn|custom)`\n      | logfmt\n      | __error__ = \"\"\n      | client_ip != \"\"\n      [$__range]\n    )\n  )\n)",
                         "legendFormat": "{{client_names}} · {{client_ip}}",
-                        "queryType": "instant"
+                        "queryType": "range"
                       }
                     },
                     "refId": "A",
@@ -5589,9 +5589,9 @@
                         "exemplar": false,
                         "expr": "sort_desc(router_host_top_peer_share_ratio{instance=\"${node:raw}\"})",
                         "format": "time_series",
-                        "instant": false,
+                        "instant": true,
                         "legendFormat": "{{client}} → {{peer}}",
-                        "range": true
+                        "range": false
                       }
                     },
                     "refId": "A",
@@ -5682,9 +5682,9 @@
                         "exemplar": false,
                         "expr": "sort_desc(router_host_peer_count{instance=\"${node:raw}\"})",
                         "format": "time_series",
-                        "instant": false,
+                        "instant": true,
                         "legendFormat": "{{client}}",
-                        "range": true
+                        "range": false
                       }
                     },
                     "refId": "A",
