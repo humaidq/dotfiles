@@ -96,6 +96,12 @@ tuple. A LAN-initiated, NATed flow has original `src=<lan> dst=<peer>`; an
 inbound-initiated one has them the other way round. One call catches one of
 those, not both.
 
+That covers both directions for the unscoped form. The two device-scoped forms
+have a blind spot: a DNAT'd inbound flow's original destination is the router's
+public address, not the LAN address, so naming the LAN address in the filter
+cannot match it. Vacuous on these routers, which forward no ports, but it is
+the thing that would break first if one ever did.
+
 `conntrack -D` exits 1 when it matched nothing. Each call is therefore
 guarded — unguarded, `set -e` turns "there was nothing to kill" into a script
 failure, which is the *normal* outcome for an idle peer and would surface in
@@ -136,8 +142,16 @@ hammer an address is the usual reason to set a temp block at all, and a single
 merged counter would not distinguish "still trying" from "still receiving".
 
 The shared comment means `rule_handle` must become `rule_handles`, returning
-every matching handle rather than the first. `cmd_del` deletes each; `cmd_add`
-treats any existing handle as already-blocked.
+every matching handle rather than the first, and `cmd_del` deletes each.
+
+`cmd_add` gates per direction rather than on mere presence, via a `rule_dirs`
+helper reporting which of `daddr`/`saddr` an address already has. A presence
+check looked sufficient and is not: the old single-rule version of this script
+wrote `daddr`-only rules, and `router_tempblock` survives every rebuild, so
+one-sided leftovers exist in the field. Calling those "already blocked" would
+leave the return direction forwarded forever with no repair path. So `add`
+installs whichever direction is missing and says it repaired, rather than
+claiming a fresh block.
 
 `cmd_list` folds the pair back into one line per address:
 
@@ -150,11 +164,23 @@ a working block against an app that has not given up — which is exactly the
 question `list` is opened to answer.
 
 Then, and only then, `cmd_add` calls `killconn <ip>` — unscoped, matching the
-rule's own scope, since the rules block every LAN client.
+rule's own scope, since the rules block every LAN client. It calls it on the
+already-blocked path too, so a teardown that failed once is retried by simply
+running `add` again.
 
 **Ordering is load-bearing.** Rules first, `killconn` second. Reversed, a
 packet in flight recreates the conntrack entry between the flush and the rule
 landing, and the block looks broken to whoever is watching the page.
+
+**A teardown failure is not a block failure.** `killconn` is wrapped so its
+exit status cannot abort the loop: it warns on stderr and `add` carries on.
+Letting it abort was worse in three ways at once — earlier addresses were left
+blocked while later ones went untouched, the web button returned a 500 reading
+"tempblock failed" for a block that had in fact landed, and the handler
+returned before invalidating the cache so the status column agreed with the
+error. Pressing block again then hit the already-blocked path, which at the
+time skipped `killconn` entirely, so the teardown was lost for good and the
+page said blocked while the flows ran on.
 
 `del` and `flush` do not call `killconn`. Removing a block is not a reason to
 tear down whatever is talking to the address afterwards.
@@ -209,10 +235,14 @@ nft -j list chain inet router_tempblock block
 
 and taking the addresses out of the rules' `tempblock:<ip>` comments, folded in
 as `shapeBlocked`. Reading comments rather than decoding the match expressions
-keeps the parser to one field and makes the two rules per address collapse to
-one entry for free. A missing table is skipped silently, exactly as a missing
-set already is — a router with no temp blocks set is the common case, not an
-error.
+keeps the parser to one field. For a plain address it also makes the two rules
+collapse to one entry for free, since both write the same key into the exact
+map. For a CIDR it does not: those append to the prefix slice unconditionally,
+so a temp-blocked CIDR contributes two identical entries per load. Harmless —
+`classify` takes the rank-max across the slice and the index is rebuilt from
+scratch on every load, so the duplicates neither change the answer nor
+accumulate. A missing table is skipped silently, exactly as a missing set
+already is — a router with no temp blocks set is the common case, not an error.
 
 This matters more than a cosmetic badge. A packet dropped in the forward hook
 has *already* been tracked: conntrack runs at prerouting priority -200, well
