@@ -67,21 +67,29 @@ a live footgun on a router.
 ### `killconn`
 
 ```
-killconn <peer> [from <lan-ip>]
+killconn <peer>                 every LAN client's flows with that peer
+killconn <peer> from <lan-ip>   only that device's flows with that peer
+killconn from <lan-ip>          every flow that device has, any peer
 ```
 
-With `from`, it kills only that device's conversation with the peer. Without,
-every LAN client's:
-
 ```
+# killconn 185.60.216.35
+conntrack -D -d 185.60.216.35
+conntrack -D -s 185.60.216.35
+
 # killconn 185.60.216.35 from 10.20.1.42
 conntrack -D -s 10.20.1.42 -d 185.60.216.35
 conntrack -D -s 185.60.216.35 -d 10.20.1.42
 
-# killconn 185.60.216.35
-conntrack -D -d 185.60.216.35
-conntrack -D -s 185.60.216.35
+# killconn from 10.20.1.42
+conntrack -D -s 10.20.1.42
+conntrack -D -d 10.20.1.42
 ```
+
+The third form is what the page's "drop all" button runs. It is the same
+operation as the second widened to every peer at once: an app whose session
+survives one endpoint dying gets no such luck when the whole device's table
+goes, which is what "make it reconnect" actually requires.
 
 Two calls in each case because `conntrack`'s `-s`/`-d` filter the **original**
 tuple. A LAN-initiated, NATed flow has original `src=<lan> dst=<peer>`; an
@@ -158,22 +166,34 @@ does not fit `killconn`. It is replaced by a table, so the CSRF check, the LAN
 membership check, the public-address guard and the journal line all stay
 written once:
 
-| Button | Tool | argv | Invalidates cache |
-|---|---|---|---|
-| throttle | `tempthrottle` | `add <peer>` | yes |
-| block | `tempblock` | `add <peer>` | yes |
-| drop | `killconn` | `<peer> from <device>` | no |
+| Button | Tool | argv | Peer | Invalidates cache |
+|---|---|---|---|---|
+| throttle | `tempthrottle` | `add <peer>` | required | yes |
+| block | `tempblock` | `add <peer>` | required | yes |
+| drop | `killconn` | `<peer> from <device>` | required | no |
+| drop all | `killconn` | `from <device>` | none | no |
 
 argv is built by a per-action function taking `(peer, device netip.Addr)`, so
-an action that needs the device address can have it without the other two
+an action that needs the device address can have it without the others
 carrying an unused parameter.
 
-Drop keeps the `isPublicAddr` guard the other two have. It is a weaker
-requirement there — killing a flow to the gateway is recoverable in a way that
+The per-row actions keep the `isPublicAddr` guard. It is a weaker requirement
+for drop — killing a flow to the gateway is recoverable in a way that
 firewalling it is not — but the guard costs nothing and an inconsistent rule
 between three adjacent buttons is worse than a strict one.
 
-Route: `POST /peers/{device}/drop`.
+"Drop all" is the one action with no peer at all, so it carries a `peerless`
+flag: the form field is not read, the address guard has nothing to guard, and
+`argv` receives the zero `netip.Addr`. `logAction` prints `peer="-"` and skips
+the ASN lookup rather than emitting a journal line claiming an invalid
+address. The device guard still applies — the `{device}` must be a LAN
+address, which is what stops the route being pointed at anything else.
+
+Routes: `POST /peers/{device}/drop` and `POST /peers/{device}/drop-all`.
+
+No confirmation dialog, matching the per-row buttons. Nothing here is
+destructive in a lasting way: the flows re-establish, which is the point of
+the button.
 
 ### `router-web`: a status column that is true and current
 
@@ -209,9 +229,14 @@ exists to avoid.
 
 ### Page copy
 
-`peers.html` gains the third button and one line separating it from block, in
-the style of the notes already there: drop cuts what is open now and the app is
-free to reconnect; block also stops it coming back.
+`peers.html` gains the third per-row button and one line separating it from
+block, in the style of the notes already there: drop cuts what is open now and
+the app is free to reconnect; block also stops it coming back.
+
+Above the table, before any peer is listed, a "drop all" button for the device
+as a whole. It sits there rather than in the header row because it is not a
+column operation — it applies to everything below it at once, and a button
+inside the table would read as belonging to whichever row it landed next to.
 
 ## Decisions taken
 

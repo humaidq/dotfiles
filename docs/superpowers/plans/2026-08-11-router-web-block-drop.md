@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the peers page's block button stop traffic in both directions and tear down the live connection, and add a drop button that tears down the connection without blocking.
+**Goal:** Make the peers page's block button stop traffic in both directions and tear down the live connection; add a per-peer drop button that tears down the connection without blocking; and add a device-wide "drop all" button that ends every connection the device holds so its apps reconnect.
 
-**Architecture:** A new `killconn` shell tool owns all conntrack interaction. `tempblock` installs a drop rule per direction and calls `killconn` once its rules are in. `router-web` gains a third button and an action table, plus a status column that can see tempblock's rules and is invalidated when a button changes them.
+**Architecture:** A new `killconn` shell tool owns all conntrack interaction, in three forms — one peer, one peer scoped to a device, and a whole device. `tempblock` installs a drop rule per direction and calls `killconn` once its rules are in. `router-web` gains an action table driving four buttons, plus a status column that can see tempblock's rules and is invalidated when a button changes them.
 
 **Tech Stack:** NixOS module (`modules/router/`), bash via `pkgs.writeShellApplication` (shellcheck runs at build time), Go 1.22+ `net/http` with `ServeMux` path patterns, `html/template`, nftables, conntrack-tools.
 
@@ -27,12 +27,12 @@ Design spec: `docs/superpowers/specs/2026-08-11-router-web-block-drop-design.md`
 
 | File | Responsibility |
 |---|---|
-| `modules/router/killconn.bash` | **New.** Delete live conntrack entries for an address, optionally scoped to one LAN device. Touches no firewall state. |
+| `modules/router/killconn.bash` | **New.** Delete live conntrack entries: for one peer, for one peer scoped to a device, or for a whole device. Touches no firewall state. |
 | `modules/router/tempblock.bash` | Two drop rules per address (one per direction); aggregate `list`; call `killconn` after `add`. |
 | `modules/router/tools.nix` | Package `killconn`; put it on `systemPackages`, on `router-web`'s systemd path, and on `tempblock`'s `runtimeInputs`. |
 | `modules/router/web/shaping.go` | Read tempblock's chain so the status column sees it; `invalidate()` on the cache. |
-| `modules/router/web/peers.go` | Action table replacing the hardcoded `add`; `POST /peers/{device}/drop`. |
-| `modules/router/web/peers.html` | Third button and one explanatory note. |
+| `modules/router/web/peers.go` | Action table replacing the hardcoded `add`; `POST /peers/{device}/drop` and `/drop-all`; a `logAction` that tolerates a peerless action. |
+| `modules/router/web/peers.html` | Third per-row button, a device-wide button above the table, and two explanatory notes. |
 | `modules/router/web/shaping_test.go` | Tests for the tempblock chain parser and the cache. |
 | `modules/router/web/peers_test.go` | Tests for the drop route, argv construction and invalidation. |
 
@@ -48,7 +48,15 @@ No host files change: `hosts/bingo` and `hosts/bongo` already grant NOPASSWD `co
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: a `killconn` executable on `PATH`, invoked as `killconn <peer> [from <lan-ip>]`. Task 2 calls `killconn "$ip"`. Task 4 has `router-web` run `killconn <peer> from <device>`. Exit status is 0 whenever the arguments parsed, including when zero flows matched.
+- Produces: a `killconn` executable on `PATH` with three forms:
+
+  | Invocation | Kills |
+  |---|---|
+  | `killconn <peer>` | every LAN client's flows with that peer |
+  | `killconn <peer> from <lan-ip>` | only that device's flows with that peer |
+  | `killconn from <lan-ip>` | every flow that device has, any peer |
+
+  Task 2 calls `killconn "$ip"`. Task 4 has `router-web` run `killconn <peer> from <device>` for the per-row drop button and `killconn from <device>` for the page-level "drop all" button. Exit status is 0 whenever the arguments parsed, including when zero flows matched; a conntrack that genuinely failed to run exits non-zero with its stderr surfaced.
 
 - [ ] **Step 1: Write the script**
 
@@ -113,30 +121,53 @@ validate() {
 	esac
 }
 
-# Run one deletion and print how many entries went.
+# Run one deletion and set `deleted` to how many entries went.
 #
-# conntrack -D writes the deleted entries to stdout and an "N flow entries have
-# been deleted." summary to stderr, and exits 1 when N is zero. Zero is the
-# normal answer for an idle peer, not a failure, so the status is swallowed and
-# the count comes from the summary — which also means a caller sees "0" rather
-# than a script that died under set -e.
+# A global rather than a value on stdout because this has to be able to abort
+# the script on a real failure, and `die` inside a $(...) command substitution
+# only kills the subshell.
+#
+# conntrack -D writes the deleted entries to stdout and a summary to stderr,
+# and exits 1 when it deleted nothing. Zero is the normal answer for an idle
+# peer, not a failure — but keying on the exit status alone would also swallow
+# a genuine one, and an operator whose NOPASSWD grant had drifted would be told
+# "no live flows" instead of "permission denied". So the summary line is what
+# separates them: conntrack prints it whenever it actually ran, on both the
+# zero and non-zero paths, and does not print it when it failed to run.
+#
+# The count is located by scanning for the words "flow entries" rather than by
+# field position, because the summary carries a version banner —
+# "conntrack v1.4.6 (conntrack-tools): 3 flow entries have been deleted." — so
+# $1 is the string "conntrack", which would then feed the arithmetic below and
+# abort the script under set -e on the *success* path.
 #
 # 2>&1 >/dev/null in that order: stderr goes to the capture, then stdout is
 # discarded. Reversed, both would be discarded.
+deleted=0
 delete() {
-	local output count
-	output="$(ct -D "$@" 2>&1 >/dev/null)" || true
-	count="$(printf '%s\n' "$output" |
-		awk '/flow entries have been deleted/ { print $1; exit }')"
-	printf '%s' "${count:-0}"
+	local output status count
+	status=0
+	output="$(ct -D "$@" 2>&1 >/dev/null)" || status=$?
+	if [[ "$output" != *"flow entries have been deleted"* ]]; then
+		die "conntrack -D failed: ${output:-exit status $status}"
+	fi
+	count="$(printf '%s\n' "$output" | awk '{
+		for (i = 2; i <= NF; i++)
+			if ($i == "flow" && $(i + 1) == "entries") { print $(i - 1); exit }
+	}')"
+	case "$count" in
+	'' | *[!0-9]*) die "cannot read a count from conntrack: $output" ;;
+	esac
+	deleted="$count"
 }
 
 usage() {
 	cat >&2 <<'USAGE'
-killconn — tear down live connections to an address, without blocking it
+killconn — tear down live connections, without blocking anything
 
   killconn <peer>                      kill every LAN client's flows with <peer>
   killconn <peer> from <lan-ip>        kill only that device's flows with <peer>
+  killconn from <lan-ip>               kill every flow that device has
 
 Changes no firewall state, so the app may reconnect at once. To stop it coming
 back, use `tempblock add <peer>` — which calls this itself.
@@ -148,33 +179,54 @@ case "${1:-}" in
 -h | --help | help | "") usage 0 ;;
 esac
 
-peer="$1"
-shift
-validate "$peer"
-
+# `from` in first position is the device-wide form: no peer at all, kill
+# everything that device is holding. The other two forms lead with the peer, so
+# one look at $1 separates them.
+peer=""
 from=""
-if [ "$#" -gt 0 ]; then
-	[ "$1" = "from" ] || die "unexpected argument: $1"
+if [ "$1" = "from" ]; then
 	shift
 	[ "$#" -eq 1 ] || die "'from' takes exactly one address"
 	from="$1"
 	validate "$from"
+else
+	peer="$1"
+	shift
+	validate "$peer"
+	if [ "$#" -gt 0 ]; then
+		[ "$1" = "from" ] || die "unexpected argument: $1"
+		shift
+		[ "$#" -eq 1 ] || die "'from' takes exactly one address"
+		from="$1"
+		validate "$from"
+	fi
 fi
 
-# Two deletions in either case, because conntrack's -s and -d filter the
+# Two deletions in every case, because conntrack's -s and -d filter the
 # *original* tuple. A LAN-initiated NATed flow has original src=<lan>
 # dst=<peer>; an inbound-initiated one has them the other way round. One call
 # catches one of those, not both.
-if [ -n "$from" ]; then
-	a="$(delete -s "$from" -d "$peer")"
-	b="$(delete -s "$peer" -d "$from")"
+if [ -z "$peer" ]; then
+	delete -s "$from"
+	a="$deleted"
+	delete -d "$from"
+	b="$deleted"
+	scope="everything from $from"
+elif [ -n "$from" ]; then
+	delete -s "$from" -d "$peer"
+	a="$deleted"
+	delete -s "$peer" -d "$from"
+	b="$deleted"
+	scope="$peer from $from"
 else
-	a="$(delete -d "$peer")"
-	b="$(delete -s "$peer")"
+	delete -d "$peer"
+	a="$deleted"
+	delete -s "$peer"
+	b="$deleted"
+	scope="$peer"
 fi
 
 total=$((a + b))
-scope="$peer${from:+ from $from}"
 if [ "$total" -eq 0 ]; then
 	echo "no live flows: $scope"
 else
@@ -704,8 +756,8 @@ git commit --no-gpg-sign -m "router-web: show temp-blocked peers in the status c
 - Test: `modules/router/web/peers_test.go`
 
 **Interfaces:**
-- Consumes: `(*shapeCache).invalidate()` from Task 3; the `killconn <peer> from <lan-ip>` CLI from Task 1.
-- Produces: `POST /peers/{device}/drop`, and a `peerAction` struct with fields `name string`, `tool string`, `argv func(peer, device netip.Addr) []string`, `invalidate bool`. Task 5's template posts to that route.
+- Consumes: `(*shapeCache).invalidate()` from Task 3; the `killconn <peer> from <lan-ip>` and `killconn from <lan-ip>` CLI forms from Task 1.
+- Produces: `POST /peers/{device}/drop` and `POST /peers/{device}/drop-all`, and a `peerAction` struct with fields `name string`, `tool string`, `argv func(peer, device netip.Addr) []string`, `invalidate bool`, `peerless bool`. Task 5's template posts to both routes.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -771,6 +823,107 @@ func TestActionDropRefusesCrossSiteRequest(t *testing.T) {
 	}
 }
 
+func TestActionDropsEveryFlowForTheDevice(t *testing.T) {
+	server := testPeersServer(t)
+	var gotName string
+	var gotArgs []string
+	server.runTool = func(name string, args ...string) (string, error) {
+		gotName, gotArgs = name, args
+		return "killed 12 flow(s): everything from 192.168.0.10", nil
+	}
+
+	rec := httptest.NewRecorder()
+	// No peer field at all: this action is about the device.
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rec.Code)
+	}
+	want := []string{"from", "192.168.0.10"}
+	if gotName != "killconn" || !slices.Equal(gotArgs, want) {
+		t.Fatalf("ran %s %v, want killconn %v", gotName, gotArgs, want)
+	}
+}
+
+func TestActionDropAllIgnoresASubmittedPeer(t *testing.T) {
+	// The route is device-wide by construction. A peer field posted to it — by
+	// a stale form or by hand — must not narrow or redirect the action, or the
+	// button would silently do something other than what it says.
+	server := testPeersServer(t)
+	var gotArgs []string
+	server.runTool = func(_ string, args ...string) (string, error) {
+		gotArgs = args
+		return "", nil
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all",
+		strings.NewReader("peer=203.0.113.10"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+	if !slices.Equal(gotArgs, []string{"from", "192.168.0.10"}) {
+		t.Fatalf("ran killconn %v, want [from 192.168.0.10]", gotArgs)
+	}
+}
+
+func TestActionDropAllRefusesANonLANDevice(t *testing.T) {
+	// The peer guard does not apply to this route, so the device guard is the
+	// only thing standing between it and an arbitrary address.
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/203.0.113.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+	if called {
+		t.Fatal("killconn was run against an address outside the LAN")
+	}
+}
+
+func TestActionDropAllRefusesCrossSiteRequest(t *testing.T) {
+	server := testPeersServer(t)
+	called := false
+	server.runTool = func(string, ...string) (string, error) { called = true; return "", nil }
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	server.mux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+	if called {
+		t.Fatal("killconn was run for a cross-site POST")
+	}
+}
+
+func TestActionDropAllLogsWithoutAPeer(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	server := testPeersServer(t)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/drop-all", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.mux().ServeHTTP(rec, req)
+
+	line := buf.String()
+	for _, want := range []string{`action=drop-all`, `peer="-"`, `device="192.168.0.10"`, `result="ok"`} {
+		if !strings.Contains(line, want) {
+			t.Fatalf("journal line is missing %s: %q", want, line)
+		}
+	}
+	if strings.Contains(line, "invalid IP") {
+		t.Fatalf("zero address leaked into the journal: %q", line)
+	}
+}
+
 func TestActionInvalidatesTheShapeCacheOnlyWhenItChangedSomething(t *testing.T) {
 	// killconn touches no firewall state, so invalidating for it would force a
 	// needless re-read of feeds running to tens of thousands of elements.
@@ -815,7 +968,7 @@ func TestActionInvalidatesTheShapeCacheOnlyWhenItChangedSomething(t *testing.T) 
 }
 ```
 
-Add `"slices"` to that file's import block. `context`, `errors`, `time`, `strings`, `net/http` and `net/http/httptest` are already imported.
+Add `"slices"`, `"bytes"`, `"log"` and `"os"` to that file's import block if not already present — check first, since `TestActionLogsToJournal` already captures the log and may have brought some of them in. `context`, `errors`, `time`, `strings`, `net/http` and `net/http/httptest` are already imported.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -844,6 +997,11 @@ type peerAction struct {
 	// re-read of feeds running to tens of thousands of elements — the cost the
 	// cache exists to avoid.
 	invalidate bool
+	// peerless marks an action on the device as a whole. The peer form field is
+	// not read and argv receives the zero Addr. The public-address guard is
+	// skipped because there is no peer to guard — the {device} check is what
+	// keeps the route from being pointed anywhere else.
+	peerless bool
 }
 
 func addPeer(peer, _ netip.Addr) []string { return []string{"add", peer.String()} }
@@ -868,6 +1026,15 @@ func (s *peersServer) mux() *http.ServeMux {
 		name: "drop", tool: "killconn",
 		argv: func(peer, device netip.Addr) []string {
 			return []string{peer.String(), "from", device.String()}
+		},
+	}))
+	// The whole device at once. An app whose session survives one endpoint
+	// dying does not survive its entire flow table going, which is what
+	// "make it reconnect" actually takes.
+	mux.HandleFunc("POST /peers/{device}/drop-all", s.handleAction(peerAction{
+		name: "drop-all", tool: "killconn", peerless: true,
+		argv: func(_, device netip.Addr) []string {
+			return []string{"from", device.String()}
 		},
 	}))
 	return mux
@@ -896,22 +1063,29 @@ func (s *peersServer) handleAction(action peerAction) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		peer, err := netip.ParseAddr(r.PostFormValue("peer"))
-		if err != nil {
-			http.Error(w, "unparseable peer address", http.StatusBadRequest)
-			return
-		}
-		peer = peer.Unmap()
-		if !isPublicAddr(peer) {
-			// Refused before the tool is invoked: shaping the gateway or
-			// another LAN device is hard to undo from the far side of it.
-			// Applied to drop as well, where it is a weaker requirement —
-			// killing a flow is recoverable in a way firewalling one is not —
-			// because an inconsistent rule between three adjacent buttons is
-			// worse than a strict one.
-			s.logAction(action.name, peer, device, "refused: not a public address")
-			http.Error(w, "peer must be a public address", http.StatusBadRequest)
-			return
+		// A peerless action operates on the device as a whole, so there is no
+		// form field to read and nothing for the address guard below to guard.
+		// peer stays the zero Addr, which argv ignores and logAction renders
+		// as "-".
+		var peer netip.Addr
+		if !action.peerless {
+			parsed, err := netip.ParseAddr(r.PostFormValue("peer"))
+			if err != nil {
+				http.Error(w, "unparseable peer address", http.StatusBadRequest)
+				return
+			}
+			peer = parsed.Unmap()
+			if !isPublicAddr(peer) {
+				// Refused before the tool is invoked: shaping the gateway or
+				// another LAN device is hard to undo from the far side of it.
+				// Applied to drop as well, where it is a weaker requirement —
+				// killing a flow is recoverable in a way firewalling one is not
+				// — because an inconsistent rule between adjacent buttons is
+				// worse than a strict one.
+				s.logAction(action.name, peer, device, "refused: not a public address")
+				http.Error(w, "peer must be a public address", http.StatusBadRequest)
+				return
+			}
 		}
 
 		output, runErr := s.runTool(action.tool, action.argv(peer, device)...)
@@ -935,17 +1109,39 @@ func (s *peersServer) handleAction(action peerAction) http.HandlerFunc {
 }
 ```
 
-- [ ] **Step 4: Run the full suite**
+- [ ] **Step 4: Teach `logAction` about a peerless action**
+
+`logAction` currently formats `peer` and looks its ASN up unconditionally. With a zero `netip.Addr` that prints `peer="invalid IP"` — a journal line that reads like a parse failure rather than a device-wide action. `(*ASNTable).Lookup` is safe on a zero address (it misses rather than panicking), so this is about the line being readable, not about a crash. Replace `logAction` with:
+
+```go
+// logAction writes the one line that makes blocks collectable later. The ASN,
+// share-bearing device and outcome are included deliberately: an address on its
+// own ages badly, and the reason is what is wanted months later.
+func (s *peersServer) logAction(action string, peer, device netip.Addr, result string) {
+	// A device-wide action has no peer. Rendered as "-" rather than left to
+	// print the zero Addr's "invalid IP", which reads like a rejected request
+	// in a log people grep months later.
+	if !peer.IsValid() {
+		log.Printf("peer-action action=%s peer=\"-\" device=%q result=%q", action, device, result)
+		return
+	}
+	info, _ := s.asn.Lookup(peer)
+	log.Printf("peer-action action=%s peer=%q asn=%d org=%q cc=%s device=%q result=%q",
+		action, peer, info.Number, info.Org, info.Country, device, result)
+}
+```
+
+- [ ] **Step 5: Run the full suite**
 
 Run: `cd modules/router/web && go test ./...`
-Expected: PASS. The existing `TestActionThrottlesPeer`, `TestActionBlocksPeer`, `TestActionLogsToJournal` and `TestActionRefusesZonedPeerAndLogsOneLine` must still pass unmodified — the argv for throttle and block is unchanged.
+Expected: PASS. The existing `TestActionThrottlesPeer`, `TestActionBlocksPeer`, `TestActionLogsToJournal` and `TestActionRefusesZonedPeerAndLogsOneLine` must still pass unmodified — the argv for throttle and block is unchanged, and they all pass a valid peer so they take the unchanged `logAction` branch.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 nix fmt
 git add modules/router/web/peers.go modules/router/web/peers_test.go
-git commit --no-gpg-sign -m "router-web: add a drop button that kills flows without blocking"
+git commit --no-gpg-sign -m "router-web: add drop and drop-all, which kill flows without blocking"
 ```
 
 ---
@@ -982,14 +1178,33 @@ func TestRealTemplateRendersAllThreeActions(t *testing.T) {
 		`action="/peers/192.168.0.10/drop"`,
 		`action="/peers/192.168.0.10/throttle"`,
 		`action="/peers/192.168.0.10/block"`,
+		`action="/peers/192.168.0.10/drop-all"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("rendered page is missing %s\n%s", want, body)
 		}
 	}
-	// Each form carries the peer, or the button posts an empty address.
+	// Each per-row form carries the peer, or the button posts an empty address.
+	// drop-all is not among them: it is device-wide and must not carry one.
 	if got, want := strings.Count(body, `name="peer" value="203.0.113.10"`), 3; got != want {
 		t.Fatalf("%d forms carry the peer address, want %d", got, want)
+	}
+}
+
+func TestDropAllRendersWithNoPeers(t *testing.T) {
+	// The button is the device's, not the table's. An idle device renders "No
+	// current peers." and no table at all, and the button has to survive that —
+	// a device with nothing listed is exactly when you want to reset it.
+	tmpl, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, peersPageData{Device: "192.168.0.10"}); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	if !strings.Contains(out.String(), `action="/peers/192.168.0.10/drop-all"`) {
+		t.Fatalf("drop-all button absent from an empty page:\n%s", out.String())
 	}
 }
 ```
@@ -1020,11 +1235,30 @@ In `modules/router/web/peers.html`, add a third form as the **first** of the thr
 </td>
 ```
 
-And add one note after the existing `<p class="note">` about the Traffic column:
+Add one note after the existing `<p class="note">` about the Traffic column:
 
 ```html
 <p class="note"><strong>drop</strong> ends this device&rsquo;s current connections to the peer and nothing more &mdash; the app may reconnect at once. <strong>block</strong> also stops it coming back, in both directions, for every device, until the router reboots.</p>
 ```
+
+Then add the device-wide button between that note block and the `{{if .Peers}}` that opens the table, so it renders whether or not there are peers to list — an idle device is exactly when you want to reset it. It goes **after** `{{if .Error}}...{{end}}` so an error notice stays directly under the notes:
+
+```html
+<form method="post" action="/peers/{{.Device}}/drop-all" style="margin: 0 0 1rem">
+<button type="submit">drop all connections</button>
+</form>
+<p class="note">Ends every connection this device has, to every peer at once, and blocks nothing. Its apps reconnect from scratch.</p>
+```
+
+Note this form uses `{{.Device}}`, not `{{$.Device}}` — it sits outside the `{{range .Peers}}` loop, so the dot is already the page data. Inside the loop the dot is the row, which is why the per-row forms need `$`.
+
+Add a style rule for it alongside the existing `button` rule, so it does not read as a third per-row button that has drifted out of the table:
+
+```css
+form.device button { background: #fff0f0; border: 1px solid #d33; color: #a00; font-weight: 600; }
+```
+
+and give the form that class: `<form class="device" method="post" ...>`.
 
 - [ ] **Step 4: Run the full suite**
 
@@ -1104,9 +1338,27 @@ tempblock del <peer> && tempblock list
 
 Expected: `unblocked: <peer>`, and the address is gone from `list` — not left showing one direction.
 
-- [ ] **Step 9: Verify the drop button from the web UI**
+- [ ] **Step 9: Verify drop-all from the CLI**
+
+With a device holding several conversations:
+
+```bash
+conntrack -L -s <device> | wc -l   # before
+killconn from <device>
+conntrack -L -s <device> | wc -l   # after
+```
+
+Expected: `killed N flow(s): everything from <device>`, and the count drops to roughly zero. "Roughly" because the device reconnects immediately — that is the intended behaviour, not a failed kill.
+
+- [ ] **Step 10: Verify both buttons from the web UI**
 
 Click drop on a live row. Expected: 303 back to the peers page, the row's byte counts reset or the row is gone, and `journalctl -u router-web` carries one `peer-action action=drop ... result="ok"` line.
+
+Then click "drop all connections" above the table. Expected: 303 back, the table comes back much shorter or empty, and the journal carries `peer-action action=drop-all peer="-" device="<device>" result="ok"` — with `peer="-"`, not `peer="invalid IP"`.
+
+- [ ] **Step 11: Verify drop-all on an idle device**
+
+Open the peers page for a device with no current peers. Expected: "No current peers." and the drop-all button still rendered. Click it: 303 back, `no live flows` in the journal's result, no error page.
 
 ---
 
