@@ -1082,4 +1082,120 @@
 # The remaining ~60 uncovered addresses are AWS (27), Cloudflare (26), Google
 # Cloud and ChinaNet. Shared by definition; the zone wildcards handle them.
 
+# ===========================================================================
+# A DoH RELAY FLEET — twenty DigitalOcean droplets, 2026-08-12
+#
+# WRITTEN INTO custom-throttle-list.txt FIRST AND MOVED HERE the same evening,
+# with the section intact, once the classification was put to the user. It is the
+# third move between these two files on 2026-08-12 — Top VPN and Bright VPN went
+# the other way, from here to there — and the direction is the point: those are
+# tunnels and shaping beats blocking, this is a DNS-changer and blocking beats
+# shaping. The header's rule decided all three.
+#
+# WHY IT DROPS RATHER THAN SHAPES, which is the argument that moved it and is
+# worth keeping because it inverts this pair of files' usual logic. Everywhere in
+# the throttle file, a clean failure is bad: the client notices and hunts for
+# another node. For a DNS-changer a clean failure is exactly what is wanted,
+# because the fallback is not another node — it is the device's system resolver,
+# which is ours and filtered. Dropping a resolver hands the device back to us.
+#
+# Shaping also barely touches it. A lookup is a few hundred bytes, so the
+# 100 kbit/s cap costs it nothing; only the added latency and loss do any work,
+# and slow-but-working DoH still resolves every name in custom-blocklist.txt.
+#
+# WHAT THEY ARE. Every one of the twenty presents a Cloudflare certificate on 443
+# for CN=cloudflare-dns.com, and every one presents the IDENTICAL certificate:
+# serial 4ED03304C46B87A8C2EB5569DB9EBA0C, valid Dec 31 2025 to Dec 21 2026, chain
+# verifying cleanly. A DigitalOcean droplet does not hold Cloudflare's key, and
+# twenty of them do not independently obtain one certificate, so these pass the
+# TLS session through to Cloudflare's resolver rather than terminating it — the
+# same relay mechanism as the a248.e.akamai.net and swdist.apple.com hosts in the
+# throttle file, pointed at DNS instead of a CDN.
+#
+# Confirmed working, not merely listening: driven with a real DoH request
+# (`curl --resolve cloudflare-dns.com:443:<ip> …/dns-query`) three of them —
+# 138.197.89.51, 198.199.93.244 and 164.92.249.104 — returned HTTP 200 with valid
+# answers for example.com. The other seventeen were fingerprinted by certificate
+# only. None answers on udp/53, so DoH on 443 is the whole service.
+#
+# WHY IT MATTERS MORE THAN TWENTY ROWS. A handset pointed at one of these resolves
+# entirely outside the router, which makes every name-based control we have inert
+# for that device — the sinkholes, the imo names, the whole layer. That is a
+# larger hole than any single tunnel node in either file, and it is invisible in a
+# capture unless someone asks what the 443 flows actually are. It is also the
+# reason the dns4all entry at the top of this file exists, and the same reasoning
+# one layer up: a cached address does not need the name again.
+#
+# WHAT MUST NOT BE TOUCHED. Cloudflare's own resolver addresses, 1.1.1.1 and
+# 1.0.0.1, and cloudflare-dns.com by name. The relays are the finding; the
+# upstream is public infrastructure the whole house may legitimately reach, and
+# taking it out is the same self-harm as the Akamai and Etisalat refusals
+# elsewhere in this file. Blocking the NAME also does nothing — the client dials
+# these by address, and the name they present in SNI is Cloudflare's rather than
+# the operator's, so there is no operator name anywhere to sinkhole.
+#
+# THIS LIST IS A SNAPSHOT, and unusually so: the fleet is enumerable from outside
+# by exactly the property that identified it — a DigitalOcean address serving
+# certificate serial 4ED0…BA0C on 443. Twenty is what was handed over, not what
+# exists. If more are wanted, that fingerprint finds them, which is a better
+# position than these files are normally in and worth using before collecting
+# them one at a time.
+#
+#
+# All twenty are AS14061 across some fifteen separate /19 and /20 announcements,
+# which is DigitalOcean's allocation being drawn from rather than a block the
+# operator holds — /32s throughout, since the neighbours are unrelated tenants.
+# The only /24-level repeat is 138.197.89.0/24, which gave up .14 and .51.
+138.197.89.51
+138.197.89.14
+143.198.56.56
+143.198.130.68
+146.190.147.214
+146.190.55.21
+209.38.221.54
+206.189.239.140
+198.211.105.16
+198.199.111.239
+198.199.93.244
+188.166.162.251
+167.172.146.116
+167.71.182.48
+164.92.249.104
+134.209.232.141
+137.184.24.142
+137.184.68.215
+192.241.220.50
+207.154.209.125
+#
+# --- frozondns, MOVED HERE FROM custom-throttle-list.txt the same day, under the
+# same rule and in the same decision as the twenty above.
+#
+# Its note as it stood in that file, corrected where it had gone stale: "These two
+# are the DNS-changer already sinkholed as *.frozondns.com, which the app reaches
+# by address with no lookup at all. It moved to the second one within minutes of
+# the first being dropped, so expect a third." It said two and listed three — the
+# third it predicted duly arrived and was appended without the sentence being
+# updated, which is worth repeating here because the prediction coming true is the
+# useful part: this service replaces a dropped address quickly.
+#
+# The rest of that note stands. 45.66.151.43 serves a valid GlobalSign *.imo.im
+# certificate, which puts it on imo edge infrastructure rather than on anything of
+# the DNS service's own — the same overwall pattern as the ousaqb.tech names.
+#
+# Shaping these was always the weaker choice for the reason set out above, and
+# there is a second reason specific to them: the client dials them by address with
+# no lookup at all, so the *.frozondns.com sinkhole never fires and the address is
+# the only layer that touches this service.
+45.66.151.43
+194.4.52.220
+45.136.38.51
+#
+# SWEEP, so the next reader does not repeat it: custom-throttle-list.txt was
+# searched for any other resolver — DNS-changer, DoH or DoT endpoint — at the
+# time of this move, and these three plus the twenty above were all of it. The
+# one near-miss is the numbered node pool in that file whose operator runs its
+# own zone's NS records on the pool itself; that is a tunnel operator hosting its
+# own DNS, not a resolver offered to clients, and it correctly stays there.
+# ===========================================================================
+
 
