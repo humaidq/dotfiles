@@ -1062,3 +1062,456 @@
 # /32 only — this is general-purpose cloud, as full of unrelated tenants as
 # DigitalOcean or Hetzner.
 144.24.170.223
+
+# Twenty-one more from later the same evening, handed over one to five at a time
+# as each was shaped and the client moved. Same caveat as the block above and it
+# matters more here because of what is at the end of it: NO per-address capture
+# backs any of these. What is on record is the mapping, the range arithmetic and
+# the reverse DNS, not a characterised flow — no share, no direction ratio, no
+# transport. Every attribution below is "this address was handed over during the
+# round", which is the weakest evidence class in this file.
+#
+# DigitalOcean, AS14061. The 152.42 pair is the one worth reading: 152.42.207.31
+# originates from 152.42.192.0/19 where the two already here — 152.42.187.214 and
+# 152.42.160.159 — are both in 152.42.160.0/19, so it is a fresh allocation; then
+# 152.42.181.240 landed back in 152.42.160.0/19 and makes three there. Both facts
+# get lost if this is counted at the /17 the 152.42.160.159 note uses.
+152.42.207.31
+152.42.181.240
+# 170.64.224.0/20, the same announced prefix as 170.64.237.166 and four addresses
+# from it.
+#
+# Correction to the note above 170.64.237.166 while this is being written: it
+# reads "Same /17 as 170.64.140.197 further up, so DigitalOcean's 170.64.128.0/17
+# has now produced two." True at /17, but those two are not one allocation —
+# 170.64.140.197 originates from 170.64.128.0/18 and 170.64.237.166 from
+# 170.64.224.0/20. The real repeat is this address against .237.166. Worth having
+# straight because /17-level counting is what produced the stale tallies the
+# round note above already warns about.
+170.64.239.144
+# 64.227.0.0/20, 24.144.64.0/22 and 137.184.176.0/20, all three new to the file.
+64.227.0.180
+24.144.64.195
+137.184.178.32
+# And 137.184.248.0/22, a second 137.184 allocation — .178.32 above is in
+# 137.184.176.0/20. One /16, two announcements, same as the 143.198 and 146.190
+# cases.
+137.184.250.129
+# 178.62.64.0/18. 178.62.209.103 further up is in 178.62.192.0/18 — same /16,
+# different announcement, so this is a new allocation rather than a repeat.
+178.62.97.178
+# 143.198.248.0/22, and the third 143.198 range: 143.198.57.217 is in
+# 143.198.48.0/20 and 143.198.214.26 in 143.198.208.0/20. Three addresses, three
+# separate allocations of one /16.
+143.198.248.129
+# 146.190.224.0/20, the third 146.190 allocation: 146.190.132.199 (in the
+# twelve-address fan-out above) is in 146.190.128.0/19 and 146.190.31.189 in
+# 146.190.16.0/20. Same pattern as 143.198 — one /16, three separate
+# announcements, which is DigitalOcean's allocation granularity rather than a
+# range signal.
+146.190.237.238
+# And 146.190.200.0/22, a fourth 146.190 allocation. No PTR. Four addresses, four
+# separate announcements inside one /16 — the strongest illustration in this block
+# of why /16-level counting misleads here: it reads as "DigitalOcean's 146.190 has
+# given up four" when nothing has actually repeated.
+146.190.200.233
+# Scaleway / Online SAS, AS12876, four more. All four carry instances.scw.cloud
+# PTRs, which is the default reverse name on a Scaleway instance — it identifies
+# the product, not the tenant, so it is a description rather than evidence.
+#
+# The first three and every earlier 51.158 entry here (.242.175, .235.31,
+# .117.140, .235.229) originate from 51.158.0.0/15. 51.158.237.185 does not: it
+# comes from 51.158.128.0/17, a more specific announcement inside the same space.
+# So this is not one prefix seven times over, and proximity within 51.158 is not
+# a range signal — there is no single boundary to count against.
+51.158.114.173
+51.158.78.143
+51.158.105.55
+51.158.237.185
+# 163.172.0.0/16 is new to the file — a fourth Scaleway range after 51.15.0.0/16,
+# 51.158.0.0/15 and 151.115.0.0/17.
+#
+# Counted by prefix against the committed file rather than from the tally in the
+# round note above, which reads "Scaleway/Online 11" and does not reconcile: those
+# four ranges hold twelve committed addresses, seventeen with these five. Same
+# caveat as the IONOS discrepancy below — recount before quoting either number.
+163.172.181.44
+# SCALEWAY-WAW again, 151.115.0.0/17 — fourth there after 151.115.52.76,
+# 151.115.75.209 and 151.115.76.240, so Warsaw stays a range this client returns
+# to rather than a one-off, as the note above 151.115.76.240 already had it.
+#
+# The .1 is worth a sentence only to close the question it raises: a .1 usually
+# reads as a gateway or router rather than a host, and shaping infrastructure
+# would be a different kind of mistake from shaping a tenant. It is not one — the
+# PTR is 1-54-115-151.instances.scw.cloud, the same per-instance naming as every
+# other Scaleway address here, so this is an ordinary instance that happens to
+# hold the first address in its /24.
+#
+# That makes eighteen Scaleway addresses across the file in five ranges, counted
+# by prefix rather than from the round note's stale tally.
+151.115.54.1
+# IONOS, AS8560. 93.90.207.165 is the first 93.90.x anywhere in this file: RIPE
+# gives inetnum 93.90.197.0 - 93.90.207.255, netname IONOS-CUSTOMERS, maintained
+# by AS8560-MNT and AS15418-MNT — customer VPS space, the same kind of tenancy as
+# the 217.160 block and not shared infrastructure. 74.208.129.147 is the second in
+# 74.208.0.0/16, which ARIN carries as 1AN1-NETWORK, IONOS Inc.
+#
+# That makes four IONOS allocations across two continents: 217.160.0.0/16,
+# 212.227.0.0/16, 74.208.0.0/16 and 93.90.192.0/20. Those four prefixes hold
+# seventeen committed addresses, nineteen with these two, which does not reconcile
+# with the "IONOS 20" tally in the round note — that was computed over all of
+# AS8560 rather than these four prefixes. Recount both the same way before quoting
+# either.
+93.90.207.165
+74.208.129.147
+# Hetzner, AS24940. 37.27.91.243 is the third in 37.27.0.0/16 after .15.151 and
+# .25.51, both added earlier tonight — a range called new to this client a few
+# hours ago and now used three times in one round. PTR is Hetzner's default
+# static.243.91.27.37.clients.your-server.de, which names the product and not the
+# tenant.
+37.27.91.243
+# OVH, AS16276, 54.38.0.0/16 — and the second address in 54.38.198.0/24, beside
+# 54.38.198.163 already here. That is a /24-level repeat across days rather than
+# within one round, which is the shape the 146.59.179.0/24 note calls out, though
+# a /24 inside an OVH /16 is 256 of tens of thousands and carries nothing on its
+# own. Fifth in 54.38.0.0/16 counting .198.163, .50.229, .155.41 and .151.115.
+# PTR ip184.ip-54-38-198.eu, OVH's default naming.
+54.38.198.184
+# AltusHost, AS51430, in 79.142.76.0/23 — a fourth AltusHost /23 for this client,
+# after the ranges holding 79.142.74.43, 79.142.75.43/.75.56 and 79.142.79.185/
+# .79.195. PTR swe-net-ip.as51430.net, which is the AS's own naming and again not
+# a tenant.
+79.142.77.41
+# AltusHost again, 31.3.156.0/24 — and a new announcement rather than a repeat:
+# 31.3.154.181 and 31.3.154.235 already here both originate from 31.3.152.0/22.
+# PTR rs-network-ip.as51430.net, the same AS-level naming as .77.41 above.
+#
+# That is eleven AltusHost addresses across the file now, in 79.142.x, 31.3.x and
+# 185.10.58.x. The note above 185.10.58.249 calls AltusHost "the one hoster in the
+# pool that looks held rather than rented ad hoc", and eleven across three ranges
+# is consistent with that — but nothing here tests it, so it stays an impression
+# rather than a finding. A range case would need the same thing everything else in
+# this block needs: a capture.
+31.3.156.63
+# Third in 31.3.152.0/22 after .154.181 and .154.235. PTR swe-net-ip.as51430.net,
+# AltusHost's own AS-level naming, which says nothing about the tenant.
+31.3.154.254
+#
+# Third in 185.10.58.0/24, and the address that made the reverse-DNS sweep below
+# worth running: its PTR is ytewotm1njq5.sacas.buzz. That is not a hoster default
+# — AltusHost's own addresses resolve to swe-net-ip / nld-net-ip / rs-network-ip
+# under as51430.net — but a name the customer configured.
+#
+# 185.10.58.188, already in this file, carries the same construction:
+# zgywodawyzqw.cloudpabxip.buzz. Both labels are twelve characters, both zones are
+# .buzz, and both labels are base64. DNS discards the original capitalisation, so
+# the casing was brute-forced over all 4096 possibilities; exactly one decoded to
+# printable text in each case:
+#
+#   ytewotm1njq5  =  base64("a10935649")   on 185.10.58.142
+#   zgywodawyzqw  =  base64("df0800c40")   on 185.10.58.188
+#
+# Nine characters each, both hex-shaped. That is an identifier scheme rather than a
+# hostname — an account or instance number encoded so it does not read as one.
+#
+# Neither sacas.buzz nor cloudpabxip.buzz resolves forward at all: no A, no NS, no
+# SOA. So these names exist only as reverse records the customer set on AltusHost,
+# pointing at zones that were never published. "cloudpabxip" reads as cloud-PABX-IP,
+# telephony-flavoured, which is the kind of plausible-sounding label the
+# 144.225.91.11 entry near the top of this file already documents this client using
+# — that one fabricated status-29.shop-51.stacksnippets.net as an SNI.
+#
+# This is the best correlator AltusHost has produced, and it does not settle
+# attribution on its own: a shared encoding across two addresses in one /24 says
+# one customer configured both, not that the customer is this client. What it gives
+# is a test costing one lookup — an address whose PTR base64-decodes to a short
+# hex-shaped identifier under a non-resolving zone is the same tenant as these two.
+185.10.58.142
+#
+# AS214623 — ON2644819-NET, 2644819 Ontario Inc (CA) — in 185.222.106.0/24, an EE
+# registration from 2025-01-20. New range to the file, and the entry that makes
+# the AS-level case properly rather than by counting inside one /24.
+#
+# What is different here from every other range argument in this file: AS214623
+# announces TEN /24s and nothing else. 2560 addresses total, no IPv6, no larger
+# aggregate —
+#
+#   108.165.21.0/24   110.172.149.0/24  149.13.64.0/24    154.17.253.0/24
+#   154.3.47.0/24     185.218.23.0/24   185.222.106.0/24  199.244.103.0/24
+#   205.237.92.0/24   205.237.94.0/24
+#
+# — and this file, checked against those ten programmatically rather than by eye,
+# already held EIGHT addresses inside them before tonight, across four of the ten:
+# 108.165.21.144; 110.172.149.119, .191 and .207; 154.17.253.125; and
+# 199.244.103.182, .248 and .251. These two make ten addresses in five of the ten
+# prefixes, accumulated across several days rather than one round.
+#
+# The inetnum backs the AS rather than diluting it: 185.222.106.0/25 is netname
+# CA2644819-NET, org ORG-OI85-RIPE — assigned to the AS holder's own company, not
+# to a downstream customer. That is the opposite of the 163.5.38.0/24 case below,
+# where the /24 turned out to be PA space assigned to an unrelated French LIR, and
+# it is why this is the stronger case despite a smaller count in any single /24.
+#
+# Measured against what this file already calls its best AS case — AS402267 at
+# 144.225.91.190, "six /24s, 1536 addresses, small enough to inspect end to end"
+# — AS214623 is slightly larger at ten /24s but carries ten of this client's
+# addresses to that one's two, in five prefixes rather than one. On the file's own
+# stated criteria this is now the strongest AS-level case in it, and the honest
+# reading is that the earlier note's superlative is superseded.
+#
+# CORRECTION found while checking this. The note above 199.244.103.248 treats the
+# 199.244.100.0/22 as one unit and calls that address "the SIXTH in the transferred
+# 199.244.100.0/22, which also holds .102.118, .102.203, .102.81 and .102.198". The
+# /22 is registered as one block but is not announced as one: 199.244.103.0/24
+# originates from AS214623 while 199.244.102.0/24 originates from AS21949. So that
+# six-in-a-/22 count spans two different ASes and the /22 was never the right unit.
+# The three 199.244.103.x addresses belong with this AS214623 group; the four
+# 199.244.102.x ones do not, and whatever AS21949 is has not been looked at.
+#
+# Raised with the user on the footprint and the self-assigned netname, NOT on
+# address count — the standing decision recorded above already covers count, and
+# this was a different fact. Both the whole AS and the five used /24s were offered.
+# /32s chosen again, which is the FIFTH refusal of a wider rule after AS16276,
+# 199.244.102.0/24, 199.244.100.0/22 and 163.5.38.0/24.
+#
+# A later reader should take the pattern seriously rather than re-litigating each
+# case: five wider rules have now been put up on five different kinds of evidence
+# — AS concentration, bare registration, address count, draw rate, and this one,
+# the best of them on this file's own criteria — and all five were declined. The
+# preference for /32s is not an oversight that better evidence will eventually
+# overturn. Do not spend another round building the case; spend it on captures,
+# which is the evidence every entry in this block actually lacks.
+185.222.106.86
+185.222.106.24
+# A third AS214623 address, and the SIXTH of that AS's ten announced /24s to be
+# used: 185.218.23.0/24, ES-registered 2017-08-18. Eleven of this client's
+# addresses now sit in six of the ten prefixes.
+#
+# NOT re-raised. The AS was put to the user at ten-in-five and declined, and the
+# note above says plainly not to spend another round rebuilding that case on count.
+# One more address in one more prefix is exactly the increment that ruling
+# anticipated, so this is recorded as arithmetic and nothing follows from it.
+185.218.23.119
+#
+# FIFTH, SIXTH, THIRD and FOURTH addresses in 163.5.38.0/24 — .248 and .164 came
+# first, then .180 and .185. Six of 256 in one evening, all AS401776.
+#
+# The note above 163.5.38.211/.170 says "if a third appears this is the strongest
+# small-range case in the file after that /22", so the trigger it set has fired.
+# Checking the registration properly AT that trigger turned up facts that make the
+# case weaker rather than stronger, and each contradicts something that note
+# asserts:
+#
+# CORRECTION 1. "ARIN carries it as a bare AS-CUSTOMER with no netname behind it"
+# and "there is no organisation name here to correlate against" are both wrong.
+# AS401776 resolves as AS-CUSTOMER - IDC Cube, US (ARIN, 2025-06-12) —
+# "AS-CUSTOMER" is a prefix on the name, not the whole of it.
+#
+# CORRECTION 2. The /24 is not bare either. RIPE gives inetnum 163.5.38.0/24,
+# netname IONIS-163-5-38, status ASSIGNED PA, mnt-by lir-fr-ionis-1-MNT and
+# netutils-mnt, on a legacy FR registration from 1992-06-29. So this is PA space
+# assigned by a French LIR and announced by a US reseller AS — leased, like the
+# IPXO case at 144.225.91.0/24, and NOT the ownerless-allocation profile the note
+# compared it to at 199.244.100.0/22. That comparison was the whole basis for
+# calling it the strongest small-range case, and it does not survive.
+#
+# CORRECTION 3. "AS401776 announces 18 scattered /24s" is stale: 29 IPv4 prefixes
+# now, plus 26 IPv6, scattered across Brazil, Iran, Great Britain and Switzerland.
+# If anything that reinforces the note's own conclusion — the AS is the wrong
+# lever, more so at 29 than at 18.
+#
+# The /24 was put to the user at the fourth address and declined; /32s chosen. That
+# is the fourth time a wider rule has been raised and refused, after AS16276,
+# 199.244.102.0/24 and 199.244.100.0/22. One argument was made here that the
+# earlier three did not have and that a later reader should not have to
+# reconstruct: this file SHAPES rather than drops, so collateral on a co-tenant is
+# a slow connection rather than a broken one, which is a materially cheaper mistake
+# than the same rule in custom-ip-blocklist.txt would be. The "unrelated tenants"
+# objection the range notes throughout this file lean on is inherited from that
+# file's drop semantics and is weaker here than the repetition of it suggests. It
+# was declined with that on the table, so read the standing decision as covering
+# the shaping case explicitly and not merely by analogy to the blocklist.
+#
+# .180 and .185 arrived after that ruling and were added under it without
+# re-raising, since two more addresses are only more count.
+163.5.38.248
+163.5.38.164
+163.5.38.180
+163.5.38.185
+#
+# Hetzner, AS24940, 116.203.0.0/16 — and the only address in this round that is
+# worth more than its row, because it is the first one all evening with a PTR
+# that names something: node-3.infogral.is.
+#
+# Every other reverse name tonight identifies a product — instances.scw.cloud,
+# clients.your-server.de, as51430.net. This one is a zone somebody configured, and
+# the zone enumerates a pool by name, which is the thing this file has been
+# chasing address by address since 17:55:
+#
+#   node-1   78.47.56.71        Hetzner AS24940, 78.46.0.0/15
+#   node-2   78.47.168.188      Hetzner
+#   node-3   116.203.96.227     Hetzner   <- the address handed over here
+#   node-4   116.203.244.102    Hetzner
+#   node-5   65.21.153.100      Hetzner
+#   node-6   95.216.245.44      Hetzner
+#   node-7   144.21.62.15       Oracle Cloud AS31898
+#   node-8   141.147.87.80      Oracle
+#   node-9   132.145.67.92      Oracle
+#   node-10  143.47.227.106     Oracle
+#   node-11  144.21.60.43       Oracle
+#   node-12  132.226.129.228    Oracle
+#
+# node-13 and upward do not resolve, so twelve is the whole of it. Six Hetzner and
+# six Oracle, which is exactly the supply pattern the Oracle note above 144.24.170.223
+# predicted — always-free instances alongside rented ones. The zone's own NS records
+# are node-1 through node-4, so the operator runs its DNS on the pool itself.
+#
+# WHAT THIS IS NOT, YET. The apex is a live WordPress site presenting as
+# "infogralis | Competitive Intelligence and Market Insights", on Hetzner
+# 144.76.221.59, with www and mail on the same address and a joke response header
+# (all_your_base: is_belong_to_us). A market-intelligence firm running a scraper
+# fleet across cheap providers would look EXACTLY like this — twelve numbered nodes
+# on Hetzner and Oracle is unremarkable for that business. So the pool being real
+# does not make it this client's.
+#
+# The single thing tying it here is that 116.203.96.227 was handed over as a node
+# the client had moved to, and per the caveat at the top of this block that came
+# with no capture behind it. Everything else is inference from a naming scheme.
+# node-3 refuses tcp/443 outright, so it is not serving the website, but "not a web
+# server" is a long way from "tunnel node".
+#
+# ONLY node-3 is shaped. Taking all twelve plus *.infogral.is in
+# custom-blocklist.txt was put to the user and declined; node-3 alone stands.
+# That is the right call on the evidence as it is — adding the other eleven would
+# convert one weakly-attributed address into eleven, and if the zone belongs to a
+# legitimate crawler operator that is eleven unrelated hosts shaped on the strength
+# of a PTR.
+#
+# What would settle it is a capture: one flow to node-3 with a share and a
+# direction ratio, the way every entry above this block was justified. If that
+# comes back as a tunnel, the other eleven are already mapped and the zone block
+# becomes worth having; if it does not, delete this note and the entry with it.
+#
+# Either way the mapping is the durable part of this entry. It is the only time in
+# the whole round that a node came with a name behind it rather than a number, so
+# even if this particular pool is innocent, the method is the one thing tonight
+# that got ahead of the rotation instead of following it: check the PTR on every
+# address handed over, because a configured zone enumerates in one query what
+# address-by-address shaping spent four hours failing to enumerate.
+116.203.96.227
+
+# Three more from the tail of the round, same no-capture caveat as the block
+# above.
+#
+# 54.38.62.213 is OVH AS16276, 54.38.0.0/16 again — sixth in that /16 counting
+# .198.163, .198.184, .50.229, .155.41 and .151.115. PTR ip213.ip-54-38-62.eu,
+# OVH's default naming.
+54.38.62.213
+# OVH again, 57.128.0.0/17 — second in the 57.128.0.0/10 space that the
+# 57.129.111.40 note identifies as OVH, and a separate announcement from that
+# one's 57.129.0.0/17. PTR ns31655709.ip-57-128-125.eu, OVH's dedicated-server
+# naming rather than the ip<n>.ip-a-b-c.eu form the 54.38 entries carry.
+#
+# ADDED TO THIS FILE ONLY, on instruction — deliberately NOT put into the live
+# throttle set with `tempthrottle add`, unlike every other address in this block.
+# It therefore does nothing until the next `nixos-rebuild switch` on each router,
+# and until then it is a record rather than a control. Anyone reading the live set
+# to check coverage will find this address absent from it; that is expected and
+# not a shaping failure of the kind the 45.78.195.206 note warns about.
+57.128.125.150
+# DigitalOcean, 159.89.112.0/20, new to the file. No PTR.
+159.89.124.132
+# Second 159.89 allocation, 159.89.160.0/20. No PTR.
+159.89.166.200
+# DigitalOcean, 162.243.0.0/17 — a separate announcement from the 162.243.192.0/18
+# that 162.243.255.244 further up sits in, so a new allocation rather than a
+# repeat. And 167.172.96.0/20, the third 167.172 allocation after 167.172.80.0/20
+# (167.172.86.120) and 167.172.240.0/20 (167.172.251.49). Neither has a PTR.
+162.243.94.214
+167.172.106.221
+# 107.170.192.0/18, the same announced prefix as 107.170.232.66 in the
+# twelve-address fan-out above — so this is the pool range being reused, not a new
+# allocation. No PTR.
+107.170.247.241
+#
+# REVERSE-DNS SWEEP of every address in this file, run once the .buzz naming above
+# turned up, on the theory that a configured PTR would enumerate the pool the way
+# node-3.infogral.is did. Worth recording because the result was mostly negative
+# and a later reader should not spend the lookups again.
+#
+# 95 of 250 addresses have any PTR at all, and almost all of those are hoster
+# defaults that name a product rather than a tenant: instances.scw.cloud,
+# clients.your-server.de, ip-a-b-c.eu, as51430.net, hstgr.cloud, pbiaas.com.
+# Only four carry names somebody configured:
+#
+#   116.203.96.227   node-3.infogral.is           the twelve-node pool, see above
+#   185.10.58.188    zgywodawyzqw.cloudpabxip.buzz  base64 identifier scheme
+#   79.142.74.43     mail-sor-g38.kingtropin.com.br
+#   107.182.236.121  wadsguide.org.uk
+#
+# The third is worth more than its line. 79.142.74.43 is the OLDEST AltusHost
+# address in this file — the 2026-08-05 tcp/22 tunnel that took 100% of a handset
+# — and mail-sor-g38 is Google's outbound SMTP naming (mail-sor-fNN.google.com)
+# grafted onto an unrelated Brazilian domain. That is the same fabrication habit as
+# the stacksnippets.net SNI and the .buzz zones: a name chosen to look ordinary in
+# a log. Neither kingtropin.com.br nor wadsguide.org.uk resolves forward, exactly
+# like the two .buzz zones.
+#
+# So there is no single zone enumerating this pool. What the sweep did establish is
+# that four separate operator-configured naming schemes appear across it, all four
+# pointing at zones that do not resolve, and three of the four on AltusHost. That
+# is consistent with the "held rather than rented ad hoc" reading of AltusHost
+# above, and it is still short of proof.
+# IONOS, AS8560, 217.154.240.0/22 — a FIFTH IONOS allocation for this client
+# after 217.160.0.0/16, 212.227.0.0/16, 74.208.0.0/16 and 93.90.192.0/20. Do not
+# read 217.154 as part of the 217.160.0.0/16 group on the strength of the first
+# two octets; it is a separate /22. PTR ip217-154-243-35.pbiaas.com.
+217.154.243.35
+# IONOS, 87.106.137.0/24 — a SIXTH IONOS allocation, and the one that makes the
+# pbiaas.com naming worth a note rather than a passing mention. Its PTR is
+# ip87-106-137-245.pbiaas.com, the same form as 217.154.243.35 above.
+#
+# Checked before reading anything into it, because two addresses sharing a reverse
+# domain looks like a tenant correlator and here is not one. pbiaas.com is IONOS's
+# own: its NS records are ns-ionos.ui-dns.{com,de,org,biz}, United Internet's
+# nameservers, and the apex has no A record at all. So it names an IONOS product
+# line — the same class of fact as instances.scw.cloud, clients.your-server.de and
+# ip-a-b-c.eu elsewhere in this block, and not evidence about who rents the host.
+#
+# What IS mildly interesting, and is recorded as an observation rather than a
+# conclusion: of the twenty-odd IONOS addresses in this file, only these two have
+# any PTR. Every 217.160.x, 212.227.x, 74.208.x and 93.90.x entry resolves to
+# nothing. That is consistent with the client having moved onto a different IONOS
+# product rather than a different range, which if it holds would make the product
+# the thing to watch rather than the allocation. One observation, two addresses —
+# nowhere near enough to act on.
+87.106.137.245
+# Back to 217.160.0.0/16, but a part of it this file has not used: inetnum
+# 217.160.153.128/25, netname de-rhr-bap-ngcs-public, IONOS SE, ASSIGNED PA. The
+# 217.160 addresses above cluster in 217.160.33-39 and 217.160.89-110, so despite
+# the shared /16 this is a separate assignment rather than the same block again —
+# the same distinction the .34/.102/.104 note draws, one level up. No PTR, which
+# fits the observation above: only the two pbiaas.com addresses have one.
+#
+# For the record, since the round has now run past midnight: this and everything
+# from 185.218.23.119 onward were added on 2026-08-12, not the 08-11 evening the
+# block header describes. Same continuous round, different date.
+217.160.153.138
+#
+# DELIBERATELY NOT SHAPED, recorded so the same address is not handed over twice:
+# 95.100.170.50 was passed in with the three above and briefly went into the live
+# set before it was checked. It is AKAMAI — AS20940, Akamai International B.V.,
+# and its PTR is a95-100-170-50.deploy.static.akamaitechnologies.com. Neighbouring
+# addresses in 95.100.170.0/24 carry the same deploy.static naming, so the whole
+# /24 is Akamai edge rather than one host that happens to sit there.
+#
+# It was removed from both routers with `tempthrottle del` and never written here.
+# Shaping a CDN edge degrades whatever ordinary sites the house reaches through
+# that POP, for everyone, which is the same self-harm the imo notes in
+# custom-ip-blocklist.txt refuse for Etisalat-hosted Akamai. A client can dial an
+# Akamai address for entirely innocent reasons — that is what a CDN is — so an
+# address appearing in a round is not by itself attribution.
+#
+# The general rule this round has now tested twice: check the PTR and the origin
+# AS BEFORE adding, not after. Every other address tonight came back as rented VPS
+# space where a /32 lands on one tenant; this one did not.
