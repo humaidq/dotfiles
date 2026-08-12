@@ -1,6 +1,22 @@
-# Addresses dropped outright. Tunnel and VPN endpoints now live in
-# custom-throttle-list.txt instead, where they are shaped into uselessness
-# rather than blocked — see that file for why.
+# Addresses dropped outright.
+#
+# THE SPLIT WITH custom-throttle-list.txt, stated as the rule actually applied
+# rather than as a general principle:
+#
+#   VPNs and tunnels        -> custom-throttle-list.txt, shaped into uselessness
+#   App estates             -> here, dropped
+#
+# "App estates" means imo, BIGO/Likee, TikTok Live, the live-streaming and
+# random-chat backends, DNS-changers and the like: infrastructure belonging to an
+# operator whose service you want to stop reaching, where a dropped address simply
+# fails. VPNs are the opposite case — a clean failure tells the client to try
+# another node, so shaping beats blocking, which is the whole argument in that
+# file's header.
+#
+# The rule is not a heuristic about what an address looks like. Two commercial VPN
+# apps were blocked here until 2026-08-12 and both were moved: Top VPN / topvpn.cc
+# with 57 addresses, and Bright VPN's 79.127.164.0/24. If something in this file
+# turns out to be a VPN or tunnel endpoint, it belongs there.
 
 # dns4all's resolver, blocked by name as *.dns4all.eu. The address is worth
 # having as well because a DoQ client that has the IP cached does not need the
@@ -515,80 +531,17 @@
 # address has traffic behind it and the /24 becomes arguable on the same grounds
 # as 5.181.130.23.
 
-# --- Top VPN / topvpn.cc (com.unlimited.unblock.free.accelerator.top) ---
+# --- Top VPN / topvpn.cc --- MOVED to custom-throttle-list.txt, 2026-08-12.
 #
-# Static + dynamic analysis of vpn.apk (v8.31.22.3) on 2026-08-01. The APK is a
-# V2Ray/Xray client (com.v2ray.ang) bolted onto the VV Music live-streaming app
-# (com.vv51.mvbox); its control plane is api.topvpn.cc with failover aliases
-# api.topcenter.one / api.topstudio.one (identical A-records) plus four
-# CloudFront distributions, all self-signed-cert-pinned. The exit-node pool is
-# fetched at runtime from /topvpn/wehappy/getLinkInfoList.htm, whose response is
-# RSA-1024-wrapped-RC4 encrypted. Decrypted live on an emulator under Frida: 60
-# link entries, all shadowsocks chacha20-ietf-poly1305 on :443, resourceProvider
-# "capitalonline", linkPoolID 10.
+# Fifty-seven addresses: the api.topvpn.cc control plane in 148.153.0.0/16 and the
+# shadowsocks exit pool decrypted from the app's own getLinkInfoList response. They
+# are shaped rather than dropped now, under the rule that VPNs go to the throttle
+# list while app estates like imo and BIGO are blocked here.
 #
-# Control plane (DNS A-records + X-SERVER-ADDR headers), all in 148.153.0.0/16:
-148.153.50.178
-148.153.50.182
-148.153.67.207
-148.153.116.150
-#
-# Exit nodes decrypted from getLinkInfoList (provider capitalonline, shared
-# hosting, so blocked as /32s rather than taking the /24s). 148.153.234.111,
-# 38.123.110.196, 148.153.50.179 and 148.153.67.208 were already listed above.
-148.153.51.227
-148.153.51.228
-148.153.51.229
-148.153.51.232
-148.153.51.235
-148.153.112.49
-148.153.112.50
-148.153.112.52
-148.153.112.53
-148.153.112.54
-148.153.112.62
-148.153.222.2
-148.153.222.6
-148.153.222.9
-148.153.222.10
-148.153.222.12
-148.153.222.15
-148.153.222.20
-148.153.222.22
-148.153.222.25
-148.153.222.33
-148.153.222.35
-148.153.222.40
-148.153.222.41
-148.153.222.42
-148.153.222.43
-148.153.222.44
-148.153.222.48
-148.153.222.51
-148.153.222.53
-148.153.222.55
-148.153.222.56
-148.153.222.57
-148.153.222.59
-148.153.222.61
-38.123.106.36
-38.123.106.41
-38.123.106.42
-38.123.106.43
-38.123.106.45
-38.123.106.50
-38.123.106.51
-38.123.106.57
-38.123.106.59
-38.123.109.234
-38.123.109.237
-38.123.109.248
-38.123.110.199
-38.123.110.202
-38.123.110.212
-38.123.110.217
-38.123.110.218
-38.123.110.219
+# Recorded rather than deleted because the addresses are gone from THIS file: a
+# later reader grepping here for 148.153.51.x, 148.153.112.x, 148.153.222.x or
+# 38.123.106/109/110.x will find nothing, and should look there before concluding
+# the pool was never analysed. The full APK write-up moved with it.
 
 # TikTok Live, IP-level. Normal TikTok keeps working; only the live pull/push
 # CDN is blocked.
@@ -870,17 +823,9 @@
 # customers, so recheck this if something unrelated breaks.
 34.102.162.219
 
-# Bright VPN exit node. 79.127.164.50 terminates an IPsec tunnel on UDP 4500,
-# and the app carries the address hardcoded rather than resolving it, so
-# blocking brightvpn.com by name closes the control plane but not the tunnel
-# itself.
-#
-# The /24 is CDNEXT Brussels and carries no known legitimate hostname, so the
-# whole block goes rather than the single address — exit nodes rotate within a
-# provider's range. The ports in custom-port-blocklist.txt are the durable
-# form of this; the range is here for the case where a client finds a
-# transport those do not cover.
-79.127.164.0/24
+# Bright VPN's 79.127.164.0/24 --- MOVED to custom-throttle-list.txt, 2026-08-12,
+# same rule. The IPsec-on-UDP-4500 write-up moved with it; the port rules in
+# custom-port-blocklist.txt are unaffected and remain the durable control.
 
 # TikTok live pull and webcast edges, reached by IP after the name block. The
 # pull-/push- and webcast* patterns in custom-blocklist.txt answer 0.0.0.0 for
