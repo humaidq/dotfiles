@@ -95,6 +95,25 @@ i.e. a fronting proxy. Two variants:
   for hosts answering with an upstream's certificate finds the rest. Say so in
   the note, because collecting them one at a time is the slow path.
 
+## Sweeping the list for resolvers already in it
+
+Grepping the file's prose for "DNS" finds only what someone wrote down. Probing
+every address finds what is actually there — the first run of this found 17
+resolvers sitting in the throttle list, against 3 the prose sweep had found.
+**A resolver is invisible to a capture-led method**: a few hundred bytes, no
+share of anything, nothing that looks like a tunnel.
+
+- **Run it on the router.** The shaper hooks `forward`, so a probe from a LAN
+  client is itself throttled and every throttled address reads as dead.
+- **Reuse one SSH connection** (`ssh -M -o ControlPersist=30m -fN bongo`) —
+  each fresh connection costs a hardware key touch.
+- **Read the response body, not the status code.** A hosting control panel that
+  returns 200 to every path looks exactly like a DoH hit. That check was the
+  difference between 16 real findings and 17.
+- **A bare 443 probe is not enough.** Four of the seventeen presented no
+  certificate at all until the handshake carried a resolver's SNI. Only an
+  actual query finds those.
+
 ## Writing the entry
 
 - **/32 by default.** A range needs the allocation to be small and clearly the

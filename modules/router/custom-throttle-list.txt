@@ -628,7 +628,14 @@
 # converge on this client, and a later reader deciding whether to keep adding
 # rows here should see that it was already understood at row eight.
 178.128.4.86
-157.15.20.173
+# 157.15.20.173 HAS MOVED to custom-ip-blocklist.txt, and it is the one move in
+# that batch with a real cost attached. Nothing on 443, but it answers plain
+# recursive DNS on udp/53 for anything asked of it — a resolver in the open. The
+# note above records it as this client's second channel before it became the
+# primary, so it is genuinely both things, and dropping it gives up the "no clean
+# failure to route around" property that the whole of this file is built on. It
+# went anyway: an open resolver defeats every name rule we have for any device
+# that finds it, which is the larger hole. Recorded so the trade is visible.
 
 # The round after, and the one that changed the shape of the problem rather than
 # adding two more rows.
@@ -1047,21 +1054,26 @@
 # next node.
 #
 # All twelve are AS14061 and all are /32s, consistent with the rest of the file.
-107.170.232.66
-134.199.231.67
-138.197.87.175
-143.198.57.217
-146.190.132.199
-159.203.98.143
-159.223.17.75
-167.71.20.65
-167.99.125.77
-167.172.99.160
-198.199.104.153
-206.189.239.221
-# Second in 146.190.0.0/16, alongside the .132.199 in the fan-out above. Listed
-# separately because it came in on its own rather than as part of that view, so
-# whether it shares the probe shape or was carrying something is not recorded.
+#
+# ANSWERED, AND THE TWELVE HAVE MOVED TO custom-ip-blocklist.txt. The note above
+# asked to be told if any of these ever turned out to be more than a bare
+# handshake. All twelve are DoH relays: every one serves a cloudflare-dns.com
+# certificate on 443 and every one answers a real DNS-over-HTTPS query. They were
+# not candidate tunnel nodes being enumerated, they were a resolver pool, and the
+# tcp/20107 fan-out was a client checking which members were alive.
+#
+# The reasoning above is left in place rather than deleted because it was honest
+# about its own weakness — "nothing in the flows themselves distinguishes these"
+# — and that caveat is exactly what turned out to matter. The inference that they
+# were one pool was right; the inference about what kind was wrong, and no amount
+# of looking harder at 272-byte handshakes would have settled it. Probing the
+# addresses did, in about a second each.
+# Was "second in 146.190.0.0/16, alongside the .132.199 in the fan-out above" —
+# that companion is now in custom-ip-blocklist.txt as a DoH relay, so this is the
+# only 146.190 address left from that view. It came in on its own rather than as
+# part of the fan-out, and it does NOT answer DoH or serve a resolver
+# certificate, so it stays here. Whether it shares the probe shape or was
+# carrying something is still not recorded.
 146.190.31.189
 # AltusHost, AS51430, and the second address in 185.10.58.0/24 after
 # 185.10.58.188. AltusHost has now given up ten across several days and remains
@@ -1821,9 +1833,13 @@
 # comes from 51.158.128.0/17, a more specific announcement inside the same space.
 # So this is not one prefix seven times over, and proximity within 51.158 is not
 # a range signal — there is no single boundary to count against.
-51.158.114.173
-51.158.78.143
-51.158.105.55
+# THREE OF THESE FOUR HAVE MOVED to custom-ip-blocklist.txt: 51.158.114.173,
+# 51.158.78.143 and 51.158.105.55 all answer DoH, found by the sweep described
+# there. They present no certificate at all on a bare probe — the resolver only
+# appears when the handshake carries a resolver's SNI — so the "no evidence
+# beyond the PTR" caveat above was right about the shape of the gap and wrong
+# about it being unfillable. Only 51.158.237.185 is still a tunnel node, and the
+# prefix arithmetic in the paragraph above now describes one address.
 51.158.237.185
 # 163.172.0.0/16 is new to the file — a fourth Scaleway range after 51.15.0.0/16,
 # 51.158.0.0/15 and 151.115.0.0/17.
@@ -1832,7 +1848,12 @@
 # round note above, which reads "Scaleway/Online 11" and does not reconcile: those
 # four ranges hold twelve committed addresses, seventeen with these five. Same
 # caveat as the IONOS discrepancy below — recount before quoting either number.
-163.172.181.44
+#
+# MOVED TO custom-ip-blocklist.txt: 163.172.181.44 answers DoH, so it was a
+# resolver rather than a tunnel node, and with it goes the "163.172.0.0/16 is new
+# to the file" claim above — that range is no longer represented here at all.
+# Recount before quoting any of these numbers, which was already this note's
+# advice and is now its own illustration.
 # SCALEWAY-WAW again, 151.115.0.0/17 — fourth there after 151.115.52.76,
 # 151.115.75.209 and 151.115.76.240, so Warsaw stays a range this client returns
 # to rather than a one-off, as the note above 151.115.76.240 already had it.
@@ -2726,3 +2747,202 @@
 # sixteenth 151.115 address in the file. Warsaw is now comfortably the Scaleway
 # region this client returns to most.
 151.115.67.40
+#
+# --- Handed over as a bare address with no capture behind it; everything below
+# is a desk check, not observed traffic.
+#
+# 151.115.78.178 — Scaleway SCALEWAY-WAW, AS12876, PTR
+# 178-78-115-151.instances.scw.cloud, so a /32 on one tenant. Only tcp/443 is
+# open — 22, 80, 553, 554, 853 and 8080 all refuse — and it is not a resolver:
+# the DoH probe returns nothing at all and 853 is closed, which is what keeps it
+# out of the blocklist.
+#
+# It is a fronting proxy, and it relays rather than holds keys. With no SNI, and
+# with a nonsense SNI (www.marriott.com), it answers with Akamai's
+# a248.e.akamai.net certificate; hand it swdist.apple.com and it returns Apple's
+# live swcdn.apple.com certificate instead. So unrecognised names fall through to
+# a fixed Akamai upstream while recognised ones are passed through.
+#
+# The Akamai serial (0373AB420F54941B555742D9AC890626) is identical to what the
+# real upstream 23.53.126.164 serves, and identical to what 151.115.72.41 —
+# already in this file — serves. Per this file's usual caution that is same
+# upstream, not same image: a pass-through returns whatever the upstream returns,
+# so the match was expected and carries no weight on its own.
+#
+# The one result a pass-through does not explain: SNI example.com returns
+# *.example.com, serial 0AD893BAFA68B0B7FB7A404F06ECAF9A, expired Jan 15 2026,
+# while the live example.com certificate has since rotated (serial
+# 0624D0AB311558780B7D5213B9631831, valid from Jul 29 2026). Repeated twice, same
+# stale certificate both times. Something is being served locally for that name
+# rather than relayed. CORROBORATED later in the same round: 159.203.50.29,
+# added below, is a DigitalOcean droplet in a different country under a different
+# AS, and it returns that identical expired certificate — same serial — for the
+# same SNI, alongside the same Akamai default and the same live Apple
+# pass-through. No pass-through explains two hosts on two providers serving one
+# stale certificate for a name whose live certificate has rotated. They are
+# serving from a shared store, i.e. one image. This is the fleet evidence the
+# rest of the batch is read against.
+#
+# Sweeping the listed Scaleway neighbours for the same behaviour found three more
+# fronting live: .45.183 serves www.apple.com, .72.41 serves a248.e.akamai.net,
+# .74.253 serves akamai.download.microsoft.com. Same family, different default
+# upstreams. Scanning Scaleway space for hosts answering with an upstream's
+# certificate is how the rest of these get found in one pass instead of one at a
+# time.
+#
+# Recomputed against this file: seventeenth 151.115 address, and fifteenth inside
+# SCALEWAY-WAW's 151.115.0.0/17 (the other two, .146.148 and .150.240, sit in the
+# separate 151.115.128.0/19 announcement). First in 151.115.78.0/24. Kept as a
+# /32 — 151.115.0.0/17 is 32768 addresses of general-purpose Scaleway hosting and
+# the neighbours are other people's tenants.
+151.115.78.178
+#
+# === Eight more handed over in the same round, again as bare addresses with no
+# === capture behind any of them. Everything below is a desk check. They are all
+# === DigitalOcean (AS14061) or Scaleway (AS12876) rented instances, none is a
+# === resolver — tcp/53 and tcp/853 are closed on every one and no DoH probe got
+# === a response — so all eight belong here and none in the blocklist. Grouped
+# === by what they actually do, because the three groups are worth different
+# === amounts.
+#
+# --- Group 1: general SNI proxies. Relay per-SNI, and carry the stale
+# --- certificate that identifies the image.
+#
+# 159.203.50.29 — DigitalOcean, 159.203.48.0/22, no PTR. tcp/22 and tcp/443. The
+# most valuable row in the batch: it is behaviourally identical to
+# 151.115.78.178 above, on a different provider in a different country. Unknown
+# SNI (www.marriott.com) returns Akamai a248.e.akamai.net serial
+# 0373AB420F54941B555742D9AC890626; swdist.apple.com returns Apple's live
+# swcdn.apple.com serial 6F2CBBB79F6F5CF06723393F60725BA6; example.com returns
+# *.example.com serial 0AD893BAFA68B0B7FB7A404F06ECAF9A, expired Jan 15 2026,
+# when the live certificate for that name rotated on Jul 29 2026. The Akamai and
+# Apple serials match their real upstreams and so prove only pass-through. The
+# expired one cannot come from a pass-through, and two independent hosts do not
+# cache the same dead certificate by chance — this pair is one build. Sixth
+# 159.203 address in the file, first in 159.203.48.0/22.
+159.203.50.29
+#
+# --- Group 2: fixed upstream. Same certificate no matter what SNI is offered,
+# --- so no per-name relaying — one hardcoded destination, fronted by a name the
+# --- host does not own.
+#
+# 168.144.1.102 — DigitalOcean, 168.144.0.0/22, no PTR, tcp/22 and tcp/443.
+# Serves Starbucks Coffee Company CN=starbucks.com, serial
+# 011A09B33340DA47F676131C2C8F63F4, unchanged across three different SNI values.
+# A DigitalOcean droplet does not hold Starbucks' key. The live starbucks.com
+# certificate could not be fetched from here for a staleness comparison, so this
+# row rests on the fronting alone, not on the image evidence above. Fourth
+# 168.144 address, first in 168.144.0.0/22.
+168.144.1.102
+# 165.22.133.89 — DigitalOcean, 165.22.128.0/20, no PTR, tcp/22 and tcp/443.
+# Serves Microsoft CN=akamai.download.microsoft.com, serial
+# 610003B3239C715208A51DF29E00000003B323, identical across every SNI tried. That
+# serial matches what the real akamai.download.microsoft.com serves today, so it
+# is a live pass-through and the match carries no weight by itself. What places
+# it is that 151.115.74.253 — already in this file — is the same fixed upstream
+# with the same serial and the same SNI-indifference, and 151.115.45.183 is the
+# same pattern pointed at www.apple.com. Third 165.22 address, first in
+# 165.22.128.0/20.
+165.22.133.89
+#
+# --- Group 3: no certificate to read. Weaker rows, listed on transport, banner
+# --- and range. Two of them carry a banner that is worth as much as a
+# --- certificate.
+#
+# 178.128.17.196 — DigitalOcean, 178.128.16.0/20, no PTR. tcp/22, 80, 443 and
+# 554 open; 443 accepts the connection and then never completes a handshake,
+# presenting nothing — the same silent listener this file already records at
+# 174.138.100.118, 51.75.42.29 and 144.126.253.113. Port 80, however, answers
+# "HTTP/1.0 400 Bad Request, Server: AkamaiGHost". A DigitalOcean droplet is not
+# Akamai edge; it is relaying to AkamaiGHost and returning the upstream's error
+# page. Same fronting behaviour as group 1, just visible over cleartext instead
+# of in a certificate. Fourth 178.128 address, second in 178.128.16.0/20 after
+# 178.128.22.159.
+178.128.17.196
+# 188.166.204.105 — DigitalOcean, 188.166.204.0/22, no PTR, and only tcp/80 is
+# open. Returns the identical AkamaiGHost 400 as 178.128.17.196, byte for byte
+# bar the timestamp, which is what ties it to the batch rather than the bare
+# range. Seventh 188.166 address, second in 188.166.204.0/22 after
+# 188.166.205.234.
+188.166.204.105
+# 129.212.250.132 — DigitalOcean, 129.212.248.0/22, a Mar 2025 allocation, no
+# PTR (the reverse lookup times out rather than answering NXDOMAIN). Only tcp/443
+# is open and it never completes a handshake under any SNI, so there is no
+# certificate and no banner: transport and range only.
+129.212.250.132
+# 129.212.250.226 — the same, plus tcp/22, and 94 addresses from .132 in the
+# same freshly-allocated /22. Two hosts behaving identically in a /22 that had no
+# entries in this file until today is the whole of the case for both; neither
+# would stand alone. First and second in 129.212.248.0/22 — note the existing
+# 129.212.252.236 is in the adjacent 129.212.252.0/22, not this one — and ninth
+# and tenth 129.212 addresses overall.
+129.212.250.226
+# 188.166.128.57 — DigitalOcean, 188.166.128.0/22, no PTR, and only tcp/22 is
+# open. Nothing on 80, 443, 553, 554 or 853. This is the weakest row in the
+# batch: no certificate, no banner, no fronting, only SSH and the fact that
+# 188.166.130.3 is already here in the same /22. Do not cite it as evidence of
+# anything; like 107.182.229.237 further up it rests entirely on its neighbours.
+# Eighth 188.166 address, second in 188.166.128.0/22.
+188.166.128.57
+# 151.115.76.174 — Scaleway SCALEWAY-WAW, PTR 174-76-115-151.instances.scw.cloud,
+# and the only open port is tcp/554. Nothing on 22, 80 or 443, so nothing to
+# fingerprint. Third in 151.115.76.0/24 after .114 and .240, sixteenth inside
+# 151.115.0.0/17 and eighteenth 151.115 address in the file.
+151.115.76.174
+#
+# === Five more in the same round, same terms as the batch above: bare addresses,
+# === no capture, desk check only. All five DigitalOcean AS14061, none a
+# === resolver (53 and 853 closed throughout, no DoH response), so all five here
+# === and none in the blocklist. Same three groups as before.
+#
+# --- Group 1 again: general SNI proxy carrying the image marker.
+#
+# 167.172.4.81 — DigitalOcean, 167.172.4.0/22, no PTR, only tcp/443 open. The
+# full signature, all three parts: unknown SNI returns Akamai a248.e.akamai.net
+# serial 0373AB420F54941B555742D9AC890626, swdist.apple.com returns Apple's live
+# swcdn.apple.com serial 6F2CBBB79F6F5CF06723393F60725BA6, and example.com
+# returns *.example.com serial 0AD893BAFA68B0B7FB7A404F06ECAF9A, expired
+# Jan 15 2026 against a live certificate that rotated Jul 29 2026. That makes
+# THREE hosts now — 151.115.78.178 (Scaleway PL), 159.203.50.29 and this one
+# (DigitalOcean) — serving one dead certificate for a name none of them owns.
+# Two could be argued about; three across two providers is a shared image, and
+# the expired example.com serial is the cheapest single query that identifies a
+# member. Fifth 167.172 address in the file, first in 167.172.4.0/22.
+167.172.4.81
+#
+# --- Group 2 again: fixed upstream, one hardcoded destination.
+#
+# 45.55.101.14 — DigitalOcean, 45.55.100.0/22, no PTR, only tcp/443. Serves Adobe
+# CN=assets.adobedtm.com, serial 0D1DB5A6166FDFF6CDAC0795531B6D24, identical
+# across every SNI offered. That serial matches what the real assets.adobedtm.com
+# serves today, so this is a live pass-through: it establishes fronting and
+# nothing more — no staleness, so no image evidence. A new fronted name for this
+# file; the others in the group front starbucks.com, akamai.download.microsoft.com
+# and www.apple.com. Fourth 45.55 address, first in 45.55.100.0/22.
+45.55.101.14
+#
+# --- Group 3 again: nothing to fingerprint. Transport and range only.
+#
+# 45.55.101.223 — DigitalOcean, tcp/22 and tcp/553 open, nothing on 443. Port 553
+# is the one this file keeps flagging as outside normal client use (see the notes
+# on 157.245.194.245 and 146.190.5.112); it is not TLS here — the connection
+# opens, sends no banner and closes on read. What lifts this above a bare range
+# guess is 45.55.101.14 directly above: same /24, 209 addresses apart, arriving
+# in the same handover, one of them demonstrably fronting. Second in
+# 45.55.101.0/24 and in 45.55.100.0/22, fifth 45.55 address overall.
+45.55.101.223
+# 138.68.120.206 — DigitalOcean, 138.68.120.0/23, no PTR. tcp/22 and tcp/443
+# open, but 443 accepts and never completes a handshake under any SNI — the
+# silent listener again (174.138.100.118, 51.75.42.29, 144.126.253.113,
+# 178.128.17.196). Eighth 138.68 address in the file but the first in this /23,
+# and 138.68 is spread widely enough here that the /16 count is not evidence of
+# anything; this row is the transport and the handover.
+138.68.120.206
+# 129.212.160.157 — DigitalOcean, 129.212.160.0/22, reverse lookup times out
+# rather than answering. Only tcp/443, silent, no certificate. Eleventh 129.212
+# address, first in this /22, and the third from the Mar 2025 DIGITALOCEAN-129-
+# 212-128-0 allocation after 129.212.250.132 and .226 added earlier today —
+# different /22, same recently-issued block, same behaviour of accepting 443 and
+# saying nothing. Weak on its own, and it is the newness of the allocation rather
+# than the /16 count that makes it worth the row.
+129.212.160.157

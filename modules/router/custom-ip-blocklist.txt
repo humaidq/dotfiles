@@ -1190,12 +1190,90 @@
 194.4.52.220
 45.136.38.51
 #
-# SWEEP, so the next reader does not repeat it: custom-throttle-list.txt was
-# searched for any other resolver — DNS-changer, DoH or DoT endpoint — at the
-# time of this move, and these three plus the twenty above were all of it. The
-# one near-miss is the numbered node pool in that file whose operator runs its
-# own zone's NS records on the pool itself; that is a tunnel operator hosting its
-# own DNS, not a resolver offered to clients, and it correctly stays there.
+# SWEEP BY READING, and it was not enough — see the section below. The throttle
+# file was searched for any other resolver by grepping its prose for DNS, DoH,
+# DoT and 853 at the time of this move, and that found only these three. Seventeen
+# more were already sitting in it, invisible to that method because nobody had
+# written down what they were.
+# ===========================================================================
+
+# ===========================================================================
+# SEVENTEEN RESOLVERS FOUND BY PROBING, MOVED OUT OF custom-throttle-list.txt
+# 2026-08-12
+#
+# The lesson first, because it is worth more than the addresses: the sweep above
+# searched the throttle file's PROSE for the word DNS. This one probed all 450 of
+# its addresses. The prose sweep found three; the probe found seventeen more,
+# every one of them a resolver that had been sitting in the throttle list for
+# days being gently slowed down while it resolved names for a handset at full
+# speed. **A resolver is invisible to a capture-led method** — it produces a few
+# hundred bytes of traffic and no share of anything, so nothing about it looks
+# like the tunnels these files were built to chase.
+#
+# HOW IT WAS RUN, because it should be run again: a script probing each address
+# for DoH (a real query, three ways), DoT on 853, plain DNS on 53, and the
+# certificate on 443. It has to run ON THE ROUTER — the shaper hooks `forward`,
+# so a probe from a LAN client is itself throttled and every one of these would
+# have read as dead. About four minutes for 450 addresses at parallelism 24.
+#
+# TWELVE OF THE SEVENTEEN WERE ONE SECTION, and its own note predicted this. The
+# throttle file described twelve DigitalOcean addresses seen in a single view,
+# every one at exactly 272 bytes out and 92 bytes in on tcp/20107 — bare
+# handshakes carrying nothing, filed as a candidate node pool being enumerated.
+# That note said plainly that nothing in the flows distinguished them from any
+# other port sweep, and asked to be told if one ever turned out to carry a real
+# session. All twelve serve a cloudflare-dns.com certificate and answer DoH. The
+# pool inference was right and the kind was wrong, and no further looking at
+# 272-byte handshakes could have settled it — probing did, in about a second each.
+107.170.232.66
+134.199.231.67
+138.197.87.175
+143.198.57.217
+146.190.132.199
+159.203.98.143
+159.223.17.75
+167.71.20.65
+167.99.125.77
+167.172.99.160
+198.199.104.153
+206.189.239.221
+#
+# FOUR SCALEWAY, and these are the ones that make certificate-spotting alone
+# insufficient. A bare probe to 443 gets NO certificate from any of them — the
+# resolver only appears when the handshake carries a resolver's SNI, at which
+# point all four return valid DNS. So "serves cloudflare-dns.com" finds the
+# twelve above and misses these; only sending an actual query finds them.
+51.158.78.143
+51.158.105.55
+51.158.114.173
+163.172.181.44
+#
+# ONE PLAIN-DNS RESOLVER, and the only move in this batch with a real cost.
+# 157.15.20.173 has nothing on 443 at all but answers recursive DNS on udp/53 for
+# anything asked of it. The throttle file documents it as a tunnel channel on a
+# handset — second channel, then primary — so it is genuinely both, and dropping
+# it gives up the no-clean-failure property that file is built on. Dropped
+# anyway: an open resolver defeats every name rule here for any device that finds
+# it, and that is the larger hole. If the client visibly rotates away because of
+# it, that trade is the reason.
+157.15.20.173
+#
+# ONE FALSE POSITIVE, recorded so it is not "found" again: 152.42.207.31 returns
+# HTTP 200 to a /dns-query request and looks like a hit in the scan output. It is
+# a FASTPANEL hosting control panel that returns 200 to EVERY path, including
+# nonsense ones, and the body is HTML rather than DNS. It stays in the throttle
+# list. Any future run of this scan must read the response body, not the status
+# code — that check is the difference between sixteen findings and seventeen.
+#
+# WHAT THE SAME SCAN SAYS ABOUT THE REST, which is not actionable but is the
+# clearest picture of the rotation anyone has had: of the 450 addresses probed,
+# 211 answer on 443, and their certificates are overwhelmingly other people's —
+# 69 a248.e.akamai.net, 10 www.apple.com, 7 swdist.apple.com, 6
+# akamai.download.microsoft.com, 5 www.honda.com, 5 starbucks.com, 5
+# assets.adobedtm.com, 4 www.marriott.com. All Akamai-fronted brands. So the
+# fronting relay is not a variant of this client, it is the dominant form, and a
+# hundred-odd rows in the throttle file that were filed on traffic shape alone
+# are in fact one technique. Worth a proper look when there is time.
 # ===========================================================================
 
 
