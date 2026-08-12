@@ -133,6 +133,16 @@ sys=$(nix build .#nixosConfigurations.oreamnos.config.system.build.toplevel --no
 grep -ohE '/nix/store/[a-z0-9]+-grafana[^ "]*' "$sys"/etc/systemd/system/grafana.service | head -1
 ```
 
+**A leftover instance makes the test lie, not fail.** The script's health check
+only asks whether *something* answers on the port, so a Grafana still running
+from an earlier invocation gets fetched instead — and it reports on the
+dashboard it was given, which is the previous version of the file. It reads as
+a clean pass. `test-dashboard.sh` now refuses to start when the port already
+answers, and no longer leaks its own instance (`$!` has to be grafana's pid;
+both `setsid nohup grafana &` and `( cd … && grafana … & )` record a pid that
+exits immediately, orphaning the server). If a run ever reports a panel count
+that does not match the file, check for a stray instance first.
+
 **Never `pkill -f grafana` or `pgrep -f bin/grafana`.** `-f` matches full
 command lines, and the shell running your command contains that string, so you
 kill your own session. Use a bracket to break the self-match:

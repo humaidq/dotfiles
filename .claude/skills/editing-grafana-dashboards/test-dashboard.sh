@@ -76,19 +76,53 @@ EOF
 
 PIDFILE="$ROOT/grafana.pid"
 
+# A Grafana left over from an earlier run is the worst possible failure here:
+# the health check below passes against it, the dashboard is fetched from it,
+# and the report describes the file you tested LAST time. That reads as a pass,
+# which is the one outcome this script exists to make trustworthy. So refuse to
+# run rather than bind-fail into someone else's instance.
+if [ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/health" || true)" = "200" ]; then
+  cat >&2 <<EOF
+port $PORT is already serving Grafana — testing against it would report on
+whatever dashboard IT was given, not on $DASH.
+
+Stop it first (the bracket keeps the pattern from matching this shell):
+  pgrep -f "share/[g]rafana" | xargs -r kill
+
+or pick another port with --port.
+EOF
+  exit 2
+fi
+
 # Invoked by the trap below, which shellcheck cannot see.
 # shellcheck disable=SC2329
 cleanup() {
   if [ "$KEEP" -eq 0 ] && [ -f "$PIDFILE" ]; then
     kill "$(cat "$PIDFILE")" 2>/dev/null || true
+    # Give the port up before returning. The next run's pre-flight check is
+    # otherwise racing a process that is still shutting down.
+    for _ in $(seq 1 20); do
+      kill -0 "$(cat "$PIDFILE")" 2>/dev/null || break
+      sleep 0.5
+    done
     rm -rf "$ROOT"
   fi
 }
 trap cleanup EXIT
 
-( cd "$ROOT" && setsid nohup "$GF/bin/grafana" server \
-    --homepath "$GF/share/grafana" --config "$ROOT/grafana.ini" \
-    > "$ROOT/run.log" 2>&1 < /dev/null & echo $! > "$PIDFILE" )
+# The pid in PIDFILE has to be grafana's own, and two obvious spellings of this
+# line do not give that. `setsid nohup grafana &` records setsid's pid, which
+# exits the moment it forks. `( cd … && grafana … & echo $! )` backgrounds the
+# whole `cd && grafana` list, so $! is the subshell's. Both leave cleanup
+# killing something already dead and grafana reparented to init, still holding
+# the port — which is what made the stale-instance case above routine.
+#
+# `&` on the subshell plus `exec` inside it means the subshell IS grafana: one
+# pid, recorded correctly, and it still outlives the script for --keep.
+( cd "$ROOT" && exec "$GF/bin/grafana" server \
+    --homepath "$GF/share/grafana" --config "$ROOT/grafana.ini" ) \
+  > "$ROOT/run.log" 2>&1 < /dev/null &
+echo $! > "$PIDFILE"
 
 # First start runs migrations and unpacks bundled plugins; a minute is normal.
 echo -n "waiting for grafana" >&2

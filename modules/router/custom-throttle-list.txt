@@ -34,6 +34,11 @@
 # A /32 and not the /23: CDS is a general-purpose cloud, so the neighbours are
 # other people's tenants.
 148.153.116.134
+# Fifth in the CDS Global Cloud group, 148.153.167.0/24, AS63199. Added 2026-08-12
+# from the same rotation round as the block at the end of this file, and filed here
+# with the other four rather than there because the AS and the operator are the
+# ones this group already documents. Same /32 reasoning as above.
+148.153.167.45
 # proxy.dlmate.cc. Single-name certificate, no other hostname known to resolve
 # here. A /32 only — 162.55.0.0/16 is Hetzner, so the range is full of
 # unrelated tenants.
@@ -1115,6 +1120,182 @@
 # of why /16-level counting misleads here: it reads as "DigitalOcean's 146.190 has
 # given up four" when nothing has actually repeated.
 146.190.200.233
+
+# 2026-08-12 morning, 05:20 to 07:17. Handed over as a batch from a chat log rather
+# than one at a time, and — unlike everything above — added to this file ONLY: no
+# `tempthrottle add`, no rebuild. So none of the addresses below is shaping anything
+# until the next `nixos-rebuild switch` on each router. Do not read a live set that
+# lacks them as a fault.
+#
+# Same evidence caveat as the rest of the round, and it applies harder here: these
+# arrived as bare addresses with timestamps and nothing else, so there is no share,
+# no ratio, no transport and no capture behind any of them.
+#
+# AS214623 again — ON2644819-NET, 2644819 Ontario Inc — twice more, and this is
+# where the AS reasoning above should be read from rather than re-derived.
+# 154.17.253.112 is the second in 154.17.253.0/24 after 154.17.253.125, and
+# 205.237.92.128 opens 205.237.92.0/24, the SEVENTH of that AS's ten announced /24s
+# to be used. Thirteen addresses in seven of ten prefixes now.
+#
+# A trap worth recording for 154.17.253.112 specifically: this repo's own
+# ip2asn-combined.tsv resolves it to AS174 COGENT, and ARIN's NetName for the
+# containing range is COGENT-154-17-16. Both are the legacy allocation, not the
+# announcement — live BGP gives 154.17.253.0/24 originating from AS214623. The note
+# above 144.225.91.190 already warns that a miss in that table means a stale
+# snapshot; this is the sharper version, where the table returns a confident and
+# wrong answer rather than nothing. Check announcements, not the table, before
+# attributing anything.
+#
+# The AS is NOT re-raised. It was declined at ten-in-five and the ruling above says
+# not to rebuild the case on count.
+154.17.253.112
+205.237.92.128
+# DigitalOcean, 138.68.200.0/22 — and the second address in 138.68.200.0/24, beside
+# 138.68.200.35 added last night. That is a genuine /24-level repeat inside one
+# round, which most of the DigitalOcean arithmetic in this block is not: the 143.198,
+# 146.190, 137.184 and 159.89 groups are all separate announcements that only look
+# like repeats at /16. This one is the real thing.
+#
+# Read it with the caution the 138.68.200.35 note already carries: 138.68.0.0/16 also
+# holds 138.68.74.158, a SailfishX node, and that note says explicitly not to treat
+# the coincidence as a link. A /24 repeat is tighter than a /16 coincidence, but
+# 138.68.74.158 is in neither the same /22 nor the same /24, so it stays unrelated.
+138.68.200.113
+# DigitalOcean, 143.110.160.0/20 — second 143.110 allocation after 143.110.245.185.
+143.110.169.66
+# DigitalOcean, 129.212.224.0/20 — first 129.212 anywhere in this file. No PTR.
+129.212.232.214
+#
+# Second address in 151.243.14.0/24, beside 151.243.14.64 in the node-pool block
+# further up — a /24 repeat across days, and the entry that ties two of this
+# file's small-reseller cases together.
+#
+# AS401418, FARDA-IX-LINK. Nine IPv4 /24s, 2304 addresses, and the footprint
+# overlaps AS401776's — the IDC Cube AS behind the six 163.5.38.0/24 addresses:
+#
+#   AS401418 announces 163.5.198.0/24 and 163.5.199.0/24, in the same 163.5.0.0/16
+#   as AS401776's 163.5.38.0/24, and 151.243.111.0/24 alongside this one, while
+#   AS401776 announces 151.243.179.0/24 and 151.246.185.0/24.
+#
+# So two separate small ARIN ASNs in the 401xxx range are announcing /24s carved
+# out of the same two /16s, and this client has drawn from both. The maintainer
+# object goes further: 151.243.14.0/24 is mnt-by netutils-mnt, and so is
+# 163.5.38.0/24. One maintainer across two ranges under two different ASes.
+#
+# Held as an observation, not a conclusion. netutils-mnt is plausibly an IP-leasing
+# broker whose object sits on many unrelated blocks, and nothing here has checked
+# how many — that check is what would turn this into evidence. If it turns out to
+# be narrow, it is a better handle than any single AS in this file, because it
+# would name the intermediary supplying the client rather than one of its hosts.
+#
+# DO NOT MERGE WITH THE ADJACENT /24. custom-ip-blocklist.txt holds
+# 151.243.15.2-.6 under its "AS137235 (WiredISP) — the bigo.sg esx/gdl tier" note.
+# That is the BIGO/imo estate, an unrelated investigation, and 151.243.15.0/24
+# genuinely originates from AS137235 rather than AS401418. Consecutive /24s,
+# different ASes, different operators — the adjacency is a coincidence of how the
+# /16 was carved up and reads as a link if not checked.
+151.243.14.210
+# AltusHost, fourth in 31.3.152.0/22 after .154.181, .154.235 and .154.254. Three of
+# those four are in 31.3.154.0/24, which alongside the two named-PTR addresses in
+# 185.10.58.0/24 keeps AltusHost the most concentrated hoster in the file.
+31.3.154.129
+# Linode under Akamai, AS63949, 139.162.160.0/19 — Singapore, and a region this
+# client has not used before. The Linode addresses above are all in the 172.x space.
+139.162.161.194
+# Voxility, AS3223, 5.254.67.0/24 — second Voxility address after 5.254.51.82, in a
+# different /24. The note against that one explains why nothing wider is right here
+# regardless of count: Voxility is transit and DDoS-protected hosting whose space is
+# heavily sublet, so neighbours are unrelated downstream customers.
+5.254.67.139
+# Hetzner, AS24940, inetnum 46.225.128.0/20 netname CLOUD-NBG1 — Nuremberg cloud,
+# inside the 46.224.0.0/15 that 46.224.91.79 above already uses. Second there.
+46.225.132.30
+# Cherry Servers, AS16125 (LT), 46.166.168.0/21 — a hoster new to this file. Bare
+# metal and VPS rental out of Lithuania, so a /32 on the usual reasoning: rented
+# space, single tenant per host, neighbours unrelated.
+46.166.172.173
+#
+# PSIPHON. These two are a different kind of entry from everything else in this
+# block and should not be read with the rest of it.
+#
+# Both are consumer broadband rather than rented hosting, which is why they were
+# held back and queried rather than added with the batch:
+#
+#   1.54.217.114   AS18403 FPT Telecom, VN.  netname FPTDYNAMICIP-NET,
+#                  status ASSIGNED NON-PORTABLE — an explicitly DYNAMIC pool.
+#   65.18.190.45   AS15600 Quickline AG, CH. netname FTTH-NET-GAW, "FTTH
+#                  Network", Nidau — fibre to the home.
+#
+# They were confirmed as Psiphon nodes from a capture, which makes them the ONLY
+# addresses in this whole round with a characterised flow behind them. Everything
+# else here rests on "handed over during the round" plus registration arithmetic.
+# Weight them accordingly, and weight the rest accordingly too.
+#
+# Psiphon uses residential and volunteer exits alongside rented servers, so a
+# subscriber address is expected here rather than anomalous — the usual objection
+# in this file, that consumer space means a call or an innocent tenant, does not
+# apply once the tool is identified. Note the inverse though: the GoChat entry
+# further up establishes that on at least one handset a symmetric flow to a
+# subscriber address IS a call to leave alone. Both readings are live on this
+# network, and only a capture separates them, which is exactly what these two had
+# and the rest of the round did not.
+#
+# THE DYNAMIC-POOL CAVEAT, which is the real cost of these two entries.
+# FPTDYNAMICIP-NET reassigns: 1.54.217.114 belongs to a different household on a
+# different day, and when it does, this file will be shaping an unrelated Vietnamese
+# subscriber with nothing in the entry to connect the shaping back to a decision.
+# That is a failure mode no other address here has — a rented VPS stays rented to
+# whoever rented it. If these are still in the file weeks from now, re-verify them
+# rather than trusting the row; a stale dynamic entry is worse than no entry.
+#
+# WHAT THIS IMPLIES FOR THE REST OF THE ROUND, offered as a hypothesis to test and
+# NOT as an attribution of the other entries. Psiphon rotates aggressively across
+# exactly the providers this round has been chasing — DigitalOcean, OVH, Hetzner,
+# Scaleway, Linode, Oracle, AltusHost — and distributes fresh server lists to its
+# clients out of band, by design, specifically so that blocking servers one at a
+# time does not converge. That is a precise description of what this file has spent
+# the round doing. If the wider rotation is also Psiphon, then no amount of /32s or
+# even AS-wide rules reaches it, and the honest lever is a per-device egress policy,
+# which the note above 159.203.1.196 already reached for on different grounds.
+#
+# Do not fold the rest of the round into this on the strength of the shape alone.
+# The named-PTR evidence points elsewhere: infogral.is and the base64 .buzz zones
+# are somebody's own naming, and Psiphon does not name its servers. The likeliest
+# reading is more than one tool in play, which is what the SailfishX and imo entries
+# above already establish for this network.
+1.54.217.114
+65.18.190.45
+# A third Psiphon node, 2026-08-12, and the most perishable entry in this file.
+#
+# AS197207 MCCI — Mobile Communication Company of Iran, Hamrah-e Aval — inetnum
+# 113.203.64.0/18, netname IR-MCI-20081128, prefix 113.203.96.0/20. That is not
+# fixed-line consumer space like the two above: it is a MOBILE CARRIER, so the
+# address is behind carrier NAT and fronts many subscribers at once, and it is
+# reassigned on a timescale of hours rather than days.
+#
+# The dynamic-pool caveat written against 1.54.217.114 therefore applies here
+# several times over. The mitigating fact, and the reason it is still worth adding,
+# is that the collateral is bounded by direction: this file only shapes traffic
+# between this house and that address, so an unrelated MCCI subscriber inheriting
+# it is only affected if somebody here also talks to them — which for an Iranian
+# mobile address is realistically nothing. That is the opposite of the Akamai case
+# refused above, where the shared host is one the whole house reaches constantly.
+# Cheap to hold, but re-verify rather than trusting the row.
+#
+# Iran being a principal Psiphon market, a mobile-carrier exit there is the
+# expected shape rather than a surprise, and it strengthens the Psiphon reading of
+# the three together: fixed-line VN, fibre CH and mobile IR is a residential exit
+# pool spread across three countries and three access technologies, which is what
+# the tool is built on and is nothing like the rented-VPS rotation in the rest of
+# this block.
+#
+# One methodological note in this address's favour: here the repo's
+# ip2asn-combined.tsv and live RIPE data AGREE, both giving AS197207 MCCI. Recorded
+# because the 154.17.253.112 entry above documents that table returning a confident
+# wrong answer, and it would be unfair to leave it looking useless — it is right
+# most of the time and wrong without warning, which is why announcements get checked
+# rather than the table trusted.
+113.203.97.98
 # Scaleway / Online SAS, AS12876, four more. All four carry instances.scw.cloud
 # PTRs, which is the default reverse name on a Scaleway instance — it identifies
 # the product, not the tenant, so it is a description rather than evidence.
@@ -1515,3 +1696,20 @@
 # The general rule this round has now tested twice: check the PTR and the origin
 # AS BEFORE adding, not after. Every other address tonight came back as rented VPS
 # space where a /32 lands on one tenant; this one did not.
+#
+# AND IT HAPPENED AGAIN. 95.100.170.58 was handed over on 2026-08-12, eight
+# addresses along from .50 in the same /24, and was refused on the same grounds:
+# AS20940, prefix 95.100.170.0/24, the block whose .10, .100 and .200 all resolve
+# to deploy.static.akamaitechnologies.com. Not added, not shaped.
+#
+# Two Akamai addresses out of one /24 in one round is worth more than the two rows
+# it did not become. Whatever is being watched keeps reaching this POP, which is
+# what a device does when ordinary traffic — app updates, media, any site fronted
+# by Akamai — flows through the nearest edge. An address appearing in a capture
+# means the device talked to it, not that the thing under investigation did, and
+# a CDN POP is where that distinction bites hardest.
+#
+# If a THIRD address from 95.100.170.0/24 comes up, the useful response is not a
+# third refusal: it is to find out which flows are actually landing there, because
+# by then the capture method is producing Akamai edge repeatedly and that is a
+# property of the method rather than of the client.

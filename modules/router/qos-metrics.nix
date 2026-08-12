@@ -22,11 +22,14 @@ let
   qosTextfile = pkgs.writers.writePython3Bin "qos-textfile" { flakeIgnore = [ "E501" ]; } ''
     """Collect QoS statistics into a Prometheus textfile.
 
-    Three sources, one file:
+    Five sources, one file:
       * CAKE per-tin stats, which is where prioritisation is actually visible
       * the HTB penalty classes that the throttle and imo lists steer into
       * the nftables rule counters from qos-mark and forward_throttle, which
         show classification firing
+      * the size of the throttle and imo sets, which is how a runtime
+        `tempthrottle add` becomes visible at all
+      * the per-address drop counters of the ad-hoc `tempblock` table
     """
 
     import json
@@ -66,6 +69,26 @@ let
         ("router-filter", "qos-mark"),
         ("router-blocklists", "forward_throttle"),
     ]
+
+    # The sets forward_throttle matches on. Their rule counters say how much
+    # traffic is being marked but nothing about how many addresses are in
+    # scope, and these sets have two writers: nft-blocklists-local repopulates
+    # them from custom-throttle-list.txt on a rebuild, and `tempthrottle`
+    # adds and deletes elements live. Exporting the cardinality is what makes
+    # the second writer visible — otherwise a temporary throttle is
+    # indistinguishable from the listed ones, and its removal invisible.
+    THROTTLE_SETS = ["throttle4", "throttle6", "imo4", "imo6"]
+
+    # The table `tempblock` creates on first use (see tempblock.bash). It is
+    # not part of networking.nftables.tables, so nothing else here knows about
+    # it, and it is absent whenever no temporary block is in force.
+    TEMPBLOCK_TABLE = "router_tempblock"
+    TEMPBLOCK_CHAIN = "block"
+    TEMPBLOCK_PREFIX = "tempblock:"
+
+    # Which way the rule with this match field points, in the vocabulary
+    # `tempblock list` already uses for the same two counters.
+    TEMPBLOCK_DIRECTIONS = {"daddr": "to-peer", "saddr": "from-peer"}
 
 
     def run_json(*argv):
@@ -253,6 +276,121 @@ let
         return found
 
 
+    def collect_sets(metrics):
+        found = False
+        for name in THROTTLE_SETS:
+            doc = run_json(
+                "nft", "-j", "list", "set", "inet", "router-blocklists", name
+            )
+            if not doc:
+                continue
+            for item in doc.get("nftables", []):
+                entry = item.get("set")
+                if not entry:
+                    continue
+                # `elem` is absent rather than empty for a set with nothing in
+                # it, which is exactly the state a `tempthrottle del` of the
+                # last address leaves behind — it has to read as 0, not as a
+                # missing sample.
+                metrics.add(
+                    "router_qos_set_elements",
+                    "Addresses currently in this nftables set",
+                    "gauge",
+                    {"set": name},
+                    len(entry.get("elem") or []),
+                )
+                found = True
+        return found
+
+
+    def tempblock_totals(doc):
+        """Sum the tempblock chain's counters per (address, direction).
+
+        Accumulated rather than returned per rule. Each address normally has
+        one rule per direction, but tempblock repairs one-sided leftovers
+        instead of rewriting them and nothing stops two rules for the same
+        address and direction existing. Two samples with identical labels is
+        not a duplicated line but a parse error that makes node_exporter
+        discard every metric in the textfile directory, so the sum is taken
+        here where a collision is harmless.
+        """
+        totals = {}
+        for item in doc.get("nftables", []):
+            rule = item.get("rule") or {}
+            comment = rule.get("comment") or ""
+            if not comment.startswith(TEMPBLOCK_PREFIX):
+                continue
+            # The comment, not the match expression: nft normalises what it
+            # prints for a CIDR (host bits masked) and for IPv6, so the match
+            # is not necessarily the text the operator typed — and the comment
+            # is what `tempblock del` takes back. See cmd_list in tempblock.bash.
+            address = comment[len(TEMPBLOCK_PREFIX):]
+            direction = "unknown"
+            counter = None
+            for expr in rule.get("expr", []):
+                payload = expr.get("match", {}).get("left", {}).get("payload", {})
+                direction = TEMPBLOCK_DIRECTIONS.get(payload.get("field"), direction)
+                if isinstance(expr.get("counter"), dict):
+                    counter = expr["counter"]
+            if counter is None:
+                continue
+            key = (address, direction)
+            running = totals.get(key, (0, 0))
+            totals[key] = (
+                running[0] + counter.get("packets", 0),
+                running[1] + counter.get("bytes", 0),
+            )
+        return totals
+
+
+    def collect_tempblock(metrics):
+        # Absent table and broken nft are different answers and only one of
+        # them is "nothing is blocked", so the table list is consulted first.
+        # Reporting 0 because nft could not be run would say the blocks had
+        # been lifted, which is the one wrong answer that matters here.
+        tables = run_json("nft", "-j", "list", "tables")
+        if not tables:
+            return False
+        present = False
+        for item in tables.get("nftables", []):
+            entry = item.get("table") or {}
+            if entry.get("name") == TEMPBLOCK_TABLE and entry.get("family") == "inet":
+                present = True
+        totals = {}
+        if present:
+            doc = run_json(
+                "nft", "-j", "list", "chain", "inet", TEMPBLOCK_TABLE, TEMPBLOCK_CHAIN
+            )
+            if not doc:
+                return False
+            totals = tempblock_totals(doc)
+
+        for (address, direction), (packets, bytes_) in totals.items():
+            labels = {"ip": address, "direction": direction}
+            metrics.add(
+                "router_tempblock_packets_total",
+                "Packets dropped by this temporary block",
+                "counter",
+                labels,
+                packets,
+            )
+            metrics.add(
+                "router_tempblock_bytes_total",
+                "Bytes dropped by this temporary block",
+                "counter",
+                labels,
+                bytes_,
+            )
+        metrics.add(
+            "router_tempblock_addresses",
+            "Addresses currently blocked by tempblock",
+            "gauge",
+            {},
+            len({address for address, _ in totals}),
+        )
+        return True
+
+
     def main():
         metrics = Metrics()
         ok = False
@@ -261,6 +399,8 @@ let
             ok |= collect_classes(metrics, device)
         for table, chain in RULE_CHAINS:
             ok |= collect_rules(metrics, table, chain)
+        ok |= collect_sets(metrics)
+        ok |= collect_tempblock(metrics)
 
         metrics.add(
             "router_qos_collector_success",
