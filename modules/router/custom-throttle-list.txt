@@ -1195,6 +1195,103 @@
 # different ASes, different operators — the adjacency is a coincidence of how the
 # /16 was carved up and reads as a link if not checked.
 151.243.14.210
+#
+# IONOS, inetnum 217.160.159.0/24, netname de-rhr-bap-ngcs-public — the sixteenth
+# 217.160 address in this file, and the one that settles what all of them are.
+#
+# The netname was checked across the group rather than assumed, which overturned
+# the guess it was added on. de-rhr-bap-ngcs-public is NOT specific to the recent
+# additions: 217.160.34.78, 217.160.33.174 and 217.160.104.239 carry it too, and
+# 217.160.155.154 and 217.160.102.24 carry es-lgr-pl-ngcs-public. So every 217.160
+# address this client has ever used is IONOS NGCS public-IP space — Next Generation
+# Cloud Server, their cloud-instance product — split across two sites, a German one
+# and a Spanish one.
+#
+# That is worth more than another row, because it reframes the /24 counting in the
+# older notes. The entry above 217.160.34.49 makes much of "three /24s each reaching
+# three occupants" and calls it "the tightest repeat pattern of any hoster in this
+# round". Those /24s are slices of one product's address pool at one datacentre, so
+# repeats inside them are what drawing repeatedly from that pool looks like, not
+# evidence of anything narrower. The count is real; the tightness it was read as is
+# not.
+#
+# It also means IONOS is a two-site relationship rather than a two-continent one:
+# the 74.208.x US space is a different product again, and the DE/ES split here is
+# a customer picking regions in one console. Nothing wider is takeable — NGCS public
+# pools are shared by every IONOS cloud customer in that region, which is the same
+# reasoning that keeps DigitalOcean and Hetzner at /32 throughout this file.
+217.160.159.101
+#
+# Hetzner, AS24940, inetnum 178.104.224.0/20, netname CLOUD-NBG1 — 178.104.0.0/15
+# is new to this file. Checked the same way as the IONOS group immediately above,
+# because that check overturned an assumption; this one confirms a better fact:
+#
+#   37.27.15.151     37.27.0.0/20      CLOUD-HEL1
+#   37.27.91.243     37.27.80.0/20     CLOUD-HEL1
+#   89.167.12.196    89.167.0.0/20     CLOUD-HEL1
+#   46.224.91.79     46.224.80.0/20    CLOUD-NBG1
+#   46.225.132.30    46.225.128.0/20   CLOUD-NBG1
+#   116.203.96.227   116.203.96.0/19   CLOUD-NBG1
+#   178.104.236.173  178.104.224.0/20  CLOUD-NBG1   <- this one
+#   188.245.69.44    188.245.0.0/16    DE-HETZNER-20110117
+#   162.55.0.240     162.55.0.0/16     DE-HETZNER-19920803
+#
+# Every Hetzner address this client has used in this round is HETZNER CLOUD, in two
+# regions — Helsinki and Nuremberg. The two exceptions are older entries from other
+# investigations: 162.55.0.240 is the proxy.dlmate.cc host near the top of this
+# file, and 188.245.69.44 predates this round. So the "six Hetzner ranges in play"
+# the note above 37.27.25.51 counts are not scattered ranges at all; they are one
+# product's public-IP pools at two datacentres.
+#
+# READ WITH THE IONOS NOTE ABOVE, because together they say something no single
+# address does. At IONOS every address is NGCS public space across two sites; at
+# Hetzner every address is Cloud across two sites. This client rents CLOUD
+# INSTANCES — API-provisioned, billed by the hour, destroyed and recreated in
+# seconds — rather than dedicated servers or leased ranges. That is a mechanism for
+# the rotation rate this whole round has been chasing: nodes are not being found and
+# replaced, they are being minted on demand, and the supply is bounded by the
+# provider's regional pool rather than by anything the operator holds.
+#
+# The practical consequence is the conclusion the 159.203.1.196 note already reached
+# on different evidence, now with a mechanism under it: no quantity of /32s reaches
+# a supply this elastic, and the ranges cannot be taken because they are shared with
+# every other cloud customer in the region. It is also why the AltusHost group reads
+# differently — leased space with configured PTRs is something held, not minted.
+#
+# Kept from being overread: this says how the client BUYS, not who it is, and it
+# does not distinguish this tenant from any other Hetzner Cloud customer. It is an
+# argument about which lever works, not evidence of attribution.
+178.104.236.173
+#
+# Three more DigitalOcean, and the first is the belated payoff of a correction made
+# earlier in this round.
+#
+# 170.64.131.192 originates from 170.64.128.0/18 — the SAME announced prefix as
+# 170.64.140.197. The note above 170.64.239.144 corrected an older claim that
+# 170.64.140.197 and 170.64.237.166 were a /17-level repeat, on the grounds that
+# they sit in 170.64.128.0/18 and 170.64.224.0/20 and so repeat nothing. This is
+# the first genuine repeat in 170.64.128.0/18, which is exactly what that
+# correction said to watch for in place of the /17 count.
+170.64.131.192
+# 64.227.96.0/20, a second 64.227 allocation after 64.227.0.180 in 64.227.0.0/20.
+64.227.101.18
+# 138.197.224.0/22. 138.197.87.175 above came from the twelve-address fan-out and
+# sits in a different announcement, so this is a new allocation rather than the
+# pool range being reused — unlike 107.170.247.241, which was.
+138.197.226.43
+# 178.62.64.0/18, second in that announcement after 178.62.97.178 — and the second
+# genuine within-prefix repeat in as many batches, after 170.64.131.192 above. Both
+# landed in prefixes this round had already used rather than opening new ones.
+#
+# Worth noting only because the DigitalOcean arithmetic in this block has spent most
+# of the round going the other way: 143.198, 146.190, 137.184, 159.89 and 138.197
+# all looked like /16 repeats and were each a separate announcement. Two real
+# repeats now exist, and they are in 170.64.128.0/18 and 178.62.64.0/18. If the
+# pattern continues it is the first sign of the client drawing from a bounded set of
+# DigitalOcean prefixes rather than the whole estate — which the CLOUD-NBG1 note
+# above would predict, since a cloud region has a finite public pool. One address in
+# each is far too little to say that yet; recorded so a third is recognised.
+178.62.124.212
 # AltusHost, fourth in 31.3.152.0/22 after .154.181, .154.235 and .154.254. Three of
 # those four are in 31.3.154.0/24, which alongside the two named-PTR addresses in
 # 185.10.58.0/24 keeps AltusHost the most concentrated hoster in the file.
@@ -1667,12 +1764,17 @@
 # the thing to watch rather than the allocation. One observation, two addresses —
 # nowhere near enough to act on.
 87.106.137.245
-# Back to 217.160.0.0/16, but a part of it this file has not used: inetnum
-# 217.160.153.128/25, netname de-rhr-bap-ngcs-public, IONOS SE, ASSIGNED PA. The
-# 217.160 addresses above cluster in 217.160.33-39 and 217.160.89-110, so despite
-# the shared /16 this is a separate assignment rather than the same block again —
-# the same distinction the .34/.102/.104 note draws, one level up. No PTR, which
-# fits the observation above: only the two pbiaas.com addresses have one.
+# Back to 217.160.0.0/16, inetnum 217.160.153.128/25, netname de-rhr-bap-ngcs-public,
+# IONOS SE, ASSIGNED PA. No PTR, which fits the observation above: only the two
+# pbiaas.com addresses have one.
+#
+# CORRECTION, made when 217.160.159.101 came in a few hours later and the netnames
+# were finally checked across the whole group rather than assumed. This entry
+# originally said the 217.160 addresses "cluster in 217.160.33-39 and 217.160.89-110,
+# so despite the shared /16 this is a separate assignment rather than the same block
+# again". The assignment boundary is real, but the implication — that .153 is a
+# different kind of space from the rest — is wrong. See the note against
+# 217.160.159.101 below for what they actually have in common.
 #
 # For the record, since the round has now run past midnight: this and everything
 # from 185.218.23.119 onward were added on 2026-08-12, not the 08-11 evening the
