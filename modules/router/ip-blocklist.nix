@@ -758,6 +758,7 @@ in
       description = "Resolve public STUN servers into the low-trust drop sets";
       after = [
         "nftables.service"
+        "nft-blocklists-local.service"
         "network-online.target"
       ];
       wants = [
@@ -765,13 +766,30 @@ in
         "network-online.target"
       ];
       partOf = [ "nftables.service" ];
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = [
+        "multi-user.target"
+        "nft-blocklists-local.service"
+      ];
 
       # RemainAfterExit deliberately false, unlike nft-lowtrust-macs. systemd
       # treats `start` on an already-active oneshot as a no-op, so leaving this
       # one active would quietly stop the timer from ever re-resolving — the
-      # exact trap imo-policy is commented against. partOf still re-triggers it
-      # on a ruleset reload through wantedBy.
+      # exact trap imo-policy is commented against.
+      #
+      # That choice costs the obvious way of surviving a ruleset reload, which
+      # recreates the table with empty sets. partOf does not cover it: systemd
+      # propagates a partOf restart as a *try*-restart, and a try-restart on an
+      # inactive unit is a no-op — and with RemainAfterExit false this unit is
+      # inactive the moment it exits. wantedBy multi-user.target only fires at
+      # boot. So without the indirection below, every `nixos-rebuild switch`
+      # that touches the ruleset would leave lowtrust_stun4/6 empty for up to an
+      # hour, until the timer next elapsed: a silent fail-open, the thing this
+      # whole unit is written to avoid. nft-lowtrust-macs is unaffected only
+      # because RemainAfterExit true keeps it active and therefore restartable.
+      #
+      # The fix is the one imo-policy uses: hang off nft-blocklists-local, which
+      # is RemainAfterExit true and partOf nftables.service. It receives the
+      # propagated restart and pulls this oneshot along with it.
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = false;
