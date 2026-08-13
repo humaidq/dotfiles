@@ -812,13 +812,27 @@ in
           [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name" >&2
         done < ${./custom-lowtrust-stun-hosts.txt}
 
-        nft flush set inet router-blocklists lowtrust_stun4
-        nft flush set inet router-blocklists lowtrust_stun6
+        # Flush is conditional per family, not unconditional the way the MAC
+        # loader's is. An empty set is a silent fail-open — every device in
+        # the pool gets a free pass to the STUN servers until the next timer
+        # fires, up to an hour away — while a stale set is a small, bounded
+        # hole (an address that has since moved). So a run that resolves
+        # nothing for a family must leave that family's set exactly as it
+        # was, not clear it. Decided per family rather than "both or
+        # neither" so a v6-less run (common — not every network here has
+        # working IPv6) does not throw away working v4 entries, and vice
+        # versa.
         if [ -n "$v4" ]; then
+          nft flush set inet router-blocklists lowtrust_stun4
           nft add element inet router-blocklists lowtrust_stun4 "{ ''${v4%, } }"
+        else
+          echo "nft-lowtrust-stun: no IPv4 addresses resolved this run, keeping previous lowtrust_stun4 contents" >&2
         fi
         if [ -n "$v6" ]; then
+          nft flush set inet router-blocklists lowtrust_stun6
           nft add element inet router-blocklists lowtrust_stun6 "{ ''${v6%, } }"
+        else
+          echo "nft-lowtrust-stun: no IPv6 addresses resolved this run, keeping previous lowtrust_stun6 contents" >&2
         fi
       '';
     };
