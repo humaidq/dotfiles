@@ -348,6 +348,26 @@ in
           type inet_service
         }
 
+        ${lib.optionalString cfg.lowTrust.enable ''
+          # Membership in the low-trust pool, matched as `ether saddr`, which is
+          # only visible on the LAN-ingress (upload) direction — a download's
+          # source MAC is the ISP's. That is sufficient because every consumer
+          # either drops the packet outright or sets a ct mark, and a ct mark
+          # applies to both directions of the conversation.
+          #
+          # Two sets rather than one so that removal is safe: the peers page can
+          # only touch the _temp set, so a button press can never silently undo
+          # a device that was deliberately put in the permanent list. A device
+          # in both is simply in the pool.
+          set lowtrust_macs {
+            type ether_addr
+          }
+
+          set lowtrust_macs_temp {
+            type ether_addr
+          }
+        ''}
+
         chain forward_blocklists {
           type filter hook forward priority -10; policy accept;
 
@@ -561,6 +581,71 @@ in
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
         nft -f ${throttleList}
+      '';
+    };
+
+    # Loads the permanent pool membership from the sops secret. A service
+    # rather than a generated .nft file because the list must not reach the Nix
+    # store: it names people's devices and this repository is public.
+    #
+    # partOf nftables.service for the same reason nft-blocklists-local is —
+    # a ruleset reload recreates the table with empty sets, which would
+    # silently empty the pool until the next rebuild.
+    systemd.services.nft-lowtrust-macs = lib.mkIf cfg.lowTrust.enable {
+      description = "Load low-trust pool MAC addresses";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "nftables.service" ];
+      wants = [ "nftables.service" ];
+      partOf = [ "nftables.service" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+
+      path = with pkgs; [
+        nftables
+        gnugrep
+        gnused
+        coreutils
+      ];
+
+      # Fails loudly on a missing or malformed file rather than loading an
+      # empty set. The plaintext lists get a build-time parse that fails the
+      # rebuild on a typo; a runtime secret cannot, so a failed unit is the
+      # substitute for that guarantee. An empty pool is a silent fail-open.
+      script = ''
+        set -euo pipefail
+
+        file=${lib.escapeShellArg (toString cfg.lowTrust.macFile)}
+
+        if [ ! -r "$file" ]; then
+          echo "nft-lowtrust-macs: cannot read $file" >&2
+          exit 1
+        fi
+
+        elements=""
+        while IFS= read -r line || [ -n "$line" ]; do
+          line=''${line%%#*}
+          line=$(printf '%s' "$line" | tr -d '[:space:]' | tr 'A-F' 'a-f')
+          [ -z "$line" ] && continue
+          if ! printf '%s' "$line" | grep -qE '^([0-9a-f]{2}:){5}[0-9a-f]{2}$'; then
+            echo "nft-lowtrust-macs: malformed MAC address: $line" >&2
+            exit 1
+          fi
+          elements="$elements$line, "
+        done < "$file"
+
+        # Both tables, because the sets are declared in both and nftables has
+        # no way to share one. Missing the second is the failure mode this
+        # whole plan keeps warning about: the ruleset builds, and qos-mark
+        # fails to load at runtime.
+        for table in router-blocklists router-filter; do
+          nft flush set inet "$table" lowtrust_macs
+          if [ -n "$elements" ]; then
+            nft add element inet "$table" lowtrust_macs "{ ''${elements%, } }"
+          fi
+        done
       '';
     };
 

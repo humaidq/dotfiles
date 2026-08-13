@@ -186,6 +186,34 @@ in
         description = "Packet loss applied to imo addresses, at all hours.";
       };
     };
+    # A pool of devices given a stricter egress policy than the rest of the
+    # LAN, identified by MAC. See
+    # docs/superpowers/specs/2026-08-13-low-trust-device-pool-design.md.
+    #
+    # MAC rather than IP because a device that sets its own address stays in
+    # the pool. The known and unmitigated weakness is the other direction: a
+    # device that randomises its MAC leaves the pool silently, and this network
+    # has seen MAC rotation before.
+    lowTrust = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enforce the low-trust device pool. Off means no sets, no chains, no service, and no tool.";
+      };
+      macFile = lib.mkOption {
+        type = with lib.types; nullOr path;
+        default = null;
+        description = ''
+          Path to the decrypted file listing pool MAC addresses, one per line,
+          `#` comments allowed.
+
+          A path rather than a list of strings on purpose: the list identifies
+          people's devices, this repository is public, and anything given to a
+          NixOS option ends up world-readable in the Nix store. Point this at a
+          sops secret's `.path`.
+        '';
+      };
+    };
 
     bandwidth = {
       upload = lib.mkOption {
@@ -413,6 +441,20 @@ in
                 ff00::/8
               }
             }
+
+            ${lib.optionalString cfg.lowTrust.enable ''
+              # Declared here as well as in router-blocklists, and populated by
+              # the same service. nftables sets are scoped to their table with
+              # no way to share one, and qos-mark needs the membership as much
+              # as the drop chains do. Two declarations, one writer.
+              set lowtrust_macs {
+                type ether_addr
+              }
+
+              set lowtrust_macs_temp {
+                type ether_addr
+              }
+            ''}
 
             chain early-input {
               type filter hook input priority -10; policy accept;
