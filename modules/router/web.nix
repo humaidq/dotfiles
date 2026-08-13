@@ -90,7 +90,13 @@ in
           "ROUTER_CAPTURE_DIR=%S/router-web/captures"
         ]
         ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
-        ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80";
+        ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80"
+        # Presence alone enables the pool button and badge on the peers page.
+        # Set from the same option that creates the nft sets, the drop chains
+        # and the `lowtrust` tool, so the page cannot offer an action the
+        # firewall does not implement — on a router without the pool the two
+        # routes are never registered and the block never renders.
+        ++ lib.optional cfg.lowTrust.enable "ROUTER_LOWTRUST=1";
         ExecStart = "${routerWeb}/bin/router-web --root ${routerWeb}/share/router-web --addr :80";
         Restart = "on-failure";
         RestartSec = "5s";

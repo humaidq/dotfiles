@@ -184,6 +184,15 @@ The device page grows a badge showing membership and which set it came from. A
 device in the permanent set shows the badge with **no** remove button: that
 button could not work, and offering it would be a lie.
 
+The web layer is gated the same way everything else is, following the pattern the
+capture routes already use: `web.nix` sets `ROUTER_LOWTRUST=1` only when the
+feature is enabled, `main.go` leaves `peersServer.lowTrust` and `.neighbours` nil
+without it, `mux()` does not register the two routes, and the template renders
+none of the block. Without that gate bongo — which runs `router-web` with the
+pool off — would render a button promising drops no chain implements, 500 on the
+press because the `lowtrust` tool is not on its PATH, and fork `ip neigh` plus two
+`nft list set` calls per page render that can only fail.
+
 ## Error handling
 
 | condition | behaviour |

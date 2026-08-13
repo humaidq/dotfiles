@@ -51,6 +51,7 @@ p.error { color: #a00; font-weight: 600; }
 <button type="submit">drop all connections</button>
 </form>
 <p class="note">Ends every connection this device has, to every peer at once, and blocks nothing. Its apps reconnect from scratch.</p>
+{{if .LowTrustEnabled}}
 {{if eq .LowTrust "permanent"}}
 <p class="note">This device is a <strong>low-trust</strong> pool member (permanent). Change it in the sops secret.</p>
 {{else if eq .LowTrust "temp"}}
@@ -63,6 +64,7 @@ p.error { color: #a00; font-weight: 600; }
 <button type="submit">add to low-trust pool</button>
 </form>
 <p class="note">Stricter egress for this device: extra blocked ports and subnets, public STUN dropped, and no voice-tin priority. Cleared by the next rebuild.</p>
+{{end}}
 {{end}}
 {{if eq .Capture.State "running"}}
 <div class="capture">
