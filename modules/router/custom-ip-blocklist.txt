@@ -1509,3 +1509,54 @@
 # OVH AS16276 — PTR vps-35971f37.vps.ovh.net:
 151.80.56.155
 # ===========================================================================
+#
+# ===========================================================================
+# THE RESOLVER SWEEP OF 2026-08-13 — 101 addresses, nothing found
+# ===========================================================================
+#
+# Every address added to custom-throttle-list.txt on 2026-08-13 after the
+# router became unreachable went in without a resolver check — 101 of them,
+# across four handovers. This is that check, run afterwards from the router.
+# NOTHING MOVED. All 101 stay in the throttle file.
+#
+# That is worth writing down precisely because the previous sweep found 17,
+# then a later one found 28 out of 174 in a single batch. A zero is only worth
+# anything if the method is shown to work, so it was run four ways with a
+# positive control on each:
+#
+#   JSON DoH (?name=&type=, body read)  0/101   control: 1.1.1.1, 1.0.0.1 OK
+#   RFC8484 wire-format DoH (POST)      0/101   control: 1.1.1.1, 9.9.9.9 OK
+#   DoT, tcp/853                        0/101   control: 1.1.1.1, 9.9.9.9 OPEN
+#   recursive DNS on tcp/53             0/101   control: 1.1.1.1, 9.9.9.9 OK
+#
+# Three of the 28 resolvers found earlier the same day — 64.226.71.48,
+# 159.223.17.63, 192.241.239.242 — were re-probed as a second control and all
+# three still return DNS JSON, so the sweep does detect this file's own known
+# resolvers and the zero is a real absence rather than a broken probe.
+#
+# TWO METHOD CORRECTIONS came out of it, both of which would have produced a
+# false negative if the sweep had been run the old way:
+#
+# 1. THE JSON PROBE ALONE IS NOT ENOUGH. Quad9 at 9.9.9.9 — an unambiguous
+#    resolver — returns "DoH unable to decode BASE64-URL" to the ?name= form
+#    and would have been filed as "not a resolver". It answers the wire-format
+#    POST perfectly. Any resolver speaking only RFC8484 on a path other than
+#    the JSON API is invisible to the ?name= check. Use both forms.
+#
+# 2. TCP/53 IS PROBEABLE FROM THE ROUTER. The throttling skill records that
+#    port 53 is blocked outbound on this network and that its result must not
+#    be recorded — that is correct FROM A LAN CLIENT and wrong from bongo
+#    itself, where 1.1.1.1 and 9.9.9.9 both answer a recursive query on tcp/53
+#    while 64.226.71.48 does not. The rule enforcing it does not apply to the
+#    router's own output, so from here tcp/53 is a real fourth discriminator
+#    and the cheapest of the four. It found nothing here either.
+#
+# WHAT THE ZERO PROBABLY MEANS. The 28 resolvers found earlier came
+# overwhelmingly from one place: the tcp/20107 estate that 192.168.50.250's
+# proxy client walks, where the same droplets serve DoH on 443 and a proxy
+# port beside it. The 101 swept here are the post-STUN-block tunnel nodes used
+# by .156 and .219, which are a different pool doing a different job. So the
+# resolver estate and the node estate look separate, and a batch of node
+# addresses is not automatically worth sweeping. A batch that arrives from a
+# client hunting DoH is.
+# ===========================================================================

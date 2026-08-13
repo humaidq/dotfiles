@@ -5073,6 +5073,8 @@
 # these sixty-two may be DoH resolvers sitting in the wrong file. Twenty-eight
 # were found that way in the batch immediately above, out of 174. Sweep this
 # section when the router is next available.
+#   -> DONE, same day. Zero resolvers among all 101 addresses added without a
+#      check. See "THE RESOLVER SWEEP" at the end of this file.
 #
 # --- What the STUN block did -----------------------------------------------
 #
@@ -5243,8 +5245,9 @@
 # capture, so this is the rare round where most of a handed list arrives with
 # its own evidence attached. No desk check again — the router was not
 # reachable — so AS and PTR are registry data and everything else is the
-# capture. The resolver sweep noted in the section above still has not run and
-# now covers these twenty-two as well.
+# capture. The resolver sweep noted in the section above covers these
+# twenty-two as well; it has since run and found nothing. See "THE RESOLVER
+# SWEEP" at the end of this file.
 #
 # THE CAPTURE CONFIRMS THE PREVIOUS SECTION'S READING. STUN is still dead —
 # 992 bytes of binding requests to 74.125.250.129:19302, nothing back — and

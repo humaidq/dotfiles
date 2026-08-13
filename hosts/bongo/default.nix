@@ -42,6 +42,15 @@
     sopsFile = ../../secrets/bongo.yaml;
   };
 
+  # Ungated, unlike the dnsmasq secret below: nothing about the low-trust pool
+  # depends on dnsmasq, so it stays declared in the client specialisation too
+  # and cannot become the dead manifest entry that note warns about.
+  sops.secrets."router/lowtrust-macs" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    mode = "0400";
+    restartUnits = [ "nft-lowtrust-macs.service" ];
+  };
+
   # Gated on dnsmasq itself: the client specialisation turns dnsmasq off, and
   # the NixOS module only declares the dnsmasq user when it is enabled. A
   # secret owned by a user that does not exist fails manifest validation, and
@@ -149,6 +158,20 @@
         53
         853
       ];
+      # Same policy as bingo, and the lists behind it are shared: the ports,
+      # subnets, ASNs and STUN hosts all live in modules/router and apply
+      # wherever the pool is enabled. Only membership is per-site, because only
+      # the MAC list is a secret and each router decrypts its own.
+      #
+      # Note what this pulls in beyond the drops: pool devices here also lose
+      # the Voice tin, which on this host is a sharper change than on bingo —
+      # imoPolicy is "block" rather than "throttle", so a device already denied
+      # imo outright now also gets no priority for whatever it calls with
+      # instead.
+      lowTrust = {
+        enable = true;
+        macFile = config.sops.secrets."router/lowtrust-macs".path;
+      };
       suricata.enable = false;
     };
 
