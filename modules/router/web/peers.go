@@ -36,6 +36,11 @@ type peersPageData struct {
 	// What this device's capture slot is doing. Zero when no capture
 	// directory is configured, which the template reads as "no banner".
 	Capture captureSlot
+	// Low-trust pool membership: "", "temp", or "permanent". Which set a
+	// device came from decides whether a remove button is offered, because
+	// the tool refuses to remove a permanent member and a button that cannot
+	// work should not be shown.
+	LowTrust string
 }
 
 type indexPageData struct {
@@ -79,6 +84,14 @@ type peersServer struct {
 	// feature: no routes, no banner, and the page behaves exactly as it did
 	// before captures existed.
 	captures *captureManager
+	// neighbours reads the kernel's neighbour table, the only place a device's
+	// MAC is available to the page (leases carry an address and a name, not a
+	// MAC). Injectable so tests never shell out to ip(8).
+	neighbours func(ctx context.Context) ([]byte, error)
+	// lowTrust reports a MAC's low-trust pool membership. Injectable so tests
+	// never shell out to nft(8); the real implementation is lowTrustMembership
+	// in shaping.go.
+	lowTrust func(ctx context.Context, mac string) string
 }
 
 func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -91,6 +104,8 @@ func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *templat
 		shapes:     newShapeCache(),
 		conntrack:  readConntrack,
 		runTool:    runTool,
+		neighbours: readNeighbours,
+		lowTrust:   lowTrustMembership,
 	}
 }
 
@@ -247,6 +262,23 @@ func (s *peersServer) mux() *http.ServeMux {
 			return []string{"from", device.String()}
 		},
 	}))
+	// Device-scoped like drop-all: the pool is a property of the device, not of
+	// one conversation, so there is no peer form field and peerless skips the
+	// public-address guard that would have nothing to guard. invalidate is
+	// deliberately left false: the shaping cache keyed by peer address is
+	// unaffected by device membership.
+	mux.HandleFunc("POST /peers/{device}/lowtrust", s.handleAction(peerAction{
+		name: "lowtrust", tool: "lowtrust", peerless: true,
+		argv: func(_, device netip.Addr) []string {
+			return []string{"add", device.String()}
+		},
+	}))
+	mux.HandleFunc("POST /peers/{device}/lowtrust/remove", s.handleAction(peerAction{
+		name: "lowtrust-remove", tool: "lowtrust", peerless: true,
+		argv: func(_, device netip.Addr) []string {
+			return []string{"del", device.String()}
+		},
+	}))
 	// Absent unless a capture directory is configured, so a router without one
 	// answers 404 here exactly as it did before this feature.
 	if s.captures != nil {
@@ -314,6 +346,18 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	data := peersPageData{Device: device.String(), Error: notice}
 	if s.captures != nil {
 		data.Capture = s.captures.Get(device)
+	}
+	// The pool is keyed on MAC, not address, so the address has to be resolved
+	// first. A device asleep or absent from the neighbour table simply has no
+	// MAC to look up, and LowTrust is left at its zero value rather than
+	// guessed at — that zero value is exactly what "not in the pool" means to
+	// the template.
+	if s.neighbours != nil && s.lowTrust != nil {
+		if raw, err := s.neighbours(ctx); err == nil {
+			if mac := macForDevice(raw, device); mac != "" {
+				data.LowTrust = s.lowTrust(ctx, mac)
+			}
+		}
 	}
 	for _, peer := range peers {
 		share := 0.0
