@@ -169,6 +169,29 @@ let
           router-blocklists blocked_ports
       '';
 
+  # Reuses portBlocklistGen verbatim, exactly as throttleList reuses
+  # localBlocklistGen: same format, same build-time validation, only the
+  # target set differs.
+  lowTrustPorts =
+    pkgs.runCommand "nft-lowtrust-ports.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${portBlocklistGen} ${./custom-lowtrust-ports.txt} "$out" \
+          router-blocklists lowtrust_ports
+      '';
+
+  lowTrustSubnets =
+    pkgs.runCommand "nft-lowtrust-subnets.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-lowtrust-subnets.txt} "$out" \
+          router-blocklists lowtrust_block4 lowtrust_block6
+      '';
+
   # The throttle list reuses the local blocklist's generator verbatim — same
   # format, same build-time validation, same interval collapsing — and only the
   # target sets differ. What happens to a matching packet is decided in the
@@ -366,6 +389,20 @@ in
           set lowtrust_macs_temp {
             type ether_addr
           }
+
+          set lowtrust_ports {
+            type inet_service
+          }
+
+          set lowtrust_block4 {
+            type ipv4_addr
+            flags interval
+          }
+
+          set lowtrust_block6 {
+            type ipv6_addr
+            flags interval
+          }
         ''}
 
         chain forward_blocklists {
@@ -495,6 +532,41 @@ in
           iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @blocked_ports counter drop comment "block LAN->WAN tunnel ports"
         }
 
+        ${lib.optionalString cfg.lowTrust.enable ''
+          # Entry point for the pool. Two membership rules jumping to one policy
+          # chain, so the policy is written once rather than duplicated per set.
+          #
+          # Priority -10 matches forward_ports and forward_blocklists, which
+          # puts these drops ahead of forward_throttle at 0: a pool device
+          # reaching a throttled address is dropped rather than shaped, matching
+          # the precedence the other chains already establish.
+          chain forward_lowtrust {
+            type filter hook forward priority -10; policy accept;
+
+            ether saddr @lowtrust_macs jump lowtrust_policy
+            ether saddr @lowtrust_macs_temp jump lowtrust_policy
+          }
+
+          # Scoped LAN -> WAN, so traffic between LAN devices is untouched.
+          # Traffic to the router itself needs no rule and gets none: it arrives
+          # at the input hook, and this chain is on forward. That is
+          # load-bearing rather than incidental — a pool device must keep
+          # reaching the router's resolver, because one that cannot falls back
+          # to something worse, which is the opposite of the intent.
+          #
+          # Log and verdict are separate rules throughout, for the reason
+          # forward_blocklists documents: a limit on the verdict rule would let
+          # packets over the rate escape the drop.
+          chain lowtrust_policy {
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust port drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports counter drop comment "low-trust port drop"
+
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust subnet drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 counter drop comment "low-trust subnet drop (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_block6 counter drop comment "low-trust subnet drop (IPv6)"
+          }
+        ''}
+
         chain output_blocklists {
           type filter hook output priority -10; policy accept;
 
@@ -581,6 +653,10 @@ in
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
         nft -f ${throttleList}
+        ${lib.optionalString cfg.lowTrust.enable ''
+          nft -f ${lowTrustPorts}
+          nft -f ${lowTrustSubnets}
+        ''}
       '';
     };
 
