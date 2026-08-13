@@ -403,6 +403,18 @@ in
             type ipv6_addr
             flags interval
           }
+
+          # Populated from custom-lowtrust-stun-hosts.txt by nft-lowtrust-stun,
+          # on a timer rather than at build time because these names resolve to
+          # addresses that move. No `flags interval`: these are host addresses
+          # from DNS, not ranges.
+          set lowtrust_stun4 {
+            type ipv4_addr
+          }
+
+          set lowtrust_stun6 {
+            type ipv6_addr
+          }
         ''}
 
         chain forward_blocklists {
@@ -564,6 +576,15 @@ in
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust subnet drops"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 counter drop comment "low-trust subnet drop (IPv4)"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_block6 counter drop comment "low-trust subnet drop (IPv6)"
+
+            # Generic public STUN servers only, and only on the STUN ports — see
+            # custom-lowtrust-stun-hosts.txt for why signature matching and
+            # whole-address blocking were both rejected. stun.l.google.com's
+            # addresses are shared with unrelated Google services, so this must
+            # stay port-scoped rather than becoming an address block.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip daddr @lowtrust_stun4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust STUN drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip daddr @lowtrust_stun4 counter drop comment "low-trust public STUN drop (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip6 daddr @lowtrust_stun6 counter drop comment "low-trust public STUN drop (IPv6)"
           }
         ''}
 
@@ -723,6 +744,93 @@ in
           fi
         done
       '';
+    };
+
+    # Resolves the public STUN server names into the drop sets. A timer rather
+    # than a build-time resolution because those addresses move, and a stale
+    # entry is a silently open hole rather than a visible failure.
+    #
+    # Deliberately tolerant where the MAC loader is strict: a name that fails to
+    # resolve is skipped with a warning rather than failing the unit. The
+    # failure mode differs — an unresolvable name leaves one STUN server
+    # reachable, where an unreadable MAC file would empty the whole pool.
+    systemd.services.nft-lowtrust-stun = lib.mkIf cfg.lowTrust.enable {
+      description = "Resolve public STUN servers into the low-trust drop sets";
+      after = [
+        "nftables.service"
+        "network-online.target"
+      ];
+      wants = [
+        "nftables.service"
+        "network-online.target"
+      ];
+      partOf = [ "nftables.service" ];
+      wantedBy = [ "multi-user.target" ];
+
+      # RemainAfterExit deliberately false, unlike nft-lowtrust-macs. systemd
+      # treats `start` on an already-active oneshot as a no-op, so leaving this
+      # one active would quietly stop the timer from ever re-resolving — the
+      # exact trap imo-policy is commented against. partOf still re-triggers it
+      # on a ruleset reload through wantedBy.
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = false;
+      };
+
+      path = with pkgs; [
+        nftables
+        dnsutils
+        gnugrep
+        gnused
+        coreutils
+      ];
+
+      script = ''
+        set -euo pipefail
+
+        v4=""
+        v6=""
+        while IFS= read -r line || [ -n "$line" ]; do
+          name=''${line%%#*}
+          name=$(printf '%s' "$name" | tr -d '[:space:]')
+          [ -z "$name" ] && continue
+
+          got=""
+          for addr in $(dig +short +timeout=3 +tries=2 "$name" A 2>/dev/null || true); do
+            case "$addr" in
+              *[!0-9.]*) continue ;;
+            esac
+            v4="$v4$addr, "
+            got=yes
+          done
+          for addr in $(dig +short +timeout=3 +tries=2 "$name" AAAA 2>/dev/null || true); do
+            case "$addr" in
+              *:*) v6="$v6$addr, " ; got=yes ;;
+            esac
+          done
+
+          [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name" >&2
+        done < ${./custom-lowtrust-stun-hosts.txt}
+
+        nft flush set inet router-blocklists lowtrust_stun4
+        nft flush set inet router-blocklists lowtrust_stun6
+        if [ -n "$v4" ]; then
+          nft add element inet router-blocklists lowtrust_stun4 "{ ''${v4%, } }"
+        fi
+        if [ -n "$v6" ]; then
+          nft add element inet router-blocklists lowtrust_stun6 "{ ''${v6%, } }"
+        fi
+      '';
+    };
+
+    systemd.timers.nft-lowtrust-stun = lib.mkIf cfg.lowTrust.enable {
+      description = "Refresh low-trust public STUN addresses";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "5m";
+        OnUnitActiveSec = "1h";
+        Persistent = true;
+      };
     };
 
     # Applies whichever of the two imo states is in force. Everything about
