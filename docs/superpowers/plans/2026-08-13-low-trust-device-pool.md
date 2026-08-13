@@ -190,19 +190,30 @@ Note the two escaped expansions: `''${line%%#*}` and `''${elements%, }`. Written
 
 - [ ] **Step 5: Create the secret**
 
+`sops <file>` opens $EDITOR and cannot be driven non-interactively, so use
+`sops set`, which takes a JSON-encoded value. This machine is in the key group
+for `secrets/bingo.yaml`, so no key setup is needed.
+
 ```bash
 cd /home/humaid/repos/dotfiles
-sops secrets/bingo.yaml
+sops set secrets/bingo.yaml '["router"]["lowtrust-macs"]' \
+  '"# Low-trust pool membership, one MAC per line. See\n# docs/superpowers/specs/2026-08-13-low-trust-device-pool-design.md\n"'
 ```
 
-Add a key `router/lowtrust-macs` whose value is a multi-line string. Seed it with a comment line only, so the file exists and parses before any real device is added:
+Seeded with comments only and no MAC, so the file exists and the loader parses
+it before any real device is added.
 
-```yaml
-router:
-    lowtrust-macs: |
-        # Low-trust pool membership, one MAC per line. See
-        # docs/superpowers/specs/2026-08-13-low-trust-device-pool-design.md
+Verify it round-trips, and that nothing but the intended key changed:
+
+```bash
+sops -d secrets/bingo.yaml | grep -A2 'lowtrust-macs'
+git diff --stat secrets/bingo.yaml
 ```
+
+Expected: the comment lines come back, and the diff touches only
+`secrets/bingo.yaml`. Do not commit a version you have not decrypted
+successfully — a corrupted secrets file takes nebula down with it, and with it
+SSH over the mesh.
 
 - [ ] **Step 6: Wire it up on bingo**
 
