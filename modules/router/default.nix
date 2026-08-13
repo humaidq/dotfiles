@@ -557,6 +557,39 @@ in
                 udp dport { ${formatPorts cfg.qos.lowPriorityPorts} } counter ct mark set ${toString cfg.qos.lowPriorityMark} comment "Mark low-priority UDP destination ports"
               ''}
 
+              # Low-trust devices never reach CAKE's Voice tin. Placed after
+              # every mark rule above so it overwrites what they set rather than
+              # being overwritten: the STUN signature rule in particular grants
+              # high priority to any flow speaking ICE, and the 2026-08-13
+              # captures show the tunnel client running its own STUN. That rule
+              # stays exactly as it is for every other device.
+              #
+              # ct mark rather than a packet mark, and the reason is the same
+              # one the STUN rule documents: `ether saddr` only matches on the
+              # LAN-ingress (upload) direction, because a download's source MAC
+              # is the ISP's. The mark lands on the conntrack entry, so every
+              # packet of the conversation inherits it in both directions.
+              #
+              # Mark 0 rather than the bulk mark: this removes the advantage the
+              # tunnel is exploiting without penalising anything genuine on the
+              # device. Calls from these devices are best-effort, which is the
+              # intent — they are never dropped.
+              ${lib.optionalString cfg.lowTrust.enable ''
+                ether saddr @lowtrust_macs counter ct mark set 0 comment "Low-trust device: no priority"
+                ether saddr @lowtrust_macs_temp counter ct mark set 0 comment "Low-trust device: no priority (temp)"
+
+                # Closes a hole that exists today for every device and is only
+                # closed here for pool ones: the bleach rules at the top of this
+                # chain strip DSCP arriving from the WAN, but a LAN device's own
+                # upload codepoint is untouched, so a device can mark its own
+                # packets EF and reach the Voice tin on the uplink regardless of
+                # its ct mark.
+                ether saddr @lowtrust_macs meta nfproto ipv4 counter ip dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv4)"
+                ether saddr @lowtrust_macs meta nfproto ipv6 counter ip6 dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv6)"
+                ether saddr @lowtrust_macs_temp meta nfproto ipv4 counter ip dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv4, temp)"
+                ether saddr @lowtrust_macs_temp meta nfproto ipv6 counter ip6 dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv6, temp)"
+              ''}
+
               # Translate the settled ct mark into DSCP for CAKE's diffserv4
               # classifier. Unconditional: the rules are inert when nothing
               # upstream has set a mark.
