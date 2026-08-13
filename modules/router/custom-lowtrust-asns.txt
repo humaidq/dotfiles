@@ -1,0 +1,118 @@
+# Whole hosting networks dropped LAN->WAN for devices in the low-trust pool
+# ONLY. Nothing here affects any other device on this LAN.
+#
+# One AS number per line, `#` comments. Expanded to CIDRs at build time from
+# ip2asn-combined.tsv, so the ranges refresh whenever that table is updated
+# rather than rotting the way a pasted list of prefixes would. An AS number that
+# the table does not know fails the build rather than silently contributing
+# nothing.
+#
+# WHY THIS EXISTS. Chasing individual nodes was losing: the tunnel client holds
+# a pool of candidates, probes them, selects one, and refreshes the pool from a
+# control channel fronted behind a CDN that cannot be blocked. Over a thousand
+# addresses have been collected one at a time and the supply has not thinned.
+# A pool device has no business reaching a rented VPS at all, so the whole
+# market is a better unit than the individual host.
+#
+# WHY IT IS SAFE ENOUGH TO BE WORTH IT: the tunnel rents cheap VPSes, and
+# mainstream app backends do not live there. AWS, GCP and Azure are absent from
+# this list entirely, as are every CDN, so a pool device keeps WhatsApp, Botim,
+# Apple, Google, Meta and ordinary browsing. What it loses is the small tail of
+# services self-hosted on budget providers — real, occasional, and the accepted
+# price. The generator refuses to build if any range here would swallow one of
+# the addresses this network depends on; see the guard list in ip-blocklist.nix.
+#
+# Counted against the throttle list when chosen: these fifteen cover 88% of
+# every node collected to date. Recompute rather than trusting that number —
+# see the sweep in the throttle file's own notes for why counts here rot.
+
+# --- The six general clouds, 71% of collected nodes on their own -------------
+#
+# Ordinary hosting companies with ordinary customers, which is exactly why this
+# list is pool-only and would be indefensible network-wide.
+14061   # DigitalOcean — 537 collected nodes, by far the largest single source
+63949   # Akamai Connected Cloud (Linode) — 277
+12876   # Scaleway / Online SAS — 137
+16276   # OVH — 112
+8560    # IONOS / Fasthosts — 92
+24940   # Hetzner — 28
+
+# --- Hosting whose business is substantially VPN exits -----------------------
+#
+# Lower collateral than the six above: these sell to the market this is aimed
+# at. M247 in particular is a large share of the commercial VPN estate.
+51430   # AltusHost — 73 collected nodes across five of its /24s
+9009    # M247 — 63
+63199   # CDS Global Cloud — 63
+214623  # 2644819 Ontario Inc — 46, across three ranges
+401418  # FARDA-IX — 14
+16125   # Cherry Servers — 12
+3223    # Voxility — 8
+401776  # AS-CUSTOMER, a bare ARIN object with no netname behind it — 6
+59645   # WYBT-NET — 2
+
+# --- Added after auditing what the first fifteen missed ----------------------
+#
+# 13213 was an omission rather than a judgement: it fell between "general cloud"
+# and "VPN hosting" when the tiers were drawn and landed in neither, despite
+# being the fourth-largest source in the throttle list. It spans 82.163,
+# 107.182, 173.244, 216.119 and 88.202, and its 107.182.236.0/24 is midphase
+# shared hosting — which is why individual /32s there were never a range case,
+# and why the AS is the right unit instead.
+13213   # THG Hosting / UK2NET — 53 collected nodes
+#
+# AS402267 Hadoopsky LLC belongs here on the merits — a small US hoster with
+# three collected nodes — but it CANNOT go here: the shipped ip2asn table has
+# never heard of it, because its allocation is dated 2025-04-07 and the table
+# predates that. Adding the number fails the build with "no ranges found", which
+# is the generator working correctly rather than a problem to route around. Its
+# two /24s are listed by hand in custom-lowtrust-subnets.txt instead. Move it up
+# here if that table is ever refreshed.
+
+# Two Canadian ISPs rather than VPS shops, so this is a wider net than the rest
+# of the file: it covers their whole customer base, not a rented-instance pool.
+# Taken because 38 collected nodes sit in them and nothing on this network has
+# any other reason to reach either. If a pool device ever needs something in
+# Canada, these two are the first entries to question.
+21949   # Beanfield Technologies — 25
+63127   # MAPL-NET — 13
+
+# --- Cogent, added on request after being argued against -------------------
+#
+# AS174 is TIER-1 TRANSIT, not a hosting company, and it is by a distance the
+# widest entry in this file: 8,991 prefixes and 24 million addresses — more than
+# every other AS here put together, and 0.56% of the routed IPv4 internet.
+#
+# The objection, recorded because it was raised and overruled rather than
+# missed: a transit AS announces space on behalf of its customers, so this drops
+# traffic to networks that have nothing to do with the twenty-five nodes that
+# put it here. There is no way to tell from the announcement which of those
+# 24 million addresses is a tunnel node and which is somebody's mail server.
+#
+# The counter-argument, which is what carries it: this is pool-only. The
+# devices it applies to have already been judged not to need the open internet,
+# and no other device on this LAN is affected by a single rule in this file.
+#
+# If a pool device starts failing to reach something ordinary and no other entry
+# explains it, THIS IS THE FIRST ENTRY TO REMOVE. It is also the one most likely
+# to be the cause, simply by size.
+174     # Cogent — 25 collected nodes, 24M addresses of collateral
+#
+# STILL NOT COVERED, and not coverable this way — recorded so the gap is known
+# rather than rediscovered:
+#
+#   ~25 singletons on residential and mobile carriers — Myanmar, Iran, Mexico,
+#   Vietnam, Switzerland. These are the residential-exit pool, and an ASN list
+#   of hosting providers can never catch them; that is what the per-address
+#   rows in custom-throttle-list.txt are for.
+
+# DELIBERATELY NOT HERE:
+#
+# AS21859 Zenlayer. It appeared in the collected nodes ten times, but it is an
+# edge/CDN provider rather than a VPS shop, and 929 prefixes of edge capacity is
+# the kind of range that breaks something a phone actually needs. Ten nodes is
+# not worth that. Revisit only with evidence of it carrying a tunnel.
+#
+# AWS, GCP, Azure. Not one collected node sits in any of them, and they carry
+# the backends of nearly every app on a normal handset. Adding them would break
+# the device rather than the tunnel.

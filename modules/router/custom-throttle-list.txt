@@ -6257,3 +6257,121 @@
 217.138.222.102
 217.138.222.140
 # ===========================================================================
+#
+# --- Three more, handed with no capture ------------------------------------
+#
+# AS and PTR only — no capture was supplied with these and no desk check was
+# run, so nothing about transport, share or direction is established for them.
+#
+# 37.46.119.14 makes EIGHT addresses in 37.46.119.0/24 and forty-eight from
+# AltusHost overall (20 in 31.3.0.0/16, 8 here, 20 across 79.142.75.0/24 and
+# 79.142.79.0/24 — counted against the file, not carried from a nearby note).
+# That is the largest single-operator concentration in this file and the /24
+# is now half the size of the group inside it. NOT taken as a range: AS51430
+# is general-purpose hosting and the neighbours in that /24 are other people's
+# tenants, which is the same reasoning that declined the AS214623 range. It is
+# recorded because eight-in-one-/24 is the shape that would justify reopening
+# it if the operator ever looks dedicated rather than shopped-at.
+#
+# 162.243.200.107 sits beside 162.243.201.113, already in this file — two /24s
+# apart in DigitalOcean space, which is proximity and not a pattern.
+162.243.200.107
+165.232.138.26
+37.46.119.14     # PTR ch-net.as51430.net, the same reverse as 79.142.79.252
+# ===========================================================================
+#
+# --- Seven more from a running handover log --------------------------------
+#
+# Handed as chat lines timestamped 14:47 to 16:31, so these accumulated over
+# an afternoon rather than arriving from one look. 165.232.138.26 was in the
+# list a second time and is not repeated here — it went in with the batch
+# above. AS and PTR only; no capture, no desk check.
+#
+# Five DigitalOcean and two Scaleway, both Scaleway ones carrying an
+# instances.scw.cloud PTR. Two are worth a line:
+#
+# 188.166.140.155 is ADJACENT to 188.166.140.156, already in this file. That
+# /24 now holds five — .77, .155, .156, .161, .182 — and a consecutive pair is
+# the first thing in this operator's space that is not obviously just where the
+# client shopped. Noted because a second adjacency in the same /24 would be
+# worth acting on.
+#
+# The pair does NOT aggregate, and the reason is worth knowing before anyone
+# predicts otherwise again: a /31 covers an even address and the odd one above
+# it, so .154+.155 or .156+.157 would fold and .155+.156 straddles the
+# boundary. Checked against the generated ruleset, which keeps all five as
+# /32s. Adjacency in the file is not the same as adjacency in a prefix.
+#
+# 168.144.1.12 makes FOUR in 168.144.1.0/24 — .1, .12, .77, .102. The .1 was
+# already flagged upthread as an odd address for a tenant to hold. Four in a
+# /24 is not a range argument on the reasoning applied to AS214623 and
+# AltusHost, but this is the second /24 in this file where DigitalOcean space
+# is filling in rather than scattering.
+138.197.242.171  # .62 in the same /24 is already here
+146.190.12.63
+151.115.148.196  # Scaleway, 151.115.128.0/19 — the high half, unlike most here
+165.245.200.27
+168.144.1.12
+188.166.140.155  # adjacent to .156, see above
+51.158.243.21
+# ===========================================================================
+#
+# --- One more --------------------------------------------------------------
+#
+# Scaleway, PTR 226-42-115-151.instances.scw.cloud, so one tenant on the /32.
+# No capture, no desk check. 151.115.42.150 is already in this file, making
+# two in that /24.
+#
+# It is the 137th Scaleway address here, which is worth stating once now that
+# the file is big enough for the shape to be readable. Counted against the file
+# AFTER this address went in: DigitalOcean 500, Scaleway 137 (66 across
+# 51.15/51.158/51.159, 66 in 151.115.0.0/17, 5 in 163.172), AltusHost 48. Three
+# operators, and none of it argues for a range — these are the three cheapest
+# places to rent an hourly instance in Europe, so the concentration says where
+# the client shops and not what anyone owns. The AltusHost /24 noted upthread
+# is still the only place where the density inside a single /24 is high enough
+# to be worth revisiting.
+151.115.42.226
+# ===========================================================================
+#
+# --- Two more --------------------------------------------------------------
+#
+# No capture, no desk check; AS and PTR only.
+#
+# 141.94.53.209 is the FIRST address from 141.94.0.0/16 in this file. OVH, and
+# the PTR ip209.ip-141-94-53.eu is OVH's default reverse rather than anything a
+# tenant chose — the same form as 54.38.198.165 added earlier today. A new /16
+# from an operator already represented here is the ordinary case and nothing
+# follows from it; it is noted only because a first-in-a-prefix is the thing
+# someone later checks for when asking whether a range is filling in.
+#
+# 152.42.213.101 has no PTR at all. The nearest neighbour in the file is
+# 152.42.207.31, six /24s away, which is the FASTPANEL host recorded in the
+# blocklist as a false positive that stays here — unrelated, and mentioned so
+# nobody joins them up.
+141.94.53.209
+152.42.213.101
+# ===========================================================================
+#
+# --- One more --------------------------------------------------------------
+#
+# Scaleway, PTR 132-180-159-51.instances.scw.cloud, one tenant on the /32. No
+# capture, no desk check. Fourteenth address in 51.159.0.0/16 here and the
+# nearest neighbour is 51.159.189.208, nine /24s away — spread, not a block.
+51.159.180.132
+# ===========================================================================
+#
+# --- One more --------------------------------------------------------------
+#
+# DigitalOcean, no PTR at all. No capture, no desk check.
+#
+# It lands in the low end of 146.190, which is now the densest stretch of that
+# space in this file: .0.131, .2.78, .5.112, .6.26, .8.15 and .9.165 — six
+# addresses inside the first ten /24s, against nineteen in 146.190 overall.
+# They fall across three different /22s (146.190.0.0/22, 4.0/22 and 8.0/22),
+# so this is still spread rather than a block being worked through, and the
+# usual reading applies: DigitalOcean allocates /22s to whoever asks and the
+# neighbours are other tenants. Recorded because "the bottom of 146.190 keeps
+# coming up" is the sort of thing that is only visible once it is written down.
+146.190.8.15
+# ===========================================================================

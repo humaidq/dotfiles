@@ -7,6 +7,45 @@
 #
 # One CIDR per line, v4 or v6, # comments. Parsed at build time.
 #
-# Empty on purpose. Add ranges as they are decided; a subnet is not
-# device-identifying, so unlike the MAC list this file belongs in git where it
-# can be reviewed.
+# PREFIXES THE ASN EXPANSION CANNOT SEE, added 2026-08-13.
+#
+# custom-lowtrust-asns.txt turns AS numbers into ranges by reading
+# ip2asn-combined.tsv, and that table is a static 43 MB file checked into this
+# repo with no refresh mechanism. It is already out of date: fifty-four
+# addresses in custom-throttle-list.txt sit in prefixes the table calls "not
+# routed" while live BGP names an origin AS that is on the list. The expansion
+# faithfully skips them, because it cannot know what the table does not say.
+#
+# Every prefix below was confirmed against live BGP (Team Cymru) and RIPE/ARIN
+# whois, and each belongs to a provider already named in the ASN file. They are
+# listed here rather than fixed at the source because refreshing the table is a
+# separate job with its own risk; when it is refreshed these become redundant
+# and can be deleted, which is why they are grouped and dated rather than
+# scattered.
+#
+# The announced prefix is used rather than the narrower inetnum — same basis the
+# ASN expansion works on, and it is the origin AS that makes the range the
+# provider's.
+
+# AS214623, 2644819 Ontario Inc. Fourteen collected nodes in one /24.
+108.165.21.0/24
+
+# DigitalOcean. Two /22s of 2025 allocation the table has not caught up with,
+# plus two older ones. Twelve collected nodes between them.
+165.245.200.0/22
+165.245.204.0/22
+168.144.12.0/22
+168.144.48.0/22
+
+# Hetzner. Datacentre allocations — CLOUD-FSN1 inside the first, CLOUD-HEL1
+# inside the second — both announced whole by AS24940. Eight collected nodes.
+2.28.0.0/16
+62.238.0.0/17
+
+# THG Hosting / UK2NET. Fifteen collected nodes, and the densest /23 in the
+# whole throttle list.
+82.163.74.0/23
+
+# Hadoopsky LLC, AS402267, inside Ace Data Centers space. Three nodes.
+144.225.91.0/24
+217.65.70.0/24

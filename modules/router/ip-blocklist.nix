@@ -192,6 +192,131 @@ let
           router-blocklists lowtrust_block4 lowtrust_block6
       '';
 
+  # Addresses that no generated range may ever swallow. Not a general whitelist
+  # — it is a tripwire for the ASN expansion below, which turns fifteen numbers
+  # into millions of addresses and is therefore the one place in this repo where
+  # a one-line edit can take out something the whole house needs without anyone
+  # reading a diff that looks wrong.
+  #
+  # Each entry is something already established as load-bearing: the resolver
+  # every device uses, the two Akamai edge ranges this network actually reaches,
+  # the STUN server legitimate calls discover through, the CDN carrying ordinary
+  # browsing, and this operator's own infrastructure. A build that would block
+  # any of them fails rather than shipping.
+  lowTrustNeverCover = [
+    "1.1.1.1" # Cloudflare resolver
+    "1.0.0.1"
+    "95.100.170.42" # Akamai edge this network reaches constantly
+    "23.44.201.155" # the second Akamai edge range, seen fronting
+    "74.125.250.129" # stun.l.google.com — discovery for legitimate calls
+    "185.93.2.251" # BunnyCDN edge
+    "143.244.56.58" # BunnyCDN edge
+    "139.84.164.156" # huma.id
+    "139.84.173.48" # nebula lighthouse
+  ];
+
+  # Expands a list of AS numbers into the CIDRs they announce, read from the
+  # ip2asn table this repo already ships. An ASN list rather than pasted
+  # prefixes because a provider's allocations change: the numbers stay true and
+  # the ranges refresh with the table.
+  lowTrustASNGen = pkgs.writeText "gen-lowtrust-asns.py" ''
+    import ipaddress
+    import pathlib
+    import sys
+
+    src, table_path, dst, table, set4, set6 = sys.argv[1:7]
+
+    never = [
+        ipaddress.ip_address(a)
+        for a in filter(None, """${lib.concatStringsSep "\n" lowTrustNeverCover}""".splitlines())
+    ]
+
+    wanted = {}
+    for lineno, line in enumerate(pathlib.Path(src).read_text().splitlines(), 1):
+        s = line.split("#", 1)[0].strip()
+        if not s:
+            continue
+        if not s.isdigit():
+            raise SystemExit(f"{src}:{lineno}: not an AS number: {s!r}")
+        wanted[int(s)] = lineno
+
+    v4 = []
+    v6 = []
+    seen_asns = set()
+
+    for row in pathlib.Path(table_path).read_text().splitlines():
+        parts = row.split("\t")
+        if len(parts) < 3:
+            continue
+        try:
+            asn = int(parts[2])
+        except ValueError:
+            continue
+        if asn not in wanted:
+            continue
+        try:
+            lo = ipaddress.ip_address(parts[0])
+            hi = ipaddress.ip_address(parts[1])
+        except ValueError:
+            continue
+        seen_asns.add(asn)
+        for net in ipaddress.summarize_address_range(lo, hi):
+            (v4 if net.version == 4 else v6).append(net)
+
+    # An ASN the table has never heard of contributes nothing, which would be a
+    # silent no-op — the failure mode this whole file is written against. A typo
+    # in a five-digit number is invisible any other way.
+    missing = sorted(a for a in wanted if a not in seen_asns)
+    if missing:
+        raise SystemExit(
+            f"{src}: no ranges found for AS" + ", AS".join(str(a) for a in missing)
+            + " — check the number, or that ip2asn-combined.tsv is current"
+        )
+
+    v4 = list(ipaddress.collapse_addresses(v4))
+    v6 = list(ipaddress.collapse_addresses(v6))
+
+    # The tripwire. Cheap to run, and the only thing standing between a
+    # mistyped AS number and the whole house losing its resolver or its CDN.
+    for addr in never:
+        pool = v4 if addr.version == 4 else v6
+        for net in pool:
+            if addr in net:
+                raise SystemExit(
+                    f"{src}: refusing to build — {addr} is inside {net}, which one of "
+                    "these AS numbers announces. That address is on the never-block "
+                    "list; remove the offending ASN or narrow the range."
+                )
+
+    v4 = [str(n) for n in v4]
+    v6 = [str(n) for n in v6]
+
+    with pathlib.Path(dst).open("w") as f:
+        for name, elems in ((set4, v4), (set6, v6)):
+            f.write(f"flush set inet {table} {name}\n")
+            if elems:
+                f.write(f"add element inet {table} {name} {{\n")
+                for i, elem in enumerate(elems):
+                    comma = "," if i + 1 < len(elems) else ""
+                    f.write(f"  {elem}{comma}\n")
+                f.write("}\n")
+
+    print(
+        f"low-trust ASN ranges: {len(wanted)} ASNs -> {len(v4)} IPv4, {len(v6)} IPv6",
+        file=sys.stderr,
+    )
+  '';
+
+  lowTrustASNs =
+    pkgs.runCommand "nft-lowtrust-asns.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${lowTrustASNGen} ${./custom-lowtrust-asns.txt} ${./ip2asn-combined.tsv} "$out" \
+          router-blocklists lowtrust_asn4 lowtrust_asn6
+      '';
+
   # The throttle list reuses the local blocklist's generator verbatim — same
   # format, same build-time validation, same interval collapsing — and only the
   # target sets differ. What happens to a matching packet is decided in the
@@ -404,6 +529,26 @@ in
             flags interval
           }
 
+          # Whole hosting networks, expanded from custom-lowtrust-asns.txt.
+          # Kept apart from lowtrust_block4/6 rather than merged into them
+          # because each generated .nft flushes the sets it writes: two
+          # generators sharing one set would clobber each other, and this file
+          # already states the rule as one writer per set.
+          #
+          # The practical difference to a reader is scope. lowtrust_block4/6 is
+          # for ranges chosen by hand, a few at a time. This pair is thousands
+          # of prefixes derived from a provider list, and is the reason a pool
+          # device cannot simply rotate to the next VPS.
+          set lowtrust_asn4 {
+            type ipv4_addr
+            flags interval
+          }
+
+          set lowtrust_asn6 {
+            type ipv6_addr
+            flags interval
+          }
+
           # Populated from custom-lowtrust-stun-hosts.txt by nft-lowtrust-stun,
           # on a timer rather than at build time because these names resolve to
           # addresses that move. No `flags interval`: these are host addresses
@@ -573,9 +718,40 @@ in
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust port drops"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports counter drop comment "low-trust port drop"
 
+            # QUIC. Written as its own rule rather than by putting 443 in
+            # custom-lowtrust-ports.txt, and the distinction is the whole point:
+            # that set is matched with `meta l4proto { tcp, udp }`, so 443 there
+            # would take TCP 443 with it and leave the device with no HTTPS at
+            # all.
+            #
+            # Cheap because QUIC degrades rather than fails. A browser or app
+            # that cannot reach UDP 443 falls back to TCP 443 on its own — that
+            # fallback is built into every QUIC implementation precisely because
+            # middleboxes block it — so the visible cost is a slower handshake,
+            # not a broken page.
+            #
+            # Worth taking because the 2026-08-13 captures show this client
+            # using QUIC as a tunnel transport, on 443 and on high ports, and on
+            # port 22 as well. Over UDP it is opaque from the first byte, where
+            # the TCP fallback at least exposes a TLS ClientHello and an SNI to
+            # look at. Forcing the fallback trades the device nothing and buys
+            # back visibility.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust QUIC drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 counter drop comment "low-trust QUIC drop"
+
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust subnet drops"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 counter drop comment "low-trust subnet drop (IPv4)"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_block6 counter drop comment "low-trust subnet drop (IPv6)"
+
+            # Whole hosting networks. Its own log prefix rather than sharing
+            # nft-block-lowtrust with the rules above: this pair is the one
+            # likeliest to break something legitimate on a pool device, and when
+            # that happens the question is "was it the provider block" — which a
+            # shared prefix cannot answer.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_asn4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust-asn " comment "sample low-trust provider drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_asn4 counter drop comment "low-trust provider drop (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_asn6 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust-asn " comment "sample low-trust provider drops (IPv6)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_asn6 counter drop comment "low-trust provider drop (IPv6)"
 
             # Generic public STUN servers only, and only on the STUN ports — see
             # custom-lowtrust-stun-hosts.txt for why signature matching and
@@ -677,6 +853,7 @@ in
         ${lib.optionalString cfg.lowTrust.enable ''
           nft -f ${lowTrustPorts}
           nft -f ${lowTrustSubnets}
+          nft -f ${lowTrustASNs}
         ''}
       '';
     };
