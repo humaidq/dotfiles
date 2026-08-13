@@ -35,9 +35,9 @@ func TestReadLeasesSortsAndFiltersToLAN(t *testing.T) {
 		t.Fatalf("got %d leases, want 3: %+v", len(got), got)
 	}
 	want := []lease{
-		{netip.MustParseAddr("192.168.0.10"), "device-a"},
-		{netip.MustParseAddr("192.168.0.20"), "device-b"},
-		{netip.MustParseAddr("192.168.0.30"), ""},
+		{Addr: netip.MustParseAddr("192.168.0.10"), Name: "device-a", MAC: "52:ff:a4:45:a1:7d"},
+		{Addr: netip.MustParseAddr("192.168.0.20"), Name: "device-b", MAC: "72:01:04:a8:78:e7"},
+		{Addr: netip.MustParseAddr("192.168.0.30"), Name: "", MAC: "4e:5c:cd:be:b9:6c"},
 	}
 	for i, w := range want {
 		if got[i] != w {
@@ -78,5 +78,26 @@ func TestReadLeasesLastEntryWinsPerAddress(t *testing.T) {
 func TestReadLeasesMissingFile(t *testing.T) {
 	if _, err := readLeases(filepath.Join(t.TempDir(), "absent"), netip.MustParsePrefix("192.168.0.0/24")); err == nil {
 		t.Fatal("a missing lease file returned no error")
+	}
+}
+
+// The MAC is what identifies a device to the low-trust pool and to the sops
+// secret, so it is worth its own assertion rather than only riding along in the
+// struct comparison above: a lease line with no hostname must still yield one.
+func TestReadLeasesCapturesMAC(t *testing.T) {
+	path := writeLeases(t, leaseFixture)
+	got, err := readLeases(path, netip.MustParsePrefix("192.168.0.0/24"))
+	if err != nil {
+		t.Fatalf("readLeases: %v", err)
+	}
+	macs := map[string]string{}
+	for _, l := range got {
+		macs[l.Addr.String()] = l.MAC
+	}
+	if macs["192.168.0.10"] != "52:ff:a4:45:a1:7d" {
+		t.Errorf("MAC for 192.168.0.10 = %q, want 52:ff:a4:45:a1:7d", macs["192.168.0.10"])
+	}
+	if macs["192.168.0.30"] != "4e:5c:cd:be:b9:6c" {
+		t.Errorf("nameless lease lost its MAC: got %q", macs["192.168.0.30"])
 	}
 }

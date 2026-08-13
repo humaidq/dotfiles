@@ -13,3 +13,19 @@
 22
 553
 554
+
+# 179, added 2026-08-13, and on different grounds from the four above: it was
+# NOT seen in a capture. 179 is BGP, which two routers speak to exchange
+# routes — nothing a phone, laptop or appliance on a home LAN has any reason to
+# open, so the collateral is as close to nil as a port gets. Tunnel clients pick
+# exactly that kind of port precisely because it is usually left open.
+#
+# Pool-only rather than global for the same reason 22 is: this router speaks BGP
+# to nothing today, but a global rule would be a trap for whoever later runs a
+# mesh daemon or a route server on this LAN, and it would fail with no useful
+# error. Move it to custom-port-blocklist.txt if that is ever ruled out.
+#
+# Recorded as inference, not observation: if a capture ever shows a pool device
+# actually using 179, say so here — it changes this from a cheap precaution into
+# a confirmed transport.
+179

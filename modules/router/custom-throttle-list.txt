@@ -4711,3 +4711,253 @@
 209.38.30.7
 68.183.250.113
 # ===========================================================================
+#
+# ===========================================================================
+# 2026-08-13 — a handed list of 92, and the candidate pool from the day's
+#              captures
+# ===========================================================================
+#
+# Two inputs, kept apart below because the evidence behind them is not the
+# same thing. The first is 92 addresses handed over with no capture attached:
+# nothing about traffic shape, share or direction is established for them
+# here, only what the desk check found. The second is the candidate pool read
+# out of the 2026-08-13 captures in ~/inbox/web for 192.168.50.156, .219 and
+# .250, where the behaviour IS observed — the client opens to a spread of
+# nodes within a few seconds, keeps whichever answers and abandons the rest.
+#
+# 174 addresses were checked from the router before anything was written: PTR,
+# origin AS, DoH on 443 with the BODY read, tcp/853, an sshd banner, and a
+# certificate fetched under www.wikipedia.org. Wikipedia is the discriminator
+# the header argues for — no Akamai upstream hosts it, so a pass-through falls
+# back to its own default instead of returning Wikipedia's. Of the 174: 105
+# are added here; 28 answered real DNS and 6 are app estate, all 34 of those to
+# custom-ip-blocklist.txt; 9 turned out to be listed already and 14 more were
+# already covered by a range there; and 22 were refused outright. The refusals
+# and the already-covered are both written down at the end of this section so
+# they are not "found" again.
+#
+# WHAT THE CERTIFICATES SAY. Seventeen of the addresses below return Akamai's
+# a248.e.akamai.net when asked for www.wikipedia.org — the pass-through
+# signature, not a general SNI proxy. Two more return starbucks.com and one
+# returns Apple's EV certificate for www.apple.com (O=Apple Inc.,
+# CN=www.apple.com, issued by Apple Public EV Server RSA CA 1 - G1); both are
+# Akamai-fronted brands, so those three are the same technique landing on a
+# different upstream. None of them is Akamai: every one is DigitalOcean,
+# Scaleway or THG tenant space, and 51 of the 105 answer an OpenSSH banner on
+# tcp/22, which an Akamai edge appliance does not offer you.
+#
+# Two are the self-signed camouflage rather than fronting. 152.42.238.107
+# serves an openssl-default "C=GB, ST=Berkshire, L=Newbury, O=My Company Ltd"
+# certificate it also issued itself, and 31.3.154.190 a self-signed
+# CN=vmde.com. Neither is a name a client ever arrived by.
+#
+# NOTHING HERE ANSWERED ON 853, and no range rule follows from any of it — the
+# forty-eight handed DigitalOcean addresses fall in forty-seven different /22s,
+# which is where the client shops rather than what any operator owns. All /32.
+#
+# --- Handed list — DigitalOcean, forty-eight ------------------------------
+#
+# 152.42.221.149 is the one with a capture behind it as well: 192.168.50.250
+# opened to it 150 times on 443 sending SNI monitor-60.fastly.net, and the
+# host is an nginx/1.24.0 on Ubuntu that self-signs CN=default_server
+# (emailAddress=admin@default_server) and returns 403 to every path. Fastly's
+# name on a DigitalOcean droplet is not Fastly.
+45.55.108.99
+46.101.69.103
+64.225.85.9
+67.207.70.153
+68.183.111.149
+68.183.248.231
+82.196.9.106
+128.199.114.22
+129.212.198.130
+129.212.201.224
+129.212.208.225
+129.212.222.73
+138.68.196.34
+138.68.204.150
+138.197.58.21
+138.197.108.43
+138.197.234.41
+138.197.252.105
+139.59.7.161
+139.59.52.184
+139.59.194.219
+143.244.202.141
+144.126.242.157
+146.190.201.40
+152.42.146.251
+152.42.151.221
+152.42.153.145
+152.42.221.149
+152.42.238.107
+157.230.36.197
+157.230.66.215
+157.230.195.105
+165.227.242.104
+165.245.176.86
+165.245.205.64
+167.172.10.99
+170.64.162.230
+170.64.245.137
+170.64.251.90
+174.138.96.208
+174.138.96.209
+174.138.104.103
+188.166.130.0
+188.166.200.82
+188.166.206.73
+209.38.1.14
+209.38.48.157
+209.38.184.210
+#
+# --- Handed list — Scaleway, eighteen --------------------------------------
+#
+# All eighteen carry an instances.scw.cloud PTR, so each /32 is one tenant.
+# 151.115.67.20 is one of the two starbucks.com responders.
+51.15.54.230
+51.15.105.195
+51.15.107.247
+51.15.209.189
+51.158.74.56
+51.158.190.216
+51.158.238.185
+51.159.112.129
+51.159.118.50
+151.115.13.4
+151.115.34.23
+151.115.52.216
+151.115.60.116
+151.115.67.20
+151.115.73.73
+151.115.75.143
+151.115.78.46
+163.172.177.63
+#
+# --- Handed list — THG Hosting, five ---------------------------------------
+#
+# 107.182.229.90 is the Apple EV responder. 88.202.226.71 carries the PTR
+# mta1.bookchormail.com — a mail name on a rented box, which says who rented
+# it and nothing about what it is doing now.
+82.163.74.138
+82.163.75.65
+82.163.79.187
+88.202.226.71
+107.182.229.90
+#
+# --- Handed list — three singles -------------------------------------------
+#
+31.3.154.190     # AltusHost, PTR swe-net-ip.as51430.net, self-signed CN=vmde.com
+199.244.103.196  # AS214623, 2644819 Ontario Inc — a248.e.akamai.net, /32 under the standing ruling
+98.98.207.106    # Zenlayer — .250 opened to it 1341 times on 443, the heaviest single target of the day
+#
+# --- Capture pool — the fronting relays on .156 and .219, seven ------------
+#
+# These two handsets send a freshly-made-up domain as SNI on every connection
+# — voxpackprofits.org, www.failspiceprojectsbooth.org, basicsrussianbureau.net
+# and about forty more across the day, none of them a name anything else on
+# the network has ever asked for. The rest of that estate is already in this
+# file; these seven are the ones that were not.
+45.55.112.95     # a248.e.akamai.net
+104.248.105.108
+107.182.232.192
+138.197.226.204  # a248.e.akamai.net
+174.138.96.215
+185.222.106.57   # AS214623 again
+209.38.114.187
+#
+# --- Capture pool — the .250 probe cycle, twenty-four ----------------------
+#
+# A different client from the two above and a much clearer view of the
+# selection behaviour. 192.168.50.250 works through a candidate list in a
+# fixed cycle: three ICMP echoes to a node, then a TCP SYN to tcp/7, then on
+# to the next. Whatever it likes, it opens on 20107. In the same capture it
+# fetches from raw.githubusercontent.com, queries pro.ip-api.com for its own
+# egress address, and fronts to 152.42.221.149 under a Fastly name — a node
+# list, an egress check and a fronted data channel, which is the whole shape
+# of a proxy client picking a server.
+#
+# None of the twenty-three M247 addresses answered anything at all, to the
+# handset or to a probe from the router: no echo, no 443, no 20107, no PTR.
+# They are written down because they are what the client is reaching for, and
+# a dead candidate that comes back is exactly the case a list entry covers.
+# The M247 space here is five contiguous-ish addresses in each of five /24s;
+# that is a pool being enumerated, and it is still /32 per address because
+# M247 is general-purpose hosting.
+79.110.54.212
+79.110.54.224
+79.110.54.225
+79.110.54.226
+79.110.54.229
+91.245.252.31
+91.245.252.32
+91.245.252.34
+91.245.252.40
+91.245.252.42
+139.28.179.30
+139.28.179.33
+139.28.179.35
+139.28.179.36
+185.220.68.7
+185.220.68.12
+185.220.68.19
+185.220.68.246
+217.148.140.83
+217.148.140.87
+217.148.140.88
+217.148.140.97
+217.148.140.100
+174.138.60.177   # DigitalOcean, the 20107 side of the same cycle
+#
+# --- The refusals ----------------------------------------------------------
+#
+# Recorded so the next pass does not re-find them. All were in the day's
+# captures. NINE OF THEM WERE ALREADY LISTED and are not refusals at all —
+# they were checked against the files only after the desk check, which is the
+# same mistake as checking a PTR after adding, one step further along.
+# Already dropped: 103.211.231.57, 128.1.80.118, 167.148.163.162,
+# 167.148.163.212, 82.22.195.122, 82.26.160.163, 185.250.27.164. Already
+# throttled: 150.241.249.34 (spoofed SNI sgp-stream.downstext.com) and
+# 202.63.60.39 (NETSTAR SG). Check the files first next time; the desk check
+# is the expensive half and half of it was wasted.
+#
+# CDN edges, refused on rule one. BunnyCDN 143.244.56.50, 143.244.56.58,
+# 185.93.2.251, 79.127.134.234 (PTR bunnyinfra.net, CN=*.b-cdn.net, no sshd);
+# CDN77 79.127.213.245, 79.127.235.11 (PTR sgp.cdn77.com, CN=www.cdn77.com);
+# Datacamp 79.127.134.129, 86.110.36.81; Wangsu 163.171.131.198. The
+# made-up-looking names the two handsets front with resolve to Bunny edges
+# because Bunny will serve any customer domain — the name is the layer that
+# bites there, not the address, and shaping an edge degrades the house.
+#
+# Yandex 213.180.193.56 (PTR familysearch.yandex.ru, CN=*.yandex.tr).
+#
+# The imo/BIGO call estate, refused HERE because it is an app estate and by
+# this file's own split those are dropped, not shaped. They went to
+# custom-ip-blocklist.txt in the same pass. The tell is the timing: .156 opens
+# to each of them in the same instant as it opens to 8.8.8.8:443 or
+# 8.8.4.4:443, pair after pair, which is that app's establishment probe and
+# not a node hunt.
+#
+# Transsion's shalltry ad estate on Alibaba, already documented elsewhere:
+# 47.87.129.123, 47.87.135.115 (CN=*.shalltry.com), 8.211.12.194, 8.211.21.55,
+# 47.91.67.150, 47.245.167.194, 47.245.168.10, 47.245.168.157, 47.245.180.234.
+# .156 fronts these under api.pa1mstore.com and api.palmst0re.com — typosquats
+# of Transsion's own store, with a digit for a letter in each.
+#
+# Fourteen NETSTAR (SG) addresses in 169.136.0.0/16, which are already
+# dropped and needed nothing. They were first written up here as game servers
+# on the strength of the port pattern — one host answering on 944, 1944, 2944
+# and 9444, another on 947, 1947, 2947, 9447 and 954, which reads like a lobby
+# allocator. That was wrong twice over: 169.136.0.0/16 is BIGO's, NETSTAR (SG)
+# PTE. LTD. being the registrant behind it, and the blocklist already covers
+# all fourteen by range. Neither error survives a look at the existing notes,
+# and the second one only surfaced by checking the generated ruleset rather
+# than grepping the file. The full working is in the blocklist.
+#
+# Not established either way, left out rather than guessed: 5.181.161.75
+# (Tilda website platform, AE, fronted under mr8.ae — a real UAE name),
+# 103.65.36.69 (AOFEI HK, tcp/80 only, and its /16 neighbour 103.211.231.57 is
+# already dropped), 128.1.213.82 (Zenlayer, tcp/80, and 128.1.80.118 in the
+# same space is already dropped). If any of these turns up in a node hunt
+# later it is a fresh decision, not a re-run of this one.
+# ===========================================================================

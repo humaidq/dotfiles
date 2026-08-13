@@ -31,8 +31,18 @@ type peerRow struct {
 
 type peersPageData struct {
 	Device string
-	Peers  []peerRow
-	Error  string
+	// How DHCP knows this device: the hostname it offered, and the hardware
+	// address the lease was handed to. Both come from the lease file, so a
+	// device with a static address has neither and the template renders the
+	// same em-dash the index table uses for a nameless lease.
+	//
+	// The MAC is here because it is the identifier the low-trust pool keys on:
+	// making a device's membership permanent means copying this value into the
+	// sops secret, and having it on the page saves a trip to the router.
+	Name  string
+	MAC   string
+	Peers []peerRow
+	Error string
 	// What this device's capture slot is doing. Zero when no capture
 	// directory is configured, which the template reads as "no banner".
 	Capture captureSlot
@@ -364,6 +374,24 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	}
 
 	data := peersPageData{Device: device.String(), Error: notice}
+
+	// How DHCP knows this device. Read from the lease file rather than the
+	// neighbour table because that lookup is gated on the low-trust feature
+	// being enabled, and the identity of the device is not — a router with the
+	// pool switched off should still say whose page this is.
+	//
+	// A failure here is deliberately silent: the lease file being unreadable
+	// costs a name and a MAC, and saying so in the page's error banner would
+	// imply the connection table below it is suspect, which it is not.
+	if leases, err := readLeases(s.leasesPath, s.lanNet); err == nil {
+		for _, entry := range leases {
+			if entry.Addr == device {
+				data.Name, data.MAC = entry.Name, entry.MAC
+				break
+			}
+		}
+	}
+
 	if s.captures != nil {
 		data.Capture = s.captures.Get(device)
 	}

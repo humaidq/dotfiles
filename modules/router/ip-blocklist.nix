@@ -813,21 +813,38 @@ in
           name=$(printf '%s' "$name" | tr -d '[:space:]')
           [ -z "$name" ] && continue
 
+          # The sinkhole answers are rejected explicitly, and this is not a
+          # theoretical guard: two of the three names in this file are ALSO
+          # blocked by name in custom-blocklist.txt, and this service resolves
+          # through blocky like everything else on the router. So `dig` hands
+          # back 0.0.0.0 and :: for them, both of which are perfectly valid
+          # addresses to the filters below — without this the set would fill
+          # with sinkhole placeholders and the rule would match nothing while
+          # looking populated. That is worse than an empty set, which at least
+          # reads as broken.
+          #
+          # A name that only ever returns the sinkhole is reported as
+          # unresolved, because from this service's point of view it is: the
+          # address it needs is not obtainable here. The block still holds — by
+          # name for every device, and by address in custom-ip-blocklist.txt for
+          # the two that were resolved from upstream by hand.
           got=""
           for addr in $(dig +short +timeout=3 +tries=2 "$name" A 2>/dev/null || true); do
             case "$addr" in
               *[!0-9.]*) continue ;;
+              0.0.0.0) continue ;;
             esac
             v4="$v4$addr, "
             got=yes
           done
           for addr in $(dig +short +timeout=3 +tries=2 "$name" AAAA 2>/dev/null || true); do
             case "$addr" in
+              ::) continue ;;
               *:*) v6="$v6$addr, " ; got=yes ;;
             esac
           done
 
-          [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name" >&2
+          [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name (sinkholed here, or genuinely unresolvable)" >&2
         done < ${./custom-lowtrust-stun-hosts.txt}
 
         # Flush is conditional per family, not unconditional the way the MAC

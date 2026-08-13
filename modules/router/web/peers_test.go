@@ -1433,3 +1433,88 @@ func TestRealTemplateOmitsTheBannerWithoutAManager(t *testing.T) {
 		}
 	}
 }
+
+// The device page identifies the device the way the index table does — DHCP
+// name, and now the MAC alongside it. Rendered against the real peers.html so a
+// template that drops either field fails here rather than on the router.
+func TestDevicePageShowsDHCPNameAndMAC(t *testing.T) {
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	var buf bytes.Buffer
+	data := peersPageData{
+		Device: "192.168.0.10",
+		Name:   "device-a",
+		MAC:    "52:ff:a4:45:a1:7d",
+	}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	body := buf.String()
+	if !strings.Contains(body, "device-a") {
+		t.Error("device page did not show the DHCP name")
+	}
+	if !strings.Contains(body, "52:ff:a4:45:a1:7d") {
+		t.Error("device page did not show the MAC")
+	}
+}
+
+// A device with a static address has no lease, so both fields are empty. It
+// must render the same em-dash the index table uses for a nameless lease rather
+// than a blank gap or the word "unknown".
+func TestDevicePageShowsDashWithoutALease(t *testing.T) {
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, peersPageData{Device: "192.168.0.99"}); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if !strings.Contains(buf.String(), "&mdash;") && !strings.Contains(buf.String(), "—") {
+		t.Error("a device with no lease showed no em-dash placeholder")
+	}
+}
+
+// The page must fill those fields from the lease file, not merely be capable of
+// rendering them: a handler that never looks the device up would pass the two
+// template tests above and still show nothing on the router.
+//
+// Rendered through the REAL peers.html rather than the stub the other tests
+// use, because the stub renders neither field — asserting against it would pass
+// on a substring appearing elsewhere in the output and prove nothing.
+func TestDevicePagePopulatesNameAndMACFromLeases(t *testing.T) {
+	server := testPeersServer(t)
+	real, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	server.tmpl = real
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil)
+	server.mux().ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "device-a") {
+		t.Error("page did not carry the DHCP name from the lease file")
+	}
+	if !strings.Contains(body, "aa:bb:cc:dd:ee:01") {
+		t.Error("page did not carry the MAC from the lease file")
+	}
+}
+
+// A device with a lease but no hostname must still show its MAC — the MAC is
+// the value someone needs, and dnsmasq's "*" for a nameless device must not
+// suppress it.
+func TestDevicePageShowsMACForNamelessLease(t *testing.T) {
+	server := testPeersServer(t)
+	real, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	server.tmpl = real
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/peers/192.168.0.20", nil)
+	server.mux().ServeHTTP(rec, req)
+
+	if !strings.Contains(rec.Body.String(), "aa:bb:cc:dd:ee:02") {
+		t.Error("a nameless lease lost its MAC on the page")
+	}
+}
