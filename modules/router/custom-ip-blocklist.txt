@@ -1462,3 +1462,50 @@
 # be an unrelated Azure-hosted service failing for the whole house.
 20.93.239.174
 # ===========================================================================
+#
+# --- Snap Master VPN resolvers (Innovative Connecting), 2026-08-13 ----------
+#
+# Six nodes belonging to the Snap Master VPN estate
+# (free.vpn.unblock.proxy.vpnmaster, operator Innovative Connecting /
+# Lemon Clove, Singapore). The other ten live nodes from the same package went
+# to custom-throttle-list.txt, which carries the full provenance: how the
+# addresses were decrypted out of assets/server_offline.ser, why that list is
+# stale, and which addresses were refused. Read that note first; this one only
+# covers why these six are dropped instead of shaped.
+#
+# THEY ARE OPEN DoH RESOLVERS. Each returns valid DNS JSON on 443 for the
+# cloudflare-dns.com SNI and /dns-query path, and resolves arbitrary names —
+# example.com and wikipedia.org both answer, so it is a real recursive
+# resolver and not a fixed response. Probed three times each, 3/3 on every
+# one. That is the file's standing rule: every resolver is dropped, because a
+# clean failure is the desired outcome — the device falls back to its system
+# resolver, which is ours and filtered — and because shaping does nothing to a
+# few-hundred-byte lookup anyway. A resolver in the throttle file leaves the
+# whole name-blocking layer inert while still looking handled.
+#
+# All six ALSO run the app's VPN transport triple (8080 + 443 + 119), so they
+# are dual-purpose operator nodes rather than incidental public resolvers.
+# Dropping them costs the VPN a node as well as the DNS bypass; there is no
+# case for shaping them instead.
+#
+# Checked from a workstation, not the router, which is sound here only because
+# none of the six was in either file beforehand and so none was being shaped.
+# The usual warning about probing a throttled address from a LAN client does
+# not apply to a first-time check.
+#
+# NOT ADDED, deliberately: the app also hardcodes 1.1.1.1, 1.0.0.1, 8.8.8.8
+# and 8.8.4.4 in assets/dns_list.json as its DoH resolvers. Cloudflare's pair
+# is on the never-block list and Google's is the same class of shared public
+# resolver. None of the four is in any file today and none should be added
+# from this entry — DNS egress for those belongs in a structural rule, not a
+# per-app blocklist row.
+#
+# DigitalOcean AS14061:
+46.101.148.54
+162.243.0.223
+162.243.1.134
+162.243.8.196
+192.241.233.15
+# OVH AS16276 — PTR vps-35971f37.vps.ovh.net:
+151.80.56.155
+# ===========================================================================

@@ -4961,3 +4961,830 @@
 # same space is already dropped). If any of these turns up in a node hunt
 # later it is a fresh decision, not a re-run of this one.
 # ===========================================================================
+#
+# --- Snap Master VPN (Innovative Connecting), 2026-08-13 --------------------
+#
+# free.vpn.unblock.proxy.vpnmaster on Play, "Snap Master VPN". Operator is
+# Innovative Connecting / Lemon Clove / Autumn Breeze, Singapore — the same
+# estate as Turbo VPN and Snap VPN, confirmed by the self-signed certificate
+# these hosts serve (see below).
+#
+# EVIDENCE IS A DESK CHECK, NOT A CAPTURE. Nothing on this LAN has been seen
+# talking to any of these. The addresses came out of the package itself:
+# v7.9.6 from APKMirror (sha256 959119bd4e8411ec48888a3d12e5074a438b1c099c77e
+# f90befaad16d2cf3e9b), whose assets/server_offline.ser and assets/proxy.builtin
+# are AES-192-ECB blobs. The key is a 24-byte string in libopvpnutil.so,
+# 43a41a300d06092a864886f7, recovered by trying every 24-byte window of
+# printable strings in the native libraries against the ciphertext. Both
+# decrypt to plain JSON. Anyone re-checking this can repeat that in a minute;
+# it does not need the app run or a device rooted.
+#
+# Play currently ships 8.2.8. 7.9.6 is what APKMirror had — Play's own binary
+# is not fetchable from here, so a newer build may carry addresses this misses.
+#
+# THE SERVER LIST IS STALE AND THAT IS THE MAIN CAVEAT. server_offline.ser
+# holds 125 addresses stamped 2023-03-13 and is the OFFLINE FALLBACK: the app
+# normally pulls a live list from sdk.allconnected.in, so this is what it uses
+# when it cannot. Probing all 125 on 2026-08-13 found 89 with nothing open on
+# 8080/443/119/22 at all, and several reassigned to unrelated tenants —
+# 142.93.221.95, 159.89.124.192, 165.232.188.189 and 206.189.17.114 are now
+# Cloudways shared hosting, 64.227.46.144 a customer MongoDB, 46.101.4.7 WPP,
+# 131.196.253.121 Truxgo. None of those are here and none should be added; the
+# whole list is in the session notes if a later pass wants to re-probe it.
+#
+# What IS here: the ten addresses still answering on 8080, 443 AND 119
+# together, which is exactly the transport triple the decrypted config
+# specifies — shadowsocks rc4-md5 on 8080, chacha20-ietf on 443, OpenVPN on
+# tcp/119. Six more hosts match that triple and are NOT here: they also run
+# open DoH, so by this file's split they were dropped in
+# custom-ip-blocklist.txt instead. See the matching note there.
+#
+# 107.151.182.235 and .236 have PTRs mta235/mta236.fearlesscologne.com, which
+# reads like a mail estate and is not one: fearlesscologne.com does not
+# resolve and has no MX, tcp/25 is closed on both, and both carry the full VPN
+# triple. Stale hosting naming on a recycled Zenlayer /24, not a reason to skip
+# them. 107.151.182.241 in the same block serves CN=*.google.com issued by
+# Google Trust Services for any SNI, which is the relay-to-Google signature
+# this file already documents on a Cyprus VPS elsewhere.
+#
+# Zenlayer AS21859:
+107.151.182.215
+107.151.182.216
+107.151.182.235
+107.151.182.236
+107.151.182.241
+128.14.193.253
+# DigitalOcean AS14061:
+139.59.156.3
+# Invitech (HU) AS20845 — 185.207.114.0/24, three consecutive:
+185.207.114.73
+185.207.114.74
+185.207.114.75
+#
+# --- The same operator's API relays ----------------------------------------
+#
+# These five are from proxy.builtin, not server_offline.ser, and are on
+# COMPLETELY different footing: that file is the app's current domain-fronting
+# config, not a 2023 fallback, and all five are live. Each one serves a
+# self-signed certificate, subject and issuer both C=SG, O=Innovative
+# Connecting, CN=inconnecting.com, for any SNI presented — which is what
+# identifies the operator here and what makes these safe to shape as /32s.
+# They carry the control plane (server lists, auth), not user traffic, so
+# shaping them starves the app of a live server list and pushes it onto the
+# stale fallback above.
+#
+# proxy.builtin is keyed by country and AE HAS ITS OWN BLOCK, which routes
+# through CloudFront and CDN77 rather than these addresses:
+# 1830561980.rsc.cdn77.org, 1284617462.rsc.cdn77.org, d3gvb0try6yzp6,
+# d3pycxyo2ntwm5, d2crcrvsd4tmtl, d2lu9whia0kzfq, d32ki5pvctnu4i. REFUSED on
+# rule one, shared edge — wildcarding either provider degrades the house, and
+# the fronted names are never queried so the resolver cannot deny them. That
+# is the gap in this entry and it is not closable at the address layer: a UAE
+# client reaches the API through a CDN, not through the five below. Blocking
+# sdk.allconnected.in by name in custom-blocklist.txt is the control that
+# bites there.
+#
+# DigitalOcean AS14061:
+146.190.82.244
+152.42.164.238
+152.42.184.227
+152.42.188.255
+152.42.232.123
+# ===========================================================================
+#
+# ===========================================================================
+# 2026-08-13, later — the first captures taken AFTER the STUN block, and
+#              what the clients moved to
+# ===========================================================================
+#
+# Sixty-two addresses: 37 from a handed list of 46 lines (40 unique, six of
+# them repeated in the list as given), and 25 more read out of three captures
+# — 192.168.50.140-20260813-1350, .156-20260813-1359 and .219-20260813-1359.
+# Seventeen addresses arrived from both directions at once.
+#
+# NO DESK CHECK WAS RUN THIS ROUND. The router was not reachable from the
+# session, so there is no DoH probe, no 853, no sshd banner and no certificate
+# read for any of the sixty-two. What IS established here is registry data
+# (origin AS, PTR, both from off-router) and the capture itself, which this
+# round is unusually good: direction, byte counts, ports and SNI for every
+# address that appeared. Read the rows accordingly.
+#
+# THE CONSEQUENCE WORTH ACTING ON: the resolver check was not run, so some of
+# these sixty-two may be DoH resolvers sitting in the wrong file. Twenty-eight
+# were found that way in the batch immediately above, out of 174. Sweep this
+# section when the router is next available.
+#
+# --- What the STUN block did -----------------------------------------------
+#
+# The block works, and the captures show it directly. Both .156 and .219 still
+# fire 28-byte binding requests at 74.125.250.129:19302 — stun.l.google.com —
+# 40 packets from one and 17 from the other, and NOTHING comes back. Their
+# direct DNS is gone the same way: .156 sends 77 datagrams to 8.8.8.8:53 and
+# 8.8.4.4:53, 54 bytes each, and receives nothing. Real DNS in the same
+# captures goes to 192.168.50.1 at 93-120 bytes and is answered.
+#
+# What replaced it is not another discovery service. It is the node address
+# used directly, with the payload moved onto UDP:
+#
+#   1. OPAQUE UDP ON 443. 185.218.23.244 carried 1.16 MB with .156 in one
+#      capture — 1062 datagrams out, 1424 back, 262 of them at exactly 1288
+#      bytes with a long tail of small ones, which is a loaded data channel
+#      and not a probe. It is fronted as elveganchinabee.org.
+#   2. OPAQUE UDP ON 53, which is the case this file's header already warns
+#      about. .219 pushed 9.0-11.9 kB into each of four nodes in datagrams
+#      averaging 1288-1296 bytes, one-way, nothing returned. A decoder labels
+#      that DNS. It is not: real DNS in the same file is 54-120 bytes, carries
+#      a readable query name and goes to the local resolver. Judge the traffic,
+#      never the port.
+#   3. UDP on arbitrary high ports — 141.11.32.115:49092, 213.130.159.194:34932.
+#
+# The TCP side did not go away, it just stopped needing STUN first: 217.160.102.95
+# moved 15.4 MB with .219 and 159.223.245.224 5.1 MB with .156, both on 443.
+#
+# --- The UDP carriers, two -------------------------------------------------
+185.218.23.244   # udp/443, 1.16 MB with .156, SNI elveganchinabee.org — AS214623
+188.166.128.242  # udp/443, SNI www.foodpositive.org
+#
+# --- Opaque UDP on port 53, four -------------------------------------------
+#
+# All four from .219, all one-way, mean datagram in brackets. None of them is
+# a resolver on this evidence — a resolver answers, and nothing answered.
+51.158.235.171   # 9.3 kB in 7 datagrams (1288)
+107.182.236.224  # 9.3 kB in 7 datagrams (1296), PTR vps.fordetechnologies.com
+129.212.192.229  # 9.3 kB in 7 datagrams (1292)
+151.115.85.58    # 11.9 kB in 9 datagrams (1288)
+#
+# --- UDP on high ports, two ------------------------------------------------
+141.11.32.115    # udp/49092, OVH; the netname is a base64 token, not a name
+213.130.159.194  # udp/34932, Grand Web Solutions — .67 and .95 are already in this file
+#
+# --- Loaded TCP sessions, nineteen -----------------------------------------
+#
+# Every one of these moved real traffic in both directions during the capture,
+# so "candidate" understates them — these are working channels. The made-up
+# SNI is the same technique as the batch above and the names are new again.
+217.160.102.95   # 15.4 MB with .219 — the heaviest session of the day, IONOS
+159.223.245.224  # 5.1 MB with .156
+143.198.241.242  # 4.6 MB with .219
+212.227.32.187   # 480 kB with .219, IONOS, same netname as 217.160.102.95
+45.55.100.79     # SNI saedge.net
+129.212.152.25   # SNI swimtraincoaching.org
+159.203.149.190
+151.115.12.169
+88.202.183.159   # tcp/80, PTR server.rndtree.com
+151.115.74.30    # tcp/80
+134.199.251.27   # tcp/80
+138.68.120.188   # SNI beantoysnh.net
+45.55.102.236
+174.138.104.46
+152.42.146.231
+165.245.204.99   # tcp/80
+88.202.183.132   # SNI postwwwstlhunt.net, PTR vps.hilltopgardencentre.co.uk
+82.163.74.231    # tcp/179 — the BGP port as cover, no BGP session in the capture
+151.115.75.27    # SNI masterhappybwat.com
+#
+# --- Opened and unanswered, sixteen ----------------------------------------
+#
+# 74 to 296 bytes out, nothing back, spread across tcp/21, 22, 443, 553 and
+# 554 — the same port set the earlier rounds documented. Whether these are
+# dead nodes or nodes this router is already dropping is not distinguishable
+# from a client-side capture, and it does not change the entry.
+5.199.163.68     # CherryServers
+64.225.90.192
+67.207.70.204
+107.182.236.77   # PTR thantop.org.uk
+107.182.236.192  # PTR vps.hipipo.com
+129.212.169.172
+138.68.196.63
+138.68.200.117
+146.70.227.146   # M247
+146.70.251.213   # M247
+151.115.13.104   # tcp/443, opened and abandoned
+151.115.53.18
+157.230.65.222
+161.35.253.67    # 1548 bytes out, the largest of the failures
+185.232.21.134   # M247, PTR no-mans-land.m247.com
+205.237.94.183   # AS214623
+#
+# --- Handed, with no capture behind them, nineteen -------------------------
+#
+# None of these nineteen appears in the three captures. All that is
+# established for them is AS and PTR: fifteen DigitalOcean or Scaleway
+# instances, and four on THG. 173.244.210.168 is the one to look at twice —
+# its PTR is fip.accaglobal.com, which is a professional body's name, but the
+# allocation is Hosting Services, Inc. in THG-announced space and ACCA does
+# not appear anywhere near it in the registry. A customer name on a rented box
+# is what that PTR is, on the same reading as vps.hipipo.com above. Flagged
+# rather than argued: if it ever needs defending, this is the row.
+51.159.142.46
+51.159.155.67
+107.182.229.189  # PTR jacknye.com
+129.212.146.136
+129.212.164.33
+138.68.120.173
+146.190.6.26
+146.190.186.54
+151.115.12.241
+151.115.58.210
+151.115.79.195
+159.89.213.135
+159.203.145.50
+163.172.188.86
+165.227.244.200
+165.245.201.101
+167.172.6.193
+173.244.210.168  # PTR fip.accaglobal.com — see above
+188.166.136.88
+#
+# --- Twenty-five refusals, and one of them matters more than the rest ------
+#
+# 192.168.50.140 IS NOT RUNNING A TUNNEL and its two addresses must not be
+# shaped. The whole capture is 4.8 kB and it reads end to end: the handset
+# resolves epdg.epc.mnc003.mcc470.pub.3gppnetwork.org through our resolver,
+# gets 116.58.207.151 and 116.58.207.55 back, and sends IKE_SA_INIT to each
+# on udp/500. MCC 470 is Bangladesh and MNC 003 is Banglalink; both addresses
+# are in Banglalink's own AS with PTR banglalinkgsm.com. That is the ePDG for
+# Wi-Fi Calling — a carrier service reached over IPsec, which looks exactly
+# like a VPN handshake and is not one. Shaping it would break voice calls on
+# that handset and leave no trace of why. The 3GPP name pattern
+# epdg.epc.mncXXX.mccYYY.pub.3gppnetwork.org is the tell, and it is worth
+# recognising on sight.
+#
+# THE AKAMAI EDGE IS BEING FRONTED and still must not be touched.
+# 95.100.170.49 and 95.100.170.51 received SNI www.spamaximumnovo.net from
+# .156 — a made-up name of exactly the kind the relays in this file use, on
+# the genuine Akamai edge that serves the whole house. This is the case the
+# header's never-touch list exists for: the address is shared with everything
+# legitimate, so the name is the only layer that can bite. Refused, and worth
+# stating plainly because it will look like a finding every time it recurs.
+#
+# Google and Facebook, all normal app traffic: 8.8.8.8, 8.8.4.4,
+# 74.125.250.129 (stun.l.google.com — never-touch, and the block already
+# covers it per-device), 104.155.108.207, 108.177.125.188, 142.250.202.78,
+# 172.217.112.4, 172.217.118.4, 31.13.80.48, 157.240.13.40.
+#
+# Transsion's shalltry estate on Alibaba, refused in the batch above and
+# unchanged: 47.79.230.171, 47.79.249.35, 47.82.7.220, 47.87.135.115,
+# 47.91.67.150, 47.245.167.194, 47.245.168.157. 47.87.135.115 now fronts
+# hangup.palmplaystore.com, a third spelling of that typosquat.
+#
+# imo, AS36131 PageBites: 83.229.88.101, 83.229.88.125, 83.229.96.41,
+# 185.22.42.2. All four were dialled by .156 and none answered, which is what
+# the blocklist's own note predicts for that AS. App estate, already handled,
+# nothing to add here.
+# ===========================================================================
+#
+# ===========================================================================
+# 2026-08-13, third pass — 192.168.50.156 alone, twenty minutes later
+# ===========================================================================
+#
+# Twenty-two addresses: 16 handed over, all new, and 6 more from
+# 192.168.50.156-20260813-1415.pcap. Twelve of the sixteen appear in that
+# capture, so this is the rare round where most of a handed list arrives with
+# its own evidence attached. No desk check again — the router was not
+# reachable — so AS and PTR are registry data and everything else is the
+# capture. The resolver sweep noted in the section above still has not run and
+# now covers these twenty-two as well.
+#
+# THE CAPTURE CONFIRMS THE PREVIOUS SECTION'S READING. STUN is still dead —
+# 992 bytes of binding requests to 74.125.250.129:19302, nothing back — and
+# the same three transports carry the traffic: TCP/443 with a made-up SNI,
+# opaque UDP on 443, and opaque UDP on 53. One new variant: udp/40374 to a
+# Linode instance, bidirectional, 32 kB.
+#
+# FOUR ADDRESSES ALREADY IN THIS FILE TURNED UP ON DIFFERENT TRANSPORTS,
+# which is worth more than another row. 82.163.75.65 went in earlier today as
+# a TCP host serving a248.e.akamai.net; here it takes one-way opaque UDP on
+# 443 under the name www.parisdeadqatarmale.net. 151.115.78.46 went in from a
+# handed list with no capture at all; here it takes opaque UDP on 53.
+# 104.248.106.137 takes 9.3 kB of one-way UDP on port 179. 68.183.250.113
+# still runs an ordinary TCP session. So a node is not a TCP node or a UDP
+# node — the address is the constant and the transport is chosen per session.
+# Anything that tries to characterise this estate by transport will
+# under-count it.
+#
+# --- The loaded sessions, ten ----------------------------------------------
+107.182.229.115  # tcp/443, 301 kB — the main session of the capture
+82.163.78.77     # tcp/443, 43 kB, SNI winglongsolutions.org, PTR w1.lebcloud.net
+129.212.214.14   # tcp/443, 75 kB
+138.68.204.172   # tcp/443, 60 kB, SNI www.bankdb.com
+51.158.233.186   # tcp/443, SNI www.rivertravelscart.org
+143.244.208.226  # tcp/80
+178.128.138.31   # tcp/443, SNI www.automotivesupplyyerapid.org
+24.144.70.85     # tcp/80
+79.142.79.252    # tcp/443, AltusHost, PTR ch-net.as51430.net
+151.115.14.65    # udp/443, 42 kB, SNI www.dfspin.com
+#
+# --- The UDP nodes, three --------------------------------------------------
+#
+# 172.237.13.6 is the one to read carefully. Its AS is AKAMAI-LINODE-AP,
+# Akamai Connected Cloud, and "Akamai" in an AS name is exactly the string
+# this file's never-touch rule is about — but that rule is about the EDGE, the
+# 95.100.170.0/24 appliances with deploy.static.akamaitechnologies.com
+# reverses. This is Linode, which Akamai owns, and the PTR says so:
+# 172-237-13-6.ip.linodeusercontent.com. A tenant instance, shapeable like any
+# other. The distinction is edge versus rented instance, not the brand.
+172.237.13.6     # udp/40374, 32 kB bidirectional, Linode SG
+51.15.42.180     # udp/443, 25 kB, SNI www.blockpictureplayerserver.org
+#
+# Opaque UDP on 53, one-way, ~1330-byte datagrams, nothing returned — the same
+# case as the section above and not DNS by any reading.
+138.68.200.129   # 6.6 kB in 5 datagrams
+209.38.117.210   # 6.6 kB in 5 datagrams
+#
+# --- Opened and unanswered, four -------------------------------------------
+168.144.1.77     # tcp/443, 1968 bytes out over 76 s, nothing back
+54.38.198.165    # tcp/53, OVH, PTR ip165.ip-54-38-198.eu
+82.165.182.96    # tcp/22, IONOS
+147.182.149.217  # tcp/554
+#
+# --- Handed, absent from the capture, four ---------------------------------
+#
+# AS and PTR only. 64.225.84.39 and .109 are two addresses in one /24, which
+# is not a range argument on its own and is noted only so the pair is visible
+# if more of that /24 arrives.
+64.225.84.39
+64.225.84.109
+146.190.2.78
+151.115.75.51
+#
+# --- Five refusals ---------------------------------------------------------
+#
+# THE AKAMAI EDGE, AND THE FRONTING THROUGH IT IS GETTING HEAVIER. 95.100.170.43,
+# .50 and .59 took 123 kB, 51 kB and 28 kB in this capture under the names
+# mtsy.org and foreverstorageon.org — made-up names of the same shape as every
+# relay in this file, on the appliances that serve the whole house. All three
+# carry deploy.static.akamaitechnologies.com reverses. Refused, and the volume
+# is the point: this is now a real data path, not an artefact, and the only
+# layer that can touch it is the name.
+#
+# 143.244.56.50 — BunnyCDN edge, PTR 143-244-56-50.bunnyinfra.net, refused
+# earlier today and refused again. It moved 114 kB here under
+# electronicprivacydryhyper.com. Bunny serves any customer domain, so the
+# address is shared with everything legitimate on that edge.
+#
+# 74.125.250.129 — stun.l.google.com. Never-touch, and already handled
+# per-device; the 992 bytes of unanswered binding requests are that block
+# working, not a finding.
+# ===========================================================================
+#
+# --- Psiphon, 2026-08-13 ---------------------------------------------------
+#
+# com.psiphon3.subscription, "Psiphon VPN: Freedom Online", v479 from APKMirror
+# (sha256 bb006947919f3fb5058ec42072f2d490a88ba94fc27aea8e33876c0b85d4cbcc).
+# 479 is also what Play ships, so unlike the Snap Master entry above there is
+# no version gap here.
+#
+# THE ADDRESSES: 405 server entries are embedded in classes3.dex as hex-encoded
+# blobs — psiphon-android's EmbeddedValues.EMBEDDED_SERVER_LIST. No key and no
+# decryption: hex-decode each blob and the tail is plain JSON carrying
+# ipAddress, region, capabilities, sshPort/sshObfuscatedPort/
+# sshObfuscatedQUICPort/SshShadowsocksPort/meekServerPort, and per-node ssh
+# credentials. Reproducible in a minute from the package alone.
+#
+# THIS IS ALMOST CERTAINLY THE TUNNEL CLIENT THIS FILE HAS BEEN CHASING.
+# Three independent lines say so, and none of them was arranged to:
+#
+#   1. THREE of the 405 were ALREADY IN THIS FILE before the package was ever
+#      opened, each added by a capture-led round on its own merits:
+#      151.243.14.210 (FARDA-IX-LINK, the netutils-mnt/AS401418 reseller case),
+#      165.22.133.89 (DigitalOcean, the fixed-upstream group serving
+#      akamai.download.microsoft.com) and 185.10.58.188 (AltusHost). Three
+#      separate investigations, three different rationales, all three Psiphon.
+#
+#   2. EVERY PORT IN custom-lowtrust-ports.txt APPEARS IN THE EMBEDDED SET.
+#      21 (12 entries), 22 (all 405, sshPort), 553 (11), 554 (138) — the four
+#      seeded from the 2026-08-13 captures — and 179 (11 entries). 179 is the
+#      one that matters: that file records it as inference, NOT observation,
+#      and asks to be told if a capture ever shows a pool device using it.
+#      This is not a capture, but it is the next best thing — the client's own
+#      shipped server list says 179 is a transport it offers. Worth updating
+#      that note to point here.
+#      Also 53 on 337 of the 405, which is what the blocklist's "eleven nodes
+#      fed large opaque UDP on port 53" note was looking at.
+#
+#   3. THE PROVIDER MIX MATCHES the description already written in this file —
+#      "a pool spanning DigitalOcean, IONOS, OVH, Hetzner, AltusHost and leased
+#      space". The 405 are Linode/Akamai 133, DigitalOcean 74, OVH 44, IONOS 37,
+#      M247 35, AltusHost 23, FARDA-IX-LINK 7. AltusHost was singled out there
+#      as "held rather than rented ad hoc"; Psiphon has 23 nodes in it.
+#
+# WHAT WAS CHECKED, 2026-08-13. Every one of the 405 was probed on the ports
+# ITS OWN ENTRY DECLARES, not a generic set. 369 answered, 36 did not. The 36
+# dead are NOT here — same rule applied to the Snap Master list above, where
+# dead addresses had been reassigned to unrelated tenants and shaping them
+# would have hit third parties. Of the 369 live: no DoH resolver (so nothing
+# went to custom-ip-blocklist.txt), no CDN or shared edge, and no third-party
+# tenant. Every PTR is provider auto-naming — linodeusercontent.com,
+# ip-*.eu (OVH), as51430.net (AltusHost), beanfield.net. Psiphon runs dedicated
+# infrastructure, which is why this list is clean where Snap Master's was not.
+#
+# 366 added below; 3 were already present and are not repeated.
+#
+# THE CEILING ON THIS ENTRY, stated plainly because it is lower than the
+# address count suggests. The embedded list is a BOOTSTRAP SEED, not the
+# estate. The client also fetches a live list from
+# s3.amazonaws.com/psiphon/web/iohq-waa4-q4dt/server_list_compressed and an
+# obfuscated list from the /osl path, with three SkipVerify cover domains
+# behind it (corporatehirepressth.com, designrecruitmentvure.com,
+# storagejsstrategiesfabulous.com) and Fastly fronts for feedback. Shaping
+# these 366 slows a cold start; it does not stop a client that reaches the
+# remote list.
+#
+# AND THE PART NO ADDRESS LIST REACHES: 208 of the 405 entries advertise
+# INPROXY-WEBRTC-OSSH, plus 77 INPROXY-WEBRTC-SSH and 37 QUIC variants. That is
+# Psiphon Conduit — the client tunnels through OTHER USERS' DEVICES over
+# WebRTC, so there is no fixed server address to list. The control that bites
+# there is the low-trust pool's public-STUN drop, which is already deployed and
+# is doing more against this app than these 366 rows will.
+# AKAMAI-LINODE-AP Akamai Connected Cloud (133)
+23.92.26.119
+23.239.3.69
+23.239.3.113
+45.56.70.68
+45.79.125.186
+45.79.140.173
+50.116.3.73
+50.116.11.21
+66.228.61.41
+85.90.245.73
+104.237.142.24
+109.74.197.132
+139.144.40.209
+139.144.196.29
+139.162.68.81
+139.162.71.87
+139.162.79.4
+139.162.89.243
+139.162.90.43
+139.162.101.51
+139.162.169.88
+139.162.216.9
+170.187.137.66
+170.187.181.95
+172.104.58.223
+172.104.66.221
+172.104.77.97
+172.104.89.154
+172.104.94.34
+172.104.100.155
+172.104.131.46
+172.104.134.170
+172.104.135.200
+172.104.150.135
+172.105.53.185
+172.105.64.42
+172.105.84.77
+172.105.153.184
+172.105.157.124
+172.105.193.24
+172.105.239.237
+172.105.244.217
+172.105.249.25
+172.105.251.109
+172.232.41.175
+172.232.132.62
+172.232.134.17
+172.232.141.224
+172.232.193.88
+172.232.217.218
+172.232.251.212
+172.233.33.21
+172.233.41.99
+172.233.45.245
+172.233.51.244
+172.233.62.26
+172.233.62.55
+172.233.123.124
+172.233.124.196
+172.233.163.119
+172.233.194.196
+172.233.231.178
+172.233.242.209
+172.233.244.173
+172.233.249.61
+172.234.47.6
+172.234.108.33
+172.234.109.182
+172.234.118.6
+172.234.118.28
+172.234.120.54
+172.234.123.179
+172.234.162.244
+172.234.163.66
+172.234.163.167
+172.234.169.59
+172.234.171.7
+172.234.176.179
+172.234.177.96
+172.234.184.235
+172.235.25.79
+172.235.154.5
+172.235.171.70
+172.235.174.209
+172.235.182.104
+172.235.182.218
+172.235.189.59
+172.235.191.130
+172.235.192.220
+172.235.205.224
+172.235.237.5
+172.236.2.65
+172.236.2.207
+172.236.20.84
+172.236.21.188
+172.236.22.56
+172.236.25.127
+172.236.34.66
+172.236.171.71
+172.236.195.235
+172.236.209.217
+172.237.19.240
+172.237.27.168
+172.237.36.216
+172.237.81.12
+172.237.90.32
+172.237.95.176
+172.237.109.222
+172.237.117.216
+172.237.121.21
+172.237.121.174
+172.238.7.166
+172.238.101.32
+172.238.107.215
+172.238.112.199
+172.238.118.190
+172.238.120.44
+172.238.126.183
+172.238.225.137
+172.238.238.233
+172.238.242.77
+172.238.243.98
+172.238.243.145
+172.238.255.131
+172.239.110.23
+176.58.103.151
+176.58.126.140
+178.79.137.131
+192.53.120.165
+192.53.122.88
+192.155.93.234
+212.71.238.39
+212.71.244.128
+# DIGITALOCEAN-ASN (73)
+37.139.3.119
+64.227.161.73
+64.227.170.94
+68.183.107.247
+95.85.5.6
+95.85.37.96
+104.131.47.106
+104.236.196.91
+107.170.3.103
+107.170.114.196
+107.170.253.227
+128.199.231.203
+134.209.47.225
+137.184.37.169
+137.184.39.185
+137.184.115.35
+138.68.131.12
+138.197.218.29
+138.197.221.28
+139.59.4.13
+139.59.77.36
+139.59.187.29
+142.93.149.154
+142.93.183.212
+143.110.254.26
+143.198.142.80
+146.185.139.95
+146.185.171.65
+147.182.227.69
+157.245.18.18
+157.245.99.205
+157.245.229.205
+159.65.152.86
+159.65.153.30
+159.65.158.16
+159.89.15.205
+159.203.60.0
+161.35.156.90
+161.35.174.173
+162.243.6.15
+162.243.63.186
+162.243.122.158
+162.243.128.29
+164.90.190.236
+164.92.131.155
+164.92.241.219
+165.22.160.97
+165.227.41.172
+167.71.58.40
+167.99.7.223
+167.99.194.200
+167.99.226.40
+167.172.250.141
+170.64.138.91
+170.64.138.158
+170.64.139.206
+178.128.23.13
+178.128.194.38
+178.128.237.56
+188.166.123.57
+192.241.143.72
+192.241.203.12
+192.241.225.195
+192.241.227.83
+198.199.93.165
+198.199.117.200
+198.211.106.143
+198.211.107.195
+198.211.119.150
+206.189.175.117
+209.38.71.254
+209.38.87.110
+209.97.135.212
+# OVH (43)
+46.105.39.80
+46.105.58.8
+46.105.59.27
+46.105.61.27
+46.105.72.34
+51.38.105.63
+51.68.131.22
+51.68.131.39
+51.68.131.186
+51.75.34.191
+51.75.35.117
+51.75.36.39
+51.75.39.78
+51.75.39.99
+51.75.42.164
+51.75.42.165
+51.75.43.38
+51.75.59.74
+51.77.113.212
+51.83.239.235
+51.89.113.241
+51.89.115.136
+51.89.115.148
+51.89.185.16
+51.89.190.183
+51.89.191.120
+51.195.55.192
+54.38.58.84
+54.38.61.213
+54.38.151.35
+57.128.101.173
+57.128.117.164
+135.125.158.166
+135.125.166.20
+135.125.166.32
+135.125.173.240
+141.95.23.170
+141.95.37.232
+141.95.38.212
+142.44.129.161
+142.44.135.24
+178.32.98.135
+178.32.125.148
+# IONOS-AS This is the joint network for IONOS, Fasthosts, Arsys, 1&1 Ma (37)
+50.21.179.243
+50.21.190.246
+62.151.176.224
+74.208.116.120
+74.208.116.209
+74.208.116.215
+74.208.156.104
+74.208.219.83
+74.208.219.215
+77.68.9.180
+77.68.9.223
+82.223.8.65
+82.223.20.214
+87.106.125.29
+88.208.197.47
+88.208.225.167
+88.208.240.67
+88.208.240.84
+109.228.49.100
+212.227.32.130
+212.227.32.196
+212.227.32.236
+212.227.33.46
+212.227.226.148
+212.227.226.159
+213.171.211.2
+213.171.211.68
+217.160.33.152
+217.160.34.112
+217.160.34.152
+217.160.34.188
+217.160.102.62
+217.160.104.236
+217.160.153.244
+217.160.155.149
+217.160.155.187
+217.160.159.45
+# ALTUS (22)
+31.3.152.73
+31.3.154.127
+31.3.154.156
+31.3.154.182
+31.3.154.216
+31.3.156.66
+37.46.115.116
+37.46.116.35
+37.46.119.42
+37.46.119.171
+37.46.119.175
+37.46.119.249
+37.46.121.90
+37.46.127.213
+79.142.74.36
+79.142.74.54
+79.142.75.15
+79.142.75.72
+79.142.79.181
+79.142.79.214
+79.142.79.251
+213.5.71.135
+# ON2644819-NET (17)
+185.222.106.196
+185.222.106.240
+199.244.103.76
+199.244.103.114
+199.244.103.149
+199.244.103.220
+199.244.103.228
+205.237.92.81
+205.237.92.103
+205.237.92.204
+205.237.92.245
+205.237.94.9
+205.237.94.35
+205.237.94.64
+205.237.94.132
+205.237.94.151
+205.237.94.223
+# COGENT-174 (10)
+110.172.149.12
+110.172.149.59
+110.172.149.124
+110.172.149.131
+110.172.149.162
+110.172.149.179
+154.17.253.75
+154.17.253.132
+154.17.253.156
+154.17.253.208
+# Not routed (9)
+108.165.21.53
+108.165.21.105
+108.165.21.116
+108.165.21.132
+108.165.21.155
+108.165.21.174
+108.165.21.190
+108.165.21.238
+108.165.21.241
+# BEANFIELD (8)
+66.207.215.106
+199.244.102.135
+199.244.102.223
+199.244.102.234
+199.244.102.242
+205.237.95.92
+205.237.95.173
+205.237.95.212
+# FARDA-IX-LINK (6)
+151.243.14.84
+151.243.14.127
+155.117.235.30
+155.117.235.43
+155.117.235.59
+155.117.235.100
+# MAPL-NET (3)
+185.218.23.160
+185.218.23.198
+185.218.23.243
+# CHERRYSERVERS1-AS (3)
+5.199.171.237
+5.199.171.243
+188.214.129.7
+# VOXILITY (2)
+5.254.53.245
+5.254.80.202
+# ===========================================================================
+#
+# --- Two more, handed after the third pass ---------------------------------
+#
+# Both Scaleway, both with an instances.scw.cloud PTR, so one tenant per /32.
+# Neither appears in any capture taken today and no desk check was run, so AS
+# and PTR is the whole of it. Handed with the word "block"; confirmed as the
+# throttle file, which is where an address with nothing marking it as a
+# resolver or an app estate belongs.
+151.115.52.121
+51.15.214.232
+# ===========================================================================
