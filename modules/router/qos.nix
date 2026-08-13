@@ -51,15 +51,20 @@ in
         #
         # HTB purely to get the classes — the default one is given the full link
         # rate and CAKE inside it still does all the real work, so ordinary
-        # traffic behaves as it did when CAKE was root. The penalty classes are
-        # rate-limited by HTB and then made unpleasant by netem, and both sit at
-        # the lowest HTB priority so they only ever get what ordinary traffic
-        # has left.
+        # traffic behaves as it did when CAKE was root. Both penalty classes are
+        # rate-limited by HTB and sit at the lowest HTB priority, so they only
+        # ever get what ordinary traffic has left.
         #
-        # netem does the impairment rather than the rate: its own `rate` option
-        # is a plain token bucket with none of HTB's borrowing behaviour, and
-        # keeping the two concerns in separate qdiscs means the shaping number
-        # and the misery numbers can be tuned independently.
+        # The two penalty classes no longer work the same way. The imo class is
+        # still HTB plus netem loss; the throttled class is a rate cap and
+        # nothing else since 2026-08-13, because impairment turned out to help
+        # the clients being shaped pick a different node — see the throttled
+        # class below and sifr.router.throttle in default.nix.
+        #
+        # HTB does the rate in both cases rather than netem's own `rate` option,
+        # which is a plain token bucket with none of HTB's borrowing behaviour.
+        # Keeping rate and queue in separate qdiscs is what made it possible to
+        # drop the impairment without touching the shaping number.
         script = ''
           set -euo pipefail
 
@@ -97,16 +102,34 @@ in
             # priority bands in order, and these two get only what 1:10 leaves.
             # Their own rate caps are what bounds them when the link is idle.
 
-            # Throttled class. `limit 1000` bounds netem's own queue: at
-            # ${throttle.rate} a deep queue would add minutes of delay on top of
-            # the intended latency and the tunnel would stall outright rather
-            # than merely crawl, which is more detectable than what we want.
+            # Throttled class: a rate cap and nothing else. netem used to sit
+            # here adding latency, jitter and loss; it was removed on
+            # 2026-08-13 because the clients being shaped score candidate nodes
+            # on RTT and loss, so impairing a node made it easy to spot and
+            # discard. See the comment on sifr.router.throttle in default.nix.
+            #
+            # fq_codel rather than the default pfifo, and the choice matters —
+            # a plain fifo here would silently reintroduce the latency this
+            # change exists to remove. The default queue is txqueuelen packets
+            # deep, which at ${throttle.rate} is minutes of standing buffer, and
+            # bufferbloat that severe is just as visible to an RTT probe as
+            # netem's delay was.
+            #
+            # fq_codel earns its place twice over: it holds the bulk queue near
+            # `target` instead of letting it grow, and it flow-isolates, so a
+            # probe or a keepalive gets its own queue and answers immediately
+            # while a bulk transfer on the same node sits at the cap. That is
+            # precisely the shape wanted — the node measures healthy and moves
+            # no data.
+            #
+            # target 100ms because codel's 5ms default is meaningless below a
+            # megabit: one 1500-byte packet takes ~120ms to clock out at
+            # ${throttle.rate}, so a 5ms target would have codel dropping
+            # constantly and hand the client back the loss signal just removed.
             tc class add dev "$dev" parent 1:1 classid 1:20 htb \
               rate ${throttle.rate} ceil ${throttle.rate} prio 7
-            tc qdisc add dev "$dev" parent 1:20 handle 20: netem \
-              delay ${throttle.delay} ${throttle.jitter} distribution normal \
-              loss ${throttle.loss} \
-              limit 1000
+            tc qdisc add dev "$dev" parent 1:20 handle 20: fq_codel \
+              limit 100 target 100ms interval 1s noecn
 
             # Steer anything nftables marked into the throttled class. `protocol
             # all` so one filter covers IPv4 and IPv6 alike. The filter hangs off

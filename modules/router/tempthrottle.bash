@@ -129,8 +129,9 @@ tempthrottle — temporary, non-persistent IP throttles (cleared on the next reb
   tempthrottle list                      show throttled addresses
   tempthrottle status                    marking counters and the tc classes
 
-Throttled traffic is rate capped and given added latency, jitter and loss in
-both directions — see sifr.router.throttle for the numbers. Persistent entries
+Throttled traffic is rate capped in both directions and nothing else — no added
+latency, jitter or loss, so the node still measures healthy to a client picking
+between candidates. See sifr.router.throttle for the number. Persistent entries
 belong in modules/router/custom-throttle-list.txt + a rebuild.
 USAGE
 	exit "${1:-0}"

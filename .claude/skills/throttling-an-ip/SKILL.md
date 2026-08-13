@@ -11,8 +11,17 @@ Two files, and the choice between them is the whole job:
 
 | File | What happens | What goes there |
 |---|---|---|
-| `custom-throttle-list.txt` | 100 kbit/s, +400 ms ± 100 ms, 3% loss | VPNs, tunnels, fronting relays |
+| `custom-throttle-list.txt` | 100 kbit/s cap, nothing else | VPNs, tunnels, fronting relays |
 | `custom-ip-blocklist.txt` | dropped | app estates, **and every resolver** |
+
+The throttle tier lost its 400 ms delay, 100 ms jitter and 3% loss on
+2026-08-13. The clients being shaped score candidate nodes on RTT and loss, so
+impairment made a shaped node *easier* to detect and discard — they moved on and
+found unthrottled ones. A bare cap is near-invisible to that scoring: probes
+pass under it, the node keeps measuring healthy and stays selected, and anything
+carrying real data crawls. The queue is `fq_codel`, not a fifo, because a deep
+fifo at 100 kbit/s is minutes of standing buffer and reads to a probe exactly
+like the delay that was just removed.
 
 **The address is cheap; the check is the work.** An unchecked address is worse
 than no address — a CDN edge in either file degrades the whole house, and a
@@ -28,19 +37,57 @@ ip=1.2.3.4
 dig +short -x $ip                                    # PTR
 whois $ip | grep -iE '^(inetnum|netname|NetRange|NetName|OrgName|org-name)'
 whois -h whois.cymru.com " -v $ip" | tail -1         # origin AS
-timeout 8 openssl s_client -connect $ip:443 -noservername </dev/null 2>/dev/null \
-  | openssl x509 -noout -subject -serial             # whose certificate?
-timeout 8 curl -s -o /dev/null -w '%{http_code}\n' --resolve "cloudflare-dns.com:443:$ip" \
+curl -sk -v --resolve "example.com:443:$ip" https://example.com/ 2>&1 \
+  | grep -iE 'subject:|issuer:'                      # whose certificate?
+timeout 8 curl -s -o /tmp/doh -w '%{http_code}\n' --resolve "cloudflare-dns.com:443:$ip" \
   "https://cloudflare-dns.com/dns-query?name=example.com&type=A" -H 'accept: application/dns-json'
+head -c 200 /tmp/doh                                 # the BODY decides, not the code
 ```
+
+**Port 53 is blocked outbound on this network — do not probe it and do not
+record its result.** A UDP or TCP/53 query times out for every address on earth
+here, so "no answer on 53" is the local firewall talking, not the host. One pass
+of this wrote that down as a finding for fourteen addresses before it was
+caught. The resolver check that works from here is **DoH on 443**, and 853 is
+worth a TCP probe. Anything already in the files claiming an address serves no
+DNS on 53 is unverified unless it was probed from elsewhere.
+
+**Probe every 443 host three times before describing it.** A single unanswered
+ClientHello is not silence — these hosts drop connections intermittently. One
+was written up as a silent listener and is actually a fixed-name relay; another
+refused the very name it fronts on one attempt and served it on the next. Only
+a repeated result goes in the row.
+
+**Use curl, not `openssl s_client -brief </dev/null`, to read a certificate.**
+With `-servername` and stdin at EOF, openssl reports no handshake at all on
+hosts where curl completes one and prints the cert. That artefact produced a
+confident, wrong "this host refuses named SNI" reading for five hosts in one
+batch. Keep openssl for a second opinion (`-tls1_2` behaves), decide on curl.
 
 Read the results in this order — the first match wins:
 
 1. **PTR or AS says CDN / shared edge** (`deploy.static.akamaitechnologies.com`,
    Cloudflare, Fastly, an ISP-hosted POP) → **refuse, add nothing.** Say so and
    record why. A device talking to a CDN is what a CDN is for.
-2. **DoH returns HTTP 200, or it serves `cloudflare-dns.com` / any resolver
-   certificate, or it answers on 53/853** → **`custom-ip-blocklist.txt`.**
+
+   **`Server: AkamaiGHost` does NOT mean you found a relay.** The genuine Akamai
+   edge returns the identical 400 "Invalid URL" page — fetch `23.53.126.145`
+   (live `a248.e.akamai.net`) and compare, byte for byte. That response only
+   says an Akamai edge is on the far end, which is equally true of a relay and
+   of the real thing. Two tests separate them: **the AS** (Akamai does not
+   deploy edge clusters into DigitalOcean/Scaleway/THG/Hetzner tenant space) and
+   **sshd** (the real edge has tcp/22 closed; every relay checked answers with
+   an OpenSSH banner — a CDN appliance does not offer you a shell). Apply both
+   before shaping anything in an ISP's own space.
+2. **DoH returns DNS JSON in the body, or it serves `cloudflare-dns.com` / any
+   resolver certificate, or it answers on 853** → **`custom-ip-blocklist.txt`.**
+
+   **A resolver answers DNS; a tunnel merely uses the port.** Traffic on 53 is
+   not evidence of a resolver — one capture showed eleven nodes fed large opaque
+   UDP datagrams on port 53, which a decoder cheerfully labels "DNS". Real DNS
+   in the same capture was a fraction of the size, carried a readable query name
+   and went to the local resolver. All eleven were tunnel nodes and belonged in
+   the throttle file. Judge the traffic, never the port number.
 3. **Anything else that checks out as a rented instance** → throttle list.
 
 `instances.scw.cloud`, `clients.your-server.de`, `*.vps.ovh.net`, DO-13,
@@ -81,8 +128,17 @@ A rented instance serving `swdist.apple.com`, `a248.e.akamai.net` or
 `www.marriott.com` does not hold that key — it is **relaying the handshake**,
 i.e. a fronting proxy. Two variants:
 
-- Hand it a made-up SNI (`-servername example.com`). Different cert back →
-  general SNI proxy. Same cert regardless → fixed upstream.
+- **A different cert per SNI does NOT mean a general SNI proxy.** One Akamai
+  upstream serves many brands, so it returns ICANN's `*.example.com` for
+  example.com and Apple's `swcdn.apple.com` for swdist.apple.com while being a
+  single fixed upstream. The discriminator is **a name the upstream does not
+  host** — `www.wikipedia.org`, `github.com`, `www.google.com`. A real SNI proxy
+  resolves those and returns their certificates; a pass-through falls back to
+  its upstream's default (`a248.e.akamai.net`). Test with a non-Akamai name
+  before calling anything a general proxy.
+- Fronting is not only Akamai. A Cyprus VPS in this file relays every SNI to
+  Google (`CN=*.google.com`, and `invalid2.invalid` with no SNI). Any scan that
+  only tallies Akamai brands sees half the estate.
 - **Identical serial across several hosts means same upstream, NOT one image.**
   A pass-through serves whatever the upstream serves, so the match is expected
   and proves nothing about the relays sharing a build. Check it against the real
@@ -94,6 +150,18 @@ i.e. a fronting proxy. Two variants:
 - Either way the behaviour is a usable fingerprint: scanning a provider's space
   for hosts answering with an upstream's certificate finds the rest. Say so in
   the note, because collecting them one at a time is the slow path.
+
+**A self-signed cert? whois the name in it.** One host served
+`CN=qnhyg.com`, self-signed, for every SNI — and `qnhyg.com` is an unregistered
+domain (VeriSign "No match", NXDOMAIN). No client ever reached it by name, so
+the certificate exists purely to complete a handshake for someone who already
+knows the address. Self-signed cert + nonexistent CN + empty 404 to everything
+is the trojan/VLESS camouflage, and it is the strongest positive signature
+available from a desk check. Cheap to run, hard to fake innocently.
+
+Careful with the mirror case: an unregistered name in a **PTR** (one host's
+reverse was `gun.superiorselm.com`, also unregistered) is just stale hosting
+naming. Certificate the host actively serves ≠ leftover reverse record.
 
 ## Sweeping the list for resolvers already in it
 
@@ -132,17 +200,27 @@ share of anything, nothing that looks like a tunnel.
 
 ## Verify before claiming done
 
+**Trim trailing whitespace before matching, or you will undercount.** Some
+entries are `<address>    # comment` on one line. Stripping the comment leaves
+trailing spaces, so a `$`-anchored match drops them silently — eight addresses
+were invisible to every count taken across one long session, which made "first
+88.208 address", "third 46.225 address" and a 79.142 range recount all wrong,
+and put the file total 8 low throughout. The nft parser handles those lines
+fine; this is a counting bug only, but this file's notes lean on counts.
+
 ```bash
 cd modules/router
+addrs() { sed 's/#.*//' "$1" | sed 's/[[:space:]]*$//' \
+          | grep -E '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; }
 # exactly once, in exactly one file
 for ip in <the addresses>; do
-  t=$(sed 's/#.*//' custom-throttle-list.txt | grep -Ec "^${ip}[[:space:]]*$")
-  b=$(sed 's/#.*//' custom-ip-blocklist.txt  | grep -Ec "^${ip}[[:space:]]*$")
-  echo "$ip throttle=$t block=$b"
+  echo "$ip throttle=$(addrs custom-throttle-list.txt | grep -cx "$ip")" \
+       "block=$(addrs custom-ip-blocklist.txt | grep -cx "$ip")"
 done
-# no address in both files
-comm -12 <(sed 's/#.*//' custom-throttle-list.txt | grep -oE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | sort -u) \
-         <(sed 's/#.*//' custom-ip-blocklist.txt  | grep -oE '^([0-9]{1,3}\.){3}[0-9]{1,3}' | sort -u)
+# no address in both files, and none duplicated within one
+comm -12 <(addrs custom-throttle-list.txt | sort -u) \
+         <(addrs custom-ip-blocklist.txt  | sort -u)
+addrs custom-throttle-list.txt | sort | uniq -d
 # the real gate
 nix build --no-link '.#nixosConfigurations.bingo.config.system.build.toplevel'
 ```
@@ -171,6 +249,9 @@ the file zero times, silently. Duplicates are cheap; mutual deletion is not.
 | Quoting a count from a nearby note | They rot within the hour during a round. Recount. |
 | Blocking the fronted name | Never queried, so it cannot be denied at the resolver. The address is the only layer that bites. |
 | `tempthrottle` and calling it done | Cleared by the next rebuild. Anything worth keeping goes in the file. |
+| Recording "no answer on 53" | Outbound 53 is blocked here. That result is the firewall, for every address. DoH is the only resolver check available. |
+| Trusting `openssl -brief` on named SNI | It reports no handshake where curl completes one. Five hosts were described wrongly on that basis. |
+| "Different cert per name, so it's an SNI proxy" | One Akamai upstream does that. Try wikipedia/github — a pass-through falls back to `a248.e.akamai.net`. |
 
 ## Red flags — stop and check
 

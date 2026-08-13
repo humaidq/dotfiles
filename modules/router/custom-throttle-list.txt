@@ -6,14 +6,30 @@
 # paragraph below: a dropped app backend just fails, where a dropped VPN node tells
 # the client to try the next one. That file's header carries the same rule.
 #
-# Everything here is shaped to 100 kbit/s each way with 400 ms of added latency,
-# 100 ms of jitter and 3% random loss, instead of being blocked outright. The
-# point is that a tunnel behaves like a bad connection rather than a filtered
-# one: there is no clean failure for the client to detect and route around, and
-# an app that reconnects instantly when a node is dropped has nothing to react
-# to when the node merely becomes miserable. The jitter matters more than the
-# bitrate — 400 ms ± 100 ms reorders packets badly enough to make a tunnelled
-# session unusable while leaving it technically connected.
+# Everything here is capped at 100 kbit/s each way, instead of being blocked
+# outright. The point is that a tunnel behaves like a bad connection rather than
+# a filtered one: there is no clean failure for the client to detect and route
+# around, and an app that reconnects instantly when a node is dropped has
+# nothing to react to when the node merely becomes slow.
+#
+# THE CAP IS NOW THE WHOLE OF IT — changed 2026-08-13. This file used to add
+# 400 ms of latency, 100 ms of jitter and 3% random loss on top, and the old
+# text here argued the jitter mattered more than the bitrate. Watching it work
+# says otherwise: the clients being shaped choose between candidate nodes by
+# RTT and loss, so impairing a node made it trivially easy for them to spot,
+# discard and go hunting for an unthrottled one. The impairment was advertising
+# which nodes had been touched.
+#
+# A bare rate cap does not show up in that scoring. A latency probe is a couple
+# of small packets and passes under the cap untouched, so the node keeps
+# measuring healthy and keeps being selected, while anything carrying real
+# traffic crawls. The client staying on a node that cannot move data is the
+# whole objective; a node it can tell is bad is a node it will replace.
+#
+# The queue under the cap is fq_codel, not a plain fifo, and that is part of the
+# same design — a deep fifo at 100 kbit/s is minutes of standing buffer, which
+# an RTT probe reads exactly the way it used to read netem's delay. See the
+# comment on the throttled class in qos.nix.
 #
 # Same format and same guarantees as custom-ip-blocklist.txt: parsed at build
 # time, so a typo fails the rebuild rather than silently shaping nothing, and
@@ -22,7 +38,10 @@
 #
 # TEST SITE: https://ash-speed.hetzner.com/ — Hetzner's Ashburn speed test.
 # Present so the shaping can be verified end to end from a LAN client: run the
-# speed test and the result should be ~100 kbit/s with visibly awful latency.
+# speed test and the result should be ~100 kbit/s. Latency should now look
+# ORDINARY — that is the point of the 2026-08-13 change, not a sign the shaping
+# has stopped working, so judge it on throughput alone. A ping to this address
+# staying fast while the transfer crawls is the shaper behaving correctly.
 # Remove it once the throttle is confirmed working.
 5.161.7.195
 
@@ -277,6 +296,12 @@
 # one. Two /24s of the same /16 across separate sessions suggests a range the
 # operator holds rather than a coincidence of rented hosts, so a wider block may
 # be justified if a third address appears.
+#
+# STALE AS WRITTEN — see the recount at the foot of this file (2026-08-13). The
+# condition set here was met long ago and nobody came back to it: there are now
+# EIGHT 79.142 addresses, not two, all AltusHost AS51430, spread across three of
+# its sub-allocations. The question this note raised is put to the user there
+# rather than being decided quietly by a later hand.
 79.142.79.185
 108.165.21.144
 199.244.102.118
@@ -2946,3 +2971,1743 @@
 # saying nothing. Weak on its own, and it is the newness of the allocation rather
 # than the /16 count that makes it worth the row.
 129.212.160.157
+#
+# === Two more, same round, same terms — no capture, desk check only.
+#
+# 151.115.79.178 — Scaleway SCALEWAY-WAW, PTR 178-79-115-151.instances.scw.cloud,
+# tcp/22 and tcp/443. Fixed upstream: Marriott International CN=www.marriott.com,
+# serial FA04DFD7F8F485260785F8AAF0E90B7A, unchanged across example.com,
+# swdist.apple.com and starbucks.com. The serial matches what the real
+# www.marriott.com serves today, so it is a live pass-through — fronting
+# established, no staleness, so not an image match. A fifth fronted name for this
+# file after starbucks.com, akamai.download.microsoft.com, www.apple.com and
+# assets.adobedtm.com.
+#
+# Worth its own line: the host octet. 151.115.78.178 was added earlier today and
+# this is .79.178 — consecutive /24s, identical final octet, and it is NOT a
+# transcription of the other. Both resolve to their own scw.cloud PTR, both were
+# probed separately, and they behave differently: .78.178 is a general SNI proxy
+# carrying the expired example.com certificate, this one is a single fixed
+# upstream. Same operator provisioning sequentially, not one host recorded twice.
+# If more arrive, .80.178 and up are worth checking before waiting for a handover.
+# Nineteenth 151.115 address, seventeenth in 151.115.0.0/17, first in
+# 151.115.79.0/24.
+151.115.79.178
+# 143.244.221.43 — DigitalOcean, 143.244.220.0/22, no PTR. tcp/22 and tcp/443
+# open, 443 accepts and never completes a handshake under any SNI, nothing on 80.
+# The silent listener again, and a thin row: second 143.244 address in the file
+# (after 143.244.186.128, a different /17 neighbourhood) and first in this /22.
+# Transport and handover only — nothing here corroborates it.
+143.244.221.43
+#
+# ===========================================================================
+# TWENTY-TWO ADDRESSES, 2026-08-12, handed over in four batches across one
+# session. NO CAPTURE for any of them: none was observed in traffic here, none
+# has a device, share or transport behind it. Everything below is a desk check —
+# PTR, RIPE/ARIN whois, Team Cymru origin AS, TCP reachability on 22/80/443/853,
+# TLS under several SNIs, and a DoH query with the body read. A later reader
+# should not mistake any of it for capture evidence.
+#
+# TWO METHOD CORRECTIONS FIRST, because both were made and caught inside this
+# batch and both would have put wrong words in the rows below.
+#
+# 1. PORT 53 CANNOT BE TESTED FROM HERE. This network blocks outbound 53, so a
+#    UDP or TCP/53 probe times out for every address on earth and proves nothing
+#    whatever. The first pass of this batch dutifully recorded "no answer on 53"
+#    for fourteen addresses as if it were a finding; it was the local firewall
+#    answering, not them. The resolver check that DOES work from here is DoH on
+#    443 — a /dns-query request with SNI cloudflare-dns.com, reading the BODY.
+#    Anything in this file that claims an address does not serve DNS on 53 is
+#    unverified unless it was probed from somewhere else.
+#
+# 2. `openssl s_client -brief </dev/null` LIES ABOUT -servername. On these hosts
+#    it printed no handshake at all for every named SNI while succeeding with
+#    -noservername, which reads exactly like a server that drops named SNI. It
+#    is an openssl artefact: the same connection through `curl -v --resolve`
+#    completes and shows the certificate. The first pass of this batch described
+#    five hosts as refusing named SNI on that basis, which was false. Use
+#    `curl -sk -v --resolve name:443:$ip https://name/` as the probe of record
+#    and treat openssl as a second opinion.
+#
+# WHAT THE CORRECTED PROBE SHOWS, and it is the most useful thing in this block:
+# the Akamai-fronting hosts are pass-throughs to ONE AKAMAI EDGE, not general
+# SNI proxies. The discriminator is a name Akamai does not host. Hand
+# 151.115.67.213 or 138.68.200.111 an SNI Akamai serves and the genuine
+# certificate comes back — example.com returns ICANN's *.example.com,
+# swdist.apple.com returns Apple's swcdn.apple.com, both with the chain
+# verifying. Hand either one www.wikipedia.org, github.com or www.google.com —
+# none of them Akamai customers — and both fall back to a248.e.akamai.net. A
+# general SNI proxy would have resolved those names and returned Wikipedia's and
+# GitHub's real certificates. These do not: they have one fixed upstream, and it
+# is an Akamai edge whose default certificate is a248.e.akamai.net.
+#
+# That reframes two things already written in this repo. The "returns a
+# DIFFERENT certificate per SNI, therefore a general SNI proxy" reading in the
+# entries above is not safe — one Akamai upstream produces exactly that. And the
+# certificate tally at the end of custom-ip-blocklist.txt (69 a248.e.akamai.net,
+# 10 www.apple.com, 7 swdist.apple.com, 6 akamai.download.microsoft.com, 5 each
+# www.honda.com, starbucks.com, assets.adobedtm.com, 4 www.marriott.com) is not
+# eight fronted brands; it is one upstream answering under whatever SNI the
+# scanner happened to send. The rescan worth doing sends a NON-Akamai name and
+# sorts hosts by whether they relay it or fall back.
+#
+# They are still relays and not Akamai: the origin AS is DigitalOcean, Scaleway,
+# THG or Hetzner in every case, the PTRs are instance defaults, and Akamai does
+# not deploy edge clusters into cloud tenant space. The refusal rule for real
+# CDN edge — Akamai PTRs, AS20940/16625, something the whole house reaches —
+# does not catch these. What cannot be settled from a desk check is whether each
+# one is a circumvention relay or something duller pointed at a CDN, and the
+# rows below say so rather than assuming.
+#
+# The resolver case was checked FIRST for all twenty-two, since that is the one
+# belonging in the other file: not one returned DNS JSON to a /dns-query request,
+# none presented a resolver certificate under SNI cloudflare-dns.com, and none
+# has 853 open. So none is a DoH relay and all twenty-two belong here. One came
+# close enough to be worth its own warning — 93.115.17.177.
+#
+# --- Five Akamai-edge pass-throughs on 443 ---------------------------------
+#
+# All five: TLS completes, the certificate tracks Akamai's hosting as described
+# above, and a DoH request returns AkamaiGHost's 400 "Invalid URL" page rather
+# than DNS.
+#
+# 151.115.67.213 — Scaleway AS12876, SCALEWAY-WAW 151.115.0.0/17, PTR
+# 213-67-115-151.instances.scw.cloud. Only tcp/443. FOURTH address in
+# 151.115.67.0/24 after .46, .61 and .40 — the densest /24 this file holds in
+# SCALEWAY-WAW and the best-corroborated row of the twenty-two. Still /32:
+# Scaleway sells single instances out of that range, so the neighbours in it are
+# only meaningful because they are already here, not because the /24 is anyone's.
+151.115.67.213
+# 138.68.204.158 — DigitalOcean AS14061, 138.68.204.0/22, no PTR, only tcp/443.
+# Second in 138.68.204.0/24 after 138.68.204.92.
+138.68.204.158
+# 107.182.236.139 — THG Hosting / UK2NET AS13213, 107.182.236.0/24, PTR
+# be2.colanland.com, tcp/22 and tcp/443.
+#
+# Read the existing note on this /24 before drawing anything from the range:
+# 107.182.236.0/24 is midphase.com shared hosting with hundreds of unrelated
+# tenants, so a third address in it (after .121 and .27) is NOT a range signal,
+# and the colanland.com PTR is operator naming shared with sixty neighbours.
+# What carries this row is the certificate behaviour, not the company it keeps.
+# Seventh THG address in the file. /32 and never wider.
+107.182.236.139
+# 137.184.241.231 — DigitalOcean AS14061, 137.184.240.0/22, no PTR, tcp/22 and
+# tcp/443. Third 137.184 address, first in this /22.
+137.184.241.231
+# 138.68.200.111 — DigitalOcean AS14061, 138.68.200.0/22, no PTR, tcp/22 and
+# tcp/443. THIRD in 138.68.200.0/24 after 138.68.200.35 and 138.68.200.113, and
+# .113 sits two addresses away from this one. That is the tightest clustering in
+# the batch. Carry over the caution from the .35 note: 138.68.0.0/16 also holds
+# 138.68.74.158, a SailfishX node, and that is a /16 coincidence rather than a
+# link — it is in neither this /22 nor this /24 and stays unrelated.
+138.68.200.111
+#
+# On the shared serial, since all five present it: 0373AB420F54941B555742D9AC-
+# 890626 is what the live a248.e.akamai.net (23.53.126.145) serves today,
+# expiring 22 Dec 2026. Checked, not assumed. A shared CURRENT serial is what
+# any pass-through to that upstream produces and is not fleet evidence; only a
+# STALE certificate the upstream has since rotated away from would be.
+#
+# --- Three that front Akamai on port 80 with 443 closed --------------------
+#
+# Same technique seen from the other side: no TLS listener at all, but a bare
+# request to :80 returns "Server: AkamaiGHost" with a 400 Invalid URL body, and
+# so does one carrying Host: example.com.
+#
+# 129.212.214.108 — DigitalOcean, 129.212.212.0/22 (the Mar 2025
+# DIGITALOCEAN-129-212-128-0 allocation), no PTR, reverse lookup times out.
+# Twelfth 129.212 address, third in this /22, second in 129.212.214.0/24 after
+# 129.212.214.160.
+129.212.214.108
+# 151.115.150.88 — Scaleway, but the OTHER announcement: SCALEWAY-PAR4
+# 151.115.128.0/19, Paris rather than Warsaw. PTR 88-150-115-151.instances.
+# scw.cloud, tcp/22 and tcp/80. Third in 151.115.128.0/19 after 151.115.146.148
+# and 151.115.150.240, second in 151.115.150.0/24.
+151.115.150.88
+# 45.55.101.50 — DigitalOcean, 45.55.100.0/22, no PTR, tcp/22 and tcp/80. THIRD
+# in 45.55.101.0/24 after .14 and .223, and the .223 note already records .14 as
+# demonstrably fronting. Sixth 45.55 address overall.
+45.55.101.50
+#
+# --- One Google-fronted relay, a form new to this file ---------------------
+#
+# 93.115.17.177 — MVPS LTD AS202448, Cyprus, 93.115.17.0/24, PTR
+# ip-93-115-17-177-144706.vps.hosted-by-mvps.net. First 93.115 address here.
+#
+# tcp/22, tcp/80 and tcp/443. Port 443 is a pass-through to GOOGLE with a fixed
+# upstream: example.com, cloudflare-dns.com, swdist.apple.com and a made-up
+# nonsense-xyz.test all return CN=*.google.com with the chain verifying, and SNI
+# www.google.com returns CN=www.google.com and HTTP 200. Note what that means
+# next to the Akamai hosts above — example.com is an Akamai-hosted name, and
+# this host does NOT return Akamai's certificate for it, so it is not resolving
+# the SNI either. It has one upstream and that upstream is Google's frontend.
+# No SNI at all gives Google's own "No SNI provided - please fix your client" /
+# CN=invalid2.invalid.
+#
+# Worth its own paragraph because every fronted host in this file until now has
+# pointed at Akamai. A second upstream provider for the same technique means the
+# Akamai-shaped scan that produced the tally above was looking at one half of
+# it; a rescan should count *.google.com and invalid2.invalid too.
+#
+# THE NEAR MISS, recorded so it is not repeated: a /dns-query request to this
+# host with SNI cloudflare-dns.com returns HTTP 404 over a valid, verifying
+# certificate. Status code alone reads as a resolver that happens to 404, and
+# this would have gone to the blocklist. The body is Google's own "Error 404
+# (Not Found)!!1" HTML — the relay forwards to Google, which has never heard of
+# the path. Read the body, always. Second time that check has been the
+# difference, after the FASTPANEL false positive in the other file.
+#
+# Port 80 serves an nginx/1.31.3 page titled "Backgammon", 20 KB of static HTML,
+# Last-Modified 2026-08-11 — the day before this handover. A plausible-looking
+# decoy landing page on a host whose 443 is a Google pass-through, put up the
+# day before. Behaviour, not proof.
+93.115.17.177
+#
+# --- Three silent 443 listeners --------------------------------------------
+#
+# The shape documented several times above, and confirmed here with curl rather
+# than openssl after correction 2: the TCP connection is accepted, the
+# ClientHello goes out, and no ServerHello ever comes back under any SNI or none
+# until the timeout. Nothing on 80.
+#
+# 138.197.236.186 — DigitalOcean, 138.197.236.0/22, no PTR, only tcp/443. Third
+# 138.197 address here, first in this /22. Do not confuse it with the 138.197
+# addresses in custom-ip-blocklist.txt (.89.51, .89.14, .87.175): those are DoH
+# resolvers found by the sweep, and this one serves no DNS on any transport
+# reachable from here.
+138.197.236.186
+# 151.115.78.181 — Scaleway SCALEWAY-WAW, PTR 181-78-115-151.instances.scw.cloud,
+# only tcp/443. Second in 151.115.78.0/24 after 151.115.78.178, and see
+# 151.115.78.233 below — this session carried .181 and .233 in that same /24, so
+# it now holds three. That strengthens the sequential-provisioning reading in the
+# 151.115.79.178 note, with the caveat that these two behave differently from
+# .178, which is a talkative proxy where these are silent.
+151.115.78.181
+# 159.203.48.133 — DigitalOcean, 159.203.48.0/22, no PTR, only tcp/443. Seventh
+# 159.203 address, and second in this /22 after 159.203.50.29 — which is one of
+# the three hosts named in the fronting note above, so the /22 has already
+# produced a relay.
+159.203.48.133
+#
+# --- Seven that expose only tcp/22 -----------------------------------------
+#
+# Nothing on 80, 443 or 853; a bare SSH listener and nothing else, and 53 could
+# not be tested at all (correction 1). This is the thinnest row this file
+# accepts: it establishes a rented instance and a handover and nothing about
+# tunnelling. Kept because the session they arrived in is otherwise coherent,
+# and flagged as weak rather than dressed up.
+#
+# 151.115.78.233 — Scaleway SCALEWAY-WAW, PTR 233-78-115-151.instances.scw.cloud.
+# Third in 151.115.78.0/24 (see .181 above); twentieth 151.115 address overall.
+151.115.78.233
+# 159.89.212.137 — DigitalOcean, 159.89.212.0/22, no PTR. Fifth 159.89 address,
+# first in this /22; the other four sit in four separate /20s, so 159.89
+# recurring is DigitalOcean being large rather than a block.
+159.89.212.137
+# 168.144.13.73 — DigitalOcean (ARIN still shows the pre-acquisition
+# NET-168-144-0-0-1 netname), 168.144.12.0/22, no PTR. Fifth 168.144 address and
+# SECOND in 168.144.13.0/24 after 168.144.13.190 — the one piece of
+# corroboration among these seven that is worth anything.
+168.144.13.73
+# 51.15.109.252 — Scaleway, and a THIRD Scaleway announcement in this batch:
+# SCALEWAY-AMS 51.15.0.0/17, Amsterdam. PTR 252-109-15-51.instances.scw.cloud.
+# Fifteenth address in 51.15.0.0/17, which is now the file's largest single
+# hosting range; nearest neighbour is 51.15.110.83, a different /24.
+51.15.109.252
+# 37.27.82.227 — Hetzner AS24940, CLOUD-HEL1 37.27.80.0/20, Helsinki, PTR
+# static.227.82.27.37.clients.your-server.de. Fourth 37.27 address after
+# .15.151, .25.51 and .91.243, and the second in the CLOUD-HEL1 /20 alongside
+# .91.243.
+37.27.82.227
+# 91.98.124.132 — Hetzner AS24940, CLOUD-NBG1 91.98.112.0/20, Nuremberg, PTR
+# static.132.124.98.91.clients.your-server.de. First 91.98 address in the file.
+# Same operator and same product as the one above, different datacentre.
+91.98.124.132
+# 195.191.196.51 — WYBT-NET, AS59645 (DE), 195.191.196.0/24, PTR
+# cndt15.sbr01.as59645.net. Handed over with the least confidence of the batch
+# and with a specific question — is it DoH? It is not, and it cannot be: 443 and
+# 853 are both closed, so there is no endpoint to serve DoH from, and the query
+# returns no connection at all rather than an error page.
+#
+# What lifts it anyway is the file itself: 195.191.196.45 is already here, six
+# addresses away in the same /24, and its note records the same dead end — the
+# RIPE descr for this AS is a joke string with no organisation behind it to
+# correlate against. Two addresses in one /24 of a tiny single-/23 AS is a much
+# tighter coincidence than two in DigitalOcean, and it is the whole case for
+# this row. The PTR is structured operator naming (cndt15.sbr01) rather than a
+# cloud default, which says the operator names its hosts and nothing more.
+195.191.196.51
+#
+# --- Two with nothing open at all ------------------------------------------
+#
+# Every port probed was closed or filtered, so there is no service to
+# characterise and no certificate to read. These are the weakest entries in the
+# file: a DigitalOcean allocation plus a handover, full stop. A firewalled node
+# that answers only its own client looks exactly like this, and so does a
+# decommissioned instance; the row cannot tell them apart.
+#
+# 146.190.9.165 — DO-13, 146.190.8.0/22. Ninth 146.190 address, first in this /22.
+146.190.9.165
+# 159.223.241.91 — DO-13, 159.223.240.0/22. First 159.223 address in the file.
+159.223.241.91
+#
+# --- One mobile-carrier address, filed with the residential-exit reading -----
+#
+# 45.112.44.45 — AS136255 TIMCL-AS-AP, Telecom International Myanmar (Mytel),
+# inetnum 45.112.44.0 - 45.112.47.255, netname TIMCL-MM, prefix 45.112.44.0/24.
+# No PTR, nothing open. First 45.112 address here.
+#
+# This is NOT rented hosting: it is a Myanmar mobile carrier, so it belongs with
+# 1.54.217.114 (FPT Vietnam), 113.203.97.98 (MCCI mobile Iran) and 77.134.75.31
+# (SFR fibre France) rather than with the cloud rotation above. A fifth
+# residential/mobile exit, a fifth country, a second mobile carrier — the supply
+# model those four notes describe.
+#
+# Every caveat written against 113.203.97.98 applies here in full and is part of
+# this row: a mobile address sits behind carrier NAT, fronts many subscribers at
+# once, and is reassigned on a timescale of hours. The collateral is bounded by
+# direction — this file only shapes traffic between this house and that address
+# — so an unrelated Mytel subscriber inheriting it is affected only if somebody
+# here also talks to them, which for a Myanmar mobile address is realistically
+# nothing. Cheap to hold, worthless to trust: re-verify rather than believing
+# the row, and it is the first entry to drop if this file is ever pruned.
+#
+# Filed on shape, and shape is all there is — nothing was open to probe.
+45.112.44.45
+# ===========================================================================
+#
+# ===========================================================================
+# FOURTEEN MORE, same session, 2026-08-12 — batch five, bringing this session to
+# thirty-six. Same terms as the block above: NO CAPTURE, desk check only, and
+# the two method corrections at the head of that block (outbound 53 is blocked
+# here so it is never testable; curl is the probe of record, not
+# `openssl -brief`) apply to every row here. Not one of the fourteen serves DoH:
+# every /dns-query request came back as either AkamaiGHost's 400 page or no
+# connection at all, and none has 853 open. All fourteen belong in this file.
+#
+# THE WIKIPEDIA TEST SPLIT THE FRONTING HOSTS IN TWO, which the block above
+# could not do because every fronted host it found behaved the same way. Handing
+# each host a name Akamai does not serve now separates:
+#
+#   * SNI-FOLLOWING pass-through to an Akamai EDGE — example.com returns ICANN's
+#     real certificate, www.wikipedia.org falls back to a248.e.akamai.net. The
+#     upstream is a whole edge node serving many customers.
+#   * FIXED-NAME upstream — one certificate for every SNI, whatever you ask for,
+#     including wikipedia. The upstream is a single property, not an edge.
+#
+# Both are relays and both are shaped, but they are different configurations and
+# an entry that does not say which one it saw is not reproducible. The
+# fixed-name form also explains the brand tally in custom-ip-blocklist.txt more
+# precisely than the block above does: hosts pinned to www.apple.com or
+# assets.adobedtm.com produce exactly those counts no matter what SNI a scanner
+# sends, so the tally mixes fixed-name hosts with edge pass-throughs and cannot
+# be read as a preference for particular brands.
+#
+# --- One SNI-following Akamai-edge pass-through ----------------------------
+#
+# 51.15.113.158 — Scaleway AS12876, SCALEWAY-AMS 51.15.0.0/17, PTR
+# 158-113-15-51.instances.scw.cloud, only tcp/443. example.com returns ICANN's
+# *.example.com, www.wikipedia.org falls back to a248.e.akamai.net: the same
+# edge pass-through as the five in the block above. Sixteenth address in
+# 51.15.0.0/17; nearest is 51.15.110.83, three /24s away.
+51.15.113.158
+#
+# --- Two fixed-name upstreams ----------------------------------------------
+#
+# 129.212.216.134 — DigitalOcean, 129.212.216.0/22 (Mar 2025 allocation), no
+# PTR, reverse lookup times out, only tcp/443. EVERY SNI returns Apple Inc.'s
+# CN=www.apple.com with the chain verifying — example.com, www.wikipedia.org,
+# cloudflare-dns.com alike. It is not resolving names and it is not an edge; it
+# has one upstream and that upstream is Apple's Akamai-hosted www.apple.com.
+# Thirteenth 129.212 address and first in this /22.
+129.212.216.134
+# 151.115.76.17 — Scaleway SCALEWAY-WAW, PTR 17-76-115-151.instances.scw.cloud,
+# tcp/22 and tcp/443. Every SNI returns Adobe Inc.'s CN=assets.adobedtm.com,
+# wikipedia included. FOURTH address in 151.115.76.0/24 after .240, .114 and
+# .174, which makes this /24 the second-densest the file holds in SCALEWAY-WAW
+# after 151.115.67.0/24. Twenty-first 151.115 address before this session's
+# other additions.
+151.115.76.17
+#
+# --- Two fronting Akamai on port 80, 443 closed ----------------------------
+#
+# 134.199.141.177 — DigitalOcean, 134.199.140.0/22, no PTR. Only tcp/80, which
+# answers "Server: AkamaiGHost" 400 to a bare request and to one carrying
+# Host: example.com. Second 134.199 address after 134.199.177.112, first in this
+# /22 — and see 134.199.140.34 below, which arrived in the same handover and is
+# in the same /22.
+134.199.141.177
+# 185.222.106.121 — AS214623, 2644819 Ontario Inc, a numbered Ontario company on
+# a RIPE-registered (EE) allocation, inetnum 185.222.106.0 - 185.222.106.127. No
+# PTR. tcp/22 and tcp/80, AkamaiGHost again.
+#
+# The strongest range signal in this session: 185.222.106.86 and 185.222.106.24
+# are already in this file, and all three sit inside that same /25 — a
+# 128-address allocation to one small company, not a cloud provider's pool. That
+# is the shape where a range rule would actually be defensible. Kept as /32
+# anyway, consistent with the rest of the file, but if a fourth arrives from
+# this /25 the range is worth revisiting rather than adding a fourth row.
+185.222.106.121
+#
+# --- One silent 443 listener -----------------------------------------------
+#
+# 174.138.96.218 — DigitalOcean, 174.138.96.0/22, no PTR, tcp/22 and tcp/443.
+# TCP connects, the ClientHello goes unanswered under every SNI, nothing on 80.
+# Third 174.138 address and SECOND in 174.138.96.0/24 after 174.138.96.149.
+174.138.96.218
+#
+# --- Six that expose only tcp/22 -------------------------------------------
+#
+# Bare SSH listener, nothing else reachable, and 53 untestable from here. The
+# thin row again: rented instance plus handover, nothing about tunnelling. Two
+# of the six carry real corroboration from the file and are marked as such.
+#
+# 51.15.84.56 — Scaleway SCALEWAY-AMS, PTR 56-84-15-51.instances.scw.cloud.
+# Seventeenth in 51.15.0.0/17; 51.15.85.57 is in the adjacent /24.
+51.15.84.56
+# 151.115.72.73 — Scaleway SCALEWAY-WAW, PTR 73-72-115-151.instances.scw.cloud.
+# Second in 151.115.72.0/24 after 151.115.72.41.
+151.115.72.73
+# 129.212.249.218 — DigitalOcean, 129.212.248.0/22 (Mar 2025 allocation), no
+# PTR. THIRD in that /22 after 129.212.250.132 and 129.212.250.226, both of
+# which were added earlier today. Same recently-issued allocation producing a
+# third address inside a day is the one thing here worth more than the handover.
+129.212.249.218
+# 174.138.121.18 — DigitalOcean, 174.138.120.0/22, no PTR. Fourth 174.138
+# address, first in this /22.
+174.138.121.18
+# 138.68.120.89 — DigitalOcean, 138.68.120.0/23, no PTR. Second in that /23
+# after 138.68.120.206, which was added earlier today. Tenth 138.68 address.
+138.68.120.89
+# 138.197.242.62 — DigitalOcean, 138.197.240.0/22, no PTR. Fourth 138.197
+# address in this file and first in this /22. Nothing on 443 at all, so unlike
+# 138.197.236.186 above it is not even a silent listener — just SSH.
+138.197.242.62
+#
+# --- Two with nothing open at all ------------------------------------------
+#
+# No port answered, so there is nothing to characterise. Weakest rows in the
+# file; a firewalled node and a decommissioned instance look identical from here.
+#
+# 134.199.140.34 — DigitalOcean, 134.199.140.0/22, no PTR. Second address from
+# this /22 in this handover alongside 134.199.141.177 above, which is the only
+# reason it is more than a bare allocation note — and 141.177 is one of the
+# fronting hosts, so the /22 has produced one confirmed relay.
+134.199.140.34
+# 51.159.154.206 — Scaleway AS12876, announced inside 51.158.0.0/15, PTR
+# 206-154-159-51.instances.scw.cloud. Fourth 51.159 address after .150.145,
+# .160.202 and .191.145.
+#
+# The netname here is ONLINENET_DEDICATED_SERVERS, which is the exact trap this
+# repo has documented before: it reads like bare metal, and the PTR says
+# instances.scw.cloud — a cloud instance. PTR and AS decide, never the netname.
+51.159.154.206
+# ===========================================================================
+#
+# ===========================================================================
+# ELEVEN MORE, same session, 2026-08-12 — batch six, bringing this session to
+# forty-seven. Same terms: NO CAPTURE, desk check only, and both method
+# corrections at the head of the first block apply (outbound 53 is blocked here
+# and is never testable; curl is the probe of record). None of the eleven serves
+# DoH and none has 853 open, so all eleven belong in this file.
+#
+# --- The one row in this session with a real tunnel signature ---------------
+#
+# 88.208.225.105 — Fasthosts Internet Ltd, "UK Next Generation Cloud Server
+# (NGCS)", inetnum 88.208.224.0 - 88.208.227.255, announced by AS8560 IONOS SE
+# (Fasthosts is IONOS-owned, so the AS name and the inetnum name disagree
+# without either being wrong). No PTR. tcp/22 and tcp/443.
+#
+# CORRECTED 2026-08-13: this row first said "first 88.208 address in this file
+# and the first Fasthosts/IONOS host in it at all". Both were wrong.
+# 88.208.240.76 — IONOS AS8560, opaque tcp/554 — has been in this file all
+# along, on a line carrying a trailing comment, which the counting command used
+# throughout that session silently skipped. See the note on that trap at the
+# foot of the file. This is the SECOND 88.208 address and the second IONOS host.
+#
+# Everything else in this session fronts somebody else's certificate or says
+# nothing at all. This one presents its OWN: CN=qnhyg.com, self-signed (issuer
+# and subject both CN=qnhyg.com), valid 10 Apr 2026 to 10 Apr 2027, returned for
+# every SNI including www.wikipedia.org. Behind it, every path returns an empty
+# 404 with Content-Type text/plain and a zero-length body, over TLS 1.3 with
+# X25519MLKEM768 — a current post-quantum-hybrid stack, so recent software.
+#
+# What makes it a signature rather than a curiosity: QNHYG.COM IS NOT A
+# REGISTERED DOMAIN. VeriSign returns "No match", and it is NXDOMAIN in DNS. So
+# no client can ever have reached this host by that name; the certificate exists
+# only so that a handshake completes for a client that already knows the address
+# and the name to send. Self-signed cert for a nonexistent domain, plus an empty
+# 404 for anything unauthenticated, is the standard camouflage of a TLS-carried
+# proxy (the trojan/VLESS family). That is the closest thing to a positive
+# identification anywhere in these forty-seven rows, and it is still an
+# inference from behaviour, not a capture.
+#
+# Worth reusing: an unregistered CN is cheap to test and hard to fake innocently.
+# Any host in this file presenting a self-signed certificate is worth a whois on
+# the name in it.
+88.208.225.105
+#
+# --- One silent 443 listener, and one that was wrongly called silent --------
+#
+# 129.212.249.209 — DigitalOcean, 129.212.248.0/22 (Mar 2025 allocation), no
+# PTR, only tcp/443, ClientHello unanswered under every SNI. FOURTH address in
+# that /22 and second in 129.212.249.0/24 — 129.212.249.218 arrived nine
+# addresses away in batch five of this same session, with .250.132 and .250.226
+# added earlier today. One recently-issued /22 has now produced four addresses
+# inside a day, which is the tightest temporal cluster in the file. Fifteenth
+# 129.212 address overall.
+129.212.249.209
+# 51.158.235.85 — Scaleway SCALEWAY-AMS, 51.158.128.0/17, PTR
+# 85-235-158-51.instances.scw.cloud, tcp/22 and tcp/443. THIRD in
+# 51.158.235.0/24 after 51.158.235.31 and 51.158.235.229.
+#
+# CORRECTION, made within the hour: this row first said "silent", on the
+# strength of one unanswered ClientHello. It is not silent — it is a FIXED-NAME
+# upstream, and retrying gets Microsoft Corporation's CN=akamai.download.
+# microsoft.com for every SNI tried (example.com, www.wikipedia.org, github.com,
+# swdist.apple.com), with a /dns-query request returning AkamaiGHost's 400 page.
+# Same configuration as 151.115.146.43 in the batch below, on a different
+# provider.
+#
+# THE METHOD POINT, which is worth more than the row: A SINGLE UNANSWERED
+# CLIENTHELLO IS NOT SILENCE. These hosts drop connections intermittently — one
+# of them refused the very name it fronts on one attempt and served it on the
+# next. Every "silent listener" in this file should have been probed three
+# times before being written down. The other six so described in this session
+# were re-probed three times each after this was caught and stayed silent
+# throughout; this one was the only false reading. Retry before recording.
+51.158.235.85
+#
+# --- Four that expose only tcp/22 ------------------------------------------
+#
+# 82.163.75.141 — THG Hosting / UK2NET AS13213, 82.163.74.0/23, no PTR. Second
+# in 82.163.75.0/24 after 82.163.75.240. Read with the correction already
+# recorded above: AS13213 announces 388 prefixes and is an ordinary ISP
+# footprint, so the AS is the wrong unit and a /24 repeat inside it is two
+# customers' worth of address space, not an attributable block.
+82.163.75.141
+# 45.55.106.130 — DigitalOcean, 45.55.104.0/22, no PTR. Seventh 45.55 address,
+# first in this /22.
+45.55.106.130
+# 151.115.13.6 — Scaleway SCALEWAY-WAW, PTR 6-13-115-151.instances.scw.cloud.
+# Notable for where it sits: the other twenty-four 151.115 addresses in this
+# file have third octets from 45 to 79 (plus two in the Paris /19 at 146 and
+# 150), and this is the first below 45. A different part of the same allocation
+# rather than more of the same neighbourhood.
+151.115.13.6
+# 138.68.120.144 — DigitalOcean, 138.68.120.0/23, no PTR. THIRD in that /23
+# after 138.68.120.206 (earlier today) and 138.68.120.89 (batch five of this
+# session). Twelfth 138.68 address.
+138.68.120.144
+#
+# --- Four with nothing open at all -----------------------------------------
+#
+# No port answered; nothing to characterise. Weakest rows in the file.
+#
+# 209.38.125.51 — DigitalOcean DO-13, 209.38.124.0/22, no PTR. Seventh 209.38
+# address, first in this /22.
+209.38.125.51
+# 82.163.73.83 — THG Hosting, inetnum 82.163.73.0/24, netname High-Volume-100TB,
+# descr "UK-2 Limited". Second in that /24 after 82.163.73.180.
+#
+# It has a PTR, gun.superiorselm.com, and that name is worth one line so nobody
+# chases it: SUPERIORSELM.COM IS UNREGISTERED — VeriSign returns "No match", and
+# it is NXDOMAIN. So the reverse record points at a name with no forward record,
+# which is stale hosting-customer naming rather than anything live. It is not
+# the qnhyg.com case above: there the unregistered name is on a certificate the
+# host actively serves, here it is only a leftover PTR string.
+82.163.73.83
+# 51.158.240.86 — Scaleway SCALEWAY-AMS, PTR 86-240-158-51.instances.scw.cloud.
+# Twelfth address in 51.158.128.0/17; nearest are 51.158.239.227 and
+# 51.158.242.175, neither in this /24.
+51.158.240.86
+# 51.158.237.179 — Scaleway SCALEWAY-AMS, PTR 179-237-158-51.instances.scw.cloud.
+# Second in 51.158.237.0/24 after 51.158.237.185 — six addresses apart.
+#
+# With this and 51.158.235.85 above, 51.158.128.0/17 now holds thirteen and is
+# the file's largest Scaleway concentration after 51.15.0.0/17. Still /32 each:
+# it is a /17 of general-purpose cloud, and the density says where the client
+# shops rather than what it owns.
+51.158.237.179
+# ===========================================================================
+#
+# ===========================================================================
+# NINE MORE, same session, 2026-08-12 — batch seven, bringing this session to
+# fifty-six. Handed over as ten, but 82.163.74.84 appeared twice in the list;
+# it is one address and has one row. Same terms as every block above: NO
+# CAPTURE, desk check only, outbound 53 untestable, curl as the probe of record.
+# None serves DoH, none has 853 open, all nine belong in this file.
+#
+# EVERY 443 HOST HERE WAS PROBED THREE TIMES before being described, following
+# the correction recorded against 51.158.235.85 above. One host in this batch
+# proves why: 129.212.152.58 returned no handshake for www.wikipedia.org on the
+# first attempt and served its certificate for that exact name on the retry —
+# and on another pass it refused the one name it actually fronts. The drops are
+# intermittent and mean nothing; only a repeated result does.
+#
+# --- One SNI-following Akamai-edge pass-through ----------------------------
+#
+# 170.64.254.149 — DigitalOcean, 170.64.248.0/21, no PTR, only tcp/443.
+# example.com returns ICANN's real *.example.com, www.wikipedia.org falls back
+# to a248.e.akamai.net, and /dns-query gets AkamaiGHost's 400 page: an edge
+# pass-through. Eighth 170.64 address in the file, second in this /21 after
+# 170.64.251.147.
+170.64.254.149
+#
+# --- Two fixed-name upstreams ----------------------------------------------
+#
+# 151.115.146.43 — Scaleway SCALEWAY-PAR4, 151.115.128.0/19, PTR
+# 43-146-115-151.instances.scw.cloud, tcp/22 and tcp/443. Every SNI returns
+# Microsoft Corporation's CN=akamai.download.microsoft.com, issued by Microsoft
+# TLS G2 ECC CA OCSP 06 — wikipedia and github included, so it is pinned to that
+# one property rather than following the name. Second in 151.115.146.0/24 after
+# 151.115.146.148, and fourth in the PAR4 /19 alongside 151.115.150.240 and
+# 151.115.150.88.
+#
+# Same upstream as 51.158.235.85 above, on a different Scaleway announcement —
+# two hosts pinned to the same Microsoft property is the first repeat of a
+# fixed-name upstream in this file, and it is a better link between two hosts
+# than any shared Akamai serial, because a fixed-name relay had to be configured
+# for that name deliberately.
+151.115.146.43
+# 129.212.152.58 — DigitalOcean, 129.212.144.0/20 (Mar 2025 allocation), no PTR,
+# reverse lookup times out, only tcp/443. Every SNI returns Marriott
+# International's CN=www.marriott.com, issuer Sectigo Public Server
+# Authentication CA OV R40 — which matches what the live www.marriott.com serves
+# today, checked rather than assumed, so this is a current pass-through and not
+# a stale copy. Second in 129.212.152.0/24 after 129.212.152.181, fourth in that
+# /20, sixteenth 129.212 address overall.
+#
+# Note for the fronted-name tally: this is the second Marriott-pinned host here
+# after 151.115.79.178, which the note above describes as a fixed upstream on
+# the same evidence.
+129.212.152.58
+#
+# --- Three fronting Akamai on port 80, 443 closed --------------------------
+#
+# 51.159.144.97 — Scaleway, announced inside 51.158.0.0/15, PTR
+# 97-144-159-51.instances.scw.cloud, tcp/22 and tcp/80, AkamaiGHost 400. Fifth
+# 51.159 address. Netname is ONLINENET_DEDICATED_SERVERS again — a cloud
+# instance despite the name, exactly as recorded against 51.159.154.206.
+51.159.144.97
+# 45.55.112.12 — DigitalOcean, 45.55.112.0/22, no PTR, tcp/22 and tcp/80,
+# AkamaiGHost. THIRD in 45.55.112.0/24 after 45.55.112.130 and 45.55.112.142.
+# Eighth 45.55 address.
+45.55.112.12
+# 134.199.184.218 — DigitalOcean, 134.199.184.0/22, no PTR, tcp/22 and tcp/80,
+# AkamaiGHost. Fourth 134.199 address, first in this /22; the other three are
+# 134.199.177.112 and the 134.199.140.0/22 pair added earlier in this session.
+134.199.184.218
+#
+# --- One silent 443 listener -----------------------------------------------
+#
+# 157.230.78.216 — DigitalOcean, 157.230.76.0/22, no PTR, only tcp/443, and
+# silent across three attempts. Second 157.230 address after 157.230.72.25,
+# which is in the neighbouring /22 rather than this one.
+157.230.78.216
+#
+# --- Two that expose only tcp/22 -------------------------------------------
+#
+# 82.163.74.84 — THG Hosting / UK2NET AS13213, 82.163.74.0/23, no PTR. THIRD in
+# 82.163.74.0/24 after 82.163.74.147 and 82.163.74.211, eighth 82.163 address,
+# and fifteenth THG address across 82.163 and 107.182. The /24 caution stands:
+# AS13213 is an ordinary ISP footprint and a /24 inside it is several customers'
+# address space, so density here says where the client rents, not what it holds.
+82.163.74.84
+# 188.166.128.236 — DigitalOcean, inetnum 188.166.128.0/22 (netname
+# DIGITALOCEAN, RIPE-registered rather than ARIN), no PTR. Ninth 188.166 address
+# and second in this /22 after 188.166.130.3.
+188.166.128.236
+# ===========================================================================
+#
+# ===========================================================================
+# EIGHTEEN MORE, same session, 2026-08-12 — batch eight, bringing this session
+# to seventy-four. Desk check only as before, with one difference: the handover
+# said of the residential-looking addresses that they are "strange call-like
+# connections that tunnel VPN traffic". That is reported context, not something
+# verified here, and it is recorded as such — but it matches the reading the
+# residential-exit notes above already give, and it is why the two carrier
+# addresses in this batch are kept rather than refused.
+#
+# A FINDING THAT UNDERMINES A SIGNATURE THIS FILE LEANS ON HEAVILY, and it
+# should be read before trusting any "AkamaiGHost" row above. The genuine Akamai
+# edge was fetched directly for comparison — 23.53.126.145, the live
+# a248.e.akamai.net — and it returns THE IDENTICAL "Server: AkamaiGHost" 400
+# Invalid URL page, same body, same length, as every relay in this session. So
+# that response does NOT distinguish a relay from real CDN edge. It only says
+# "an Akamai edge is on the other end of this", which is equally true of both.
+#
+# What actually distinguishes them, and what every row here rests on instead:
+#
+#   * THE NETWORK. DigitalOcean, Scaleway, THG, Hetzner and Fasthosts tenant
+#     space is not where Akamai deploys edge clusters. The AS is the evidence.
+#   * SSHD. The real edge has tcp/22 CLOSED. Every relay checked in this session
+#     answers with an OpenSSH banner. An Akamai appliance does not offer you a
+#     shell.
+#
+# That second test is what decided 205.237.95.199 below, which is the first
+# address in this file where the refusal rule genuinely had to be weighed.
+#
+# A NEGATIVE RESULT, recorded so it is not re-derived: SSH banners were
+# collected from thirty-odd hosts in this session to test whether the relays
+# share a build. THEY DO NOT. Versions run 7.0 through 10.2 with no pattern —
+# OpenSSH 7.0 and 8.4 both appear on fronting hosts, 7.2 and 10.2 both on hosts
+# that front nothing. It looks like a pool of separately rented instances, not a
+# fleet from one image. The banner is useful for telling a relay from a CDN
+# appliance and useless for grouping the relays.
+#
+# --- Two Akamai-edge pass-throughs on 443 ----------------------------------
+#
+# 174.138.96.163 — DigitalOcean, 174.138.96.0/22, no PTR, tcp/22 and tcp/443,
+# sshd OpenSSH 7.0. example.com returns ICANN's real certificate,
+# www.wikipedia.org falls back to a248.e.akamai.net. THIRD in 174.138.96.0/24
+# after 174.138.96.149 and 174.138.96.218, the latter added earlier in this
+# session. Fifth 174.138 address.
+174.138.96.163
+# 205.237.95.199 — AS21949 BEANFIELD, Beanfield Technologies Inc, Canada. Legacy
+# ARIN space (205.237.88.0 - 205.237.95.255) with a RIPE-held object;
+# announcement is 205.237.95.0/24. No PTR. tcp/22 and tcp/443. Same edge
+# pass-through behaviour as the address above.
+#
+# THIS IS THE ONE THAT NEEDED THE REFUSAL RULE APPLIED PROPERLY. Beanfield is a
+# Canadian fibre ISP, not a cloud provider, and "an ISP-hosted POP fronting
+# Akamai" is exactly the description of a real Akamai edge node deployed inside
+# a carrier — which this file must never shape. Three things decided it is not:
+#
+#   * tcp/22 answers SSH-2.0-OpenSSH_7.1, a 2015-era build. The genuine Akamai
+#     edge at 23.53.126.145 has 22 closed. CDN appliances do not run public sshd.
+#   * 205.237.95.191 and 205.237.95.93 are ALREADY in this file, both in this
+#     same /24, from earlier rounds, alongside 205.237.92.128. This makes the
+#     fourth 205.237 address and the third in 205.237.95.0/24.
+#   * Nothing here reaches Beanfield for anything else, so the collateral is
+#     bounded by direction in the way the Akamai refusals above are not — those
+#     were addresses the whole house talks to constantly.
+#
+# Kept as /32. If the rest of the house ever starts reaching Beanfield, revisit.
+205.237.95.199
+#
+# --- Four fronting Akamai on port 80, 443 closed ---------------------------
+#
+# 51.158.238.13 — Scaleway SCALEWAY-AMS, 51.158.128.0/17, PTR
+# 13-238-158-51.instances.scw.cloud, only tcp/80. Fifteenth address in that /17.
+51.158.238.13
+# 173.244.210.251 — THG Hosting / UK2NET AS13213, 173.244.210.0/24, PTR
+# 173.244.210.251.static.midphase.com, only tcp/80. First 173.244 address in
+# this file, and a THIRD midphase range after 107.182.236.0/24 and the 82.163
+# announcements — the same shared-hosting operator, so read the standing
+# caution: midphase /24s hold hundreds of unrelated tenants and the PTR style is
+# shared with all of them. /32 and nothing wider, ever, in this range.
+173.244.210.251
+# 138.68.120.222 — DigitalOcean, 138.68.120.0/23, no PTR, only tcp/80. FOURTH in
+# that /23 — after 138.68.120.206 (earlier today), 138.68.120.89 and
+# 138.68.120.144 (both earlier in this session). One /23 has produced four
+# addresses inside a day, and this is the first of the four to show what it is:
+# the other three are bare SSH listeners, this one fronts. That is the clearest
+# evidence in the file that the ssh-only rows are the same population as the
+# fronting rows rather than filler.
+138.68.120.222
+# 167.99.31.136 — DigitalOcean, 167.99.28.0/22, no PTR, tcp/22 and tcp/80, sshd
+# OpenSSH 7.3. First 167.99 address in THIS file — but note 167.99.125.77 is in
+# custom-ip-blocklist.txt as a DoH resolver from the sweep. Different /22, and
+# this one has 443 closed so it serves no DoH at all; the two are unrelated
+# beyond the provider. Recorded because a future reader grepping "167.99" will
+# find both and should not merge them.
+167.99.31.136
+#
+# --- Four silent listeners, each probed three times ------------------------
+#
+# 163.172.149.48 — Scaleway SCALEWAY-DEDIBOX 163.172.0.0/16, Paris, PTR
+# 48-149-172-163.instances.scw.cloud, tcp/22 and tcp/443, sshd OpenSSH 8.5.
+# ClientHello unanswered on three attempts. Second 163.172 address after
+# 163.172.147.4, and a Scaleway range this file has barely touched.
+163.172.149.48
+# 129.212.250.123 — DigitalOcean, 129.212.248.0/22 (Mar 2025 allocation), no
+# PTR, only tcp/443, silent on three attempts. FIFTH address in that /22 within
+# one day, and the third in 129.212.250.0/24 after .132 and .226. That /22 is
+# now the densest recent-allocation cluster in the file.
+129.212.250.123
+# 51.158.245.37 — Scaleway SCALEWAY-AMS, PTR 37-245-158-51.instances.scw.cloud,
+# tcp/22 and tcp/443, sshd OpenSSH 7.3, silent on three attempts. Sixteenth
+# address in 51.158.128.0/17.
+51.158.245.37
+# 45.55.121.52 — DigitalOcean, 45.55.120.0/22, no PTR. A VARIANT NOT SEEN BEFORE
+# IN THIS FILE: the silence is on port 80, not 443. tcp/80 accepts the
+# connection, takes a complete HTTP request and then sends nothing back at all,
+# on three attempts; 443 is closed and 22 is closed. Every other silent listener
+# here does that on 443. Ninth 45.55 address, first in this /22.
+45.55.121.52
+#
+# --- Three that expose only tcp/22 -----------------------------------------
+#
+# 46.225.6.243 — Hetzner AS24940, CLOUD-NBG1 46.225.0.0/20, Nuremberg, PTR
+# static.243.6.225.46.clients.your-server.de, sshd OpenSSH 9.6p1 Ubuntu.
+#
+# CORRECTED 2026-08-13: written as "THIRD 46.225 address after 46.225.17.127 and
+# 46.225.132.30". It is the FOURTH — 46.225.22.118 was already here, on a line
+# with a trailing comment that the counting command skipped (see the foot of the
+# file). Hetzner therefore stands at ten addresses, not nine, across 37.27,
+# 46.225, 91.98 and 178.104.
+46.225.6.243
+# 51.158.235.8 — Scaleway SCALEWAY-AMS, PTR 8-235-158-51.instances.scw.cloud.
+# FOURTH in 51.158.235.0/24 after .31, .229 and .85 — the densest /24 the file
+# holds in Scaleway Amsterdam, and .85 (corrected above to a Microsoft
+# fixed-name relay) is the one that shows what the neighbourhood is for.
+51.158.235.8
+# 178.104.194.219 — Hetzner AS24940, CLOUD-NBG1 178.104.192.0/20, PTR
+# static.219.194.104.178.clients.your-server.de, sshd OpenSSH 10.2p1 Ubuntu —
+# the newest build seen in this session, on the same product as the 2015-era
+# ones elsewhere. First 178.104 address in the file.
+178.104.194.219
+#
+# --- Three with nothing open at all ----------------------------------------
+#
+# 82.163.75.109 — THG Hosting / UK2NET, 82.163.74.0/23, no PTR. THIRD in
+# 82.163.75.0/24 after 82.163.75.240 and 82.163.75.141, the latter added earlier
+# in this session. Ninth 82.163 address, sixteenth THG address overall.
+82.163.75.109
+# 129.212.213.139 — DigitalOcean, 129.212.212.0/22 (Mar 2025), no PTR, reverse
+# lookup times out. Fourth in that /22 after 129.212.214.160, 129.212.212.224
+# and 129.212.214.108.
+129.212.213.139
+# 170.64.255.21 — DigitalOcean, 170.64.248.0/21, no PTR. THIRD in that /21 after
+# 170.64.251.147 and 170.64.254.149, the latter from batch seven of this
+# session. Ninth 170.64 address.
+170.64.255.21
+#
+# --- Two residential / mobile carrier addresses ----------------------------
+#
+# These two are NOT rented hosting and must not be read as more of the cloud
+# rotation. They belong with 1.54.217.114 (FPT Vietnam), 113.203.97.98 (MCCI
+# mobile Iran), 77.134.75.31 (SFR fibre France) and 45.112.44.45 (Mytel mobile
+# Myanmar, added earlier in this session) — the residential exit pool.
+#
+# Every caveat in those notes applies here in full: consumer and mobile
+# addresses are dynamically reassigned, mobile ones sit behind carrier NAT and
+# front many subscribers at once, and the only thing keeping the collateral
+# acceptable is direction — this file shapes traffic between this house and that
+# address alone, so an unrelated subscriber inheriting it is affected only if
+# somebody here also talks to them. Re-verify rather than trusting these rows;
+# they are the first to drop in any prune.
+#
+# 187.188.178.92 — AS22884 Total Play Telecomunicaciones, Mexico, 187.188.0.0/15,
+# PTR fixed-187-188-178-92.totalplay.net. The PTR is the carrier's own
+# subscriber naming and "fixed-" says fixed-line rather than mobile, so this is
+# residential FTTH. Nothing open, which is what a consumer line looks like.
+# First Mexican address and first Total Play address in this file — a sixth
+# country for the residential pool.
+187.188.178.92
+# 37.111.43.47 — AS133385 Atom Myanmar Limited (formerly Telenor Myanmar), MM,
+# 37.111.43.0/24. The RIPE object is a NON-RIPE-NCC-MANAGED placeholder, so the
+# useful attribution is the APNIC/BGP one. No PTR, nothing open.
+#
+# This is the SECOND MYANMAR MOBILE CARRIER in one session, after 45.112.44.45
+# on Mytel. Two different Burmese operators, handed over hours apart, is a
+# stronger signal than either alone: a residential exit pool weighted toward one
+# small country, which is what these tools look like when a particular market is
+# being used for egress. Worth watching for a third.
+37.111.43.47
+# ===========================================================================
+#
+# ===========================================================================
+# FOUR MORE, same session, 2026-08-12 — batch nine, bringing this session to
+# seventy-eight. Handed over as five; 178.104.194.219 was already added in batch
+# eight an hour earlier and is not duplicated here. Desk check only, all four
+# probed three times, none serves DoH.
+#
+# 138.68.192.89 — DigitalOcean, 138.68.192.0/22, no PTR, tcp/22 and tcp/443,
+# sshd OpenSSH 8.8. FIXED-NAME upstream: every SNI returns Adobe Inc.'s
+# CN=assets.adobedtm.com, wikipedia included. Second Adobe-pinned host in this
+# file after 151.115.76.17, on a different provider — the same kind of repeat
+# noted for the two Microsoft-pinned ones, and a better link between two hosts
+# than any shared Akamai serial, because the name had to be configured. First
+# address in this /22; thirteenth 138.68 address.
+138.68.192.89
+# 51.15.196.67 — Scaleway, and a range this file has not touched: the whois here
+# is the plain 51.15.0.0/16 SCALEWAY object (Paris), not the SCALEWAY-AMS /17
+# that the other seventeen 51.15 addresses sit in. PTR 67-196-15-51.instances.
+# scw.cloud, only tcp/80, AkamaiGHost 400 on three attempts. Eighteenth 51.15
+# address and the first outside 51.15.0.0/17.
+51.15.196.67
+# 170.64.248.77 — DigitalOcean, 170.64.248.0/21, no PTR, only tcp/22, sshd
+# OpenSSH 8.4. FOURTH address in that /21 after 170.64.251.147, 170.64.254.149
+# and 170.64.255.21 — the last two from batches seven and eight of this session.
+# Tenth 170.64 address.
+170.64.248.77
+#
+# 192.124.26.34 — READ THIS ROW BEFORE TRUSTING IT. AS42873 Max-Planck-
+# Gesellschaft, inetnum 192.124.25.0 - 192.124.28.255, netname MPIB-TUE, descr
+# "MPI fuer Biologie Tuebingen", PTR is-net.tuebingen.mpg.de. No port open at
+# all. This is a German research institute's own address space — not a rented
+# instance, not a consumer line, and nothing like the other seventy-seven
+# addresses in this session.
+#
+# THE LIKELY INNOCENT EXPLANATION, which no evidence here rules out: academic
+# networks run large-scale internet measurement, and an unsolicited inbound scan
+# shows up in a traffic sample as a "connection" exactly like an outbound tunnel
+# does. Direction is the whole question and a desk check cannot answer it. Note
+# also 195.191.196.45 and .51 in this file, which belong to a researcher's own
+# AS — the same category, and no more established than this one.
+#
+# It is kept because the handover asked for it and because the collateral is
+# nil: this file shapes only traffic between this house and that address, and
+# nothing here has any business with MPI Tuebingen. But it is the weakest row in
+# the file on the question of WHAT it is, weaker than the bare-SSH rows, and it
+# is the first entry to remove if this file is ever pruned. If it needs
+# settling, the check is direction — who opened the connection — and that needs
+# a capture, not another whois.
+192.124.26.34
+# ===========================================================================
+#
+# 159.203.153.10 — one address, handed over on its own, 2026-08-12, closing this
+# session at seventy-nine. DigitalOcean, 159.203.152.0/22, no PTR. Only tcp/22,
+# sshd OpenSSH 7.9; 443 and 80 both closed, so nothing to characterise and no
+# DoH possible. Desk check only, no capture, and a thin row on its own terms.
+#
+# Eighth 159.203 address in the file and the first in this /22 — 159.203.156.201
+# is the nearest and sits in the next /22 up, so the neighbourhood is
+# DigitalOcean being large rather than a block. What little weight this carries
+# comes from 159.203.48.133 and 159.203.50.29 (a silent listener and a fronting
+# relay, in one shared /22) showing that this /16 has already produced both
+# shapes.
+159.203.153.10
+#
+# ===========================================================================
+# FOURTEEN MORE, same session, 2026-08-12 — batch ten, bringing this session to
+# ninety-three. Desk check only, no capture, every 443 host probed three times,
+# none serves DoH, none has 853 open.
+#
+# The population is now overwhelmingly DigitalOcean: eleven of these fourteen,
+# across eleven different /22s. That is not a block anyone holds, it is what
+# renting single droplets at volume looks like, and no range rule follows from
+# it. What DOES follow is in the /24 repeats below, several of which are now
+# deep enough to be worth watching.
+#
+# --- Two Akamai-edge pass-throughs -----------------------------------------
+#
+# 159.65.213.62 — DigitalOcean, 159.65.212.0/22, no PTR, only tcp/443.
+# example.com returns ICANN's real certificate, www.wikipedia.org falls back to
+# a248.e.akamai.net, /dns-query gets AkamaiGHost's 400. First 159.65 address in
+# this file.
+159.65.213.62
+# 151.115.67.119 — Scaleway SCALEWAY-WAW, PTR 119-67-115-151.instances.scw.cloud,
+# only tcp/443, same edge pass-through behaviour. FIFTH ADDRESS IN
+# 151.115.67.0/24, after .40, .46, .61 and .213 — that /24 is now the densest in
+# the entire file, and .213 (added earlier in this session) is also an edge
+# pass-through. Five addresses in one /24 of a provider that sells single
+# instances is starting to look like one tenant renting repeatedly rather than
+# coincidence, but Scaleway hands out /32s from that pool to anyone, so the
+# range still does not belong to anybody here. /32, and if a sixth arrives this
+# is the /24 to argue about first.
+151.115.67.119
+#
+# --- One fronting Akamai on port 80 ----------------------------------------
+#
+# 144.126.254.102 — DigitalOcean, 144.126.252.0/22, no PTR, only tcp/80. First
+# attempt returned nothing at all, the second and third returned AkamaiGHost's
+# 400 — the intermittent dropping documented above, and the reason three
+# attempts is the rule. Third 144.126 address, second in this /22 after
+# 144.126.253.113.
+144.126.254.102
+#
+# --- Four silent 443 listeners ---------------------------------------------
+#
+# 82.163.73.15 — THG Hosting / UK2NET, 82.163.73.0/24 (netname High-Volume-100TB),
+# tcp/22 and tcp/443, sshd OpenSSH 8.2, ClientHello unanswered on three
+# attempts. THIRD in that /24 after 82.163.73.180 and 82.163.73.83.
+#
+# Its PTR is raw.crcy.space, and CRCY.SPACE IS UNREGISTERED — NXDOMAIN, and the
+# registry reports the name as available to buy. That is the second PTR in this
+# session pointing at a domain nobody owns, after gun.superiorselm.com on
+# 82.163.73.83 — the same /24, the same operator. Two unregistered PTR names in
+# one /24 says THG leaves customer reverse records behind after the domain
+# lapses; it is housekeeping, not evidence. Do not confuse it with the
+# qnhyg.com case, where the unregistered name is on a certificate the host
+# actively serves.
+82.163.73.15
+# 170.64.249.232 — DigitalOcean, 170.64.248.0/21, no PTR, only tcp/443, silent
+# on three attempts. FIFTH address in that /21 — after 170.64.251.147 and, all
+# from this session, 170.64.254.149 (edge pass-through), 170.64.255.21 and
+# 170.64.248.77. Eleventh 170.64 address.
+170.64.249.232
+# 159.203.154.61 — DigitalOcean, 159.203.152.0/22, no PTR, only tcp/443, silent.
+# Second in that /22 after 159.203.153.10, which was added minutes earlier in
+# this same session — two adjacent /24s of one /22 arriving in consecutive
+# handovers. Ninth 159.203 address.
+159.203.154.61
+# 174.138.115.214 — DigitalOcean, 174.138.112.0/22, no PTR, only tcp/443,
+# silent. Sixth 174.138 address, first in this /22.
+174.138.115.214
+#
+# --- Three that expose only tcp/22 -----------------------------------------
+#
+# 168.144.0.129 — DigitalOcean (pre-acquisition NET-168-144-0-0-1 netname),
+# 168.144.0.0/22, no PTR, sshd OpenSSH 8.0. Sixth 168.144 address, second in
+# this /22 after 168.144.1.102.
+168.144.0.129
+# 157.230.198.62 — DigitalOcean, 157.230.196.0/22, no PTR, sshd OpenSSH 8.4.
+# Third 157.230 address, first in this /22.
+157.230.198.62
+# 144.126.242.94 — DigitalOcean, 144.126.240.0/22, no PTR, sshd OpenSSH 7.0 —
+# the oldest build in this batch. Fourth 144.126 address, first in this /22.
+144.126.242.94
+#
+# --- Four with nothing open at all -----------------------------------------
+#
+# 134.199.180.32 — DigitalOcean, 134.199.180.0/22. Fifth 134.199 address and a
+# fourth distinct /22 in that range, after 134.199.140.0/22 (two), 134.199.184.0/22
+# and 134.199.177.112.
+134.199.180.32
+# 68.183.246.186 — DigitalOcean, 68.183.244.0/22. Third 68.183 address after
+# 68.183.242.208 and 68.183.250.42, each in its own /22.
+68.183.246.186
+# 104.248.97.45 — DigitalOcean, 104.248.96.0/22. Second 104.248 address after
+# 104.248.106.137.
+104.248.97.45
+# 82.163.75.56 — THG Hosting / UK2NET, 82.163.74.0/23. FOURTH in 82.163.75.0/24
+# after .240, .141 and .109 — the last two added earlier in this session, so
+# that /24 has produced three addresses in one day. Eleventh 82.163 address and
+# nineteenth THG address across 82.163, 107.182 and 173.244.
+#
+# The standing caution still applies and is worth repeating at this density:
+# AS13213 announces 388 prefixes as an ordinary ISP, and 82.163.72.0/23 is
+# shared hosting space. Four in a /24 there is four rented boxes among many
+# tenants, not a block anyone owns.
+82.163.75.56
+# ===========================================================================
+#
+# ===========================================================================
+# SIX MORE, same session, 2026-08-12 — batch eleven, bringing this session to
+# ninety-nine. Sixteen addresses were handed over; TEN WERE ALREADY IN THIS FILE
+# (164.90.254.9, 134.199.177.112, 188.166.130.3, 188.166.205.234, 51.158.234.37
+# and 110.172.149-family from earlier rounds; 151.115.72.73, 51.15.109.252,
+# 51.158.240.86, 51.158.235.85 and 138.68.120.144 from earlier in this session).
+# Re-handing an address is harmless and no rows were touched for them — recorded
+# only so the count below is not read as sixteen new findings.
+#
+# Desk check only, three attempts per host, none serves DoH.
+#
+# --- One Akamai-edge pass-through ------------------------------------------
+#
+# 82.163.75.100 — THG Hosting / UK2NET, 82.163.74.0/23, no PTR, tcp/22 and
+# tcp/443, sshd OpenSSH 8.7. example.com returns ICANN's real certificate,
+# www.wikipedia.org falls back to a248.e.akamai.net. FIFTH in 82.163.75.0/24
+# after .240, .141, .109 and .56 — four of the five arrived today, and this is
+# the first of them to show what it is. Twelfth 82.163 address, twentieth THG
+# address across 82.163, 107.182 and 173.244.
+82.163.75.100
+#
+# --- Three fronting Akamai on port 80 --------------------------------------
+#
+# 151.115.67.82 — Scaleway SCALEWAY-WAW, PTR 82-67-115-151.instances.scw.cloud,
+# tcp/22 and tcp/80, sshd OpenSSH 7.5, AkamaiGHost 400 on both attempts.
+#
+# THIS IS THE SIXTH ADDRESS IN 151.115.67.0/24. The batch-ten note said that if
+# a sixth arrived, this /24 is the one to argue about first — it arrived within
+# the hour. The six are .40, .46, .61, .82, .119 and .213, and three of them
+# (.82, .119, .213) are demonstrably fronting Akamai.
+#
+# The range is STILL NOT TAKEN, and the reason is the standing rule rather than
+# timidity: 151.115.67.0/24 sits inside Scaleway's general instance pool, which
+# is sold as /32s to anybody, so the other 250 addresses are other tenants and a
+# /24 rule would shape them all. Density says where this client shops, not what
+# it owns — the same reasoning that declined the /16 arithmetic everywhere above.
+# Six /32s it is. The question belongs to the user, not to this file, and it has
+# been put to them rather than decided here.
+151.115.67.82
+# 139.59.199.167 — DigitalOcean, 139.59.196.0/22 — Singapore space, carried in
+# the APNIC-ERX legacy object and announced by AS14061. No PTR, tcp/22 and
+# tcp/80, sshd OpenSSH 8.0, AkamaiGHost 400. Fifth 139.59 address after
+# .1.127, .54.242, .59.242 and .192.64, each in a different /22.
+139.59.199.167
+# 110.172.149.25 — AS214623, 2644819 Ontario Inc, 110.172.149.0/24 (netname
+# STUB-110-172-149SLASH24, transferred to ARIN 2024-11-19). No PTR, tcp/22 and
+# tcp/80, sshd OpenSSH 8.4, AkamaiGHost 400. FOURTH in that /24 after .119,
+# .191 and .207 — the note above records .119 and .207 as the pair that carried
+# a cleartext Cookie channel, so this /24 has prior form of a different kind.
+#
+# This makes NINE addresses in the file from AS214623, across three ranges:
+# 110.172.149.0/24 (four), 185.222.106.0/25 (three, one added earlier today) and
+# 154.17.253.0/24 (two). THE AS IS NOT RE-RAISED. It was put to the user at
+# ten-in-five and declined, and the notes above say plainly not to rebuild that
+# case on count. One more address in an already-known range is exactly the
+# increment that ruling anticipated; this is arithmetic and nothing follows.
+110.172.149.25
+#
+# --- One that exposes only tcp/22 ------------------------------------------
+#
+# 45.55.112.134 — DigitalOcean, 45.55.112.0/22, no PTR, sshd OpenSSH 8.3. FOURTH
+# in 45.55.112.0/24 after .130, .142 and .12, the last added earlier in this
+# session and fronting Akamai on :80. Tenth 45.55 address.
+45.55.112.134
+#
+# --- One with nothing open at all ------------------------------------------
+#
+# 67.207.70.59 — DigitalOcean, 67.207.68.0/22, no PTR, every probed port closed.
+# First 67.207 address in the file, and nothing corroborates it beyond the
+# handover. Weakest row of the six.
+67.207.70.59
+# ===========================================================================
+#
+# ===========================================================================
+# NINE MORE — batch twelve, and the first dated 2026-08-13: this session began
+# on the 12th and has run past midnight, so "earlier today" in every block above
+# means 12 Aug. That brings the session to one hundred and eight addresses.
+# Desk check only, three attempts per host, none serves DoH, none has 853 open.
+#
+# --- THE 79.142 RECOUNT, which is the substantive item in this batch ---------
+#
+# 79.142.76.179 — AltusHost B.V., AS51430, inetnum 79.142.76.0 - 79.142.77.238,
+# netname ALTUSHOST-NET, PTR swe-net-ip.as51430.net. tcp/22 (OpenSSH 8.3),
+# tcp/80 and tcp/443. Port 80 answers AkamaiGHost 400; port 443 accepts and
+# never completes a handshake on three attempts — the two shapes on one host,
+# which is uncommon in this file and worth noting on its own.
+#
+# The note against 79.142.79.185 above says: "Two /24s of the same /16 across
+# separate sessions suggests a range the operator holds ... a wider block may be
+# justified if a third address appears." THAT CONDITION WAS MET LONG AGO AND
+# NOBODY RETURNED TO IT. Recounted against the file rather than trusting the
+# note, this address makes EIGHT, all AS51430 AltusHost, across three of its
+# sub-allocations:
+#
+#   79.142.74.0 - 79.142.75.255  (AS51430-NL)     .74.43, .75.12, .75.43, .75.56
+#   79.142.76.0 - 79.142.77.238  (ALTUSHOST-NET)  .77.41, .76.179  <- this one
+#   79.142.79.0/24               (CH-AH-NET)      .79.185, .79.195
+#
+# So the premise of that note is wrong in the direction that matters: it is not
+# two addresses in two /24s, it is eight in three named allocations of one small
+# hosting AS. That is a materially better range case than anything else in this
+# file — better than 151.115.67.0/24 (six, but inside Scaleway's open instance
+# pool) and better than the AS214623 case that was declined, because these are
+# AltusHost's own sub-allocations rather than a slice of a general-purpose cloud.
+#
+# IT IS STILL NOT TAKEN HERE. AltusHost sells to other customers too, so a /23
+# or wider rule shapes tenants who have nothing to do with this, and taking a
+# range is the user's decision, not a later hand's. The three allocations above
+# are what the decision would be over. Eight /32s until told otherwise, and the
+# stale note has been marked in place so the next reader does not re-derive this.
+79.142.76.179
+#
+# --- One fixed-name upstream, a brand new to that shape --------------------
+#
+# 209.38.115.68 — DigitalOcean DO-13, 209.38.112.0/22, no PTR, tcp/22 (OpenSSH
+# 8.7) and tcp/443. Every SNI returns Starbucks Coffee Company's
+# CN=starbucks.com — example.com and www.wikipedia.org alike — so it is pinned
+# to that one property. Fourth distinct fixed-name brand in this file after
+# Apple, Adobe, Microsoft and Marriott. Eighth 209.38 address, first in this /22.
+209.38.115.68
+#
+# --- One Akamai-edge pass-through ------------------------------------------
+#
+# 188.166.130.11 — DigitalOcean, RIPE-registered 188.166.128.0/22, no PTR,
+# tcp/22 (OpenSSH 8.5) and tcp/443. example.com returns ICANN's real
+# certificate, www.wikipedia.org falls back to a248.e.akamai.net. Second in
+# 188.166.130.0/24 after 188.166.130.3 — which was itself re-handed in the
+# previous batch — and tenth 188.166 address.
+188.166.130.11
+#
+# --- One silent 443 listener -----------------------------------------------
+#
+# 82.163.75.165 — THG Hosting / UK2NET, 82.163.74.0/23, no PTR, tcp/22 (OpenSSH
+# 7.3) and tcp/443, ClientHello unanswered on three attempts. SIXTH IN
+# 82.163.75.0/24 — .240, .56, .100, .109, .141 and this — of which four arrived
+# on 12 Aug and .100 is a confirmed edge pass-through.
+#
+# That /24 now matches 151.115.67.0/24 for density, and the same answer applies
+# for the same reason: 82.163.72.0/23 is THG shared hosting space in an ISP that
+# announces 388 prefixes, so six rented boxes there are six tenants among many.
+# /32s. If the user wants a range argued anywhere, 79.142 above is the stronger
+# case by a distance.
+82.163.75.165
+#
+# --- Two that expose only tcp/22 -------------------------------------------
+#
+# 170.64.191.231 — DigitalOcean, 170.64.128.0/18, no PTR, sshd OpenSSH 9.6p1
+# Ubuntu. Twelfth 170.64 address, and outside the 170.64.248.0/21 cluster that
+# holds five of the others; nearest are 170.64.140.197 and 170.64.131.192.
+170.64.191.231
+# 151.115.74.197 — Scaleway SCALEWAY-WAW, PTR 197-74-115-151.instances.scw.cloud,
+# sshd OpenSSH 8.0. Second in 151.115.74.0/24 after 151.115.74.253.
+151.115.74.197
+#
+# --- Three with nothing open at all ----------------------------------------
+#
+# 139.59.53.143 — DigitalOcean, 139.59.52.0/22 (APNIC-ERX legacy object,
+# Singapore), no PTR. Sixth 139.59 address, second in this /22 after
+# 139.59.54.242.
+139.59.53.143
+# 168.119.105.122 — Hetzner AS24940, 168.119.96.0/20, PTR
+# static.122.105.119.168.clients.your-server.de. First 168.119 address here and
+# the twelfth Hetzner address, across 37.27, 46.225, 91.98, 178.104 and now
+# 168.119 — five separate Hetzner ranges, which is what renting from a large
+# provider looks like rather than a block.
+168.119.105.122
+# 129.212.200.189 — DigitalOcean, 129.212.200.0/21 (Mar 2025 allocation), no
+# PTR, reverse lookup times out. Seventeenth 129.212 address and first in this
+# /21; the other recent-allocation clusters are 129.212.248.0/22 (five) and
+# 129.212.212.0/22 (four), so this is a third neighbourhood in the same 2025
+# allocation.
+129.212.200.189
+# ===========================================================================
+#
+# ===========================================================================
+# A COUNTING TRAP IN THIS FILE, found 2026-08-13 and worth more than any single
+# row above.
+#
+# EIGHT ADDRESSES IN THIS FILE ARE INVISIBLE TO THE OBVIOUS COUNTING COMMAND.
+# They sit on lines of the form "<address>    # <comment>" — an address with a
+# trailing comment on the same line — and every count taken during the 12-13 Aug
+# session used:
+#
+#   sed 's/#.*//' custom-throttle-list.txt | grep -oE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+#
+# which strips the comment but leaves the trailing whitespace, so the `$` anchor
+# never matches and the line is dropped silently. The eight are 79.142.75.12,
+# 46.225.22.118, 23.251.50.166, 150.241.249.34, 5.254.53.242, 88.208.240.76,
+# 151.243.14.207 and 202.63.60.39.
+#
+# THE FIX is one more step — trim before matching:
+#
+#   sed 's/#.*//' custom-throttle-list.txt | sed 's/[[:space:]]*$//' \
+#     | grep -E '^([0-9]{1,3}\.){3}[0-9]{1,3}$'
+#
+# WHAT IT COST: three claims written during that session were wrong and have
+# been corrected in place — "first 88.208 address and first IONOS host" (it was
+# the second of each), "THIRD 46.225 address" (fourth), and the 79.142 recount
+# (eight, not seven). The file total was quoted as 450 throughout that session
+# and was in fact 458 before it started; the correct figures are 458 before and
+# 566 after, with 108 added.
+#
+# Note the nft parser is NOT affected — it handles those lines correctly and all
+# eight are genuinely shaped. This was only ever a counting error, never an
+# operational one. But this file's notes lean on counts constantly ("nth address
+# in this /22"), and a systematically low count in one direction is exactly the
+# kind of thing that gets carried forward. Recompute with the trimmed form.
+# ===========================================================================
+#
+# ===========================================================================
+# FOURTEEN MORE — batch thirteen, 2026-08-13, bringing this session to one
+# hundred and twenty-two. Fifteen were handed over; 129.212.152.58 was already
+# added in batch seven and is not duplicated. Desk check only, three attempts
+# per host, counts taken with the trimmed extractor described at the foot of
+# this file. None serves DoH.
+#
+# --- Two Akamai-edge pass-throughs -----------------------------------------
+#
+# 162.243.60.160 — DigitalOcean, 162.243.0.0/17, no PTR, tcp/22 (OpenSSH 8.9)
+# and tcp/443. example.com returns ICANN's real certificate, www.wikipedia.org
+# falls back to a248.e.akamai.net. Third 162.243 address after .94.214 and
+# .255.244, each far apart in a /17.
+162.243.60.160
+# 168.144.49.61 — DigitalOcean, 168.144.48.0/22, no PTR, tcp/22 (OpenSSH 8.4)
+# and tcp/443, same edge pass-through behaviour.
+#
+# ONE ADDRESS AWAY FROM 168.144.49.60, which is already in this file. Adjacent
+# host addresses is the tightest coincidence in the whole session — tighter than
+# any /24 count, because two consecutive addresses in a cloud pool are two
+# instances provisioned in the same request or the same minute. Third in this
+# /22 with 168.144.48.84, and seventh 168.144 address. It is still /32: adjacency
+# says these two were created together, not that DigitalOcean gave anyone the
+# range.
+168.144.49.61
+#
+# --- One fixed-name upstream -----------------------------------------------
+#
+# 144.126.253.25 — DigitalOcean, 144.126.252.0/22, no PTR, tcp/22 (OpenSSH 7.8)
+# and tcp/443. Every SNI returns Starbucks Coffee Company's CN=starbucks.com,
+# wikipedia included. SECOND Starbucks-pinned host after 209.38.115.68 from
+# batch twelve — the brand repeats now hold for Microsoft (two), Adobe (two),
+# Marriott (two) and Starbucks (two). Second in 144.126.253.0/24 after
+# 144.126.253.113 and third in this /22; fifth 144.126 address.
+144.126.253.25
+#
+# --- Two fronting Akamai on port 80 ----------------------------------------
+#
+# 45.55.102.157 — DigitalOcean, 45.55.100.0/22, no PTR, only tcp/80. FOURTH in
+# that /22 after 45.55.101.14, .223 and .50. Eleventh 45.55 address.
+45.55.102.157
+# 51.159.86.14 — Scaleway, announced inside 51.158.0.0/15, PTR
+# 14-86-159-51.instances.scw.cloud, only tcp/80. Sixth 51.159 address. Netname
+# ONLINENET_DEDICATED_SERVERS once more, and the PTR once more says cloud
+# instance — the trap that note keeps warning about.
+51.159.86.14
+#
+# --- Three silent 443 listeners --------------------------------------------
+#
+# 51.159.191.186 — Scaleway, PTR 186-191-159-51.instances.scw.cloud, only
+# tcp/443, ClientHello unanswered on three attempts. Second in 51.159.191.0/24
+# after 51.159.191.145.
+51.159.191.186
+# 165.232.95.51 — DigitalOcean, 165.232.80.0/20, no PTR, tcp/22 (OpenSSH 7.3)
+# and tcp/443, silent. First 165.232 address in this file.
+165.232.95.51
+# 170.64.255.126 — DigitalOcean, 170.64.248.0/21, no PTR, only tcp/443, silent.
+# SIXTH address in that /21 — .248.77, .249.232, .251.147, .254.149, .255.21 and
+# this — and second in 170.64.255.0/24. Five of the six arrived in this session.
+# That /21 now sits behind only 151.115.67.0/24 and 82.163.75.0/24 for density,
+# and unlike those two it is a /21 rather than a /24, so it is a weaker case for
+# a range even at six.
+170.64.255.126
+#
+# --- Three that expose only tcp/22 -----------------------------------------
+#
+# 139.59.52.174 — DigitalOcean, 139.59.52.0/22 (APNIC-ERX legacy object,
+# Singapore), no PTR, sshd OpenSSH 7.1. THIRD in that /22 after 139.59.54.242
+# and 139.59.53.143, the latter added in batch twelve hours earlier. Seventh
+# 139.59 address.
+139.59.52.174
+# 95.217.235.132 — Hetzner AS24940, CLOUD-HEL1 95.217.232.0/21, Helsinki, PTR
+# static.132.235.217.95.clients.your-server.de, sshd OpenSSH 10.0p2 Debian.
+# First 95.217 address here.
+95.217.235.132
+# 91.99.134.224 — Hetzner AS24940, CLOUD-NBG1 91.99.128.0/20, Nuremberg, PTR
+# static.224.134.99.91.clients.your-server.de, sshd OpenSSH 9.6p1 Ubuntu. First
+# 91.99 address, and NOT the same range as 91.98.124.132 already here — 91.98
+# and 91.99 are separate /16s that Hetzner happens to hold both of.
+#
+# With these two, Hetzner reaches fourteen addresses across seven ranges: 37.27,
+# 46.225, 91.98, 91.99, 95.217, 168.119 and 178.104. Seven separate ranges is
+# the clearest illustration in this file of why provider totals prove nothing —
+# it is one company's whole customer base, not one tenant's estate.
+91.99.134.224
+#
+# --- Two with nothing open at all ------------------------------------------
+#
+# 64.225.85.129 — DigitalOcean, 64.225.84.0/22, no PTR. Third 64.225 address and
+# second in that /22 after 64.225.84.9 and 64.225.84.153, both in the adjacent
+# /24.
+64.225.85.129
+# 159.223.248.226 — DigitalOcean DO-13, 159.223.248.0/22, no PTR. Second 159.223
+# address after 159.223.241.91, in a different /22.
+159.223.248.226
+#
+# --- One that does not belong with the others, and is probably a mistake -----
+#
+# 81.0.219.99 — Contabo GmbH, AS51167, inetnum 81.0.218.0 - 81.0.219.255,
+# netname TT-20221122, PTR vmi1103454.contaboserver.net. First Contabo address
+# in this file. tcp/80 and tcp/443.
+#
+# IT MATCHES NO TUNNEL SIGNATURE HERE, and the evidence points the other way:
+#
+#   * Port 443 serves CN=api-staging.joiicare.com issued by LET'S ENCRYPT,
+#     valid 14 Jul to 12 Oct 2026. An LE certificate requires proof of control
+#     over the name at issuance, so whoever runs this box controlled that
+#     subdomain — this is not a borrowed or relayed certificate.
+#   * joiicare.com is a registered domain belonging to a real company, and
+#     api-staging.joiicare.com resolves to Cloudflare rather than here, which is
+#     what a company's public record looks like while a staging box sits on a
+#     cheap VPS.
+#   * Every path returns HTTP 200 with the 14-byte body "Not Authorized" — an
+#     API refusing an unauthenticated caller, not a proxy.
+#   * The same certificate comes back for example.com and www.wikipedia.org,
+#     which reads like fronting until you notice it is ordinary nginx
+#     default_server behaviour: one vhost, one certificate, served to anything.
+#     Port 80 confirms the reading — the stock "Welcome to nginx!" page.
+#
+# So the honest description is a small company's staging API on a Contabo VPS.
+# Added because the handover asked for it and the collateral is confined to one
+# tenant, but it is the most likely false positive in this session, ahead of
+# 192.124.26.34. If something in the house legitimately uses a Joii-branded app,
+# this row will break it and should be removed first. What would settle it is
+# which local device talked to it and in which direction — a capture, not a
+# whois.
+81.0.219.99
+# ===========================================================================
+#
+# ===========================================================================
+# NINE MORE — batch fourteen, 2026-08-13, session total one hundred and
+# thirty-one. Ten were handed over; 45.55.101.223 was already here.
+#
+# THE FIRST ROWS IN THIS SESSION WITH CAPTURE EVIDENCE. Everything above was
+# desk check only. Eight of these nine were observed in packet captures taken on
+# this network today, which settles what a hundred and twenty desk checks could
+# only infer. What the captures show about the TOOL is recorded here once, since
+# it explains the shape of this whole file and is worth more than any row.
+#
+# HOW THE CLIENT WORKS — candidates, then selection:
+#
+#   1. It holds a POOL OF CANDIDATE NODES and probes them in quick succession,
+#      a handful of packets each, before committing.
+#   2. It then SELECTS ONE and sends effectively everything through it. The
+#      selected node carries the overwhelming majority of the traffic; the
+#      candidates carry almost none. That is why this file fills up so fast
+#      with addresses that look inert on a desk check: most entries here are
+#      candidates that were probed and passed over, not nodes that carried
+#      anything.
+#   3. Selection is by measured quality. This is the direct evidence for the
+#      2026-08-13 shaper change recorded at the head of this file — a node made
+#      slow, laggy and lossy is a node this client discards at step 2, and it
+#      simply picks another. The cap-only shaper exists so that a shaped node
+#      still wins selection and then cannot move data.
+#
+# HOW IT HIDES — three techniques, all visible in the capture:
+#
+#   * RANDOMISED SNI. Each candidate is reached with a TLS/QUIC handshake
+#     carrying a DIFFERENT invented domain name — plausible-looking but
+#     unregistered strings, one per node, never reused. No name lookup precedes
+#     them. Blocking by name is therefore pointless against this tool, and the
+#     nonsense SNI is itself the tell: a genuine service is reached by a name
+#     that resolves to it.
+#   * PORT REUSE. Sessions were seen on tcp/22, tcp/21, tcp/80, tcp/443,
+#     tcp/553, tcp/554, QUIC on 443 and on high ports, and UDP on high ports —
+#     the same client using whichever port is likely to be open. Several of the
+#     rows above that looked like a bare SSH listener or an FTP server on a desk
+#     check are this: the port is camouflage, not a service.
+#   * PORT 53 THAT IS NOT DNS. Several nodes are fed large opaque UDP datagrams
+#     on port 53. A packet decoder labels anything on that port "DNS" and it is
+#     nothing of the sort — real DNS in the same capture is a fraction of the
+#     size, carries a readable query name and goes to this network's own
+#     resolver. See the warning below, because this nearly caused eleven
+#     addresses to be filed in the wrong file.
+#
+#   * A CONTROL CHANNEL THIS FILE CANNOT TOUCH. The client also reaches an
+#     Akamai edge address carrying an invented SNI, and Akamai edge is on the
+#     never-block list because the whole house depends on it. If that is how the
+#     candidate pool is refreshed, then no amount of adding node addresses here
+#     will stop new ones arriving — which matches what this session looked like.
+#     Worth its own investigation; it is not solvable in this file.
+#
+# A WARNING ABOUT THE RESOLVER RULE, learned here: "it answers on 53, so it goes
+# in custom-ip-blocklist.txt" is not safe as stated. A RESOLVER ANSWERS DNS; A
+# TUNNEL MERELY USES THE PORT. The test is the traffic, not the port number —
+# a resolver returns decodable responses to small readable queries, where this
+# returns nothing decodable to large opaque datagrams. Eleven addresses in
+# today's capture use port 53 this way and every one belongs in THIS file.
+#
+# --- The selected node -----------------------------------------------------
+#
+# 174.138.102.192 — DigitalOcean, 174.138.100.0/22, no PTR. THE NODE THE CLIENT
+# SELECTED, and the only address in this session confirmed carrying the bulk of
+# a tunnelled session rather than being probed and dropped. Transport is SSH,
+# both on tcp/22 and on a high port, server banner OpenSSH 8.7.
+#
+# The client side is the more useful detail: the SSH client identifies itself as
+# PuTTY as well as OpenSSH, from a handset. That is the signature of the Android
+# SSH-tunnel apps (HTTP Injector, Dark Tunnel and relatives), which embed an SSH
+# client and a candidate list, and it names the tool category behind most of
+# this file. Seventh 174.138 address; first in this /22.
+174.138.102.192
+#
+# --- Seven candidates, capture-confirmed but passed over -------------------
+#
+# All seven were reached in the same session and dropped after a few packets —
+# probed, not used. Their being unremarkable on a desk check is the expected
+# result, not a weakness of the row.
+#
+# 138.68.125.27 — DigitalOcean, 138.68.124.0/22, no PTR. Reached over TLS on 443
+# with an invented SNI. Fourteenth 138.68 address, first in this /22.
+138.68.125.27
+# 159.203.147.99 — DigitalOcean, 159.203.144.0/22, no PTR. TLS on 443 with an
+# invented SNI. Tenth 159.203 address, first in this /22.
+159.203.147.99
+# 139.59.50.187 — DigitalOcean, 139.59.48.0/22 (APNIC-ERX object, Singapore), no
+# PTR. QUIC, and notably QUIC ON PORT 22 — the clearest single illustration of
+# the port-reuse point above, since nothing but this tool puts QUIC on the SSH
+# port. Eighth 139.59 address, first in this /22.
+139.59.50.187
+# 107.182.236.109 — THG Hosting / UK2NET, 107.182.236.0/24, PTR hmrdgt.com.
+# Reached on tcp/80. Fourth address in that /24, which the standing note says is
+# midphase shared hosting with hundreds of unrelated tenants — so still /32, and
+# the PTR is operator naming rather than this client's.
+107.182.236.109
+# 107.182.229.58 — THG Hosting / UK2NET, 107.182.229.0/24, no PTR. Reached on
+# tcp/554, the RTSP port, carrying nothing resembling RTSP. FOURTH in that /24
+# after .52, .209 and .237.
+107.182.229.58
+# 188.166.140.156 — DigitalOcean, 188.166.140.0/22, no PTR. Reached on TCP/21
+# and decoded as FTP by the packet decoder — port reuse again, and a good
+# example of why the protocol label in a capture is a guess from the port
+# number. Eleventh 188.166 address.
+188.166.140.156
+# 82.163.73.109 — THG Hosting, 82.163.73.0/24, PTR
+# 82.163.73.109.static.midphase.com. Opaque UDP on a high port and on 443, and
+# it carried more than the other candidates without approaching the selected
+# node. FOURTH in 82.163.73.0/24 after .15, .83 and .180, and thirteenth 82.163
+# address.
+#
+# The UDP shape here is the one that needs care rather than confidence: opaque
+# UDP to a single peer is the signature of a CALL as much as a tunnel, and this
+# network's notes are emphatic that call media must not be mistaken for a
+# tunnel. What tips it is the company it keeps — same session, same candidate
+# pattern, a midphase PTR and a /24 this file already holds three of — not the
+# traffic shape on its own. Recorded as the weaker of the eight.
+82.163.73.109
+#
+# --- One with no capture evidence ------------------------------------------
+#
+# 144.126.253.200 — DigitalOcean, 144.126.252.0/22, no PTR. THE ONE ADDRESS OF
+# THE TEN THAT DOES NOT APPEAR IN TODAY'S CAPTURES AT ALL, so it stands on the
+# handover alone, as every row above this batch does. Third in 144.126.253.0/24
+# after .25 and .113, and sixth 144.126 address — which is why it is plausible,
+# not because anything here observed it.
+144.126.253.200
+# ===========================================================================
+#
+# ===========================================================================
+# THIRTY-NINE MORE — batch fifteen, 2026-08-13. NOT HANDED OVER ONE AT A TIME:
+# this is the candidate pool read straight out of today's captures, which is
+# the first time this file has been filled from the tool's own list rather than
+# from whatever happened to be noticed. Session total one hundred and seventy.
+#
+# Every one of the thirty-nine was contacted by the client described in batch
+# fourteen, in the same sessions, with the same candidate-probe pattern. That is
+# the evidence for all of them; the desk checks add only the allocation. They
+# are grouped below by the transport each was reached on, because that grouping
+# IS the finding — one client, one pool, seven different ports and protocols.
+#
+# THREE ADDRESSES FROM THE SAME CAPTURES WERE DELIBERATELY LEFT OUT, and the
+# reasons matter more than the additions:
+#
+#   * 185.93.2.251 and 143.244.56.58 — BunnyCDN edge, PTRs under bunnyinfra.net,
+#     AS60068 Datacamp/CDN77. A real CDN carrying real browsing for the whole
+#     house. They appear in the capture because the household uses the web, not
+#     because the tunnel uses them. REFUSED, and they must stay refused: this is
+#     the exact case the Akamai near-misses above document.
+#   * 5.112.121.116 — IranCell, an Iranian mobile carrier, seen carrying STUN.
+#     STUN to a mobile carrier address is call signalling, and this network's
+#     notes are emphatic that call media must not be filed as a tunnel. Left
+#     out on that rule even though an Iranian carrier address would otherwise
+#     fit the residential-exit pattern above.
+#
+# --- Nine reached with an invented SNI over TLS or QUIC ---------------------
+#
+# Each carries a different unregistered domain name in its handshake, never
+# reused, with no lookup preceding it. The name is written beside each so a
+# later reader can see the pattern rather than take it on trust — and so nobody
+# wastes time blocking these by name, which does nothing.
+#
+104.248.107.86    # www.wikichildodhh.org
+107.182.229.217   # portalmostcancer.org
+108.165.21.252    # kesuudbg.com
+129.212.162.236   # garageparkpromotion.org
+138.68.192.128    # lerigoiconsquared.net
+143.244.222.213   # boxesfoot.net
+163.172.137.243   # www.neatonweb.org
+174.138.96.224    # nicday.net
+188.166.140.77    # www.automotivemauifreelance.com
+#
+# --- Five SSH candidates ---------------------------------------------------
+#
+# The transport the selected node used. These were probed on tcp/22 and passed
+# over; 185.218.23.23 and 216.119.151.8 answered with OpenSSH banners.
+#
+134.199.141.229
+138.68.200.33
+162.243.104.193
+185.218.23.23
+216.119.151.8
+#
+# --- Eleven reached on port 53 with traffic that is not DNS ----------------
+#
+# THE GROUP MOST AT RISK OF BEING FILED IN THE WRONG PLACE. Large opaque UDP
+# datagrams to port 53, no readable query, nothing decodable coming back. A
+# capture tool labels them "DNS" purely from the port number. They are tunnel
+# nodes and belong here; a genuine DoH or plain resolver belongs in
+# custom-ip-blocklist.txt, and the difference is the traffic, not the port.
+#
+# Note also that this network blocks outbound 53, so these are attempts rather
+# than working sessions — which is itself the reason the tool tries the port.
+#
+129.212.149.170
+130.195.209.21    # M247, AS9009
+138.197.240.116
+138.68.200.112
+143.198.243.152
+151.115.59.126
+151.115.78.87
+188.166.140.161
+206.189.242.64
+51.15.49.193
+89.38.224.190     # M247, AS9009
+#
+# M247 (AS9009) is new to this file with those two. It is a hosting company
+# whose business is substantially VPN endpoints, so its presence in a candidate
+# pool is unsurprising — but it is a general host with other customers, and the
+# /32 rule applies as everywhere else.
+#
+# --- Four reached on tcp/554, the RTSP port -------------------------------
+#
+# Carrying nothing resembling RTSP. Port reuse, same as the FTP and SSH cases.
+#
+151.115.84.221
+151.115.85.118
+157.230.196.208
+168.144.48.87
+#
+# --- Two reached on tcp/553 ------------------------------------------------
+#
+170.64.251.129
+51.158.236.119
+#
+# --- Seven reached on tcp/80 ----------------------------------------------
+#
+107.182.236.8     # PTR stallonworld.org.uk
+129.212.153.68
+138.197.254.223
+159.89.216.68
+168.144.13.123
+170.64.248.74
+206.189.246.212   # PTR trade2trade.net
+#
+# --- One reached over TLS on 443 with no SNI at all ------------------------
+#
+167.172.10.120
+#
+# On the two AS214623 addresses above (108.165.21.252, 185.218.23.23): that AS
+# is now well past the count at which a wider rule was put to the user and
+# declined. NOT RE-RAISED, per the standing instruction not to rebuild that case
+# on arithmetic. Recorded and left alone.
+# ===========================================================================
+#
+# ===========================================================================
+# FIFTY-FIVE MORE — batch sixteen, 2026-08-13. Thirty-one handed over (two of
+# the thirty-four listed were already here, and one was listed twice) plus
+# twenty-four more read out of a SECOND ROUND OF CAPTURES taken later the same
+# morning. Session total two hundred and twenty-five.
+#
+# Requested as "block"; filed here as throttle after putting the choice to the
+# user, who confirmed. Recorded because the word matters: dropping these gives
+# the client the clean per-node failure that the 2026-08-13 shaper change exists
+# to deny it, and with the control channel described below the pool refreshes
+# faster than a blocklist can grow. If the cap-only shaper turns out not to hold
+# a node once it is deployed and re-observed, moving this whole population to
+# custom-ip-blocklist.txt is the fallback that was discussed.
+#
+# WHAT THE SECOND CAPTURE ROUND ADDS, beyond more addresses:
+#
+#   * THE POOL ROTATED COMPLETELY. Not one of the nodes carrying traffic in the
+#     later captures appears in the earlier ones. The client did not fail over
+#     to a neighbour; it moved to an entirely fresh set.
+#   * IT NO LONGER PUTS EVERYTHING THROUGH ONE NODE. The earlier round had a
+#     single selected node carrying almost all of it. The later round spreads
+#     comparable volume across three or four at once. Whether that is a setting,
+#     a different profile, or a response to nodes going bad cannot be told from
+#     a capture — but it means "find the one big peer" is no longer sufficient
+#     as a detection method here, and byte-ranking now needs the top several
+#     rows read rather than the first.
+#   * A SECOND AKAMAI-FRONTED NAME. Alongside the invented name seen before,
+#     another unregistered name is presented to a different Akamai edge range
+#     (23.44.201.0/24, PTRs under deploy.static.akamaitechnologies.com,
+#     AS20940 — real Akamai, not a relay). Two fronted names on two Akamai
+#     ranges makes the control-channel reading firmer, and it stays outside what
+#     this file can touch.
+#
+# THREE ADDRESSES FROM THESE CAPTURES WERE LEFT OUT, and the first two are the
+# more important entries in this block:
+#
+#   * 2.182.242.131 — Iran Telecommunication Company, and 89.43.134.40 — High
+#     Speed For Internet Services, Syria. Both carry STUN AND DTLS: WebRTC
+#     signalling plus media. THAT IS A CALL, on consumer ISPs in two countries,
+#     and shaping either would degrade somebody's conversation. This is the
+#     third and fourth time this session that a carrier address in a capture has
+#     turned out to be call media rather than a tunnel — after an IranCell
+#     address in the earlier round — and it is why carrier space gets the
+#     protocol checked rather than the provider assumed.
+#   * 79.127.134.129 — Datacamp/CDNEXT, PTR under datapacket.com. Four packets,
+#     no completed handshake, nothing to characterise. DataPacket carries both
+#     CDN edge and VPN exits, and on four packets there is no way to tell which;
+#     the two BunnyCDN addresses refused in batch fifteen are the same company.
+#     Left out as insufficient rather than cleared.
+#
+# --- AltusHost, AS51430 — and this changes the range question ---------------
+#
+# 31.3.156.92 (PTR rs-network-ip.as51430.net) and 79.142.79.23 (ch-net.as51430.net).
+#
+# The batch-twelve recount asked whether 79.142 should be taken as a range at
+# eight addresses. That framing was too narrow: AS51430 also holds 31.3.154.0/24
+# and 31.3.156.0/24, which this file has been collecting all along. WITH THESE
+# TWO, ALTUSHOST STANDS AT FIFTEEN ADDRESSES across five of its /24s — the
+# largest single-operator concentration in this file by a wide margin, and a
+# small hosting AS rather than a general-purpose cloud.
+#
+# Still not taken as a range, for the reason given before: AltusHost sells to
+# other customers and a /23 or /24 rule shapes them too. But fifteen is a much
+# stronger case than the eight that question was asked about, and it is the same
+# question, so it is flagged here rather than left to be rediscovered a third
+# time.
+31.3.156.92
+79.142.79.23
+#
+# --- M247, AS9009 — three more ---------------------------------------------
+#
+# Bringing M247 to five. A hosting company whose business is substantially VPN
+# endpoints, so its recurrence in a candidate pool is expected. General host,
+# other customers, /32 each.
+146.70.176.13
+146.70.227.213
+152.89.160.115
+#
+# --- THG Hosting / UK2NET, AS13213 — seven more ----------------------------
+#
+# Bringing THG to thirty-seven across 82.163, 88.202, 107.182, 173.244 and
+# 216.119. Two carry customer PTRs that are somebody else's naming rather than
+# this client's — the standing midphase caution applies to all of them.
+82.163.73.61      # PTR mail.dinhoj.se
+82.163.74.12      # PTR new-server2.tgcworld.com
+82.163.74.116
+82.163.74.131
+88.202.226.69     # PTR 88.202.226.69.static.midphase.com
+107.182.229.76
+107.182.232.202
+#
+# --- Scaleway, AS12876 — eight more ----------------------------------------
+#
+# All carry the default instances.scw.cloud PTR, which names the product and not
+# the tenant. 151.115.67.32 makes SEVEN in 151.115.67.0/24, which was already
+# the densest /24 here when the sixth arrived; the answer is unchanged and for
+# the same reason — that /24 is Scaleway's open instance pool, sold as /32s to
+# anyone.
+151.115.12.71
+151.115.56.236
+151.115.60.160
+151.115.67.32
+151.115.73.92
+51.15.59.115
+51.158.236.252
+51.158.244.109
+51.159.189.208
+51.159.191.62
+#
+# --- Hetzner, OVH, IONOS, Voxility, HostPapa, AS214623 ---------------------
+#
+116.203.64.114    # Hetzner, PTR clients.your-server.de
+164.132.76.37     # OVH, PTR vps.ovh.net
+217.160.153.145   # IONOS
+5.254.60.108      # Voxility — second after 5.254.53.242
+67.215.255.67     # HostPapa / ColoCrossing, PTR colocrossing.com
+205.237.92.156    # AS214623, 2644819 Ontario Inc — NOT re-raised, see the standing ruling
+#
+# --- DigitalOcean — twenty-two more ----------------------------------------
+#
+# Twenty-two addresses across nineteen different /22s. As with batch fifteen,
+# the spread is the point: this is single droplets rented at volume, and no
+# range rule follows from any of it. Two are worth a word — 168.144.1.1 and
+# 170.64.252.1 are the .1 of their respective /24s, which is unusual for a
+# tenant address and is noted in case it means anything later.
+129.212.161.29
+129.212.169.51
+129.212.214.72
+138.197.55.50
+138.197.59.77
+138.197.254.191
+138.68.36.125
+138.68.196.50
+138.68.196.127
+138.68.204.49
+146.190.184.244
+146.190.189.99
+146.190.191.68
+157.245.28.137
+159.203.154.18
+164.90.252.189
+167.99.17.170
+168.144.1.1
+170.64.248.164
+170.64.252.1
+174.138.108.42
+188.166.128.231
+188.166.140.182
+209.38.4.223
+209.38.10.69
+209.38.30.7
+68.183.250.113
+# ===========================================================================

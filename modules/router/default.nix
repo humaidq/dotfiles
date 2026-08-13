@@ -111,29 +111,28 @@ in
       };
     };
     # Applied to the addresses in custom-throttle-list.txt, in both directions.
-    # These are deliberately bad rather than merely slow: the aim is a tunnel
-    # that stays connected and is useless, because a client that fails cleanly
-    # just reconnects somewhere else.
+    #
+    # A BANDWIDTH CAP AND NOTHING ELSE, since 2026-08-13. This tier used to add
+    # 400 ms of latency, 100 ms of jitter and 3% random loss on top of the cap,
+    # on the theory that a tunnel which stays connected and is miserable beats
+    # one that fails cleanly and makes the client reconnect elsewhere.
+    #
+    # Observation on the network says that backfired. The clients being shaped
+    # score their candidate nodes on exactly those signals — RTT and loss — so
+    # an impaired node is *easier* for them to detect and discard than a slow
+    # one, and they simply moved on and found unthrottled candidates. Latency
+    # and loss were doing the opposite of their purpose: advertising which nodes
+    # had been touched.
+    #
+    # A pure rate cap is close to invisible to that scoring. A latency probe is
+    # a couple of small packets and sails through under the cap, so the node
+    # looks healthy and stays selected, while anything that actually moves data
+    # crawls. Keeping the node attractive is the point.
     throttle = {
       rate = lib.mkOption {
         type = lib.types.str;
         default = "100kbit";
-        description = "Rate cap applied to throttled addresses, each direction.";
-      };
-      delay = lib.mkOption {
-        type = lib.types.str;
-        default = "400ms";
-        description = "Latency added to throttled addresses.";
-      };
-      jitter = lib.mkOption {
-        type = lib.types.str;
-        default = "100ms";
-        description = "Jitter around the added latency. Reorders packets, which hurts a tunnel more than the rate cap does.";
-      };
-      loss = lib.mkOption {
-        type = lib.types.str;
-        default = "3%";
-        description = "Random packet loss applied to throttled addresses.";
+        description = "Rate cap applied to throttled addresses, each direction. The whole of the throttle: no added latency, jitter or loss.";
       };
     };
     # What the addresses in custom-imo-list.txt get. The two sites want
