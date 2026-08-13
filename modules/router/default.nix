@@ -186,6 +186,34 @@ in
         description = "Packet loss applied to imo addresses, at all hours.";
       };
     };
+    # A pool of devices given a stricter egress policy than the rest of the
+    # LAN, identified by MAC. See
+    # docs/superpowers/specs/2026-08-13-low-trust-device-pool-design.md.
+    #
+    # MAC rather than IP because a device that sets its own address stays in
+    # the pool. The known and unmitigated weakness is the other direction: a
+    # device that randomises its MAC leaves the pool silently, and this network
+    # has seen MAC rotation before.
+    lowTrust = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Enforce the low-trust device pool. Off means no sets, no chains, no service, and no tool.";
+      };
+      macFile = lib.mkOption {
+        type = with lib.types; nullOr path;
+        default = null;
+        description = ''
+          Path to the decrypted file listing pool MAC addresses, one per line,
+          `#` comments allowed.
+
+          A path rather than a list of strings on purpose: the list identifies
+          people's devices, this repository is public, and anything given to a
+          NixOS option ends up world-readable in the Nix store. Point this at a
+          sops secret's `.path`.
+        '';
+      };
+    };
 
     bandwidth = {
       upload = lib.mkOption {
@@ -239,10 +267,46 @@ in
         default = "cs1";
         description = "DSCP class applied to low-priority traffic.";
       };
+      lowTrustMark = lib.mkOption {
+        type = lib.types.int;
+        default = 9;
+        description = ''
+          Conntrack mark stamped on a low-trust device's conversations. A
+          sentinel, not a priority class: no rule in qos-mark translates it into
+          a DSCP codepoint, so a flow carrying it lands in CAKE's best-effort
+          tin, and the single rule that matches it short-circuits the rest of
+          the chain so nothing can promote the flow afterwards.
+
+          Must differ from highPriorityMark and lowPriorityMark, or the
+          translation rules would give pool devices the very class the pool
+          exists to deny them, and must be non-zero — zero is what an
+          unclassified conntrack entry already carries and could not be told
+          apart from a pool one. Both are asserted at build time.
+        '';
+      };
     };
   };
 
   config = lib.mkIf cfg.enable {
+    # The low-trust sentinel only works by being a value nothing else in
+    # qos-mark can produce or translate. A collision would not fail the ruleset
+    # load — it would quietly hand pool devices the Voice tin, which is the one
+    # outcome the pool exists to prevent, so it is caught at build time.
+    assertions = [
+      {
+        assertion =
+          cfg.qos.lowTrustMark != 0
+          && cfg.qos.lowTrustMark != cfg.qos.highPriorityMark
+          && cfg.qos.lowTrustMark != cfg.qos.lowPriorityMark;
+        message = ''
+          sifr.router.qos.lowTrustMark (${toString cfg.qos.lowTrustMark}) must be
+          non-zero and must differ from highPriorityMark
+          (${toString cfg.qos.highPriorityMark}) and lowPriorityMark
+          (${toString cfg.qos.lowPriorityMark}).
+        '';
+      }
+    ];
+
     boot.kernelModules = [
       "sch_cake"
     ];
@@ -414,6 +478,20 @@ in
               }
             }
 
+            ${lib.optionalString cfg.lowTrust.enable ''
+              # Declared here as well as in router-blocklists, and populated by
+              # the same service. nftables sets are scoped to their table with
+              # no way to share one, and qos-mark needs the membership as much
+              # as the drop chains do. Two declarations, one writer.
+              set lowtrust_macs {
+                type ether_addr
+              }
+
+              set lowtrust_macs_temp {
+                type ether_addr
+              }
+            ''}
+
             chain early-input {
               type filter hook input priority -10; policy accept;
 
@@ -445,6 +523,13 @@ in
             # different namespace from the meta marks that forward_throttle in
             # ip-blocklist.nix writes (0x2/0x3 for the tc fw filters), so the
             # two schemes cannot collide despite the overlapping numbers.
+            #
+            # The ct mark space has three values, not two: highPriorityMark and
+            # lowPriorityMark each translate into a codepoint at the bottom of
+            # the chain, and lowTrustMark deliberately translates into none. It
+            # is a sentinel that pulls a flow out of the chain entirely — see
+            # the low-trust block below for why that needed to be a mark rather
+            # than a match.
             chain qos-mark {
               type filter hook forward priority mangle; policy accept;
 
@@ -470,6 +555,76 @@ in
               # forwarded flow.
               iifname "${cfg.ppp}" meta nfproto ipv4 counter ip dscp set cs0 comment "Bleach DSCP arriving from WAN (IPv4)"
               iifname "${cfg.ppp}" meta nfproto ipv6 counter ip6 dscp set cs0 comment "Bleach DSCP arriving from WAN (IPv6)"
+
+              # LOW-TRUST POOL. A pool device's conversations never reach CAKE's
+              # Voice tin — not the tunnel's, and not its calls either. They are
+              # never dropped or throttled, only never prioritised, which is the
+              # accepted trade.
+              #
+              # The mechanism is a sentinel ct mark (qos.lowTrustMark) that no
+              # rule below translates into a codepoint, plus one `return` that
+              # takes a flow carrying it straight out of the chain. So a pool
+              # flow leaves qos-mark with cs0 and lands in best-effort.
+              #
+              # WHY A SENTINEL, and not the `ct mark set 0` placed after the
+              # classifiers that this was until 2026-08-13. `ether saddr` can
+              # only match upload: a download's source MAC is the ISP's, and
+              # there is no download-direction equivalent (matching the LAN
+              # address instead would miss a device that changes it). The ct
+              # mark crossing both directions was assumed to cover that. It does
+              # not, because the rules being neutralised are themselves
+              # direction-agnostic and run on every packet. A STUN Binding
+              # Success Response arriving from the WAN carries the same magic
+              # cookie as the request, so the STUN rule re-marked the flow high
+              # on the way in; the ether-saddr rules could not match that packet
+              # to undo it; and the translation rules then wrote EF onto it.
+              # Download flapped between best-effort and Voice for the life of
+              # the call. Any highPriorityPorts match on `sport` had the same
+              # hole. Pre-empting the classifiers and refusing to re-enter them
+              # is what closes it: the download packet never reaches a rule that
+              # could promote it.
+              #
+              # ONE `return` RATHER THAN NINE GUARDS. The alternative was
+              # `ct mark != sentinel` bolted onto each of the four
+              # highPriorityPorts rules, the STUN rule and the four
+              # lowPriorityPorts rules. A guard that must be repeated is a guard
+              # someone forgets on the tenth rule; expressed once, the sentinel
+              # structurally cannot reach the translation rules at the bottom of
+              # this chain, whatever is added between here and there.
+              #
+              # `return` from a base chain applies the chain policy (accept) and
+              # evaluation carries on at the next hook, so nothing outside
+              # qos-mark is skipped — only the rules that could promote this
+              # flow. Counted like everything else here: a zero counter on it
+              # means the pool is empty or the sets failed to load, which is the
+              # silent fail-open this feature keeps guarding against.
+              #
+              # One accepted consequence: a conversation still open when a
+              # device leaves the pool keeps the sentinel until its conntrack
+              # entry expires. New flows are unaffected, and ICE renegotiation
+              # produces new flows.
+              ${lib.optionalString cfg.lowTrust.enable ''
+                ether saddr @lowtrust_macs counter ct mark set ${toString cfg.qos.lowTrustMark} comment "Low-trust device: no priority"
+                ether saddr @lowtrust_macs_temp counter ct mark set ${toString cfg.qos.lowTrustMark} comment "Low-trust device: no priority (temp)"
+
+                # Closes a hole that exists today for every device and is only
+                # closed here for pool ones: the bleach rules above strip DSCP
+                # arriving from the WAN, but a LAN device's own upload codepoint
+                # is untouched, so a device can mark its own packets EF and
+                # reach the Voice tin on the uplink regardless of its ct mark.
+                # Ahead of the return, which would otherwise skip them. The
+                # `meta nfproto` matches are for counter placement, for the
+                # reason spelled out on the translation rules below.
+                ether saddr @lowtrust_macs meta nfproto ipv4 counter ip dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv4)"
+                ether saddr @lowtrust_macs meta nfproto ipv6 counter ip6 dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv6)"
+                ether saddr @lowtrust_macs_temp meta nfproto ipv4 counter ip dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv4, temp)"
+                ether saddr @lowtrust_macs_temp meta nfproto ipv6 counter ip6 dscp set cs0 comment "Low-trust device: bleach self-marked DSCP (IPv6, temp)"
+
+                # Matches in both directions, unlike everything above it: this
+                # is the rule that catches the download half, which carries the
+                # sentinel on its conntrack entry but no LAN MAC to match on.
+                ct mark ${toString cfg.qos.lowTrustMark} counter return comment "Low-trust device: leave QoS classification"
+              ''}
 
               ${lib.optionalString (cfg.qos.highPriorityPorts != [ ]) ''
                 tcp sport { ${formatPorts cfg.qos.highPriorityPorts} } counter ct mark set ${toString cfg.qos.highPriorityMark} comment "Mark high-priority TCP source ports"

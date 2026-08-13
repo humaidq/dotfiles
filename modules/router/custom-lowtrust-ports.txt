@@ -1,0 +1,15 @@
+# Ports dropped LAN->WAN for devices in the low-trust pool only. The global
+# custom-port-blocklist.txt is unchanged and applies to everybody; this file is
+# the stricter set that only pool devices get.
+#
+# Same format and guarantees as that file: parsed at build time, so a typo
+# fails the rebuild rather than silently blocking nothing.
+#
+# Seeded from the 2026-08-13 captures, which showed one client using each of
+# these as a transport with nothing resembling the port's real protocol on it.
+# 22 is deliberately NOT in the global file: SSH from other devices on this LAN
+# is legitimate, and that is exactly the distinction this pool exists to draw.
+21
+22
+553
+554

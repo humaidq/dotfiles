@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -24,7 +25,7 @@ var errFake = errors.New("conntrack unavailable")
 func testPeersServer(t *testing.T) *peersServer {
 	t.Helper()
 	tmpl, err := template.New("peers.html").Parse(
-		`{{.Device}}|{{range .Peers}}{{.Addr}},{{.ASN}},{{.Org}},{{.Country}},{{.SharePct}},{{.Shape}};{{end}}|{{.Error}}`)
+		`{{.Device}}|{{range .Peers}}{{.Addr}},{{.ASN}},{{.Org}},{{.Country}},{{.SharePct}},{{.Shape}};{{end}}|{{.Error}}|{{.LowTrust}}`)
 	if err != nil {
 		t.Fatalf("parse template: %v", err)
 	}
@@ -45,6 +46,25 @@ func testPeersServer(t *testing.T) *peersServer {
 		return []byte(conntrackFixture), nil
 	}
 	server.runTool = func(string, ...string) (string, error) { return "ok", nil }
+	// Non-nil is what enables the low-trust pool, so setting these is what puts
+	// the default test server in the enabled state — see
+	// testPeersServerWithoutLowTrust for the other one. Stubs rather than the
+	// real functions so render() never shells out to ip(8) or nft(8) on
+	// whatever machine runs the suite.
+	server.neighbours = func(context.Context) ([]byte, error) { return nil, nil }
+	server.lowTrust = func(context.Context, string) string { return "" }
+	return server
+}
+
+// testPeersServerWithoutLowTrust is the shape bongo runs: router-web with the
+// pool disabled. Nil is the disabled state for both fields, which is what
+// newPeersServer already leaves them at — clearing them explicitly here so the
+// intent survives someone re-adding a default in the constructor.
+func testPeersServerWithoutLowTrust(t *testing.T) *peersServer {
+	t.Helper()
+	server := testPeersServer(t)
+	server.neighbours = nil
+	server.lowTrust = nil
 	return server
 }
 
@@ -699,6 +719,220 @@ func TestActionDropAllLogsWithoutAPeer(t *testing.T) {
 	}
 	if strings.Contains(line, "invalid IP") {
 		t.Fatalf("zero address leaked into the journal: %q", line)
+	}
+}
+
+func TestActionAddsDeviceToLowTrustPool(t *testing.T) {
+	server := testPeersServer(t)
+	var gotName string
+	var gotArgs []string
+	server.runTool = func(name string, args ...string) (string, error) {
+		gotName, gotArgs = name, args
+		return "lowtrust: added aa:bb:cc:dd:ee:01", nil
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/lowtrust", nil)
+	server.mux().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303", rec.Code)
+	}
+	if gotName != "lowtrust" || len(gotArgs) != 2 || gotArgs[0] != "add" || gotArgs[1] != "192.168.0.10" {
+		t.Fatalf("ran %s %v, want lowtrust add 192.168.0.10", gotName, gotArgs)
+	}
+}
+
+func TestActionRemovesDeviceFromLowTrustPool(t *testing.T) {
+	server := testPeersServer(t)
+	var gotName string
+	var gotArgs []string
+	server.runTool = func(name string, args ...string) (string, error) {
+		gotName, gotArgs = name, args
+		return "lowtrust: removed aa:bb:cc:dd:ee:01", nil
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/peers/192.168.0.10/lowtrust/remove", nil)
+	server.mux().ServeHTTP(rec, req)
+
+	// The tool name is asserted, not discarded: this is the only test covering
+	// this route, so a typo in its `tool:` field would otherwise ship silently
+	// and the button would 500 on the router.
+	if gotName != "lowtrust" || len(gotArgs) != 2 || gotArgs[0] != "del" || gotArgs[1] != "192.168.0.10" {
+		t.Fatalf("ran %s %v, want lowtrust del 192.168.0.10", gotName, gotArgs)
+	}
+}
+
+// TestLowTrustRoutesAbsentWhenDisabled is the bongo case: the pool is off, so
+// the two routes must answer exactly as they did before the feature existed.
+// A 500 from a registered route would mean the page offered an action the
+// router cannot perform.
+func TestLowTrustRoutesAbsentWhenDisabled(t *testing.T) {
+	for _, path := range []string{
+		"/peers/192.168.0.10/lowtrust",
+		"/peers/192.168.0.10/lowtrust/remove",
+	} {
+		server := testPeersServerWithoutLowTrust(t)
+		ran := false
+		server.runTool = func(string, ...string) (string, error) { ran = true; return "", nil }
+
+		rec := httptest.NewRecorder()
+		server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, nil))
+
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("POST %s: status = %d, want 404", path, rec.Code)
+		}
+		if ran {
+			t.Errorf("POST %s invoked a tool on a router without the pool", path)
+		}
+	}
+}
+
+// TestLowTrustRoutesPresentWhenEnabled is the other half of the pair: the same
+// mux with the feature on must register both routes. Without it, gating the
+// routes could regress into gating them away entirely and nothing would fail.
+func TestLowTrustRoutesPresentWhenEnabled(t *testing.T) {
+	for _, path := range []string{
+		"/peers/192.168.0.10/lowtrust",
+		"/peers/192.168.0.10/lowtrust/remove",
+	} {
+		rec := httptest.NewRecorder()
+		testPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, nil))
+		if rec.Code != http.StatusSeeOther {
+			t.Errorf("POST %s: status = %d, want 303", path, rec.Code)
+		}
+	}
+}
+
+// TestPageOmitsLowTrustBlockWhenDisabled covers the render() half: with the
+// feature off the page must carry no membership state, and must not consult
+// the neighbour table or nft at all — on bongo those are a fork per page load
+// that can only fail.
+func TestPageOmitsLowTrustBlockWhenDisabled(t *testing.T) {
+	server := testPeersServerWithoutLowTrust(t)
+	tmpl, err := template.New("peers.html").Parse(`{{.Device}}|{{.LowTrustEnabled}}|{{.LowTrust}}`)
+	if err != nil {
+		t.Fatalf("parse template: %v", err)
+	}
+	server.tmpl = tmpl
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if got, want := rec.Body.String(), "192.168.0.10|false|"; got != want {
+		t.Fatalf("page data = %q, want %q", got, want)
+	}
+}
+
+// TestPageShowsLowTrustMembership exercises the wiring inside render(): the
+// handler resolves the device's MAC from the neighbour table, then asks
+// lowTrust about that MAC — not the address, which is the caller's key but
+// not the pool's. Both steps are injected, so this never shells out.
+func TestPageShowsLowTrustMembership(t *testing.T) {
+	server := testPeersServer(t)
+	server.neighbours = func(context.Context) ([]byte, error) {
+		return []byte("192.168.0.10 dev lan0 lladdr aa:bb:cc:dd:ee:01 REACHABLE\n"), nil
+	}
+	server.lowTrust = func(_ context.Context, mac string) string {
+		if mac != "aa:bb:cc:dd:ee:01" {
+			t.Fatalf("looked up membership for %q, want aa:bb:cc:dd:ee:01", mac)
+		}
+		return "temp"
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if !strings.HasSuffix(rec.Body.String(), "|temp") {
+		t.Fatalf("LowTrust not carried into the page data: %q", rec.Body.String())
+	}
+}
+
+// TestPageOmitsLowTrustWhenMACUnknown covers a device with no neighbour-table
+// entry (asleep, or the table was just flushed): lowTrust must not be asked
+// about an empty MAC, and the page must not claim membership it never checked.
+func TestPageOmitsLowTrustWhenMACUnknown(t *testing.T) {
+	server := testPeersServer(t)
+	server.neighbours = func(context.Context) ([]byte, error) { return []byte(""), nil }
+	called := false
+	server.lowTrust = func(context.Context, string) string { called = true; return "permanent" }
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if called {
+		t.Fatal("lowTrust was consulted for a device with no MAC")
+	}
+	if !strings.HasSuffix(rec.Body.String(), "||") {
+		t.Fatalf("LowTrust should be empty when the MAC is unknown: %q", rec.Body.String())
+	}
+}
+
+func TestLowTrustBadgeHidesRemoveForPermanent(t *testing.T) {
+	var buf bytes.Buffer
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	data := peersPageData{Device: "192.168.50.10", LowTrustEnabled: true, LowTrust: "permanent"}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatal(err)
+	}
+	body := buf.String()
+	if !strings.Contains(body, "low-trust") {
+		t.Error("permanent member should show the low-trust badge")
+	}
+	if strings.Contains(body, "/lowtrust/remove") {
+		t.Error("permanent member must not offer a remove button")
+	}
+}
+
+func TestLowTrustBadgeOffersRemoveForTemp(t *testing.T) {
+	var buf bytes.Buffer
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	data := peersPageData{Device: "192.168.50.10", LowTrustEnabled: true, LowTrust: "temp"}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatal(err)
+	}
+	body := buf.String()
+	if !strings.Contains(body, `action="/peers/192.168.50.10/lowtrust/remove"`) {
+		t.Errorf("temp member should offer a remove button:\n%s", body)
+	}
+}
+
+func TestLowTrustBadgeAbsentByDefault(t *testing.T) {
+	// A pool router, device not in it: an add button and no remove button, no
+	// badge text. LowTrustEnabled is what separates this from "no pool on this
+	// router at all" below — the two used to share the zero value, which is how
+	// bongo ended up rendering a button for drops it does not implement.
+	var buf bytes.Buffer
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	if err := tmpl.Execute(&buf, peersPageData{Device: "192.168.50.10", LowTrustEnabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	body := buf.String()
+	if !strings.Contains(body, `action="/peers/192.168.50.10/lowtrust"`) {
+		t.Errorf("device not in the pool should offer to add it:\n%s", body)
+	}
+	if strings.Contains(body, "/lowtrust/remove") {
+		t.Errorf("device not in the pool must not offer a remove button:\n%s", body)
+	}
+}
+
+// TestLowTrustBlockAbsentWhenFeatureDisabled is the zero value — what every
+// pre-existing template test constructs, and what bongo renders. Not one word
+// of the block may appear: the routes are not registered there, so every
+// control in it is a 500 waiting to be clicked.
+func TestLowTrustBlockAbsentWhenFeatureDisabled(t *testing.T) {
+	var buf bytes.Buffer
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	if err := tmpl.Execute(&buf, peersPageData{Device: "192.168.50.10"}); err != nil {
+		t.Fatal(err)
+	}
+	body := buf.String()
+	for _, unwanted := range []string{"lowtrust", "low-trust"} {
+		if strings.Contains(body, unwanted) {
+			t.Errorf("page mentions %q with the pool disabled:\n%s", unwanted, body)
+		}
+	}
+	// The rest of the page is untouched by the gate.
+	if !strings.Contains(body, `action="/peers/192.168.50.10/drop-all"`) {
+		t.Errorf("gating the pool block took the drop-all button with it:\n%s", body)
 	}
 }
 

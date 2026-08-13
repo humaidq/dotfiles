@@ -432,6 +432,15 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
 		peers.captures = newCaptureManager(dir, getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0"))
 		go peers.captures.sweepEvery(captureSweepEvery)
 	}
+	// The low-trust pool is opt-in the same way, and for a stronger reason: the
+	// nft sets, the drop chains and the `lowtrust` tool are all gated on one
+	// NixOS option, so on a router without it these lookups can only fail and
+	// the buttons can only promise drops nothing implements. Unset leaves both
+	// fields nil, which mux() and the template read as "no such feature".
+	if strings.TrimSpace(os.Getenv("ROUTER_LOWTRUST")) != "" {
+		peers.neighbours = readNeighbours
+		peers.lowTrust = lowTrustMembership
+	}
 	handler := peers.mux()
 	go serveMeshWithRetry(validAddr, handler)
 	return nil

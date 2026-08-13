@@ -42,6 +42,12 @@
     sopsFile = ../../secrets/bingo.yaml;
   };
 
+  sops.secrets."router/lowtrust-macs" = {
+    sopsFile = ../../secrets/bingo.yaml;
+    mode = "0400";
+    restartUnits = [ "nft-lowtrust-macs.service" ];
+  };
+
   # Gated on dnsmasq itself: the client specialisation turns dnsmasq off, and
   # the NixOS module only declares the dnsmasq user when it is enabled. A
   # secret owned by a user that does not exist fails manifest validation, and
@@ -155,6 +161,10 @@
         853
       ];
       suricata.enable = false;
+      lowTrust = {
+        enable = true;
+        macFile = config.sops.secrets."router/lowtrust-macs".path;
+      };
     };
 
     persist = {

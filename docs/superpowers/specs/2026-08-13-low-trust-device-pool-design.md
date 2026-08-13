@@ -134,29 +134,61 @@ An earlier draft granted priority by destination from a maintained
 real call per app to seed, and it buys nothing once the requirement is "no Voice
 tin for these devices" rather than "no Voice tin for the tunnel".
 
-Four rules in `qos-mark`, placed **after** the existing mark rules and **before**
-the ct-mark-to-DSCP translation:
+Seven rules in `qos-mark`, placed **after** the WAN DSCP bleach at the top of the
+chain and **before** every classifier:
 
 ```
-ether saddr @lowtrust_macs      counter ct mark set 0
-ether saddr @lowtrust_macs_temp counter ct mark set 0
+ether saddr @lowtrust_macs      counter ct mark set <lowTrustMark>
+ether saddr @lowtrust_macs_temp counter ct mark set <lowTrustMark>
 ether saddr @lowtrust_macs      ip dscp set cs0    (+ ip6 form)
 ether saddr @lowtrust_macs_temp ip dscp set cs0    (+ ip6 form)
+ct mark <lowTrustMark>          counter return
 ```
 
-Two mechanisms make this work, both already load-bearing elsewhere in the file:
+`sifr.router.qos.lowTrustMark` is a **sentinel**, not a priority class: none of
+the four `ct mark … dscp set …` translation rules at the bottom of the chain
+matches it, so a flow carrying it settles in best-effort. A build-time assertion
+keeps it non-zero and distinct from `highPriorityMark` and `lowPriorityMark` —
+zero is what an unclassified conntrack entry already carries, and a collision
+with either of the others would hand pool devices the very class this denies
+them.
 
-- **`ether saddr` only matches upload.** A download's source MAC is the ISP's.
-  This is fine because the mark lands on the *conntrack entry*, so every packet
-  of the conversation inherits it in both directions — the same property the
-  STUN rule's own comment describes as load-bearing.
-- **Placement after the mark rules** means this overwrites any high-priority mark
-  the port list or the STUN signature just set, rather than being overwritten.
+An earlier version of this section claimed the conntrack mark alone was enough,
+on the grounds that `ether saddr` matching upload only did not matter because the
+mark crosses both directions. **That was wrong, and it is what the sentinel
+fixes.** The rules being neutralised are themselves direction-agnostic and run on
+every packet:
+
+- A STUN **Binding Success Response** arriving from the WAN carries the same
+  magic cookie as the request, so the STUN rule re-marked the flow high on the
+  way in. The `ether saddr` rules could not match that packet to undo it — a
+  download's source MAC is the ISP's — and the translation rules then wrote EF
+  onto it. Download flapped between best-effort and Voice for the life of the
+  call.
+- Any `highPriorityPorts` match on `sport` had the same hole.
+
+There is no download-direction equivalent of `ether saddr` to add (matching the
+LAN address instead would miss a device that changes it), so the fix is to
+pre-empt the classifiers rather than to override them: stamp the sentinel first,
+then leave the chain. `return` from a base chain applies the chain policy
+(accept) and evaluation continues at the next hook, so only the rest of
+`qos-mark` is skipped.
+
+**One `return` rather than nine `ct mark != <sentinel>` guards** on the four
+`highPriorityPorts` rules, the STUN rule and the four `lowPriorityPorts` rules: a
+guard that has to be repeated is a guard someone forgets on the tenth rule, and
+expressed once the sentinel structurally cannot reach the translation rules
+whatever is added between here and there.
+
+Accepted consequence: a conversation still open when a device leaves the pool
+keeps the sentinel until its conntrack entry expires. New flows are unaffected,
+and ICE renegotiation produces new flows.
 
 The DSCP bleach closes a hole that exists today independently of this feature.
 The router bleaches DSCP arriving from the WAN, but a LAN device's own upload
 codepoint is untouched, so a device can mark its own packets EF and reach the
-Voice tin on the uplink regardless of its ct mark.
+Voice tin on the uplink regardless of its ct mark. It sits ahead of the `return`,
+which would otherwise skip it.
 
 Normal devices are unaffected: every rule is gated on set membership, and the
 sets are empty on a router that has not enabled the feature.
@@ -183,6 +215,15 @@ forgot one would be an unauthenticated firewall mutation.
 The device page grows a badge showing membership and which set it came from. A
 device in the permanent set shows the badge with **no** remove button: that
 button could not work, and offering it would be a lie.
+
+The web layer is gated the same way everything else is, following the pattern the
+capture routes already use: `web.nix` sets `ROUTER_LOWTRUST=1` only when the
+feature is enabled, `main.go` leaves `peersServer.lowTrust` and `.neighbours` nil
+without it, `mux()` does not register the two routes, and the template renders
+none of the block. Without that gate bongo — which runs `router-web` with the
+pool off — would render a button promising drops no chain implements, 500 on the
+press because the `lowtrust` tool is not on its PATH, and fork `ip neigh` plus two
+`nft list set` calls per page render that can only fail.
 
 ## Error handling
 

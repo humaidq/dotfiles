@@ -36,6 +36,16 @@ type peersPageData struct {
 	// What this device's capture slot is doing. Zero when no capture
 	// directory is configured, which the template reads as "no banner".
 	Capture captureSlot
+	// Whether this router has the low-trust pool at all. False on a router
+	// where the feature is off, and the template then renders none of the
+	// block: no button promising drops that no chain implements, and no link
+	// to routes that are not registered.
+	LowTrustEnabled bool
+	// Low-trust pool membership: "", "temp", or "permanent". Which set a
+	// device came from decides whether a remove button is offered, because
+	// the tool refuses to remove a permanent member and a button that cannot
+	// work should not be shown.
+	LowTrust string
 }
 
 type indexPageData struct {
@@ -79,6 +89,24 @@ type peersServer struct {
 	// feature: no routes, no banner, and the page behaves exactly as it did
 	// before captures existed.
 	captures *captureManager
+	// neighbours reads the kernel's neighbour table, the only place a device's
+	// MAC is available to the page (leases carry an address and a name, not a
+	// MAC). Injectable so tests never shell out to ip(8).
+	//
+	// Set by main.go alongside lowTrust, only when the low-trust pool is
+	// enabled: nothing else on the page needs a MAC, so on a router without
+	// the pool this would be a fork of ip(8) per page render for a value
+	// nobody reads.
+	neighbours func(ctx context.Context) ([]byte, error)
+	// lowTrust reports a MAC's low-trust pool membership. Injectable so tests
+	// never shell out to nft(8); the real implementation is lowTrustMembership
+	// in shaping.go.
+	//
+	// Nil disables the feature the same way a nil captures does: no routes, no
+	// template block, no nft(8) calls that could only fail because the sets do
+	// not exist. bongo runs this binary with the pool off, and must behave
+	// exactly as it did before the pool existed.
+	lowTrust func(ctx context.Context, mac string) string
 }
 
 func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -247,6 +275,30 @@ func (s *peersServer) mux() *http.ServeMux {
 			return []string{"from", device.String()}
 		},
 	}))
+	// Absent unless the low-trust pool is enabled, for the same reason the
+	// capture routes are: the `lowtrust` tool is only installed on a router
+	// that has the pool, so registering these elsewhere would offer a button
+	// whose only possible outcome is a 500.
+	//
+	// Device-scoped like drop-all: the pool is a property of the device, not of
+	// one conversation, so there is no peer form field and peerless skips the
+	// public-address guard that would have nothing to guard. invalidate is
+	// deliberately left false: the shaping cache keyed by peer address is
+	// unaffected by device membership.
+	if s.lowTrust != nil {
+		mux.HandleFunc("POST /peers/{device}/lowtrust", s.handleAction(peerAction{
+			name: "lowtrust", tool: "lowtrust", peerless: true,
+			argv: func(_, device netip.Addr) []string {
+				return []string{"add", device.String()}
+			},
+		}))
+		mux.HandleFunc("POST /peers/{device}/lowtrust/remove", s.handleAction(peerAction{
+			name: "lowtrust-remove", tool: "lowtrust", peerless: true,
+			argv: func(_, device netip.Addr) []string {
+				return []string{"del", device.String()}
+			},
+		}))
+	}
 	// Absent unless a capture directory is configured, so a router without one
 	// answers 404 here exactly as it did before this feature.
 	if s.captures != nil {
@@ -314,6 +366,23 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	data := peersPageData{Device: device.String(), Error: notice}
 	if s.captures != nil {
 		data.Capture = s.captures.Get(device)
+	}
+	// The pool is keyed on MAC, not address, so the address has to be resolved
+	// first. A device asleep or absent from the neighbour table simply has no
+	// MAC to look up, and LowTrust is left at its zero value rather than
+	// guessed at — that zero value is exactly what "not in the pool" means to
+	// the template.
+	//
+	// Both nil on a router without the pool, which is what keeps the whole
+	// lookup — a fork of ip(8) and up to two of nft(8), per page render — off
+	// a router that has no sets for them to read.
+	if s.neighbours != nil && s.lowTrust != nil {
+		data.LowTrustEnabled = true
+		if raw, err := s.neighbours(ctx); err == nil {
+			if mac := macForDevice(raw, device); mac != "" {
+				data.LowTrust = s.lowTrust(ctx, mac)
+			}
+		}
 	}
 	for _, peer := range peers {
 		share := 0.0

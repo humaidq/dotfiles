@@ -50,6 +50,17 @@ let
     ];
     text = builtins.readFile ./tempthrottle.bash;
   };
+  lowtrust = pkgs.writeShellApplication {
+    name = "lowtrust";
+    runtimeInputs = with pkgs; [
+      coreutils
+      gawk
+      gnugrep
+      iproute2
+      nftables
+    ];
+    text = builtins.readFile ./lowtrust.bash;
+  };
 in
 {
   config = lib.mkIf cfg.enable {
@@ -58,7 +69,8 @@ in
       killconn
       tempblock
       tempthrottle
-    ];
+    ]
+    ++ lib.optional cfg.lowTrust.enable lowtrust;
 
     # router-web's peers page shells out to these to throttle/block a peer.
     # DynamicUser services (see web.nix) get a PATH built solely from their
@@ -69,6 +81,7 @@ in
       killconn
       tempblock
       tempthrottle
-    ];
+    ]
+    ++ lib.optional cfg.lowTrust.enable lowtrust;
   };
 }

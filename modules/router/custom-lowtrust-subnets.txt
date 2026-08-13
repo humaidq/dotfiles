@@ -1,0 +1,12 @@
+# Destination networks dropped LAN->WAN for devices in the low-trust pool only.
+#
+# Unlike custom-ip-blocklist.txt this file is meant to hold BLANKET entries —
+# a /16 or wider where a provider is not worth enumerating host by host for a
+# device that has no business there. That is only defensible because it applies
+# to the pool rather than the house.
+#
+# One CIDR per line, v4 or v6, # comments. Parsed at build time.
+#
+# Empty on purpose. Add ranges as they are decided; a subnet is not
+# device-identifying, so unlike the MAC list this file belongs in git where it
+# can be reviewed.

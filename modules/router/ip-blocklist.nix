@@ -169,6 +169,29 @@ let
           router-blocklists blocked_ports
       '';
 
+  # Reuses portBlocklistGen verbatim, exactly as throttleList reuses
+  # localBlocklistGen: same format, same build-time validation, only the
+  # target set differs.
+  lowTrustPorts =
+    pkgs.runCommand "nft-lowtrust-ports.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${portBlocklistGen} ${./custom-lowtrust-ports.txt} "$out" \
+          router-blocklists lowtrust_ports
+      '';
+
+  lowTrustSubnets =
+    pkgs.runCommand "nft-lowtrust-subnets.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-lowtrust-subnets.txt} "$out" \
+          router-blocklists lowtrust_block4 lowtrust_block6
+      '';
+
   # The throttle list reuses the local blocklist's generator verbatim — same
   # format, same build-time validation, same interval collapsing — and only the
   # target sets differ. What happens to a matching packet is decided in the
@@ -348,6 +371,52 @@ in
           type inet_service
         }
 
+        ${lib.optionalString cfg.lowTrust.enable ''
+          # Membership in the low-trust pool, matched as `ether saddr`, which is
+          # only visible on the LAN-ingress (upload) direction — a download's
+          # source MAC is the ISP's. That is sufficient because every consumer
+          # either drops the packet outright or sets a ct mark, and a ct mark
+          # applies to both directions of the conversation.
+          #
+          # Two sets rather than one so that removal is safe: the peers page can
+          # only touch the _temp set, so a button press can never silently undo
+          # a device that was deliberately put in the permanent list. A device
+          # in both is simply in the pool.
+          set lowtrust_macs {
+            type ether_addr
+          }
+
+          set lowtrust_macs_temp {
+            type ether_addr
+          }
+
+          set lowtrust_ports {
+            type inet_service
+          }
+
+          set lowtrust_block4 {
+            type ipv4_addr
+            flags interval
+          }
+
+          set lowtrust_block6 {
+            type ipv6_addr
+            flags interval
+          }
+
+          # Populated from custom-lowtrust-stun-hosts.txt by nft-lowtrust-stun,
+          # on a timer rather than at build time because these names resolve to
+          # addresses that move. No `flags interval`: these are host addresses
+          # from DNS, not ranges.
+          set lowtrust_stun4 {
+            type ipv4_addr
+          }
+
+          set lowtrust_stun6 {
+            type ipv6_addr
+          }
+        ''}
+
         chain forward_blocklists {
           type filter hook forward priority -10; policy accept;
 
@@ -475,6 +544,50 @@ in
           iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @blocked_ports counter drop comment "block LAN->WAN tunnel ports"
         }
 
+        ${lib.optionalString cfg.lowTrust.enable ''
+          # Entry point for the pool. Two membership rules jumping to one policy
+          # chain, so the policy is written once rather than duplicated per set.
+          #
+          # Priority -10 matches forward_ports and forward_blocklists, which
+          # puts these drops ahead of forward_throttle at 0: a pool device
+          # reaching a throttled address is dropped rather than shaped, matching
+          # the precedence the other chains already establish.
+          chain forward_lowtrust {
+            type filter hook forward priority -10; policy accept;
+
+            ether saddr @lowtrust_macs jump lowtrust_policy
+            ether saddr @lowtrust_macs_temp jump lowtrust_policy
+          }
+
+          # Scoped LAN -> WAN, so traffic between LAN devices is untouched.
+          # Traffic to the router itself needs no rule and gets none: it arrives
+          # at the input hook, and this chain is on forward. That is
+          # load-bearing rather than incidental — a pool device must keep
+          # reaching the router's resolver, because one that cannot falls back
+          # to something worse, which is the opposite of the intent.
+          #
+          # Log and verdict are separate rules throughout, for the reason
+          # forward_blocklists documents: a limit on the verdict rule would let
+          # packets over the rate escape the drop.
+          chain lowtrust_policy {
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust port drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports counter drop comment "low-trust port drop"
+
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust subnet drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 counter drop comment "low-trust subnet drop (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_block6 counter drop comment "low-trust subnet drop (IPv6)"
+
+            # Generic public STUN servers only, and only on the STUN ports — see
+            # custom-lowtrust-stun-hosts.txt for why signature matching and
+            # whole-address blocking were both rejected. stun.l.google.com's
+            # addresses are shared with unrelated Google services, so this must
+            # stay port-scoped rather than becoming an address block.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip daddr @lowtrust_stun4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust STUN drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip daddr @lowtrust_stun4 counter drop comment "low-trust public STUN drop (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip6 daddr @lowtrust_stun6 counter drop comment "low-trust public STUN drop (IPv6)"
+          }
+        ''}
+
         chain output_blocklists {
           type filter hook output priority -10; policy accept;
 
@@ -561,7 +674,195 @@ in
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
         nft -f ${throttleList}
+        ${lib.optionalString cfg.lowTrust.enable ''
+          nft -f ${lowTrustPorts}
+          nft -f ${lowTrustSubnets}
+        ''}
       '';
+    };
+
+    # Loads the permanent pool membership from the sops secret. A service
+    # rather than a generated .nft file because the list must not reach the Nix
+    # store: it names people's devices and this repository is public.
+    #
+    # partOf nftables.service for the same reason nft-blocklists-local is —
+    # a ruleset reload recreates the table with empty sets, which would
+    # silently empty the pool until the next rebuild.
+    systemd.services.nft-lowtrust-macs = lib.mkIf cfg.lowTrust.enable {
+      description = "Load low-trust pool MAC addresses";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "nftables.service" ];
+      wants = [ "nftables.service" ];
+      partOf = [ "nftables.service" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+
+      path = with pkgs; [
+        nftables
+        gnugrep
+        gnused
+        coreutils
+      ];
+
+      # Fails loudly on a missing or malformed file rather than loading an
+      # empty set. The plaintext lists get a build-time parse that fails the
+      # rebuild on a typo; a runtime secret cannot, so a failed unit is the
+      # substitute for that guarantee. An empty pool is a silent fail-open.
+      script = ''
+        set -euo pipefail
+
+        file=${lib.escapeShellArg (toString cfg.lowTrust.macFile)}
+
+        if [ ! -r "$file" ]; then
+          echo "nft-lowtrust-macs: cannot read $file" >&2
+          exit 1
+        fi
+
+        elements=""
+        while IFS= read -r line || [ -n "$line" ]; do
+          line=''${line%%#*}
+          line=$(printf '%s' "$line" | tr -d '[:space:]' | tr 'A-F' 'a-f')
+          [ -z "$line" ] && continue
+          if ! printf '%s' "$line" | grep -qE '^([0-9a-f]{2}:){5}[0-9a-f]{2}$'; then
+            echo "nft-lowtrust-macs: malformed MAC address: $line" >&2
+            exit 1
+          fi
+          elements="$elements$line, "
+        done < "$file"
+
+        # Both tables, because the sets are declared in both and nftables has
+        # no way to share one. Missing the second is the failure mode this
+        # whole plan keeps warning about: the ruleset builds, and qos-mark
+        # fails to load at runtime.
+        for table in router-blocklists router-filter; do
+          nft flush set inet "$table" lowtrust_macs
+          if [ -n "$elements" ]; then
+            nft add element inet "$table" lowtrust_macs "{ ''${elements%, } }"
+          fi
+        done
+      '';
+    };
+
+    # Resolves the public STUN server names into the drop sets. A timer rather
+    # than a build-time resolution because those addresses move, and a stale
+    # entry is a silently open hole rather than a visible failure.
+    #
+    # Deliberately tolerant where the MAC loader is strict: a name that fails to
+    # resolve is skipped with a warning rather than failing the unit. The
+    # failure mode differs — an unresolvable name leaves one STUN server
+    # reachable, where an unreadable MAC file would empty the whole pool.
+    systemd.services.nft-lowtrust-stun = lib.mkIf cfg.lowTrust.enable {
+      description = "Resolve public STUN servers into the low-trust drop sets";
+      after = [
+        "nftables.service"
+        "nft-blocklists-local.service"
+        "network-online.target"
+      ];
+      wants = [
+        "nftables.service"
+        "network-online.target"
+      ];
+      partOf = [ "nftables.service" ];
+      wantedBy = [
+        "multi-user.target"
+        "nft-blocklists-local.service"
+      ];
+
+      # RemainAfterExit deliberately false, unlike nft-lowtrust-macs. systemd
+      # treats `start` on an already-active oneshot as a no-op, so leaving this
+      # one active would quietly stop the timer from ever re-resolving — the
+      # exact trap imo-policy is commented against.
+      #
+      # That choice costs the obvious way of surviving a ruleset reload, which
+      # recreates the table with empty sets. partOf does not cover it: systemd
+      # propagates a partOf restart as a *try*-restart, and a try-restart on an
+      # inactive unit is a no-op — and with RemainAfterExit false this unit is
+      # inactive the moment it exits. wantedBy multi-user.target only fires at
+      # boot. So without the indirection below, every `nixos-rebuild switch`
+      # that touches the ruleset would leave lowtrust_stun4/6 empty for up to an
+      # hour, until the timer next elapsed: a silent fail-open, the thing this
+      # whole unit is written to avoid. nft-lowtrust-macs is unaffected only
+      # because RemainAfterExit true keeps it active and therefore restartable.
+      #
+      # The fix is the one imo-policy uses: hang off nft-blocklists-local, which
+      # is RemainAfterExit true and partOf nftables.service. It receives the
+      # propagated restart and pulls this oneshot along with it.
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = false;
+      };
+
+      path = with pkgs; [
+        nftables
+        dnsutils
+        gnugrep
+        gnused
+        coreutils
+      ];
+
+      script = ''
+        set -euo pipefail
+
+        v4=""
+        v6=""
+        while IFS= read -r line || [ -n "$line" ]; do
+          name=''${line%%#*}
+          name=$(printf '%s' "$name" | tr -d '[:space:]')
+          [ -z "$name" ] && continue
+
+          got=""
+          for addr in $(dig +short +timeout=3 +tries=2 "$name" A 2>/dev/null || true); do
+            case "$addr" in
+              *[!0-9.]*) continue ;;
+            esac
+            v4="$v4$addr, "
+            got=yes
+          done
+          for addr in $(dig +short +timeout=3 +tries=2 "$name" AAAA 2>/dev/null || true); do
+            case "$addr" in
+              *:*) v6="$v6$addr, " ; got=yes ;;
+            esac
+          done
+
+          [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name" >&2
+        done < ${./custom-lowtrust-stun-hosts.txt}
+
+        # Flush is conditional per family, not unconditional the way the MAC
+        # loader's is. An empty set is a silent fail-open — every device in
+        # the pool gets a free pass to the STUN servers until the next timer
+        # fires, up to an hour away — while a stale set is a small, bounded
+        # hole (an address that has since moved). So a run that resolves
+        # nothing for a family must leave that family's set exactly as it
+        # was, not clear it. Decided per family rather than "both or
+        # neither" so a v6-less run (common — not every network here has
+        # working IPv6) does not throw away working v4 entries, and vice
+        # versa.
+        if [ -n "$v4" ]; then
+          nft flush set inet router-blocklists lowtrust_stun4
+          nft add element inet router-blocklists lowtrust_stun4 "{ ''${v4%, } }"
+        else
+          echo "nft-lowtrust-stun: no IPv4 addresses resolved this run, keeping previous lowtrust_stun4 contents" >&2
+        fi
+        if [ -n "$v6" ]; then
+          nft flush set inet router-blocklists lowtrust_stun6
+          nft add element inet router-blocklists lowtrust_stun6 "{ ''${v6%, } }"
+        else
+          echo "nft-lowtrust-stun: no IPv6 addresses resolved this run, keeping previous lowtrust_stun6 contents" >&2
+        fi
+      '';
+    };
+
+    systemd.timers.nft-lowtrust-stun = lib.mkIf cfg.lowTrust.enable {
+      description = "Refresh low-trust public STUN addresses";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "5m";
+        OnUnitActiveSec = "1h";
+        Persistent = true;
+      };
     };
 
     # Applies whichever of the two imo states is in force. Everything about

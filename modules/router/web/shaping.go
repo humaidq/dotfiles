@@ -229,6 +229,57 @@ func parseShapingSets(docs map[string][]byte) *shapeIndex {
 	return index
 }
 
+// readNeighbours shells out to the kernel's IPv4 neighbour table. It is the
+// only place a device's MAC is available to the page — dnsmasq's lease file
+// carries an address and a hostname, not a MAC — and is the same table the
+// lowtrust CLI itself resolves an address to a MAC from.
+func readNeighbours(ctx context.Context) ([]byte, error) {
+	return exec.CommandContext(ctx, "ip", "-4", "neigh", "show").Output()
+}
+
+// macForDevice finds device's MAC in `ip -4 neigh show` output. Each line is
+// "<addr> dev <iface> lladdr <mac> <state>"; a line with no lladdr field (the
+// entry is FAILED, or incomplete) has none to find. Returning "" for that case
+// rather than an error lets the caller skip the nft lookup entirely instead of
+// asking it about an empty MAC.
+func macForDevice(raw []byte, device netip.Addr) string {
+	want := device.String()
+	for _, line := range strings.Split(string(raw), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 || fields[0] != want {
+			continue
+		}
+		for i, f := range fields {
+			if f == "lladdr" && i+1 < len(fields) {
+				return fields[i+1]
+			}
+		}
+	}
+	return ""
+}
+
+// lowTrustMembership reports whether a device's MAC is in the low-trust sets.
+// Returns "", "temp" or "permanent"; permanent wins, because that is what
+// decides whether the page offers a remove button.
+func lowTrustMembership(ctx context.Context, mac string) string {
+	if mac == "" {
+		return ""
+	}
+	for _, s := range []struct{ set, class string }{
+		{"lowtrust_macs", "permanent"},
+		{"lowtrust_macs_temp", "temp"},
+	} {
+		out, err := exec.CommandContext(ctx, "nft", "-j", "list", "set", "inet", "router-blocklists", s.set).Output()
+		if err != nil {
+			continue
+		}
+		if strings.Contains(strings.ToLower(string(out)), strings.ToLower(mac)) {
+			return s.class
+		}
+	}
+	return ""
+}
+
 // shapeCache keeps a parsed index for a short while. The blocklist feeds run to
 // tens of thousands of elements, and a page render is not worth re-reading them
 // every time; a stale-by-seconds answer is fine for a status column.
