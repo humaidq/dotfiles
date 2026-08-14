@@ -164,6 +164,10 @@
       lowTrust = {
         enable = true;
         macFile = config.sops.secrets."router/lowtrust-macs".path;
+        # Shapes pool traffic to CDN space past 50 MB, refilling at 20 MB/hour.
+        # The one instrument that reaches domain fronting, where the edge is
+        # shared with the whole house and the cover name is never resolved.
+        cdnQuota.enable = true;
       };
     };
 
