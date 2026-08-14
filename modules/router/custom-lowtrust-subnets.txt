@@ -36,6 +36,16 @@
 165.245.204.0/22
 168.144.12.0/22
 168.144.48.0/22
+#
+# A FIFTH, added 2026-08-14 after a handed address landed in the gap. The table
+# collapses 168.144.8.0 - 168.145.95.255 into one "Not routed" row, which is why
+# 168.144.12.0/22 and 168.144.48.0/22 above are already here and why this one
+# was missing too — they are all holes in the same bad row. Live BGP gives
+# 168.144.192.0/22 originating from AS14061, allocated 2020-04-23, so the table
+# has been wrong about it for four years rather than merely lagging a new
+# allocation. Worth knowing when judging how much the rest of the table can be
+# trusted: this is not a freshness problem, it is a wrong row.
+168.144.192.0/22
 
 # Hetzner. Datacentre allocations — CLOUD-FSN1 inside the first, CLOUD-HEL1
 # inside the second — both announced whole by AS24940. Eight collected nodes.

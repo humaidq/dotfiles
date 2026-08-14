@@ -29,3 +29,47 @@
 # actually using 179, say so here — it changes this from a cheap precaution into
 # a confirmed transport.
 179
+
+# --- Six added 2026-08-14 on request ---------------------------------------
+#
+# NONE OF THE SIX APPEARS IN ANY CAPTURE. Every pcap from 2026-08-12 to 14 was
+# checked for them, LAN->WAN, TCP and UDP: zero packets. These go in on the
+# same basis as 179 above — inference from what the port is for, not
+# observation of a pool device using it. If a capture ever shows one carrying,
+# say so here; it changes the entry's standing.
+
+# The four classic VPN transports. A pool device has no business establishing a
+# VPN by any means, and these are what the off-the-shelf clients use when they
+# are not bothering to hide.
+1194    # OpenVPN, udp and tcp
+51820   # WireGuard, udp
+1723    # PPTP control channel — the GRE data path (proto 47) is untouched by a
+        # port rule, but PPTP cannot start without this, so it is enough
+#
+# 1701 is L2TP, and custom-port-blocklist.txt DELIBERATELY LEFT IT OUT with a
+# reason worth repeating rather than silently contradicting: "it rides inside
+# ESP and never appears on the wire on its own, so it would block nothing 500
+# and 4500 do not already cover." That is correct for L2TP/IPsec, which is
+# essentially all of it. It is added here anyway because bare unencrypted L2TP
+# does exist and costs nothing to close for a pool device — but expect it to
+# never fire. It is not a second layer on the IPsec block; it is the small
+# remainder that block does not reach.
+1701
+
+# 1443 and 8008, neither of which is a VPN port.
+#
+# 1443 IS THE INTERESTING ONE. The global file already drops 943, 1943, 2943
+# and 9443 as imo's tunnel transport family, and the shape of that family is a
+# digit stuck on the front of 443. 1443 is the one member of the obvious series
+# that was never listed. That is a pattern argument and not evidence — no
+# capture shows 1443 in use — but it is the kind of gap a client walks into
+# when the neighbours are closed.
+1443
+#
+# 8008 is HTTP-alt, and the reason it is safe here is the rule's direction
+# rather than the port being unused: lowtrust_policy matches
+# `iifname lan0 oifname ppp`, so this is LAN->WAN only. Chromecast and Google
+# Cast use 8008/8009 on the LAN, that traffic never reaches this chain, and
+# casting keeps working for pool devices. A pool device reaching 8008 on the
+# WAN is a different thing entirely.
+8008

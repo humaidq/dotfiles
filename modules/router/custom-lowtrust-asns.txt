@@ -106,12 +106,53 @@
 #   of hosting providers can never catch them; that is what the per-address
 #   rows in custom-throttle-list.txt are for.
 
-# DELIBERATELY NOT HERE:
+# --- Zenlayer, added 2026-08-14, reversing the decline recorded below -------
 #
-# AS21859 Zenlayer. It appeared in the collected nodes ten times, but it is an
-# edge/CDN provider rather than a VPS shop, and 929 prefixes of edge capacity is
-# the kind of range that breaks something a phone actually needs. Ten nodes is
-# not worth that. Revisit only with evidence of it carrying a tunnel.
+# This entry was refused above the line for a while on two grounds. One of them
+# turned out to be wrong and the other is still not satisfied, so the reversal
+# is written out in full rather than just deleting the old note.
+#
+# WHAT THE DECLINE SAID: "an edge/CDN provider rather than a VPS shop, and 929
+# prefixes of edge capacity is the kind of range that breaks something a phone
+# actually needs. Ten nodes is not worth that. Revisit only with evidence of it
+# carrying a tunnel."
+#
+# THE SIZE CLAIM WAS WRONG, and by enough to change the answer. Counted from
+# the shipped ip2asn table: AS21859 announces 571 IPv4 ranges totalling 656,640
+# addresses, which collapse to 775 CIDRs — 0.015% of routed IPv4. AS174 Cogent,
+# already in this file and argued through at length above, is 24,004,735
+# addresses. Zenlayer is THIRTY-SIX TIMES SMALLER than the widest entry already
+# accepted here. "929 prefixes of edge capacity" was the number that carried
+# the decline and it does not survive being computed.
+#
+# THE CARRYING EVIDENCE IS STILL ABSENT, and this is the honest gap. Across
+# every capture taken 2026-08-12 to 14 there is not one established session to
+# a Zenlayer address: no TLS, no SNI, no payload, 756 bytes inbound in total.
+# The literal condition the decline set has NOT been met.
+#
+# WHAT REPLACED IT is a different and better argument, from 192.168.50.250's
+# capture of 2026-08-13. The client ICMP-pings a spread of Zenlayer addresses
+# and they REPLY — 98.98.207.98, .99, .102, .103, .105, 128.14.65.31, .34, .97,
+# .150, 128.14.66.38, all alive, TTL 45-56. It then selects 98.98.207.106 and
+# fires 1341 SYNs at tcp/443, which get nothing back. That is the same
+# ping-then-probe-then-select cycle this file was written about, and it is
+# running over CONTIGUOUS space: seven addresses inside 98.98.207.97-.106 and
+# four inside 128.14.65-66. A client working consecutive addresses in one
+# provider's block is the exact case where per-/32 rows lose and the AS is the
+# right unit. Thirteen Zenlayer /32s are in the throttle list and nine more
+# appear in that capture alone without ever having been added.
+#
+# So: not "it carried a tunnel", but "it is being enumerated as a pool, and the
+# collateral is a fortieth of what the decline assumed". Pool-only, like
+# everything here. The never-cover tripwire was dry-run against these 775 CIDRs
+# before the entry went in and matches nothing.
+#
+# IF A POOL DEVICE LOSES SOMETHING and Cogent above is not the cause, this is
+# the second entry to try removing — it is the only one in the file admitted
+# without direct evidence of carrying traffic.
+21859   # Zenlayer — 13 collected nodes, 656k addresses, enumerated as a pool
+#
+# DELIBERATELY NOT HERE:
 #
 # AWS, GCP, Azure. Not one collected node sits in any of them, and they carry
 # the backends of nearly every app on a normal handset. Adding them would break

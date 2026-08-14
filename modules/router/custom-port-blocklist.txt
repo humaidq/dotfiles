@@ -56,7 +56,28 @@
 #
 # The cost, if it ever lands, is a real corporate VPN from home — IKEv2 is what
 # a phone or a Mac uses for a work profile, and it will fail with no useful
-# error. This file is the first place to look. L2TP's 1701 is deliberately not
+# error. This file is the first place to look.
+#
+# IT HAS LANDED, and not as a corporate VPN. Capture
+# 192.168.50.140-20260813-1350.pcap shows a handset resolve
+# epdg.epc.mnc003.mcc470.pub.3gppnetwork.org through our resolver, get
+# 116.58.207.151 and 116.58.207.55, and send IKE_SA_INIT to both on udp/500 —
+# seven attempts across two addresses, not one reply. MCC 470 / MNC 003 is
+# Banglalink, and that name is the ePDG for WI-FI CALLING. So the premise above
+# is no longer true: something on this LAN does use IPsec, and this rule is why
+# it fails.
+#
+# The ports are LEFT IN PLACE — removing them reopens the whole IKEv2 category
+# that the paragraph above argues for closing, and that is a bigger decision
+# than one handset's Wi-Fi Calling. This is recorded so the failure is
+# attributable rather than mysterious, because it fails exactly the way the
+# paragraph predicts: silently, with no useful error on the device.
+#
+# If Wi-Fi Calling is wanted for that handset, the fix is a per-device accept
+# for udp/500 and udp/4500 to that carrier's ePDG addresses ahead of this rule,
+# not deleting the ports. The 3GPP name pattern
+# epdg.epc.mncXXX.mccYYY.pub.3gppnetwork.org is how to find the addresses for
+# any other carrier. L2TP's 1701 is deliberately not
 # here: it rides inside ESP and never appears on the wire on its own, so it
 # would block nothing 500 and 4500 do not already cover.
 500

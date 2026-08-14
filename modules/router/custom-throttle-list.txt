@@ -6378,3 +6378,45 @@
 # coming up" is the sort of thing that is only visible once it is written down.
 146.190.8.15
 # ===========================================================================
+#
+# --- Six handed overnight, 2026-08-13 19:16 to 2026-08-14 08:00 ------------
+#
+# 98.98.207.101 arrived twice in the log, three hours apart, which is the
+# client still working the same address rather than two findings.
+#
+# THREE ARE ZENLAYER and they are the reason AS21859 has now gone into
+# custom-lowtrust-asns.txt after being explicitly declined there. The full
+# argument is in that file; the short form is that the client is enumerating
+# contiguous Zenlayer space rather than renting scattered instances, and the
+# AS turned out to be a fraction of the size the decline was based on.
+98.98.207.97
+98.98.207.101
+128.14.66.38
+#
+# 168.144.192.46 — DigitalOcean, and the fifth /24 of 168.144 in this file.
+168.144.192.46
+#
+# 74.50.12.96 — announced by AS209888 Aeriandi Limited (GB) but the allocation
+# says HostPapa, re-registered to IPXO, which leases address space to whoever
+# rents it. The AS tells you who routes it and the netname tells you who sells
+# it, and here they disagree; the netname is the one that matters.
+# 67.215.255.67, also HostPapa, is already in this file.
+74.50.12.96
+#
+# 102.252.2.17 — NOT a rented instance, and worth reading before anyone treats
+# it as one. netname TELKOM-MOBILE, Telkom SA Limited, and the PTR is
+# 8ta-252-2-17.telkomadsl.co.za. This is a consumer line on a South African
+# mobile carrier: the residential-exit pool that custom-lowtrust-asns.txt
+# records as uncoverable by any ASN list, because the AS here is a national
+# carrier's entire subscriber base. A /32 row is the only correct handling and
+# this is exactly the case those rows exist for.
+#
+# CONFIRMED BY THE OPERATOR, 2026-08-14: the residential addresses collected in
+# this file are residential proxies. That upgrades every one of them from
+# "carrier address, inferred to be an exit" to observed fact, and it settles
+# the open question in custom-lowtrust-asns.txt's closing note about the ~25
+# singletons on residential and mobile carriers. They are one estate, they are
+# bought by the client the same way a VPS is, and the ASN list will never see
+# them. Per-/32 is not a fallback here — it is the only instrument that fits.
+102.252.2.17
+# ===========================================================================
