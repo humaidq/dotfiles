@@ -6420,3 +6420,460 @@
 # them. Per-/32 is not a fallback here — it is the only instrument that fits.
 102.252.2.17
 # ===========================================================================
+#
+# --- Two handed over, 2026-08-14 --------------------------------------------
+#
+# Handed over as a list of three with no capture. 128.14.66.38 was the third
+# and is already in this file, in the "Six handed overnight" block above — it
+# is one of the three Zenlayer addresses that put AS21859 into
+# custom-lowtrust-asns.txt. A repeat hand-over is the client still working the
+# same address, not a new finding, so nothing was added for it.
+#
+# Both rows below are desk checks only — PTR, whois and origin AS. No capture,
+# no certificate: the router probes were skipped this round, so nothing here
+# says what either host serves, only who rents it.
+#
+# 169.40.141.43 — no PTR. The ARIN block is the RIPE ERX transfer, but the
+# live registration is inetnum 169.40.141.0/24, netname NET-169-40-141-0-24,
+# org-name "Private Customer", and the origin is AS137517 FLAMEHOSTING INC
+# (PK), announcing the /24 out of DE.
+#
+# AS137517 IS ALREADY IN THIS REPO, on the other side of the split:
+# custom-ip-blocklist.txt names it three times as one of the small leased
+# hosting ASes carrying the imo/BIGO estate (the imoim.app/imostatic.com tier
+# and the single-zone-certificate rows). That is not enough to move this
+# address there. FlameHosting is general leased space, the blocklist rows are
+# attributed by a dedicated single-zone TLS certificate, and this one has not
+# been fetched. If a later check finds it serving an imo or BIGO certificate
+# it belongs in the blocklist instead, and this note is the pointer to that.
+#
+# First address in 169.0.0.0/8 anywhere in this file.
+169.40.141.43
+#
+# 13.39.77.133 — AWS EC2, PTR ec2-13-39-77-133.eu-west-3.compute.amazonaws.com,
+# AS16509, inside AMAZON-CDG (13.36.0.0/14, Amazon Data Services France). A
+# tenant instance in Paris, not CloudFront: the CDN edges carry
+# server-*.cloudfront.net reverses and sit in other Amazon blocks, so the
+# "refuse, it is a shared edge" rule does not bite here. The ec2- reverse names
+# the instance's own address and the /32 is one tenant.
+#
+# First 13.0.0.0/8 address and the first AWS instance in this file, which is
+# mildly surprising given how much of it is DigitalOcean, Scaleway and Hetzner.
+13.39.77.133
+# ===========================================================================
+#
+# --- Four added, 2026-08-14, and a shared registration template --------------
+#
+# Handed over as a list of seven, which was five distinct new addresses and of
+# those, four ended up here. 169.40.141.82 appeared twice within the one list,
+# which is one address and not two. 169.40.141.43 and 13.39.77.133 were already
+# in the block immediately above from earlier the same day, and 46.183.24.168
+# belongs to custom-imo-list.txt — see the paragraph below the rows.
+#
+# Desk checks only again — PTR, whois, origin AS. No capture and no certificate
+# for any of the four listed, so nothing below says what these hosts serve.
+#
+# READ THIS BEFORE TREATING THE FIRST THREE AS ORDINARY VPS SINGLETONS. They
+# share a registration template that is identical field for field, and so does
+# 46.183.24.168, which is what led to it being noticed:
+#
+#   169.40.141.82   inetnum 169.40.141.0/24   NET-169-40-141-0-24   AS137517
+#   95.134.21.130   inetnum 95.134.21.0/24    NET-95-134-21-0-24    AS135402
+#   167.148.28.53   inetnum 167.148.28.0/24   NET-167-148-28-0-24   AS22427
+#   46.183.24.168   inetnum 46.183.24.0/24    NET-46-183-24-0-24    AS142146
+#
+# — a /24 sub-allocation, a netname mechanically derived from the prefix,
+# org-name "Private Customer", no PTR at all, and a registered country that
+# disagrees with the country the prefix is announced from in every case
+# (US/UA, US/US, US/US, US/SE against ASes registered PK, US, US, SG).
+#
+# AND THREE OF THOSE FOUR ASes ARE ALREADY IN THIS REPO, on the drop side.
+# custom-ip-blocklist.txt names AS137517 FlameHosting, AS135402 (one of the
+# four Wired ISP shells) and AS22427 GNET together, three separate times, as
+# the rented half of the imo/BIGO estate. 167.148 is the sharpest case: there
+# are thirteen 167.148 addresses in that file across three /24s (163, 196,
+# 199), all GNET, all dropped as imo/BIGO — and none in this file until now.
+#
+# THE FIRST THREE ARE STILL SHAPED AND NOT DROPPED, and the reason matters.
+# The blocklist rows on those ASes are attributed by a dedicated single-zone
+# TLS certificate fetched from each address; that is what makes a /32 on leased
+# space defensible there. None of these has been probed. A shared whois
+# template proves they were bought from the same kind of reseller, which is
+# how every small hosting AS registers leased space — it does not attribute
+# them to imo. Absent the certificate, "rented instance" is the whole of what
+# is established, and the rented-instance default is this file.
+#
+# THE CHECK THAT SETTLES IT is one certificate fetch per address from the
+# router. If any of them serves a single-zone cert for an imo, BIGO or bnxz
+# zone, it belongs in custom-ip-blocklist.txt with the rest of that estate and
+# should be moved with this note carried across. That check has not been run.
+169.40.141.82
+95.134.21.130
+167.148.28.53
+#
+# THE FOURTH, 46.183.24.168, IS NOT LISTED HERE — it is already governed by
+# custom-imo-list.txt, both as a /32 of its own and inside the 46.183.24.0/24
+# taken there later. It was added to this file on the hand-over and removed on
+# finding that, following the precedent set for 185.250.27.164 further up: an
+# address in two files reads as a decision reversed rather than duplicated, and
+# the case for shaping it belongs in the note where the drop was decided. It is
+# recorded there instead, along with the operator's observation — reported the
+# same day — that the address was marked as imo but seen carrying a VPN.
+#
+# THAT OBSERVATION IS WHY THE OTHER THREE STAY HERE rather than being chased
+# into the blocklist. The one member of this template cluster whose role is
+# actually known is dual-use: attributed to the imo/BIGO estate by certificate,
+# and separately observed carrying tunnel traffic. So an AS appearing on the
+# drop side of this repo does not make its next address an app endpoint, and
+# shaping is the safer of the two errors for the three above.
+#
+# Second address in 169.40.141.0/24 — .43 is directly above. Still /32s: two of
+# 256 on a reseller's sub-allocation is thin, and "Private Customer" hides
+# whether the /24 is one tenant or many. A third address in it flips the usual
+# escalation and the /24 becomes the right call.
+#
+# All four template ASes turn out to be in this repo already, which was not
+# obvious at first pass: AS137517, AS135402 and AS22427 are named in
+# custom-ip-blocklist.txt, and AS142146 Sandhill Solution Pte. Ltd. (SG,
+# announced from SE) is the AS behind the 46.183.24.0/24 in custom-imo-list.txt.
+# Four for four is the part worth carrying forward — a hand-over landing on an
+# AS this repo has already met is now the expectation, not the surprise, and it
+# is not on its own a reason to file an address on the drop side.
+#
+# --- And the fifth, which is a different animal ------------------------------
+#
+# 103.141.64.165 — NOT the template above and not a reseller /24. inetnum
+# 103.141.64.0 - 103.141.65.255, netname IQTEL-BD, descr IQ-TEL, org-name
+# IQ-TEL, country BD, origin AS139325 IQTEL-AS-AP. That is a small Bangladeshi
+# ISP holding its own APNIC allocation and announcing it itself.
+#
+# So this reads as the residential-exit case, the same one 102.252.2.17 (Telkom
+# SA) is written up as a few blocks above — a subscriber address on a national
+# or regional carrier, which the operator confirmed on 2026-08-14 are bought as
+# residential proxies. custom-lowtrust-asns.txt records why no ASN list can
+# cover these: the AS is a carrier's entire subscriber base. A /32 is not a
+# fallback here, it is the only instrument that fits.
+#
+# No PTR recorded, and NOT because the host has none — the reverse lookup for
+# 103.141.64.in-addr.arpa times out at the resolver on three attempts, which is
+# a broken delegation somewhere upstream, not a fact about this address. Do not
+# read the blank as evidence.
+#
+# SUPERSEDES THE "DESK CHECK ONLY" QUALIFIER ABOVE, added within the hour: the
+# capture 192.168.50.162-20260814-1520.pcap covers this address and it is the
+# second-heaviest flow in it — 329 kB across 2044 frames, and it runs the FULL
+# 256.9s of the capture end to end, first packet to last.
+#
+# It is UDP, not TCP: 1232 datagrams out on port 41569, one port, one peer, no
+# TLS and nothing readable. tshark volunteers "MPEG TS" for one frame and
+# "RTCP" for two, which is a decoder guessing at high-entropy payload and is
+# not evidence of either.
+#
+# Opaque UDP to a single peer is the shape of a call as much as a tunnel, so
+# the discriminator here is the duration: it is up for the whole window rather
+# than starting and stopping the way a call does, and the same device is
+# simultaneously running the four tunnel flows in the block below. A persistent
+# full-window UDP flow is the tunnel reading, not the call one.
+#
+# First address in 103.0.0.0/8 in this file.
+103.141.64.165
+# ===========================================================================
+#
+# --- Four from a capture, 2026-08-14 15:15–15:20 ----------------------------
+#
+# THE FIRST ROWS IN THIS FILE'S RECENT RUNS WITH AN ACTUAL CAPTURE BEHIND THEM.
+# Source: ~/inbox/web/192.168.50.162-20260814-1520.pcap — 11k frames, 256.98s,
+# one bingo LAN device (192.168.50.162). Handed over as five, but
+# 129.151.240.71 appeared twice in the list, which is one address.
+#
+# What the capture establishes for all four: volume, direction, transport, port
+# and — where there is one — the SNI. That is a different and stronger class of
+# evidence than the whois-only rows above, and the rows are written to say so.
+#
+# THE OTHER HALF OF THE CAPTURE IS THE CONTROL, and it is worth reading before
+# anything here is doubted. The same device dialled endpoints this repo already
+# drops and got nothing back: 169.136.160.158 (the NETSTAR LBS) took 16 kB and
+# returned ZERO bytes; four Tencent addresses in 43.166/170.106 took 12, 10, 9.8
+# and 5.9 kB and returned ZERO; 98.96.215.30 and 98.96.228.106 likewise. So the
+# imo estate is being dialled and is failing, while the four addresses below
+# carry megabytes in both directions. This device is not merely running imo.
+#
+# 46.183.24.169 is also in the capture and DID answer — 249 kB in 31.6s — which
+# is correct behaviour and not a leak: it is in custom-imo-list.txt, bingo runs
+# imoPolicy = alternate, and 2026-08-14 is an even day, so it is shaped rather
+# than dropped today. Do not read it as the imo list failing.
+#
+# 13.49.121.85 — the top talker of the whole capture at 1,039 kB over 255.1s,
+# essentially the full window. AWS EC2, PTR ec2-13-49-121-85.eu-north-1.
+# compute.amazonaws.com, AS16509, AMAZON-ARN (Stockholm). Opaque TCP to port
+# 27649 across 3467 packets: no TLS handshake anywhere in the flow, no
+# ClientHello, high-entropy from the first payload byte. An arbitrary high port
+# carrying a megabyte of unstructured traffic for the length of the capture is
+# the plainest tunnel signature this file collects.
+#
+# It is the second AWS instance here — 13.39.77.133, added a few hours earlier
+# in the block above, was the first, and that one was whois-only. Different
+# region (eu-north-1 against eu-west-3) and a /15 away, so this is a tenant
+# renting in more than one Amazon region rather than a block being worked.
+13.49.121.85
+#
+# 129.151.240.71 — 150 kB over 67.0s, opaque TCP to port 18433, no TLS, high
+# entropy from byte 0. Oracle Cloud, AS31898 ORACLE-BMC-31898, no PTR, in
+# 129.151.224.0/19 (netname OPC1).
+#
+# 213.35.104.31 — 139 kB over 49.2s, opaque TCP to port 43777, no TLS, high
+# entropy from byte 0. ALSO AS31898 — inetnum 213.35.64.0 - 213.35.127.255,
+# netname SE-ORACLE-SE-20000113, org-name Oracle Svenska AB, announced from SE.
+# No PTR.
+#
+# TWO ORACLE ADDRESSES ON ONE AS IN ONE CAPTURE, in two different Oracle
+# allocations on two continents, both opaque TCP on arbitrary high ports within
+# minutes of each other. AS31898 is already the best-represented cloud in this
+# file — the Psiphon node list around line 2100 has four Oracle nodes in it and
+# the note at 1249 records why: the always-free ARM tier makes a permanent
+# instance cost nothing. This is the same economics being used again.
+#
+# /32s and not the /19s, on the standing rule. Oracle Cloud is general-purpose
+# and the neighbours in both prefixes are other people's tenants.
+129.151.240.71
+213.35.104.31
+#
+# --- 169.40.141.61, and why the /24 goes with it -----------------------------
+#
+# 46 kB over 105.1s, and the only one of the four that speaks TLS: tcp/443, a
+# real TLSv1.2 handshake that completes (ClientHello, then ServerHello + CCS +
+# Finished back, then application data), carrying SNI rochester2.com.
+#
+# ROCHESTER2.COM DOES NOT EXIST. The registry answers "No match for domain
+# ROCHESTER2.COM" — it has never been registered, so no client has ever
+# resolved it and no resolver could have answered for it. The device therefore
+# had this address hardcoded and sent a cover name purely to make the handshake
+# look ordinary to anything watching the SNI. That is the same signature as
+# 150.241.249.34 further up (spoofed SNI sgp-stream.downstext.com, never
+# resolved), and it is the strongest positive reading available here: an
+# unregistered SNI cannot be an accident, and the name layer cannot touch it
+# because nothing is ever asked to resolve.
+#
+# THE /24 IS NOW TAKEN. This is the third address of 169.40.141.0/24 in this
+# file inside one day — .43 and .82 in the block above, .61 here — and the note
+# on .82 said in as many words that a third would flip the escalation. The
+# allocation is exactly this /24, sub-allocated as netname NET-169-40-141-0-24,
+# org-name "Private Customer" under AS137517 FlameHosting, so the prefix is one
+# reseller customer's block rather than a slice of general cloud: taking it does
+# not sweep in unrelated tenants the way a DigitalOcean or Oracle /19 would.
+# The three /32s stay above for their provenance and the generator collapses
+# them into this.
+#
+# It is a shaping entry and not a drop, which bounds what a mistake costs here.
+# If something the house actually uses turns up in this /24, the fix is to pull
+# the prefix back to the three /32s, and this paragraph is the pointer to that.
+169.40.141.0/24
+# ===========================================================================
+#
+# --- Same capture, swept for everything else --------------------------------
+#
+# The capture above was then read end to end rather than only for the addresses
+# handed over. 45 peers; most are accounted for and only three rows came out of
+# it. What follows is the whole reckoning, so a later reader does not re-do it.
+#
+# ALREADY DROPPED AND CONFIRMED WORKING — dialled, returned exactly zero bytes:
+# 169.136.160.158/.156, 169.136.118.88/.89/.90 and 169.136.107.245 (NETSTAR,
+# AS10122); 43.166.133.248/.149.37/.162.38/.177.253/.240.244 and
+# 170.106.9.192/.15.18 (Tencent); 98.96.215.30/.228.106/.228.109. Nothing to
+# add for any of them — the ranges in custom-ip-blocklist.txt are biting.
+#
+# ORDINARY TRAFFIC, LEFT ALONE: Apple (17.248.213.64/.68/.70/.71 gateway.
+# icloud.com, 17.253.18.196/.202/.210, 17.188.185.134), Meta (57.144.120.141,
+# 57.144.144.128/.141/.145 — ep7/graph/gateway.facebook.com), Google
+# (216.239.32.27, www.chrome.com), Fastly 151.101.1.140 (reddit.com), and the
+# LAN itself (192.168.50.1, 192.168.10.13).
+#
+# 5.195.172.211 IS ETISALAT AND WAS DELIBERATELY NOT ADDED — inetnum
+# 5.195.0.0/16, AE-EMIRNET-20120822, AS5384. The device sent 24 bytes to its
+# 443 and got an RST back, which reads like a probe, but the standing rule in
+# this repo is that nothing Etisalat-hosted goes in either file. It is the
+# carrier. Recorded here so the next sweep does not rediscover it and decide
+# differently.
+#
+# NOTHING TO ADD ON THE DNS SIDE EITHER, which is the useful negative. Every
+# name the device looked up in those four minutes already answers 0.0.0.0:
+# sgp.imoim.net, fgw.imoim.app, edu.ousaqb.tech (*.ousaqb.tech, line 150),
+# sgp-stream2.streamingcloth.com (*.streamingcloth.com, 237),
+# conf.letsmessagenow.com (*.letsmessagenow.com, 170) and the CloudFront
+# distribution d37tp9szxrigiu.cloudfront.net (already inside the fronting regex
+# at line 317). The remaining lookups are ad SDKs — moloco, vungle, pangle.io,
+# unityads, doubleclick — which inspected-apps.txt leaves alone on purpose.
+#
+# THAT IS THE POINT OF THIS CAPTURE, and it is worth stating plainly: the name
+# layer is not leaking. It is working so completely that the client has stopped
+# using names at all and is dialling hardcoded addresses, which is precisely
+# why rochester2.com is sent as an SNI for a domain that has never been
+# registered. Nothing here argues for another blocklist entry; it argues that
+# the address layer is now the only one that bites, which is what this file is.
+#
+# --- The three that were added ----------------------------------------------
+#
+# 213.130.159.61 — 4,991 bytes over 63.7s, and the traffic is the interesting
+# part: bidirectional UDP, device to port 45521 and the host answering from
+# port 55104, no TLS. Grand Web Solutions, AS46370.
+#
+# THIS IS THE FOURTH 213.130.159 ADDRESS IN THIS FILE. .67 and .95 are in the
+# rotation block around line 2648 and .194 is the udp/34932 singleton at 5121,
+# which is the same transport shape as this one. Four of 256 now, all on the
+# same reseller /24 (netname NET-213-130-159-0-24, org-name "Private
+# Customer"), which is over the line this file drew for 169.40.141.0/24 earlier
+# today — but the prefix is NOT taken here, deliberately. The PTR is
+# adsl213-130-159-61.as15444.net: an ADSL-style reverse pointing at a different
+# AS entirely, which is the fingerprint of consumer lines resold as exits. If
+# that is what the /24 is, its other addresses are other people's connections
+# and the collateral argument holds in a way it did not for FlameHosting's.
+213.130.159.61
+#
+# 141.11.105.190 and 141.11.105.214 — the weakest rows in this block and marked
+# as such. Neither carried anything: each is an ECN-capable SYN to port 443 and
+# an immediate ACK+RST back, two packets apiece, 24 seconds apart near the end
+# of the capture. Dialled and refused, not used.
+#
+# They are listed because of what they are, not what they did. AS31715 CloudIP
+# LLC, netname NET-141-11-105-0-24, org-name "Private Customer" — the same
+# registration template as the four in the block above — and CloudIP is a
+# fourth AS this repo has already met on the drop side, named in
+# custom-ip-blocklist.txt alongside FlameHosting and GNET. 141.11.32.115 is
+# already in this file (udp/49092, OVH-announced at the time) and
+# 141.11.124.140 is in the blocklist, so this is the third 141.11 /24 to come
+# up. A node the client tried and found dead today is a node it will try again;
+# shaping costs nothing if it stays dead.
+141.11.105.190
+141.11.105.214
+#
+# THE TEMPLATE CLUSTER IS NOW SIX ASes WIDE and that is the finding to carry
+# forward from this whole day. Every one of these is inetnum <prefix>/24,
+# netname NET-<prefix>-0-24, org-name "Private Customer", no PTR or a stale
+# consumer one, and a registered country that disagrees with the announcing
+# country: AS137517 FlameHosting (169.40.141.0/24), AS135402 Wired ISP
+# (95.134.21.0/24), AS22427 GNET (167.148.28.0/24), AS142146 Sandhill
+# (46.183.24.0/24), AS46370 Grand Web Solutions (213.130.159.0/24) and AS31715
+# CloudIP (141.11.105.0/24). Six small hosting ASes, one reseller template, and
+# the client shops across all of them. Whoever sells these /24s is the layer
+# above the addresses, and a sweep for that template is likely to find the rest
+# of the estate faster than collecting them one capture at a time.
+# ===========================================================================
+#
+# --- Second capture, 2026-08-14 15:20–15:29 ---------------------------------
+#
+# ~/inbox/web/192.168.50.162-20260814-1529.pcap — 39k frames, 555.1s, same
+# device, picking up where the 15:20 capture stopped. 140 peers, every one of
+# them ASN-resolved against this repo's own ip2asn-combined.tsv and checked
+# against all four lists before anything was written.
+#
+# THE HEADLINE IS A DECLINE, not an addition. Most of the volume in this
+# capture is TikTok and it is supposed to be there — see the 42.99.140 note
+# below and the AS4637 paragraph in custom-lowtrust-asns.txt.
+#
+# 16.171.185.251 — 885 kB over 227.7s, opaque TCP to port 35585, no TLS, no
+# SNI. AWS, AS16509, eu-north-1. The THIRD AWS instance in this file and the
+# second in eu-north-1 alongside 13.49.121.85, which is a /15 away and was
+# taken from the previous capture. Two Stockholm instances on arbitrary high
+# ports in one afternoon is a tenant with more than one box in one region.
+16.171.185.251
+#
+# 195.21.131.78 — 450 kB over 19.1s, and 502 packets each way, which is the
+# most symmetric flow in either capture. Opaque UDP to port 4452, no TLS.
+# AS3257 GTT-BACKBONE.
+#
+# A /32 and emphatically not the AS: GTT is tier-1 transit at 4,952,320
+# addresses. The address is the tunnel node; the AS is the internet.
+195.21.131.78
+#
+# 45.151.143.134 — 494 kB over 301.3s, tcp/443, TLSv1.2, SNI yahoo4.com.
+# AS393942 WiredISP Inc.
+#
+# 95.134.64.103 — 594 kB over 45.6s, tcp/443, SNI rebel2.com. AS135402
+# US-FXCAPITAL, a WiredISP shell — and a different /24 from 95.134.21.130,
+# which is in the block above from the same day on whois alone.
+#
+# THESE TWO PLUS 169.40.141.61 ARE ONE NAMING SCHEME. yahoo4.com, rebel2.com,
+# rochester2.com: a word or brand, one digit, .com. rochester2.com has never
+# been registered at all; rebel2.com dates to 2017 through a domain reseller
+# and yahoo4.com to 2025 through Alibaba, and neither has anything to do with
+# the host presenting it. Cover names on hardcoded addresses.
+#
+# IT IS A SEARCHABLE FINGERPRINT and that is worth more than the three rows.
+# Any future capture where a pool device sends SNI matching <word><digit>.com
+# to a small hosting AS is this same estate, and the SNI can be matched without
+# waiting for the address to be handed over. Both ASes went into
+# custom-lowtrust-asns.txt on the strength of it.
+45.151.143.134
+95.134.64.103
+#
+# 167.148.28.60 — 57 kB over 21.9s, opaque TCP to port 27160, no TLS. GNET
+# AS22427, and the SECOND address in 167.148.28.0/24 after .53 in the block
+# above. Left at /32s: two of 256, and thirteen other GNET addresses in
+# custom-ip-blocklist.txt sit in three completely different /24s, so the client
+# is spread across GNET rather than working this one block. AS22427 is in the
+# pool ASN list now, which is the better instrument for that shape.
+167.148.28.60
+#
+# --- 213.130.159.0/24, taken after being declined this morning ---------------
+#
+# The previous capture put four addresses of this /24 in this file and the note
+# there explicitly DECLINED the prefix, on the grounds that the PTR
+# (adsl213-130-159-61.as15444.net) looked like resold consumer lines, which
+# would make the neighbours other people's connections.
+#
+# This capture answers it: SEVEN addresses of the /24 in one 9-minute window —
+# .56, .57, .61, .74, .76, .78, .79 — on top of .67, .95 and .194 already here
+# from earlier rounds. Ten of 256. .76 carries opaque UDP on port 47259, the
+# same transport shape as .61 (45521) and .194 (34932), and the low addresses
+# arrive in 3-second bursts that read as enumeration rather than use.
+#
+# Ten addresses working consecutively through one /24 is the case where per-/32
+# rows lose, whatever the reverse records suggest. The four /32s above stay for
+# their provenance and the generator collapses them in. AS9304 Hutchison, which
+# announces this space, was NOT taken — 1,874,175 addresses of a Hong Kong
+# carrier for one reseller's block is the trade this file keeps refusing.
+213.130.159.0/24
+#
+# --- What was found and deliberately not added ------------------------------
+#
+# THE 42.99.140 CLUSTER IS TIKTOK. Eight addresses — .138, .139, .152, .170,
+# .194, .200, .202, .211 — were handed over as suspected VPN nodes, and .202
+# alone is 2,070 kB. Every one of them dials tcp/443 with a real TLS handshake
+# and a real resolvable SNI under tiktokcdn.com or tiktokv.com:
+# sf16-ies-music-sg.tiktokcdn.com on .152 and .202, p16-common-sign.tiktokcdn
+# .com on .194. AS4637 Telstra Global is carrying TikTok's CDN edge.
+#
+# Same for the rest of the volume in this capture: 139.177.238.202 (6,573 kB,
+# the top talker, SNI v31.tiktokcdn.com), 101.45.16.210 (1,364 kB, aggr32-
+# normal.tiktokv.com), 71.18.20.251 (1,176 kB, v45.tiktokcdn.com), 79.127.251
+# .10 (1,014 kB, sf77-ies-music-sg.tiktokcdn.com), 71.18.222.1, 71.18.253.95,
+# 37.19.219.9/.15. Roughly 12 MB of the capture is TikTok video.
+#
+# NONE OF IT IS ADDED, because this repo blocks TikTok LIVE and not TikTok:
+# custom-blocklist.txt anchors on webcast/pull-/push- prefixes precisely so
+# ordinary TikTok keeps working, and not one name here matches those. A real
+# handshake to a name that resolves is the opposite of the signature this file
+# collects. Handing over a heavy flow is not evidence of a tunnel — reading its
+# SNI is what separates the two, and here it separates cleanly.
+#
+# THE AKAMAI TRAFFIC IS ALSO CORRECT AND MUST NOT BE TOUCHED: 95.100.170.41,
+# .42, .43, .48 (3,979 kB together), 23.209.46.94, 23.46.230.103/.110,
+# 23.206.197.x. 95.100.170.42 is on the never-cover guard in ip-blocklist.nix
+# by name — a build that swallowed it would fail. This is what the CDN volume
+# quota on bingo is for, and it is the instrument that reaches this space.
+#
+# 31.58.84.2 was handed over as a suspected GNET address and is exactly that,
+# but it is ALREADY a /32 in custom-imo-list.txt and nothing was added for it.
+# 16 packets to port 80, 4.4 kB. AS22427 is now in the pool ASN list as well.
+#
+# 85.17.39.116 (Leaseweb, SNI e39116.apester.live) is an ad/content widget
+# vendor, left alone with the rest of the SDK tail.
+#
+# THE DROP SIDE IS STILL HOLDING, on a much larger sample than the first
+# capture: 34 NETSTAR addresses across 169.136 plus 103.139.72.57, 202.63.39.99
+# and 164.90.116.57; seven Tencent addresses; three Zenlayer; 138.113.178.42
+# (Meteverse); 167.82.86.73 and 199.232.234.73. Every one dialled, every one
+# returned exactly zero bytes. The 169.136 addresses in particular arrive in
+# 7-packet 546-byte probes at 2-second intervals — the client enumerating a
+# range it can no longer reach.
+# ===========================================================================

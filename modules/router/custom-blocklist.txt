@@ -17,6 +17,10 @@ d1zmavshn1ll3z.cloudfront.net
 d3ae4tlgqlgide.cloudfront.net
 d3gnlijgh4zcei.cloudfront.net
 d3qvtqqyw2p8t4.cloudfront.net
+d1mh1y7ij6zmqj.cloudfront.net
+die3wsrnlcoc1.cloudfront.net
+d2yxm1use2fttr.cloudfront.net
+attending0.com
 
 # Improper TLDs
 *.bar

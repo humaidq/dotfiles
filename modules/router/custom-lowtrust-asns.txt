@@ -151,9 +151,114 @@
 # the second entry to try removing — it is the only one in the file admitted
 # without direct evidence of carrying traffic.
 21859   # Zenlayer — 13 collected nodes, 656k addresses, enumerated as a pool
+
+# --- The reseller estate, added 2026-08-14 -----------------------------------
+#
+# Eight ASNs, 73,728 addresses between them — 0.0017% of routed IPv4, against
+# the 39,993,747 the twenty entries above already cover. This section is the
+# cheapest thing in the file by three orders of magnitude and it is aimed at
+# the best-evidenced target in it.
+#
+# WHAT TIES THEM TOGETHER is a registration template, written up at length in
+# custom-throttle-list.txt's 2026-08-14 blocks. Every address collected from
+# these ASNs sits in a /24 sub-allocation whose netname is mechanically derived
+# from the prefix (NET-169-40-141-0-24, NET-95-134-21-0-24, NET-167-148-28-0-24,
+# NET-46-183-24-0-24, NET-141-11-105-0-24 …), whose org-name is the anonymous
+# "Private Customer", which has no PTR, and whose registered country disagrees
+# with the country the prefix is announced from. One reseller is selling /24s
+# across eight small hosting ASes and the client shops across all of them.
+#
+# THE CARRYING EVIDENCE IS DIRECT, which is what the Zenlayer note above had to
+# do without. From 192.168.50.162's captures of 2026-08-14, 15:15 and 15:29:
+#
+#   AS393942  45.151.143.134   494 kB, TLS on 443 with SNI yahoo4.com
+#   AS135402  95.134.64.103    594 kB, TLS on 443 with SNI rebel2.com
+#   AS137517  169.40.141.61     46 kB, TLS on 443 with SNI rochester2.com
+#   AS22427   167.148.28.60     57 kB, opaque TCP on port 27160, no TLS
+#   AS31715   141.11.105.190/.214, dialled and RST-refused
+#   AS142146  46.183.24.168-.171, in custom-imo-list.txt, .171 at 540 kB
+#
+# THE THREE SNIs ARE THE FINDING. yahoo4.com, rebel2.com and rochester2.com are
+# one naming scheme — an ordinary English word or brand, a single digit, .com —
+# and not one of them is the certificate the host actually holds.
+# rochester2.com has NEVER BEEN REGISTERED (registry says "No match"), so no
+# client can ever have resolved it; rebel2.com was registered in 2017 through a
+# domain reseller and yahoo4.com in 2025 through Alibaba, and neither has any
+# relationship to the address dialling them. These are cover names attached to
+# hardcoded addresses so the handshake looks ordinary to anything reading SNI.
+# The name layer cannot reach any of it, because nothing is ever resolved.
+#
+# COLLATERAL. All eight are small hosting ASes with 11 to 45 announced ranges
+# each. None is a CDN, none is transit, and none appears anywhere in this
+# network's ordinary traffic across either capture except as the addresses
+# above. Three of them — AS137517, AS135402 and AS22427 — are already named in
+# custom-ip-blocklist.txt as the rented half of the imo/BIGO estate, so their
+# other use here is an app estate this network already drops. The never-cover
+# tripwire was left at full strength and the build passes, so none of these
+# ranges touches the resolver, the Akamai edges, STUN or this operator's hosts.
+#
+# The four WiredISP shells go in together. AS393942 is the one with carrying
+# evidence; AS21840, AS135402 and AS137235 are the same operator under
+# different numbers, named as a set in custom-ip-blocklist.txt, and splitting
+# them would leave the obvious next hop open.
+393942  # WiredISP Inc. — 9,216 addresses, SNI yahoo4.com on 45.151.143.134
+21840   # NET3, WiredISP shell — 11,008
+135402  # US-FXCAPITAL, WiredISP shell — 11,776, SNI rebel2.com on 95.134.64.103
+137235  # KMS-AS-AP, WiredISP shell — 8,448
+142146  # Sandhill Solution — 2,816, the smallest entry in this file
+22427   # GNET — 9,984, opaque tcp/27160 on 167.148.28.60
+137517  # FlameHosting — 10,240, SNI rochester2.com on 169.40.141.61
+31715   # CloudIP — 10,240
 #
 # DELIBERATELY NOT HERE:
 #
-# AWS, GCP, Azure. Not one collected node sits in any of them, and they carry
-# the backends of nearly every app on a normal handset. Adding them would break
-# the device rather than the tunnel.
+# AS4637 TELSTRA GLOBAL, requested on 2026-08-14 and declined on the capture.
+# The addresses that prompted it are the 42.99.140.x cluster — .138, .139,
+# .152, .170, .194, .200, .202, .211, eight of them, several carrying megabytes
+# — and they are NOT a tunnel. Every one dials tcp/443 with a real TLS
+# handshake and a real, resolvable SNI in tiktokcdn.com or tiktokv.com:
+# sf16-ies-music-sg.tiktokcdn.com, p16-common-sign.tiktokcdn.com and so on.
+# That is TikTok's CDN edge riding Telstra Global transit.
+#
+# It matters that this repo blocks TikTok LIVE and not TikTok. custom-blocklist
+# .txt anchors on the webcast/pull-/push- prefixes precisely so ordinary TikTok
+# keeps working, and none of the names in this capture matches those. So
+# AS4637 would not break a tunnel, it would break TikTok — for pool devices
+# only, but deliberately, and by an entry filed as if it were a VPN network.
+# At 1,132,544 addresses it is also transit rather than hosting, the same
+# objection recorded against Cogent above.
+#
+# If TikTok should be off for pool devices, that is a legitimate decision and a
+# different one, and it belongs in custom-blocklist.txt where the live-only
+# scoping is argued — not here, disguised as a tunnel finding.
+#
+# AS3257 GTT (4,952,320) and AS60068 CDN77 (119,552). 195.21.131.78 on GTT is a
+# genuine tunnel node — opaque UDP on port 4452 — and it is in the throttle
+# list as a /32. But GTT is tier-1 transit and CDN77 is a CDN serving
+# tiktokcdn.com in this same capture. Both are the "refuse, add nothing" case.
+#
+# AS9304 Hutchison / HGC (1,874,175) announces 213.130.159.0/24, where ten
+# collected addresses now sit. The /24 is in the throttle list instead; a Hong
+# Kong carrier's whole network is not worth one reseller's block.
+#
+# CANDIDATES NOT TAKEN, recorded so they are not rediscovered as new:
+# AS54994 Meteverse (253,696) is named in custom-ip-blocklist.txt with the
+# imo/BIGO estate and 138.113.178.42 in it is already dropped, but nothing in
+# either capture shows it carrying a tunnel. AS139325 IQ-TEL (1,536, and the
+# smallest thing considered here) holds 103.141.64.165, which does carry one —
+# but it is a Bangladeshi ISP's subscriber base, the residential-exit case this
+# file's closing note says an ASN list can never properly cover. Both are one
+# piece of evidence away.
+#
+# AWS, GCP, Azure. They carry the backends of nearly every app on a normal
+# handset, and adding them would break the device rather than the tunnel.
+#
+# THE OLD REASON FOR THAT — "not one collected node sits in any of them" — IS
+# NO LONGER TRUE and was corrected on 2026-08-14. Three AWS instances are now
+# in the throttle list: 13.39.77.133 (eu-west-3), 13.49.121.85 (eu-north-1,
+# 1,039 kB of opaque tcp/27649) and 16.171.185.251 (eu-north-1, 885 kB of
+# opaque tcp/35585). The client has started renting in AWS. The conclusion is
+# unchanged and now rests only on the collateral argument, which is the one
+# that was always doing the work — but the factual claim underneath it has
+# gone, so per-/32 rows in the throttle list are the whole of the answer for
+# AWS and will have to keep up on their own.

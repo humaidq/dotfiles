@@ -804,6 +804,37 @@
 # and 101.32.x on port 80 are WeChat (sgshort.wechat.com, MicroMessenger
 # client), answered 200, and must not be swept up with them.
 46.183.24.0/24
+#
+# 2026-08-14 — THE /24 IS ALSO CARRYING A TUNNEL, and this is where that gets
+# recorded because this is where the drop was decided.
+#
+# 46.183.24.168 was handed over as an address to throttle, on a list of VPN
+# nodes, and the operator then said in as many words that it "was marked as imo
+# but used in vpn". It was briefly added to custom-throttle-list.txt and then
+# removed, on the 185.250.27.164 precedent in that file's own note: an address
+# in two lists reads as a decision reversed rather than duplicated, and the
+# case for shaping belongs in the note where the drop was made. This is it.
+#
+# The capture 192.168.50.162-20260814-1520.pcap backs it. Both .168 and .169
+# are in it — .168 with 13 kB spread across 237s of the 257s window, .169 with
+# 265 kB in a 31.6s burst — on a device whose four heaviest flows are opaque
+# tunnel traffic to AWS, Oracle and FlameHosting addresses, and whose imo
+# endpoints proper (169.136 NETSTAR, the Tencent set) returned zero bytes
+# throughout. .169 answering at all is correct, not a leak: bingo runs
+# imoPolicy = alternate and 2026-08-14 is an even day, so this /24 was shaped
+# rather than dropped that day.
+#
+# WHAT IT MEANS FOR THE POLICY, unresolved and left to the operator. The
+# certificate evidence above (CN=*.bigbigbig.club on both .168 and .169) is not
+# withdrawn — this space is genuinely imo/BIGO's — but if the same addresses
+# also carry a tunnel, then the alternate policy drops them on odd days, and a
+# clean drop is exactly what makes a tunnel client fail over and go hunting for
+# a node this repo has never seen. That is the founding argument of
+# custom-throttle-list.txt applied to this /24. Moving it to a permanent
+# throttle would answer it; so would leaving it, on the view that hurting imo
+# every other day is worth handing the tunnel a free failover. The change is
+# sifr.router.imoPolicy on bingo, not an edit to this file, which is why
+# nothing was changed here.
 
 # Thirteenth run, 2026-08-04, immediately after the /24 above went live — same
 # handset, same 5-minute method, imo launched again. The /24 held: 46.183.24.182
