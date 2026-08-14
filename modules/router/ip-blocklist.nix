@@ -1161,8 +1161,29 @@ in
             v4="$v4$addr, "
             got=yes
           done
+          # The character-class reject on the FIRST line of each case is load
+          # bearing and the two must stay symmetrical. `dig` prints
+          # ";; communications error to 127.0.0.1#53: timed out" on STDOUT as
+          # well as stderr, so the 2>/dev/null above does not keep it out of
+          # this loop and word-splitting hands each piece of it here as an
+          # "address".
+          #
+          # This bit the v6 branch on bongo, 2026-08-14 15:40: the resolver was
+          # briefly unreachable, and the branch tested only for a colon
+          # (*:*), which "127.0.0.1#53:" satisfies. Six of those — three names
+          # times +tries=2 — reached nft as set elements and it exited 1 on a
+          # syntax error. The v4 branch shrugged the same run off, because it
+          # validates the whole token rather than looking for one character.
+          #
+          # It was worse than a failed unit. The flush below runs BEFORE the
+          # add, so the flush succeeded, the add failed, set -e aborted, and
+          # lowtrust_stun6 was left EMPTY — exactly the fail-open the comment
+          # under it says must never happen. A junk-but-non-empty $v6 walks
+          # straight past the "resolved nothing, keep what we have" guard,
+          # because that guard tests for emptiness and junk is not empty.
           for addr in $(dig +short +timeout=3 +tries=2 "$name" AAAA 2>/dev/null || true); do
             case "$addr" in
+              *[!0-9A-Fa-f:]*) continue ;;
               ::) continue ;;
               *:*) v6="$v6$addr, " ; got=yes ;;
             esac
@@ -1181,15 +1202,26 @@ in
         # neither" so a v6-less run (common — not every network here has
         # working IPv6) does not throw away working v4 entries, and vice
         # versa.
+        # FLUSH AND ADD GO IN AS ONE `nft -f` TRANSACTION, for the reason the
+        # imo policy generator above already gives at its own flush pair: nft
+        # applies a -f script atomically, so the set is never observably empty
+        # between the two.
+        #
+        # Two separate nft calls is what turned the 2026-08-14 15:40 failure on
+        # bongo from a failed unit into a fail-open. The flush landed, the add
+        # was rejected, set -e ended the run, and lowtrust_stun6 sat empty until
+        # the next timer — the precise outcome the paragraph above forbids. The
+        # emptiness guard cannot catch that on its own, because it runs before
+        # nft ever sees the elements and a malformed list is not an empty one.
+        # With one transaction a rejected add takes the flush down with it and
+        # the previous contents survive, whatever got past the filters.
         if [ -n "$v4" ]; then
-          nft flush set inet router-blocklists lowtrust_stun4
-          nft add element inet router-blocklists lowtrust_stun4 "{ ''${v4%, } }"
+          printf 'flush set inet router-blocklists lowtrust_stun4\nadd element inet router-blocklists lowtrust_stun4 { %s }\n' "''${v4%, }" | nft -f -
         else
           echo "nft-lowtrust-stun: no IPv4 addresses resolved this run, keeping previous lowtrust_stun4 contents" >&2
         fi
         if [ -n "$v6" ]; then
-          nft flush set inet router-blocklists lowtrust_stun6
-          nft add element inet router-blocklists lowtrust_stun6 "{ ''${v6%, } }"
+          printf 'flush set inet router-blocklists lowtrust_stun6\nadd element inet router-blocklists lowtrust_stun6 { %s }\n' "''${v6%, }" | nft -f -
         else
           echo "nft-lowtrust-stun: no IPv6 addresses resolved this run, keeping previous lowtrust_stun6 contents" >&2
         fi
