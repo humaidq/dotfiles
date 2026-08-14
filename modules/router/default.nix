@@ -212,6 +212,57 @@ in
           sops secret's `.path`.
         '';
       };
+
+      cdnQuota = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Shape a pool device's traffic to CDN space once it exceeds a volume
+            budget, instead of blocking it. Off means no sets, no chain and no
+            generated file.
+
+            For domain fronting, which neither of the other instruments reach:
+            the edge address is shared with everything legitimate the house
+            does, and the cover name is never resolved so no DNS rule sees it.
+            Volume is what separates the two — see
+            custom-cdn-quota-asns.txt for the measurements.
+          '';
+        };
+        bytesPerSecond = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 5825;
+          description = ''
+            Sustained refill rate of the per-device token bucket, in BYTES per
+            second. 5825 is 20.97 MB/hour.
+
+            Bytes per second rather than the "20 mbytes/hour" nftables would
+            accept in its grammar, because this kernel rejects that form:
+
+              Error: Could not process rule: Value too large for defined data type
+
+            Byte-unit rate limits overflow on /hour. /second and /minute load
+            fine. Keeping the option in bytes/second makes the broken form
+            impossible to write by accident.
+          '';
+        };
+        burst = lib.mkOption {
+          type = lib.types.str;
+          default = "50 mbytes";
+          description = ''
+            Bucket capacity — the allowance a device gets at full link speed
+            before shaping begins, refilled at bytesPerSecond.
+
+            An nftables byte quantity, e.g. "50 mbytes". Values of 20, 50, 100
+            and 500 mbytes were all accepted by this kernel and echoed back
+            unchanged.
+
+            This is the knob that decides the collateral. A pool device pulling
+            a single update larger than this from a CDN will trip the quota and
+            then crawl, which is the known and accepted cost of the feature.
+          '';
+        };
+      };
     };
 
     bandwidth = {
@@ -302,6 +353,21 @@ in
           non-zero and must differ from highPriorityMark
           (${toString cfg.qos.highPriorityMark}) and lowPriorityMark
           (${toString cfg.qos.lowPriorityMark}).
+        '';
+      }
+
+      # The quota chain is entered on the sentinel conntrack mark, and that mark
+      # is only ever stamped inside the lowTrust.enable block below. With the
+      # pool off, the chain loads cleanly, matches nothing and shapes nothing —
+      # a silent fail-open, which is the one failure mode this whole feature is
+      # written against. Caught here rather than discovered from a flat counter.
+      {
+        assertion = !cfg.lowTrust.cdnQuota.enable || cfg.lowTrust.enable;
+        message = ''
+          sifr.router.lowTrust.cdnQuota.enable requires
+          sifr.router.lowTrust.enable. The quota chain is entered on the
+          qos.lowTrustMark conntrack sentinel, which nothing stamps when the
+          pool is off, so the rules would never match.
         '';
       }
     ];

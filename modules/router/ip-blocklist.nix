@@ -219,93 +219,103 @@ let
   # ip2asn table this repo already ships. An ASN list rather than pasted
   # prefixes because a provider's allocations change: the numbers stay true and
   # the ranges refresh with the table.
-  lowTrustASNGen = pkgs.writeText "gen-lowtrust-asns.py" ''
-    import ipaddress
-    import pathlib
-    import sys
+  # Parameterised on the never-cover list rather than closing over one, because
+  # there are now two callers wanting different guards: the low-trust ASN
+  # expansion below, which drops what it matches and therefore enforces the full
+  # list, and the CDN quota expansion, which only shapes and must be allowed to
+  # cover the four CDN edges on it. Everything else about the two is identical,
+  # and a copy of this script that drifted would be worse than an argument.
+  mkASNGen =
+    name: neverCover:
+    pkgs.writeText name ''
+      import ipaddress
+      import pathlib
+      import sys
 
-    src, table_path, dst, table, set4, set6 = sys.argv[1:7]
+      src, table_path, dst, table, set4, set6 = sys.argv[1:7]
 
-    never = [
-        ipaddress.ip_address(a)
-        for a in filter(None, """${lib.concatStringsSep "\n" lowTrustNeverCover}""".splitlines())
-    ]
+      never = [
+          ipaddress.ip_address(a)
+          for a in filter(None, """${lib.concatStringsSep "\n" neverCover}""".splitlines())
+      ]
 
-    wanted = {}
-    for lineno, line in enumerate(pathlib.Path(src).read_text().splitlines(), 1):
-        s = line.split("#", 1)[0].strip()
-        if not s:
-            continue
-        if not s.isdigit():
-            raise SystemExit(f"{src}:{lineno}: not an AS number: {s!r}")
-        wanted[int(s)] = lineno
+      wanted = {}
+      for lineno, line in enumerate(pathlib.Path(src).read_text().splitlines(), 1):
+          s = line.split("#", 1)[0].strip()
+          if not s:
+              continue
+          if not s.isdigit():
+              raise SystemExit(f"{src}:{lineno}: not an AS number: {s!r}")
+          wanted[int(s)] = lineno
 
-    v4 = []
-    v6 = []
-    seen_asns = set()
+      v4 = []
+      v6 = []
+      seen_asns = set()
 
-    for row in pathlib.Path(table_path).read_text().splitlines():
-        parts = row.split("\t")
-        if len(parts) < 3:
-            continue
-        try:
-            asn = int(parts[2])
-        except ValueError:
-            continue
-        if asn not in wanted:
-            continue
-        try:
-            lo = ipaddress.ip_address(parts[0])
-            hi = ipaddress.ip_address(parts[1])
-        except ValueError:
-            continue
-        seen_asns.add(asn)
-        for net in ipaddress.summarize_address_range(lo, hi):
-            (v4 if net.version == 4 else v6).append(net)
+      for row in pathlib.Path(table_path).read_text().splitlines():
+          parts = row.split("\t")
+          if len(parts) < 3:
+              continue
+          try:
+              asn = int(parts[2])
+          except ValueError:
+              continue
+          if asn not in wanted:
+              continue
+          try:
+              lo = ipaddress.ip_address(parts[0])
+              hi = ipaddress.ip_address(parts[1])
+          except ValueError:
+              continue
+          seen_asns.add(asn)
+          for net in ipaddress.summarize_address_range(lo, hi):
+              (v4 if net.version == 4 else v6).append(net)
 
-    # An ASN the table has never heard of contributes nothing, which would be a
-    # silent no-op — the failure mode this whole file is written against. A typo
-    # in a five-digit number is invisible any other way.
-    missing = sorted(a for a in wanted if a not in seen_asns)
-    if missing:
-        raise SystemExit(
-            f"{src}: no ranges found for AS" + ", AS".join(str(a) for a in missing)
-            + " — check the number, or that ip2asn-combined.tsv is current"
-        )
+      # An ASN the table has never heard of contributes nothing, which would be a
+      # silent no-op — the failure mode this whole file is written against. A typo
+      # in a five-digit number is invisible any other way.
+      missing = sorted(a for a in wanted if a not in seen_asns)
+      if missing:
+          raise SystemExit(
+              f"{src}: no ranges found for AS" + ", AS".join(str(a) for a in missing)
+              + " — check the number, or that ip2asn-combined.tsv is current"
+          )
 
-    v4 = list(ipaddress.collapse_addresses(v4))
-    v6 = list(ipaddress.collapse_addresses(v6))
+      v4 = list(ipaddress.collapse_addresses(v4))
+      v6 = list(ipaddress.collapse_addresses(v6))
 
-    # The tripwire. Cheap to run, and the only thing standing between a
-    # mistyped AS number and the whole house losing its resolver or its CDN.
-    for addr in never:
-        pool = v4 if addr.version == 4 else v6
-        for net in pool:
-            if addr in net:
-                raise SystemExit(
-                    f"{src}: refusing to build — {addr} is inside {net}, which one of "
-                    "these AS numbers announces. That address is on the never-block "
-                    "list; remove the offending ASN or narrow the range."
-                )
+      # The tripwire. Cheap to run, and the only thing standing between a
+      # mistyped AS number and the whole house losing its resolver or its CDN.
+      for addr in never:
+          pool = v4 if addr.version == 4 else v6
+          for net in pool:
+              if addr in net:
+                  raise SystemExit(
+                      f"{src}: refusing to build — {addr} is inside {net}, which one of "
+                      "these AS numbers announces. That address is on the never-block "
+                      "list; remove the offending ASN or narrow the range."
+                  )
 
-    v4 = [str(n) for n in v4]
-    v6 = [str(n) for n in v6]
+      v4 = [str(n) for n in v4]
+      v6 = [str(n) for n in v6]
 
-    with pathlib.Path(dst).open("w") as f:
-        for name, elems in ((set4, v4), (set6, v6)):
-            f.write(f"flush set inet {table} {name}\n")
-            if elems:
-                f.write(f"add element inet {table} {name} {{\n")
-                for i, elem in enumerate(elems):
-                    comma = "," if i + 1 < len(elems) else ""
-                    f.write(f"  {elem}{comma}\n")
-                f.write("}\n")
+      with pathlib.Path(dst).open("w") as f:
+          for name, elems in ((set4, v4), (set6, v6)):
+              f.write(f"flush set inet {table} {name}\n")
+              if elems:
+                  f.write(f"add element inet {table} {name} {{\n")
+                  for i, elem in enumerate(elems):
+                      comma = "," if i + 1 < len(elems) else ""
+                      f.write(f"  {elem}{comma}\n")
+                  f.write("}\n")
 
-    print(
-        f"low-trust ASN ranges: {len(wanted)} ASNs -> {len(v4)} IPv4, {len(v6)} IPv6",
-        file=sys.stderr,
-    )
-  '';
+      print(
+          f"{pathlib.Path(src).name}: {len(wanted)} ASNs -> {len(v4)} IPv4, {len(v6)} IPv6",
+          file=sys.stderr,
+      )
+    '';
+
+  lowTrustASNGen = mkASNGen "gen-lowtrust-asns.py" lowTrustNeverCover;
 
   lowTrustASNs =
     pkgs.runCommand "nft-lowtrust-asns.nft"
@@ -315,6 +325,44 @@ let
       ''
         python3 ${lowTrustASNGen} ${./custom-lowtrust-asns.txt} ${./ip2asn-combined.tsv} "$out" \
           router-blocklists lowtrust_asn4 lowtrust_asn6
+      '';
+
+  # The CDN quota set reuses the ASN expander with ONE difference, and it is the
+  # difference that needs justifying rather than the reuse.
+  #
+  # lowTrustNeverCover exists because that generator turns a five-digit number
+  # into millions of addresses that get DROPPED. Four of its nine entries are
+  # CDN edges — 95.100.170.42, 23.44.201.155, 185.93.2.251, 143.244.56.58 — and
+  # those four are precisely what a CDN quota has to cover, so the unmodified
+  # guard makes this file impossible to build.
+  #
+  # The guard is NARROWED rather than removed: the four CDN edges are exempted
+  # and the other five are still enforced, so nothing generated from
+  # custom-cdn-quota-asns.txt can ever swallow the resolver, the STUN server or
+  # this operator's own hosts. Exempting the four is safe only because a match
+  # here shapes to the throttle tier instead of dropping, and only ever for a
+  # pool device. Both properties are stated in that file's header as the terms
+  # of the exemption.
+  cdnQuotaNeverCover = builtins.filter (
+    a:
+    !(builtins.elem a [
+      "95.100.170.42"
+      "23.44.201.155"
+      "185.93.2.251"
+      "143.244.56.58"
+    ])
+  ) lowTrustNeverCover;
+
+  cdnQuotaASNGen = mkASNGen "gen-cdn-quota-asns.py" cdnQuotaNeverCover;
+
+  cdnQuotaASNs =
+    pkgs.runCommand "nft-cdn-quota-asns.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${cdnQuotaASNGen} ${./custom-cdn-quota-asns.txt} ${./ip2asn-combined.tsv} "$out" \
+          router-blocklists cdn_quota4 cdn_quota6
       '';
 
   # The throttle list reuses the local blocklist's generator verbatim — same
@@ -562,6 +610,46 @@ in
           }
         ''}
 
+        ${lib.optionalString (cfg.lowTrust.enable && cfg.lowTrust.cdnQuota.enable) ''
+          # CDN space subject to the volume quota, expanded from
+          # custom-cdn-quota-asns.txt. Nothing here is ever dropped — these two
+          # sets exist only to say "this destination is a CDN edge", and the
+          # decision about what to do is made by the rate limiter below.
+          set cdn_quota4 {
+            type ipv4_addr
+            flags interval
+          }
+
+          set cdn_quota6 {
+            type ipv6_addr
+            flags interval
+          }
+
+          # One token bucket per pool device, created and refreshed by the
+          # `update` statements in lowtrust_cdn_quota. The element key is the
+          # DEVICE's address in both directions, so a device has one budget
+          # covering its CDN traffic either way rather than two independent
+          # allowances.
+          #
+          # The timeout only reaps idle entries; it is not the quota window.
+          # The window is the token bucket's own refill and needs no timer,
+          # which is the whole reason this is a dynamic set rather than a
+          # named quota object plus a reset unit.
+          set cdn_over4 {
+            type ipv4_addr
+            flags dynamic, timeout
+            timeout 2h
+            size 1024
+          }
+
+          set cdn_over6 {
+            type ipv6_addr
+            flags dynamic, timeout
+            timeout 2h
+            size 1024
+          }
+        ''}
+
         chain forward_blocklists {
           type filter hook forward priority -10; policy accept;
 
@@ -702,6 +790,29 @@ in
 
             ether saddr @lowtrust_macs jump lowtrust_policy
             ether saddr @lowtrust_macs_temp jump lowtrust_policy
+
+            ${lib.optionalString cfg.lowTrust.cdnQuota.enable ''
+              # Entered on the conntrack sentinel, NOT on ether saddr like the
+              # two rules above, and that difference is the whole reason this is
+              # a separate chain.
+              #
+              # A MAC match only ever sees upload: a download's source MAC is the
+              # ISP's. Every rule in lowtrust_policy is a drop, and dropping the
+              # outbound packet is enough to stop a conversation, so the
+              # one-directional match has never mattered there. It matters here.
+              # The traffic this quota exists to shape is the DOWNLOAD half —
+              # 45.5 MB down against 3.0 MB up in the capture that motivated it —
+              # so a rule placed alongside those two would meter the 3 MB and
+              # never see the 45 MB.
+              #
+              # qos.lowTrustMark is stamped on the upload path by MAC and rides
+              # the conntrack entry in both directions; default.nix already
+              # depends on exactly that property to catch the download half of
+              # its own classification. Reused here rather than introducing a
+              # pool-device IP set that would need its own loader and its own
+              # staleness problem.
+              ct mark ${toString cfg.qos.lowTrustMark} jump lowtrust_cdn_quota
+            ''}
           }
 
           # Scoped LAN -> WAN, so traffic between LAN devices is untouched.
@@ -714,6 +825,39 @@ in
           # Log and verdict are separate rules throughout, for the reason
           # forward_blocklists documents: a limit on the verdict rule would let
           # packets over the rate escape the drop.
+          ${lib.optionalString cfg.lowTrust.cdnQuota.enable ''
+            # Volume quota for CDN space. Shapes, never drops.
+            #
+            # Domain fronting cannot be answered by address or by name: the edge
+            # is shared with everything legitimate the house does, and the cover
+            # name is never resolved so no DNS rule sees it. Volume is what
+            # separates the two, by more than an order of magnitude —
+            # custom-cdn-quota-asns.txt carries the measurements.
+            #
+            # `limit rate over` MATCHES when the bucket is empty, so under budget
+            # these rules do not fire at all and the traffic is untouched. Over
+            # it, every further packet takes meta mark 0x2 — the mark
+            # forward_throttle already uses — and lands in the existing HTB
+            # throttle class. No new tc class, no new mark namespace.
+            #
+            # The throttled class is 100 kbit/s = 12.5 kB/s, comfortably above
+            # the ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} B/s refill.
+            # A client that keeps pulling therefore stays over budget and stays
+            # in the class, instead of oscillating in and out of it. That is
+            # deliberate: it is what makes this stable without any hysteresis.
+            #
+            # Written per-second because this kernel REJECTS the natural form:
+            #   limit rate over 20 mbytes/hour
+            #   -> Error: Could not process rule: Value too large for defined data type
+            # Byte-unit rates overflow on /hour. /second and /minute are fine.
+            chain lowtrust_cdn_quota {
+              oifname "${cfg.ppp}" ip daddr @cdn_quota4 update @cdn_over4 { ip saddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (upload, IPv4)"
+              oifname "${cfg.lan0}" ip saddr @cdn_quota4 update @cdn_over4 { ip daddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (download, IPv4)"
+              oifname "${cfg.ppp}" ip6 daddr @cdn_quota6 update @cdn_over6 { ip6 saddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (upload, IPv6)"
+              oifname "${cfg.lan0}" ip6 saddr @cdn_quota6 update @cdn_over6 { ip6 daddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (download, IPv6)"
+            }
+          ''}
+
           chain lowtrust_policy {
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust port drops"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports counter drop comment "low-trust port drop"
@@ -854,6 +998,9 @@ in
           nft -f ${lowTrustPorts}
           nft -f ${lowTrustSubnets}
           nft -f ${lowTrustASNs}
+          ${lib.optionalString cfg.lowTrust.cdnQuota.enable ''
+            nft -f ${cdnQuotaASNs}
+          ''}
         ''}
       '';
     };
