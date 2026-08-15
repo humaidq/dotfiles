@@ -65,9 +65,27 @@ let
     # shows the throttle and imo sets matching, split by direction and address
     # family — a breakdown the HTB class counters cannot give, since both
     # families and both directions land in the same class.
+    # lowtrust_cdn_quota is here for a reason worth stating: without it the CDN
+    # volume quota is INVISIBLE, and not merely absent. Its rules end in
+    # `meta mark set 0x2`, which is the same mark forward_throttle sets, which
+    # tc steers into class 1:20, which CLASSES below labels "throttle". So
+    # every byte a pool device sends to CDN space after blowing its quota is
+    # already being counted on the dashboard's VPN throttle panels, mixed in
+    # with genuinely shaped tunnel nodes and indistinguishable from them.
+    #
+    # The four rules in that chain each carry a counter and a distinct comment
+    # ("CDN volume quota exceeded (upload, IPv4)" and so on), so scraping the
+    # chain splits the quota out by direction and address family and lets a
+    # panel subtract it from the class total. Nothing else can: the HTB class
+    # counter is one number for both sources.
+    #
+    # Absent on a router with cdnQuota disabled — bongo today. run_json returns
+    # None for a chain that does not exist and collect_rules reports False,
+    # which the ok |= accumulation in main() absorbs.
     RULE_CHAINS = [
         ("router-filter", "qos-mark"),
         ("router-blocklists", "forward_throttle"),
+        ("router-blocklists", "lowtrust_cdn_quota"),
     ]
 
     # The sets forward_throttle matches on. Their rule counters say how much
@@ -78,6 +96,26 @@ let
     # the second writer visible — otherwise a temporary throttle is
     # indistinguishable from the listed ones, and its removal invisible.
     THROTTLE_SETS = ["throttle4", "throttle6", "imo4", "imo6"]
+
+    # The CDN quota's per-device token buckets. Exported alongside the throttle
+    # sets because collect_sets treats every name the same way, but they mean
+    # something different and the panel using them must not overstate it:
+    #
+    # cdn_over4/6 gets an element for EVERY pool device that touches CDN space,
+    # created by the `update` statement in lowtrust_cdn_quota, because that is
+    # where the token bucket lives. An element therefore means "this device has
+    # an active CDN budget", NOT "this device is over its quota". Being over is
+    # what the rule counters above measure, since the rate expression only
+    # matches — and only then does the counter tick and the mark get set.
+    #
+    # Cardinality is still the number worth watching: it is how many pool
+    # devices are in scope right now, it is bounded by the set's size 1024, and
+    # entries reap on the 2h idle timeout, so a flat non-zero line here with no
+    # rule bytes is a quota doing its job silently rather than a broken one.
+    # custom-cdn-quota-asns.txt's expansion (cdn_quota4/6) is deliberately NOT
+    # exported: it is a build-time constant of tens of thousands of intervals
+    # and changes only on rebuild.
+    QUOTA_SETS = ["cdn_over4", "cdn_over6"]
 
     # The table `tempblock` creates on first use (see tempblock.bash). It is
     # not part of networking.nftables.tables, so nothing else here knows about
@@ -278,7 +316,7 @@ let
 
     def collect_sets(metrics):
         found = False
-        for name in THROTTLE_SETS:
+        for name in THROTTLE_SETS + QUOTA_SETS:
             doc = run_json(
                 "nft", "-j", "list", "set", "inet", "router-blocklists", name
             )
