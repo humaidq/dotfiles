@@ -704,3 +704,136 @@ func TestVoiceTOSIsExpeditedForwarding(t *testing.T) {
 		t.Errorf("DSCP = %d, want 46", voiceTOS>>2)
 	}
 }
+
+// The startup grace.
+//
+// A rebuild restarts this service and, through networkd, pppd underneath it.
+// The loss and the dead session that follow are real — they are also expected,
+// self-inflicted, and over in seconds. Recording them teaches the reader that
+// the event log is noise, which costs more than the events are worth.
+//
+// The grace suppresses the *events*. Minute rows are still written throughout,
+// so the history and the loss meters show the gap exactly as it happened; it is
+// only the "something is wrong" claim that is withheld.
+
+// The window must outlast a poll interval, or the very first poll after a
+// restart — the one that finds the interface still without an address — would
+// fall outside it and log the outage the grace exists to swallow.
+func TestTheGraceOutlastsAPPPPoll(t *testing.T) {
+	if startupGrace <= pppPollInterval {
+		t.Fatalf("startupGrace = %s, want more than one %s poll", startupGrace, pppPollInterval)
+	}
+}
+
+func TestTheGracedMinuteDoesNotCountTowardsAnEpisode(t *testing.T) {
+	store := newTestStore(t)
+	start := time.Date(2026, 8, 15, 9, 3, 0, 0, time.UTC)
+	target := newTestTarget(roleCore)
+	prober := &uplinkProber{store: store, startedAt: start, targets: []*uplinkTarget{target}}
+
+	// Exactly enough consecutive bad minutes to open an episode, starting at
+	// the restart. The first is the reconnect and is dropped, which leaves the
+	// run one short — a sustained fault opens on the next minute instead (see
+	// TestDegradedEpisodeOpensOnceTheGraceHasPassed), a rebuild never gets
+	// there.
+	for i := range episodeOpenAfter {
+		prober.updateEpisode(target, minuteRow{
+			TS: start.Add(time.Duration(i) * time.Minute), Target: target.anchor.Name,
+			Role: roleCore, Sent: 60, Received: 0,
+		})
+	}
+
+	if _, found, err := store.openEvent(eventDegraded, target.anchor.Name); err != nil {
+		t.Fatalf("open event: %v", err)
+	} else if found {
+		t.Fatal("a rebuild's own reconnect opened a degradation episode")
+	}
+	if target.episodeOpen {
+		t.Fatal("episodeOpen set, which would paint the status page red")
+	}
+}
+
+func TestDegradedEpisodeOpensOnceTheGraceHasPassed(t *testing.T) {
+	store := newTestStore(t)
+	start := time.Date(2026, 8, 15, 9, 3, 0, 0, time.UTC)
+	target := newTestTarget(roleCore)
+	prober := &uplinkProber{store: store, startedAt: start, targets: []*uplinkTarget{target}}
+
+	// The line is still bad after the window closes, which is no longer this
+	// service's own doing and is exactly what the event log is for.
+	after := start.Add(startupGrace)
+	for i := range episodeOpenAfter {
+		prober.updateEpisode(target, minuteRow{
+			TS: after.Add(time.Duration(i) * time.Minute), Target: target.anchor.Name,
+			Role: roleCore, Sent: 60, Received: 0,
+		})
+	}
+
+	event, found, err := store.openEvent(eventDegraded, target.anchor.Name)
+	if err != nil {
+		t.Fatalf("open event: %v", err)
+	}
+	if !found {
+		t.Fatal("real degradation after the grace was not recorded")
+	}
+	if !strings.Contains(event.Detail, "loss") {
+		t.Errorf("detail = %q, want it to name the loss", event.Detail)
+	}
+}
+
+// An interface that does not exist reads exactly like a session that has not
+// come back yet, which is the state a rebuild leaves behind.
+const downIface = "sifr-no-such-iface"
+
+func TestPPPDownInsideTheStartupGraceIsNotAnEvent(t *testing.T) {
+	store := newTestStore(t)
+	start := time.Date(2026, 8, 15, 9, 3, 0, 0, time.UTC)
+	prober := &uplinkProber{store: store, pppIface: downIface, startedAt: start}
+
+	prober.pollPPP(start.Add(time.Second))
+
+	if _, found, err := store.openEvent(eventPPPDown, downIface); err != nil {
+		t.Fatalf("open event: %v", err)
+	} else if found {
+		t.Fatal("the session a rebuild dropped was logged as an outage")
+	}
+	// The latch must stay clear. Set here, the poll after the grace expires
+	// would take itself for a repeat and never record a session that is
+	// genuinely still down.
+	if prober.pppDown {
+		t.Fatal("pppDown latched during the grace, which would swallow the real event")
+	}
+}
+
+func TestASessionStillDownAfterTheGraceIsRecorded(t *testing.T) {
+	store := newTestStore(t)
+	start := time.Date(2026, 8, 15, 9, 3, 0, 0, time.UTC)
+	prober := &uplinkProber{store: store, pppIface: downIface, startedAt: start}
+
+	prober.pollPPP(start.Add(time.Second))
+	prober.pollPPP(start.Add(startupGrace + pppPollInterval))
+
+	event, found, err := store.openEvent(eventPPPDown, downIface)
+	if err != nil {
+		t.Fatalf("open event: %v", err)
+	}
+	if !found {
+		t.Fatal("a session still down after the grace was never recorded")
+	}
+	if want := start.Add(startupGrace + pppPollInterval); !event.TS.Equal(want) {
+		t.Errorf("event at %s, want %s: the outage is timed from when it was "+
+			"confirmed, not from a restart it may have nothing to do with", event.TS, want)
+	}
+	if !prober.pppDown {
+		t.Fatal("pppDown not latched after the real event, so every poll would append another")
+	}
+}
+
+// A prober built without a start time — every test above this block, and the
+// page tests — must behave as it always has.
+func TestAZeroStartTimeGivesNoGrace(t *testing.T) {
+	prober := &uplinkProber{}
+	if prober.inStartupGrace(time.Date(2026, 8, 15, 9, 3, 0, 0, time.UTC)) {
+		t.Fatal("a zero start time granted a grace window")
+	}
+}

@@ -16,7 +16,7 @@ import (
 func newTestService(t *testing.T, store *uplinkStore, targets ...*uplinkTarget) *uplinkService {
 	t.Helper()
 
-	tmpl, err := template.ParseFiles("uplink.html")
+	tmpl, err := template.ParseFiles("uplink.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse uplink.html: %v", err)
 	}
@@ -86,7 +86,7 @@ func TestUplinkPageRenders(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil))
+	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil), navData{})
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
@@ -118,7 +118,7 @@ func TestUplinkPageRendersWithNoHistory(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil))
+	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil), navData{})
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
@@ -135,7 +135,7 @@ func TestUplinkPageRejectsOtherPaths(t *testing.T) {
 	service := newTestService(t, newTestStore(t))
 
 	recorder := httptest.NewRecorder()
-	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink/../secrets", nil))
+	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink/../secrets", nil), navData{})
 	if recorder.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", recorder.Code)
 	}
@@ -144,7 +144,7 @@ func TestUplinkPageRejectsOtherPaths(t *testing.T) {
 func TestLandingBandRenders(t *testing.T) {
 	// The band is injected into the landing page, which predates this feature
 	// and has to keep rendering with and without it.
-	tmpl, err := template.ParseFiles("index.html")
+	tmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestLandingBandRenders(t *testing.T) {
 
 	t.Run("with a band", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, service).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, service, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, "/", nil))
 
 		body := recorder.Body.String()
@@ -175,7 +175,7 @@ func TestLandingBandRenders(t *testing.T) {
 
 	t.Run("without one", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, "/", nil))
 
 		body := recorder.Body.String()
@@ -285,7 +285,7 @@ func TestBandMetersCarryTheLongFormInTheTooltip(t *testing.T) {
 // TestLandingBandRendersBars covers the template half: the widths have to
 // survive html/template's CSS-context escaping, or every bar renders empty.
 func TestLandingBandRendersBars(t *testing.T) {
-	tmpl, err := template.ParseFiles("index.html")
+	tmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestLandingBandRendersBars(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, service).ServeHTTP(recorder,
+	landingMux(pageData{}, tmpl, service, navSource{}).ServeHTTP(recorder,
 		httptest.NewRequest(http.MethodGet, "/", nil))
 	body := recorder.Body.String()
 
@@ -321,7 +321,7 @@ func TestLandingBandRendersBars(t *testing.T) {
 }
 
 func TestUplinkRoutesOnlyExistWhenConfigured(t *testing.T) {
-	tmpl, err := template.ParseFiles("index.html")
+	tmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
@@ -330,7 +330,7 @@ func TestUplinkRoutesOnlyExistWhenConfigured(t *testing.T) {
 	// recorded as zero, which is worse than not answering.
 	for _, path := range []string{"/uplink", "/metrics"} {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, path, nil))
 		if recorder.Code != http.StatusNotFound {
 			t.Errorf("%s status = %d without probing configured, want 404", path, recorder.Code)

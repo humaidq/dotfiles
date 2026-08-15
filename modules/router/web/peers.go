@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/netip"
 	"os/exec"
+	"sort"
 	"strings"
 	"time"
 )
@@ -51,6 +52,7 @@ type peerRow struct {
 const staleAfter = 2 * time.Minute
 
 type peersPageData struct {
+	Nav    navData
 	Device string
 	// How DHCP knows this device: the hostname it offered, and the hardware
 	// address the lease was handed to. Both come from the lease file, so a
@@ -86,8 +88,53 @@ type peersPageData struct {
 	LowTrustUnknown bool
 }
 
+// deviceRow is one DHCP lease as the index renders it. The lease is embedded
+// rather than copied field by field so the template's existing .Addr, .Name and
+// .MAC keep working and this type only has to describe what it adds.
+type deviceRow struct {
+	lease
+	// Same meaning, formatting and threshold as the peers page's column, and
+	// deliberately so: a device reading "3s" here and on its own page is the
+	// same claim about the same connection table.
+	LastSeen string
+	Stale    bool
+	// The unformatted gap behind LastSeen, and whether there was one. Kept
+	// unexported because the template has no use for them — they exist so the
+	// rows can be ordered by how recently a device was active, which a
+	// formatted string cannot do: "3s" sorts after "1d 4h" as text.
+	idle  time.Duration
+	dated bool
+}
+
+// byLastActive orders the devices list: most recently active first, then the
+// devices nothing could be dated for, then by address.
+//
+// The undated go last rather than first because "no flow this router can date"
+// is the weakest claim on the page, not the strongest. It covers a device that
+// is genuinely gone, one whose only traffic is a protocol timeoutSysctl does
+// not map, and one that has been silent long enough for conntrack to reap its
+// entries — and sorting those above a device that spoke three seconds ago would
+// invert the whole point of the column.
+//
+// Address is the final tiebreak, which is also what makes this a no-op on a
+// router with no timeout table: nothing is dated, so the list keeps exactly the
+// address order readLeases already produced.
+func byLastActive(rows []deviceRow) {
+	sort.SliceStable(rows, func(i, j int) bool {
+		a, b := rows[i], rows[j]
+		if a.dated != b.dated {
+			return a.dated
+		}
+		if a.dated && a.idle != b.idle {
+			return a.idle < b.idle
+		}
+		return a.Addr.Less(b.Addr)
+	})
+}
+
 type indexPageData struct {
-	Leases   []lease
+	Nav      navData
+	Leases   []deviceRow
 	Priority []priorityRow
 	Error    string
 	// Set when the connection table could not be read. Kept apart from Error,
@@ -145,6 +192,10 @@ type peersServer struct {
 	// not exist. bongo runs this binary with the pool off, and must behave
 	// exactly as it did before the pool existed.
 	lowTrust func(ctx context.Context, mac string) string
+	// Builds the shared nav strip. Zero value is usable: an empty hostname and
+	// a grey lamp, which is what a test server renders and what a router with
+	// no probing shows.
+	nav navSource
 	// Turns each flow's conntrack countdown into a last-seen time. Nil in
 	// tests that pass their own fixture expectations; the page then renders
 	// blank last-seen cells and is otherwise unchanged.
@@ -190,8 +241,20 @@ func (s *peersServer) handleIndex(w http.ResponseWriter, r *http.Request) {
 		log.Printf("peers index: read leases from %q: %v", s.leasesPath, err)
 		data.Error = "Cannot read the DHCP lease file, so no devices can be listed. A peers page is still reachable directly at /peers/<address>."
 	}
-	data.Leases = leases
-	data.Priority, data.PriorityError = s.priorityNow(r.Context(), leases)
+	data.Nav = s.nav.data("devices", true)
+	data.Leases = make([]deviceRow, 0, len(leases))
+	for _, entry := range leases {
+		data.Leases = append(data.Leases, deviceRow{lease: entry})
+	}
+
+	// One dump serves both the prioritised table and the last-seen column. The
+	// connection table is the largest thing this page reads, and sampling it
+	// twice would also give the two tables views of the LAN seconds apart —
+	// a device could be prioritised in one and idle in the other.
+	raw, rawErr := s.conntrackDump(r.Context())
+	data.Priority, data.PriorityError = s.priorityNow(raw, rawErr, leases)
+	s.annotateLastSeen(data.Leases, raw, rawErr)
+	byLastActive(data.Leases)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.indexTmpl.Execute(w, data); err != nil {
@@ -207,19 +270,61 @@ func (s *peersServer) handleIndex(w http.ResponseWriter, r *http.Request) {
 // Returns a notice rather than an error: the device list is the page's job and
 // must survive an unreadable connection table. An empty result with no notice
 // genuinely means nothing is prioritised.
-func (s *peersServer) priorityNow(ctx context.Context, leases []lease) ([]priorityRow, string) {
+// conntrackDump reads the connection table once for the whole index page.
+//
+// Returns (nil, nil) when nothing on the page needs it, which is the case on a
+// router with no call mark configured and no timeout table: the prioritised
+// table would have nothing to select on and the last-seen column nothing to
+// date with, so the fork is pure cost.
+func (s *peersServer) conntrackDump(ctx context.Context) ([]byte, error) {
+	if s.namer.callMark == 0 && s.timeouts == nil {
+		return nil, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, conntrackTimeout)
+	defer cancel()
+	raw, err := s.conntrack(ctx)
+	if err != nil {
+		log.Printf("peers index: read conntrack: %v", err)
+		return nil, err
+	}
+	return raw, nil
+}
+
+// annotateLastSeen fills in how long ago each listed device last carried a
+// packet, in place.
+//
+// A failure here is silent by design. The prioritised table above already
+// carries a banner for an unreadable connection table, and a second notice
+// about the same failure would read as two things being broken. Blank cells are
+// the honest fallback and the column already renders them for a device with no
+// datable flow.
+func (s *peersServer) annotateLastSeen(rows []deviceRow, raw []byte, readErr error) {
+	if s.timeouts == nil || readErr != nil || raw == nil {
+		return
+	}
+	idle, err := deviceIdle(strings.NewReader(string(raw)), s.lanNet, s.timeouts)
+	if err != nil {
+		log.Printf("peers index: parse conntrack for last seen: %v", err)
+		return
+	}
+	for i := range rows {
+		seen, ok := idle[rows[i].Addr]
+		if !ok {
+			continue
+		}
+		rows[i].LastSeen = formatDuration(seen)
+		rows[i].Stale = seen >= staleAfter
+		rows[i].idle, rows[i].dated = seen, true
+	}
+}
+
+func (s *peersServer) priorityNow(raw []byte, readErr error, leases []lease) ([]priorityRow, string) {
 	if s.namer.callMark == 0 {
 		// No mark configured, so there is nothing to collect and an empty
 		// table would be a claim rather than an answer.
 		return nil, ""
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, conntrackTimeout)
-	defer cancel()
-
-	raw, err := s.conntrack(ctx)
-	if err != nil {
-		log.Printf("peers index: read conntrack: %v", err)
+	if readErr != nil {
 		return nil, "Cannot read the connection table, so prioritised traffic cannot be listed. The device list below is unaffected."
 	}
 	marked, err := parseMarkedFlows(strings.NewReader(string(raw)), s.lanNet, s.namer.callMark)
@@ -421,6 +526,10 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	}
 
 	data := peersPageData{Device: device.String(), Error: notice}
+	// Both peers pages mark "devices" current: a device page is a leaf of that
+	// section, and a strip that highlighted nothing there would read as a page
+	// that had fallen outside the site.
+	data.Nav = s.nav.data("devices", true)
 
 	// How DHCP knows this device. Read from the lease file rather than the
 	// neighbour table because that lookup is gated on the low-trust feature

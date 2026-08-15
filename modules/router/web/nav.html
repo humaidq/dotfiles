@@ -1,0 +1,32 @@
+{{/*
+The navigation strip, shared by every page.
+
+Parsed alongside each page template rather than duplicated into them, so a
+section added here appears everywhere at once. Each page passes its own .Nav,
+which is why this takes a navData and not the whole page.
+
+A link is rendered only where it works: /uplink exists only when probing is
+configured, and /peers only on the mesh listener. A nav that offered either
+unconditionally would hand the reader a 404 on the LAN, which is worse than a
+missing entry — one is a gap, the other looks like a broken router.
+*/}}
+{{ define "nav" }}
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">
+      <span class="lamp lamp-{{ .State }}" title="Uplink: {{ .StateText }}"></span>
+      <span class="sr-only">Uplink: {{ .StateText }}.</span>
+      <span class="brand-host">{{ .Host }}</span>
+    </a>
+    <ul class="navlinks">
+      <li><a href="/"{{ if eq .Active "status" }} class="current" aria-current="page"{{ end }}>Status</a></li>
+      {{ if .ShowUplink }}
+      <li><a href="/uplink"{{ if eq .Active "uplink" }} class="current" aria-current="page"{{ end }}>Uplink</a></li>
+      {{ end }}
+      {{ if .ShowPeers }}
+      <li><a href="/peers"{{ if eq .Active "devices" }} class="current" aria-current="page"{{ end }}>Devices</a></li>
+      {{ end }}
+    </ul>
+  </div>
+</nav>
+{{ end }}

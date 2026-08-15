@@ -111,6 +111,54 @@ func timeoutSysctl(f flow) (string, bool) {
 	return "", false
 }
 
+// timeoutCap names a second tunable the kernel clamps this flow's countdown to,
+// on top of the one its state selects.
+//
+// There is one such clamp and it matters enormously here. A TCP entry in
+// ESTABLISHED that has not been marked ASSURED — traffic seen one way only, a
+// half-open socket, a connection whose reply never came — is held to
+// nf_conntrack_tcp_timeout_unacknowledged (300s by default) rather than to
+// nf_conntrack_tcp_timeout_established (432000s, five days). Reading the
+// uncapped maximum for those entries computes 432000 minus a countdown that
+// never exceeds 300, and reports a connection last active seconds ago as
+// idle for very nearly five days. That is not a rounding error, it is the
+// exact opposite of the answer, and it is what this column exists to get right.
+//
+// Taken as a minimum rather than a substitution so the result is safe even if a
+// kernel applies the clamp differently: if the clamp does not in fact apply,
+// the countdown will exceed the smaller maximum and idle() blanks the cell
+// rather than reporting a negative gap.
+func timeoutCap(f flow) (string, bool) {
+	if f.Proto == "tcp" && f.State == "ESTABLISHED" && !f.Assured {
+		return "nf_conntrack_tcp_timeout_unacknowledged", true
+	}
+	return "", false
+}
+
+// maxTimeout returns the countdown a fresh entry for this flow starts from.
+func (t *timeoutTable) maxTimeout(f flow) (uint64, bool) {
+	name, ok := timeoutSysctl(f)
+	if !ok {
+		return 0, false
+	}
+	max, ok := t.lookup(name)
+	if !ok {
+		return 0, false
+	}
+	if capName, capped := timeoutCap(f); capped {
+		limit, ok := t.lookup(capName)
+		if !ok {
+			// The clamp applies but cannot be read, so the maximum in hand is
+			// known to be the wrong one. A blank cell beats a five-day answer.
+			return 0, false
+		}
+		if limit < max {
+			max = limit
+		}
+	}
+	return max, true
+}
+
 // idle returns how long ago the flow last carried a packet.
 //
 // A nil table is the "no idle information" case rather than an error: tests and
@@ -119,11 +167,7 @@ func (t *timeoutTable) idle(f flow) (time.Duration, bool) {
 	if t == nil || !f.HaveTimeout {
 		return 0, false
 	}
-	name, ok := timeoutSysctl(f)
-	if !ok {
-		return 0, false
-	}
-	max, ok := t.lookup(name)
+	max, ok := t.maxTimeout(f)
 	if !ok {
 		return 0, false
 	}

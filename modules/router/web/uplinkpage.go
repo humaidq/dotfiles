@@ -341,6 +341,7 @@ type uplinkDayView struct {
 }
 
 type uplinkPageData struct {
+	Nav           navData
 	Hostname      string
 	Generated     string
 	Band          *uplinkBand
@@ -371,7 +372,17 @@ func roleNote(role, tin string) string {
 	return ""
 }
 
-func (s *uplinkService) handlePage(w http.ResponseWriter, r *http.Request) {
+// pageHandler binds the nav strip to the listener this handler is registered
+// on. The uplink page is served on both, and only the listener knows whether
+// the devices section is reachable from it — the service is one object shared
+// by both and cannot tell them apart.
+func (s *uplinkService) pageHandler(nav navSource, showPeers bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.handlePage(w, r, nav.data("uplink", showPeers))
+	}
+}
+
+func (s *uplinkService) handlePage(w http.ResponseWriter, r *http.Request, nav navData) {
 	if r.URL.Path != "/uplink" && r.URL.Path != "/uplink/" {
 		http.NotFound(w, r)
 		return
@@ -384,6 +395,7 @@ func (s *uplinkService) handlePage(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 	data := uplinkPageData{
+		Nav:           nav,
 		Hostname:      hostname,
 		Generated:     now.Format("2006-01-02 15:04:05 MST"),
 		Band:          s.band(),

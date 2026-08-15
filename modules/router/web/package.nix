@@ -19,5 +19,9 @@ buildGoModule {
     install -Dm644 ${./peers.html} "$out/share/router-web/peers.html"
     install -Dm644 ${./peers-index.html} "$out/share/router-web/peers-index.html"
     install -Dm644 ${./uplink.html} "$out/share/router-web/uplink.html"
+    # The nav strip every page invokes. style.css is NOT here: it is embedded in
+    # the binary, so a page can never render unstyled because an install dropped
+    # a file — see serveStylesheet.
+    install -Dm644 ${./nav.html} "$out/share/router-web/nav.html"
   '';
 }

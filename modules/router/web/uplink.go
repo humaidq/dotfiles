@@ -76,6 +76,28 @@ const (
 	pppPollInterval = 5 * time.Second
 	// How often expired minutes are deleted.
 	pruneInterval = time.Hour
+	// How long after this process starts an outage is treated as its own doing
+	// rather than the line's.
+	//
+	// A `nixos-rebuild switch` restarts this service, and restarts networkd,
+	// which takes pppd down with it. The session is gone for a few seconds and
+	// the anchors record loss the whole time — all of it true, none of it the
+	// ISP's, and all of it landing in the event log as an outage and, if the
+	// redial is slow, a degradation episode. An event log that fires on every
+	// deploy is one nobody reads, which costs more than these events are worth.
+	//
+	// A minute, because that is all the redial takes and the episode machinery
+	// supplies its own hysteresis on top: episodeOpenAfter already demands
+	// three consecutive bad minutes, so with the first of them graced a line
+	// has to stay bad for four minutes from start before an episode opens.
+	// Only the PPP event fires on sight, and one minute covers the reconnect
+	// that produces it several times over.
+	//
+	// The price is explicit: an outage that is genuinely the line's and happens
+	// to coincide with a rebuild is recorded up to a minute late. The minute
+	// rows are written throughout regardless, so the history and the loss
+	// meters still show the gap — only the event is withheld.
+	startupGrace = time.Minute
 )
 
 // Anchor roles.
@@ -421,11 +443,21 @@ type uplinkProber struct {
 	byID    map[uint16]*uplinkTarget
 	peer    *uplinkTarget
 
+	// When this process started probing, for the startup grace. Zero means no
+	// grace, which is what tests that build a prober by hand want.
+	startedAt time.Time
+
 	mu       sync.Mutex
 	pppLocal netip.Addr
 	pppPeer  netip.Addr
 	pppEvent int64
 	pppDown  bool
+}
+
+// inStartupGrace reports whether t falls inside the window after start during
+// which an outage is assumed to be this service's own restart.
+func (p *uplinkProber) inStartupGrace(t time.Time) bool {
+	return !p.startedAt.IsZero() && t.Before(p.startedAt.Add(startupGrace))
 }
 
 // newUplinkProber opens the raw socket and builds the target set. The PPP peer
@@ -450,6 +482,7 @@ func newUplinkProber(store *uplinkStore, pppIface string, anchors []anchor, rete
 		retention: retention,
 		load:      newLoadSampler(pppIface),
 		byID:      map[uint16]*uplinkTarget{},
+		startedAt: time.Now(),
 	}
 
 	all := expandAnchors(anchors)
@@ -736,6 +769,12 @@ func (p *uplinkProber) updateEpisode(target *uplinkTarget, row minuteRow) {
 	if target.anchor.Role == rolePeer {
 		return
 	}
+	if p.inStartupGrace(row.TS) {
+		// pppd went down with this service and the loss in this minute is the
+		// reconnect. Returning before the counters, not after, so the window
+		// cannot bank bad minutes and open an episode the moment it closes.
+		return
+	}
 
 	if target.baseline == 0 || row.TS.Minute() == 0 {
 		// Recomputed hourly, and on the first minute after start, from the
@@ -833,7 +872,12 @@ func (p *uplinkProber) pollPPP(now time.Time) {
 		if p.peer != nil {
 			p.peer.setAddress(netip.Addr{})
 		}
-		if !p.pppDown {
+		// Inside the startup grace the session is presumed to be mid-redial
+		// after the rebuild that restarted this process. The latch is left
+		// clear on purpose: if the session is still down when the window
+		// closes, the next poll records it then, timed from the moment it was
+		// confirmed rather than from the restart.
+		if !p.pppDown && !p.inStartupGrace(now) {
 			id, err := p.store.appendEvent(uplinkEvent{
 				TS: now, Kind: eventPPPDown, Target: p.pppIface,
 				Detail: "no address on the interface",

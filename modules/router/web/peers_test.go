@@ -274,7 +274,7 @@ func TestLANMuxHasNoPeersRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	lan := landingMux(pageData{}, tmpl, nil)
+	lan := landingMux(pageData{}, tmpl, nil, navSource{})
 
 	for _, path := range []string{"/peers/192.168.0.10", "/peers/192.168.0.10/throttle"} {
 		rec := httptest.NewRecorder()
@@ -357,7 +357,7 @@ func TestLANMuxHasNoIndexRoute(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	landingMux(pageData{}, tmpl, nil, navSource{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("LAN mux served a peers path with %d", rec.Code)
 	}
@@ -385,7 +385,7 @@ func TestPeersPageShowsShapingStatus(t *testing.T) {
 // notice a syntax error in the real peers.html — and a template that fails to
 // parse takes the whole peers page down at startup, not just one column.
 func TestRealTemplateRendersTrafficColumn(t *testing.T) {
-	tmpl, err := template.ParseFiles("peers.html")
+	tmpl, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -505,12 +505,15 @@ func TestIndexWithoutCallMarkCollectsNothing(t *testing.T) {
 // The stub templates elsewhere would not catch a syntax error in the real
 // index, and a template that fails to parse takes the whole peers page down.
 func TestRealIndexTemplateRendersPriority(t *testing.T) {
-	tmpl, err := template.ParseFiles("peers-index.html")
+	tmpl, err := template.ParseFiles("peers-index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers-index.html: %v", err)
 	}
 	data := indexPageData{
-		Leases: []lease{{Addr: netip.MustParseAddr("192.168.0.10"), Name: "device-a"}},
+		Leases: []deviceRow{{
+			lease:    lease{Addr: netip.MustParseAddr("192.168.0.10"), Name: "device-a"},
+			LastSeen: "30s",
+		}},
 		Priority: []priorityRow{{
 			Device: "192.168.0.10", DeviceName: "device-a", Peer: "203.0.113.10",
 			ASN: 64496, Org: "Example Hosting", Country: "NL",
@@ -536,7 +539,7 @@ func TestRealIndexTemplateRendersPriority(t *testing.T) {
 }
 
 func TestRealIndexTemplateSaysWhenNothingIsPrioritised(t *testing.T) {
-	tmpl := template.Must(template.ParseFiles("peers-index.html"))
+	tmpl := template.Must(template.ParseFiles("peers-index.html", "nav.html"))
 	var out strings.Builder
 	if err := tmpl.Execute(&out, indexPageData{}); err != nil {
 		t.Fatalf("execute: %v", err)
@@ -931,7 +934,7 @@ func TestPageMarksLowTrustUnknownWithNoMACAnywhere(t *testing.T) {
 
 func TestLowTrustBadgeHidesRemoveForPermanent(t *testing.T) {
 	var buf bytes.Buffer
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	data := peersPageData{Device: "192.168.50.10", LowTrustEnabled: true, LowTrust: "permanent"}
 	if err := tmpl.Execute(&buf, data); err != nil {
 		t.Fatal(err)
@@ -947,7 +950,7 @@ func TestLowTrustBadgeHidesRemoveForPermanent(t *testing.T) {
 
 func TestLowTrustBadgeOffersRemoveForTemp(t *testing.T) {
 	var buf bytes.Buffer
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	data := peersPageData{Device: "192.168.50.10", LowTrustEnabled: true, LowTrust: "temp"}
 	if err := tmpl.Execute(&buf, data); err != nil {
 		t.Fatal(err)
@@ -964,7 +967,7 @@ func TestLowTrustBadgeAbsentByDefault(t *testing.T) {
 	// router at all" below — the two used to share the zero value, which is how
 	// bongo ended up rendering a button for drops it does not implement.
 	var buf bytes.Buffer
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	if err := tmpl.Execute(&buf, peersPageData{Device: "192.168.50.10", LowTrustEnabled: true}); err != nil {
 		t.Fatal(err)
 	}
@@ -983,7 +986,7 @@ func TestLowTrustBadgeAbsentByDefault(t *testing.T) {
 // page just failed to, so the only possible outcome was a 500.
 func TestLowTrustBadgeSaysUnknownWithoutAMAC(t *testing.T) {
 	var buf bytes.Buffer
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	data := peersPageData{Device: "192.168.50.10", LowTrustEnabled: true, LowTrustUnknown: true}
 	if err := tmpl.Execute(&buf, data); err != nil {
 		t.Fatal(err)
@@ -1008,7 +1011,7 @@ func TestLowTrustBadgeSaysUnknownWithoutAMAC(t *testing.T) {
 // control in it is a 500 waiting to be clicked.
 func TestLowTrustBlockAbsentWhenFeatureDisabled(t *testing.T) {
 	var buf bytes.Buffer
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	if err := tmpl.Execute(&buf, peersPageData{Device: "192.168.50.10"}); err != nil {
 		t.Fatal(err)
 	}
@@ -1025,7 +1028,7 @@ func TestLowTrustBlockAbsentWhenFeatureDisabled(t *testing.T) {
 }
 
 func TestRealTemplateRendersAllThreeActions(t *testing.T) {
-	tmpl, err := template.ParseFiles("peers.html")
+	tmpl, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -1058,7 +1061,7 @@ func TestDropAllRendersWithNoPeers(t *testing.T) {
 	// The button is the device's, not the table's. An idle device renders "No
 	// current peers." and no table at all, and the button has to survive that —
 	// a device with nothing listed is exactly when you want to reset it.
-	tmpl, err := template.ParseFiles("peers.html")
+	tmpl, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -1383,7 +1386,7 @@ func TestLANMuxHasNoCaptureRoutes(t *testing.T) {
 	// fake. Do not "simplify" this back to a status check.
 	config := loadConfig()
 	tmpl := template.Must(template.New("index").Parse("landing"))
-	lan := landingMux(config, tmpl, nil)
+	lan := landingMux(config, tmpl, nil, navSource{})
 	for _, tc := range []struct {
 		method string
 		path   string
@@ -1429,7 +1432,7 @@ func TestCaptureActionsAreLogged(t *testing.T) {
 }
 
 func TestRealTemplateRendersTheIdleCaptureButton(t *testing.T) {
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	var out strings.Builder
 	if err := tmpl.Execute(&out, peersPageData{
 		Device:  "192.168.0.10",
@@ -1449,7 +1452,7 @@ func TestRealTemplateRendersTheIdleCaptureButton(t *testing.T) {
 }
 
 func TestRealTemplateRendersTheRunningCaptureBanner(t *testing.T) {
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	var out strings.Builder
 	if err := tmpl.Execute(&out, peersPageData{
 		Device: "192.168.0.10",
@@ -1477,7 +1480,7 @@ func TestRealTemplateRendersTheRunningCaptureBanner(t *testing.T) {
 }
 
 func TestRealTemplateRendersTheReadyCaptureBanner(t *testing.T) {
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	var out strings.Builder
 	if err := tmpl.Execute(&out, peersPageData{
 		Device: "192.168.0.10",
@@ -1508,7 +1511,7 @@ func TestRealTemplateOmitsTheBannerWithoutAManager(t *testing.T) {
 	// A router with no capture directory renders the page it always did.
 	// Asserted on the routes rather than on the word "capture", which the
 	// stylesheet carries on every render.
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	var out strings.Builder
 	if err := tmpl.Execute(&out, peersPageData{Device: "192.168.0.10"}); err != nil {
 		t.Fatalf("execute peers.html: %v", err)
@@ -1526,7 +1529,7 @@ func TestRealTemplateOmitsTheBannerWithoutAManager(t *testing.T) {
 // name, and now the MAC alongside it. Rendered against the real peers.html so a
 // template that drops either field fails here rather than on the router.
 func TestDevicePageShowsDHCPNameAndMAC(t *testing.T) {
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	var buf bytes.Buffer
 	data := peersPageData{
 		Device: "192.168.0.10",
@@ -1549,7 +1552,7 @@ func TestDevicePageShowsDHCPNameAndMAC(t *testing.T) {
 // must render the same em-dash the index table uses for a nameless lease rather
 // than a blank gap or the word "unknown".
 func TestDevicePageShowsDashWithoutALease(t *testing.T) {
-	tmpl := template.Must(template.ParseFiles("peers.html"))
+	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, peersPageData{Device: "192.168.0.99"}); err != nil {
 		t.Fatalf("render: %v", err)
@@ -1568,7 +1571,7 @@ func TestDevicePageShowsDashWithoutALease(t *testing.T) {
 // on a substring appearing elsewhere in the output and prove nothing.
 func TestDevicePagePopulatesNameAndMACFromLeases(t *testing.T) {
 	server := testPeersServer(t)
-	real, err := template.ParseFiles("peers.html")
+	real, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -1592,7 +1595,7 @@ func TestDevicePagePopulatesNameAndMACFromLeases(t *testing.T) {
 // suppress it.
 func TestDevicePageShowsMACForNamelessLease(t *testing.T) {
 	server := testPeersServer(t)
-	real, err := template.ParseFiles("peers.html")
+	real, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -1732,7 +1735,7 @@ ipv4     2 tcp      6 431999 ESTABLISHED src=192.168.0.99 dst=203.0.113.10 sport
 }
 
 func TestRealTemplateRendersLastSeenColumn(t *testing.T) {
-	tmpl, err := template.ParseFiles("peers.html")
+	tmpl, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -1763,7 +1766,7 @@ func TestRealTemplateRendersLastSeenColumn(t *testing.T) {
 }
 
 func TestRealTemplateRendersTheQuotaBadge(t *testing.T) {
-	tmpl, err := template.ParseFiles("peers.html")
+	tmpl, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
@@ -1779,5 +1782,195 @@ func TestRealTemplateRendersTheQuotaBadge(t *testing.T) {
 	// template's `class="shape {{.Shape}}"` cannot split it on a space.
 	if want := `<span class="shape cdn-quota">cdn-quota</span>`; !strings.Contains(out.String(), want) {
 		t.Fatalf("rendered page is missing %s\n%s", want, out.String())
+	}
+}
+
+func TestIndexShowsLastSeenPerDevice(t *testing.T) {
+	// .10 has a fresh flow, .20 has one that has been silent for days. Both are
+	// in the test server's lease file.
+	const fixture = `ipv4     2 tcp      6 431998 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport=1 dport=443 packets=10 bytes=400 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=1 packets=8 bytes=300 [ASSURED] mark=0 use=1
+ipv4     2 tcp      6 200000 ESTABLISHED src=192.168.0.20 dst=203.0.113.20 sport=2 dport=443 packets=2 bytes=100 src=203.0.113.20 dst=198.51.100.1 sport=443 dport=2 packets=2 bytes=100 [ASSURED] mark=0 use=1
+`
+	server := testPeersServer(t)
+	server.conntrack = func(context.Context) ([]byte, error) { return []byte(fixture), nil }
+	server.timeouts = fakeTimeouts(map[string]string{
+		"nf_conntrack_tcp_timeout_established":    "432000",
+		"nf_conntrack_tcp_timeout_unacknowledged": "300",
+	}, nil)
+	server.indexTmpl = template.Must(template.New("peers-index.html").Parse(
+		`{{range .Leases}}{{.Addr}}={{.LastSeen}}/{{.Stale}};{{end}}`))
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+	body := rec.Body.String()
+
+	if !strings.Contains(body, "192.168.0.10=2s/false;") {
+		t.Fatalf("live device row wrong: %q", body)
+	}
+	// 432000-200000 = 232000s.
+	if !strings.Contains(body, "192.168.0.20=2d 16h/true;") {
+		t.Fatalf("idle device row wrong: %q", body)
+	}
+}
+
+func TestIndexLeavesLastSeenBlankWithoutATimeoutTable(t *testing.T) {
+	server := testPeersServer(t) // timeouts is nil there by default
+	server.indexTmpl = template.Must(template.New("peers-index.html").Parse(
+		`{{range .Leases}}{{.Addr}}=[{{.LastSeen}}];{{end}}`))
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+	if !strings.Contains(rec.Body.String(), "192.168.0.10=[];") {
+		t.Fatalf("expected a blank last-seen, got %q", rec.Body.String())
+	}
+}
+
+func TestIndexLastSeenFailureIsSilentAndDoesNotDuplicateThePriorityBanner(t *testing.T) {
+	// An unreadable connection table already gets one banner from the
+	// prioritised table. The device rows must go blank rather than add a second
+	// notice about the same failure.
+	server := testPeersServer(t)
+	server.namer = namer{callMark: 2}
+	server.conntrack = func(context.Context) ([]byte, error) { return nil, errFake }
+	server.timeouts = fakeTimeouts(map[string]string{
+		"nf_conntrack_tcp_timeout_established": "432000",
+	}, nil)
+	server.indexTmpl = template.Must(template.New("peers-index.html").Parse(
+		`{{range .Leases}}{{.Addr}}=[{{.LastSeen}}];{{end}}|{{.Error}}|{{.PriorityError}}`))
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+	body := rec.Body.String()
+	if !strings.Contains(body, "192.168.0.10=[];") {
+		t.Fatalf("expected blank last-seen on a conntrack failure: %q", body)
+	}
+	if !strings.Contains(body, "Cannot read the connection table") {
+		t.Fatalf("the prioritised table lost its banner: %q", body)
+	}
+	if strings.Count(body, "Cannot read the connection table") != 1 {
+		t.Fatalf("the same failure was reported twice: %q", body)
+	}
+}
+
+func TestIndexSkipsConntrackWhenNothingNeedsIt(t *testing.T) {
+	// No call mark and no timeout table: the fork would produce nothing either
+	// table could use.
+	reads := 0
+	server := testPeersServer(t)
+	server.namer = namer{}
+	server.timeouts = nil
+	server.conntrack = func(context.Context) ([]byte, error) {
+		reads++
+		return []byte(conntrackFixture), nil
+	}
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+	if reads != 0 {
+		t.Fatalf("read the connection table %d times, want 0", reads)
+	}
+}
+
+func TestIndexReadsConntrackOnceForBothTables(t *testing.T) {
+	reads := 0
+	server := testPeersServer(t)
+	server.namer = namer{callMark: 2}
+	server.timeouts = fakeTimeouts(map[string]string{
+		"nf_conntrack_tcp_timeout_established": "432000",
+	}, nil)
+	server.conntrack = func(context.Context) ([]byte, error) {
+		reads++
+		return []byte(markedFixture), nil
+	}
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+	if reads != 1 {
+		t.Fatalf("read the connection table %d times, want 1", reads)
+	}
+}
+
+func TestRealIndexTemplateRendersLastSeen(t *testing.T) {
+	tmpl, err := template.ParseFiles("peers-index.html", "nav.html")
+	if err != nil {
+		t.Fatalf("parse peers-index.html: %v", err)
+	}
+	var out strings.Builder
+	err = tmpl.Execute(&out, indexPageData{Leases: []deviceRow{
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.10"), Name: "a"}, LastSeen: "30s"},
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.20"), Name: "b"}, LastSeen: "1d 4h", Stale: true},
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.30"), Name: "c"}},
+	}})
+	if err != nil {
+		t.Fatalf("execute peers-index.html: %v", err)
+	}
+	body := out.String()
+	for _, want := range []string{
+		`<td class="num">30s</td>`,
+		`<td class="num stale">1d 4h</td>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("rendered index is missing %s\n%s", want, body)
+		}
+	}
+	// Header plus three device rows must all carry the same cell count.
+	rows := strings.Split(strings.SplitN(body, "<h2>All devices</h2>", 2)[1], "<tr")[1:]
+	for _, row := range rows {
+		if got := strings.Count(row, "<td"); got != 0 && got != 3 {
+			t.Fatalf("device row has %d cells, want 3:\n%s", got, row)
+		}
+	}
+}
+
+func TestIndexSortsDevicesByLastActive(t *testing.T) {
+	// .20 spoke 2s ago, .10 is days idle, .30 has no datable flow at all. The
+	// lease file lists .10 before .20, so address order would put them the
+	// other way round.
+	const fixture = `ipv4     2 tcp      6 200000 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport=1 dport=443 packets=2 bytes=100 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=1 packets=2 bytes=100 [ASSURED] mark=0 use=1
+ipv4     2 tcp      6 431998 ESTABLISHED src=192.168.0.20 dst=203.0.113.20 sport=2 dport=443 packets=2 bytes=100 src=203.0.113.20 dst=198.51.100.1 sport=443 dport=2 packets=2 bytes=100 [ASSURED] mark=0 use=1
+`
+	server := testPeersServer(t)
+	server.leasesPath = writeLeases(t,
+		"1 aa:bb:cc:dd:ee:01 192.168.0.10 device-a 01:aa\n"+
+			"2 aa:bb:cc:dd:ee:02 192.168.0.20 device-b 01:bb\n"+
+			"3 aa:bb:cc:dd:ee:03 192.168.0.30 device-c 01:cc\n")
+	server.conntrack = func(context.Context) ([]byte, error) { return []byte(fixture), nil }
+	server.timeouts = fakeTimeouts(map[string]string{
+		"nf_conntrack_tcp_timeout_established":    "432000",
+		"nf_conntrack_tcp_timeout_unacknowledged": "300",
+	}, nil)
+	server.indexTmpl = template.Must(template.New("peers-index.html").Parse(
+		`{{range .Leases}}{{.Addr}};{{end}}`))
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+	// Freshest first, then the stale one, then the device nothing could date.
+	if got, want := rec.Body.String(), "192.168.0.20;192.168.0.10;192.168.0.30;"; got != want {
+		t.Fatalf("order = %q, want %q", got, want)
+	}
+}
+
+func TestByLastActiveKeepsAddressOrderWhenNothingIsDated(t *testing.T) {
+	// A router with no timeout table dates nothing, and the list must then look
+	// exactly as it did before this column existed.
+	rows := []deviceRow{
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.30")}},
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.10")}},
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.20")}},
+	}
+	byLastActive(rows)
+	want := []string{"192.168.0.10", "192.168.0.20", "192.168.0.30"}
+	for i, w := range want {
+		if rows[i].Addr.String() != w {
+			t.Fatalf("position %d = %s, want %s", i, rows[i].Addr, w)
+		}
+	}
+}
+
+func TestByLastActiveBreaksTiesByAddress(t *testing.T) {
+	rows := []deviceRow{
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.20")}, idle: 5 * time.Second, dated: true},
+		{lease: lease{Addr: netip.MustParseAddr("192.168.0.10")}, idle: 5 * time.Second, dated: true},
+	}
+	byLastActive(rows)
+	if rows[0].Addr.String() != "192.168.0.10" {
+		t.Fatalf("tie broken as %s first, want 192.168.0.10", rows[0].Addr)
 	}
 }

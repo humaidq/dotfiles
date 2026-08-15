@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	_ "embed"
 	"flag"
 	"fmt"
 	"html/template"
@@ -54,7 +55,19 @@ type pageData struct {
 	// Whether to offer the link to the peers list. True only on the mesh
 	// listener, which is the only one that serves it.
 	ShowPeers bool
+	// The shared navigation strip. Every page carries one under this name, so
+	// nav.html can be invoked the same way from all four templates.
+	Nav navData
 }
+
+//go:embed style.css
+var stylesheet string
+
+// A fixed modification time for the embedded stylesheet, so conditional
+// requests work and every router serving the same build agrees on the answer.
+// Not the process start time, which would make every restart look like a new
+// stylesheet to every cache.
+var buildTime = time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC)
 
 func getenvDefault(key string, fallback string) string {
 	value := strings.TrimSpace(os.Getenv(key))
@@ -367,7 +380,12 @@ func loadConfig() pageData {
 //
 // showPeers is set only by the mesh mux, so the link to the peers list appears
 // exactly where the link works.
-func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, showPeers bool) {
+func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, nav navSource, showPeers bool) {
+	// The stylesheet every page links. Registered here because this function is
+	// the one thing both listeners run, and a page served over the mesh with no
+	// stylesheet is what the LAN-only alternative would produce.
+	mux.HandleFunc("GET /style.css", serveStylesheet)
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -375,6 +393,7 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 		}
 		state := readSystemState(config)
 		state.ShowPeers = showPeers
+		state.Nav = nav.data("status", showPeers)
 		if uplink != nil {
 			state.Uplink = uplink.band()
 		}
@@ -390,8 +409,8 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 	// not answer /metrics with an empty body that a scrape would happily
 	// record as zero.
 	if uplink != nil {
-		mux.HandleFunc("/uplink", uplink.handlePage)
-		mux.HandleFunc("/uplink/", uplink.handlePage)
+		mux.HandleFunc("/uplink", uplink.pageHandler(nav, showPeers))
+		mux.HandleFunc("/uplink/", uplink.pageHandler(nav, showPeers))
 		mux.HandleFunc("/metrics", uplink.handleMetrics)
 	}
 }
@@ -403,9 +422,9 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 // registered in exactly one function, and that function is called from exactly
 // one mux, so making a peers page LAN-reachable takes a deliberate edit rather
 // than a forgotten check inside a handler.
-func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService) *http.ServeMux {
+func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, false)
+	registerStatusRoutes(mux, config, tmpl, uplink, nav, false)
 	return mux
 }
 
@@ -417,9 +436,9 @@ func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService)
 // another site, or from a phone on the tunnel — and a status page that only
 // answers on the LAN is unavailable in most of the situations that send you
 // looking for it.
-func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, peers *peersServer) *http.ServeMux {
+func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, peers *peersServer, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, true)
+	registerStatusRoutes(mux, config, tmpl, uplink, nav, true)
 	peers.registerRoutes(mux)
 	return mux
 }
@@ -453,7 +472,7 @@ func startUplink(staticRoot string, pppIface string) *uplinkService {
 		retention = time.Duration(days) * 24 * time.Hour
 	}
 
-	tmpl, err := template.ParseFiles(filepath.Join(staticRoot, "uplink.html"))
+	tmpl, err := template.ParseFiles(filepath.Join(staticRoot, "uplink.html"), filepath.Join(staticRoot, "nav.html"))
 	if err != nil {
 		log.Printf("uplink probing disabled: parse uplink template: %v", err)
 		return nil
@@ -518,7 +537,7 @@ func meshListenAddr(raw string) (string, error) {
 //
 // The mesh serves the status routes as well as the peers routes, so the
 // landing config and templates are threaded through here too.
-func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService) error {
+func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, nav navSource) error {
 	validAddr, err := meshListenAddr(meshAddr)
 	if err != nil {
 		return fmt.Errorf("invalid ROUTER_LISTEN_MESH %q: %w", meshAddr, err)
@@ -537,11 +556,11 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 			table = nil
 		}
 	}
-	peersTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers.html"))
+	peersTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers.html"), filepath.Join(staticRoot, "nav.html"))
 	if err != nil {
 		return fmt.Errorf("parse peers template: %w", err)
 	}
-	indexTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers-index.html"))
+	indexTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers-index.html"), filepath.Join(staticRoot, "nav.html"))
 	if err != nil {
 		return fmt.Errorf("parse peers index template: %w", err)
 	}
@@ -563,7 +582,8 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 		peers.neighbours = readNeighbours
 		peers.lowTrust = lowTrustMembership
 	}
-	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, peers))
+	peers.nav = nav
+	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, peers, nav))
 	return nil
 }
 
@@ -625,7 +645,9 @@ func main() {
 		log.Fatalf("missing index.html in %s: %v", staticRoot, err)
 	}
 
-	tmpl, err := template.ParseFiles(indexPath)
+	// nav.html defines the strip every page invokes; parsed alongside each page
+	// so one file is the only place a section is added.
+	tmpl, err := template.ParseFiles(indexPath, filepath.Join(staticRoot, "nav.html"))
 	if err != nil {
 		log.Fatalf("parse template %s: %v", indexPath, err)
 	}
@@ -636,8 +658,18 @@ func main() {
 	lanCIDR := os.Getenv("ROUTER_LAN_CIDR")
 
 	uplink := startUplink(staticRoot, config.PPPInterface)
+	// Read once rather than per render: the hostname cannot change under a
+	// running process, and the nav strip is on every page. Not taken from
+	// config, which carries the env-supplied settings and never has it —
+	// readSystemState fills that field from os.Hostname on the status page
+	// alone, which is exactly the page that needed it before the strip existed.
+	navHost := "router"
+	if hostname, err := os.Hostname(); err == nil && strings.TrimSpace(hostname) != "" {
+		navHost = hostname
+	}
+	nav := navSource{host: navHost, uplink: uplink}
 
-	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink)}
+	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, nav)}
 
 	lanErrs := make(chan error, 1)
 	go func() {
@@ -649,7 +681,7 @@ func main() {
 	// without one behaves exactly as it did before this feature. A mesh
 	// startup failure is logged, never fatal: see startMeshServer.
 	if meshAddr != "" && lanCIDR != "" {
-		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink); err != nil {
+		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, nav); err != nil {
 			log.Printf("peers page disabled: %v", err)
 		}
 	}
@@ -657,4 +689,21 @@ func main() {
 	if err := <-lanErrs; err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server failed: %v", err)
 	}
+}
+
+// serveStylesheet answers /style.css from the binary rather than from the
+// static root.
+//
+// Embedded because a stylesheet that can go missing is a page that can render
+// unstyled, and the failure would show up only on a router where the install
+// dropped a file — which is to say, in production and not in a test. The
+// templates are read from disk because they are per-router content; this is
+// part of the program.
+func serveStylesheet(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	// Short rather than long: the pages behind it are live status, someone
+	// looking at them during an outage will reload hard, and an hour of stale
+	// CSS after a router upgrade is a worse trade than re-sending 8 KB.
+	w.Header().Set("Cache-Control", "max-age=300")
+	http.ServeContent(w, r, "style.css", buildTime, strings.NewReader(stylesheet))
 }

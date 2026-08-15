@@ -365,6 +365,45 @@ let
           router-blocklists cdn_quota4 cdn_quota6
       '';
 
+  # Every unit below that writes elements into an nftables set carries this, and
+  # leaving it off one is a silent, total fail-open. It is the fix for an outage
+  # on 2026-08-15 in which every set on both routers sat empty for over an hour:
+  # 1706 throttle entries, the whole low-trust pool, and all the local
+  # blocklists, with all three loader units reporting success the whole time.
+  #
+  # The mechanism, which the partOf reasoning further down does NOT cover.
+  # NixOS sets reloadIfChanged on nftables.service, so a ruleset change is
+  # applied by systemctl RELOAD, not restart. That reload re-runs the module's
+  # rulesScript, which deletes and recreates every managed table — and a
+  # recreated table has empty sets. PartOf propagates stop and restart. It
+  # propagates nothing at all on a reload, to any unit, regardless of
+  # RemainAfterExit. So the tables were emptied and no loader re-ran.
+  #
+  # This went unnoticed for as long as it did because it needs a ruleset change
+  # that touches NO list file. Editing custom-throttle-list.txt or any sibling
+  # changes a generated .nft store path, which changes nft-blocklists-local's
+  # ExecStart, which restarts it anyway and hides the bug. The outage came from
+  # a change to the inline ruleset in this file, which moves the ExecStart of
+  # nothing.
+  #
+  # Keyed on nftables.service's ExecReload because that list contains the
+  # rulesScript store path, so it changes if and only if the applied ruleset
+  # does — including a change that comes from networking.firewall rather than
+  # from this file, which reloads and flushes these tables just the same. Keying
+  # on this module's own tables would miss exactly that case.
+  #
+  # Ordering is guaranteed rather than hoped for: switch-to-configuration issues
+  # every reload, blocks on those jobs completing, and only then issues the
+  # restarts (block_on_jobs in switch-to-configuration-ng). So the flush has
+  # finished before any loader here re-runs. That ordering is also why this is
+  # preferable to forcing reloadIfChanged off — a restart would run
+  # nftables.service's ExecStop, which deletes the tables outright and leaves
+  # the router with no firewall at all until the start completed.
+  #
+  # Not covered: a hand-run `systemctl reload nftables`. Nothing declarative can
+  # observe that, so follow one with a restart of the three units carrying this.
+  nftRulesetTrigger = [ config.systemd.services.nftables.serviceConfig.ExecReload ];
+
   # The throttle list reuses the local blocklist's generator verbatim — same
   # format, same build-time validation, same interval collapsing — and only the
   # target sets differ. What happens to a matching packet is decided in the
@@ -1020,6 +1059,10 @@ in
       wantedBy = [ "multi-user.target" ];
       after = [ "nftables.service" ];
       wants = [ "nftables.service" ];
+      # See nftRulesetTrigger. Without it a ruleset reload leaves the cached
+      # feed blocklists empty until the update timer next fires, which is up to
+      # 12 minutes away and only helps if a download succeeds.
+      restartTriggers = nftRulesetTrigger;
 
       serviceConfig = {
         Type = "oneshot";
@@ -1045,11 +1088,17 @@ in
     # instead of whenever the feed timer next happens to fire (up to 12 minutes
     # later, and only if a download succeeds).
     #
-    # The trigger is the store paths of ${localBlocklist} and ${portBlocklist}
-    # embedded in the script below: edit either txt and that path changes, which
-    # changes this unit, which makes switch-to-configuration restart it. No
-    # restartTriggers needed — and
-    # note that restartTriggers alone would not have worked here, because
+    # The trigger for that is the store paths of ${localBlocklist} and
+    # ${portBlocklist} embedded in the script below: edit either txt and that
+    # path changes, which changes this unit, which makes switch-to-configuration
+    # restart it. That covers a list edit on its own, which is why this unit
+    # carried no restartTriggers for so long — but it covers ONLY a list edit,
+    # and a ruleset change that touches no list flushes these same sets while
+    # leaving this unit's definition identical. That is the gap nftRulesetTrigger
+    # closes; it is a second mechanism, not a replacement for this one.
+    #
+    # Note either way that restartTriggers alone would not be enough here,
+    # because
     # switch-to-configuration only considers *active* units for restart, and a
     # plain oneshot is inactive the moment it exits. RemainAfterExit is what
     # keeps it active and therefore restartable. It is safe here precisely
@@ -1064,6 +1113,10 @@ in
       # nftables.service recreates the table with empty sets when it restarts,
       # which would silently drop these entries until the next rebuild.
       partOf = [ "nftables.service" ];
+      # partOf covers the restart. It does not cover the reload, which is how a
+      # ruleset change is actually applied and which empties the same sets — see
+      # nftRulesetTrigger for the outage that came of trusting partOf alone.
+      restartTriggers = nftRulesetTrigger;
 
       serviceConfig = {
         Type = "oneshot";
@@ -1098,12 +1151,18 @@ in
     # partOf nftables.service for the same reason nft-blocklists-local is —
     # a ruleset reload recreates the table with empty sets, which would
     # silently empty the pool until the next rebuild.
+    #
+    # That comment was right about the consequence and wrong about the cover:
+    # partOf does not fire on a reload at all, and this unit was one of the
+    # three left stale through the 2026-08-15 outage. restartTriggers below is
+    # what actually holds it.
     systemd.services.nft-lowtrust-macs = lib.mkIf cfg.lowTrust.enable {
       description = "Load low-trust pool MAC addresses";
       wantedBy = [ "multi-user.target" ];
       after = [ "nftables.service" ];
       wants = [ "nftables.service" ];
       partOf = [ "nftables.service" ];
+      restartTriggers = nftRulesetTrigger;
 
       # The script below exits 1 on a missing or malformed file, and that is
       # the intended behaviour — but without a retry it is permanent. The

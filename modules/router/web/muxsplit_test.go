@@ -37,11 +37,11 @@ var peerRoutes = []struct {
 }
 
 func TestLANListenerServesNoPeerRoute(t *testing.T) {
-	tmpl, err := template.ParseFiles("index.html")
+	tmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
-	lan := landingMux(pageData{}, tmpl, nil)
+	lan := landingMux(pageData{}, tmpl, nil, navSource{})
 
 	for _, route := range peerRoutes {
 		t.Run(route.method+" "+route.path, func(t *testing.T) {
@@ -55,12 +55,12 @@ func TestLANListenerServesNoPeerRoute(t *testing.T) {
 }
 
 func TestMeshListenerServesStatusAndPeers(t *testing.T) {
-	indexTmpl, err := template.ParseFiles("index.html")
+	indexTmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
 	peers := testPeersServer(t)
-	mesh := meshMux(pageData{}, indexTmpl, nil, peers)
+	mesh := meshMux(pageData{}, indexTmpl, nil, peers, navSource{})
 
 	// The status page, which is the whole point of the change: it used to be
 	// LAN-only, and the mesh is what is reachable when the LAN is not.
@@ -94,13 +94,13 @@ func TestMeshListenerServesStatusAndPeers(t *testing.T) {
 func TestLANStatusPageOffersNoPeersLink(t *testing.T) {
 	// A link that 404s is worse than no link: it reads as the page being
 	// broken rather than as the route being deliberately elsewhere.
-	tmpl, err := template.ParseFiles("index.html")
+	tmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
 
 	rec := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	landingMux(pageData{}, tmpl, nil, navSource{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 	if strings.Contains(rec.Body.String(), `href="/peers"`) {
 		t.Error("LAN status page links to a route it does not serve")
 	}
@@ -124,11 +124,11 @@ func TestMeshStatusRoutesIncludeUplink(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 	service.prober.pppLocal = netip.MustParseAddr("217.164.183.46")
 
-	indexTmpl, err := template.ParseFiles("index.html")
+	indexTmpl, err := template.ParseFiles("index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
-	mesh := meshMux(pageData{}, indexTmpl, service, testPeersServer(t))
+	mesh := meshMux(pageData{}, indexTmpl, service, testPeersServer(t), navSource{})
 
 	for _, path := range []string{"/uplink", "/metrics"} {
 		rec := httptest.NewRecorder()
@@ -147,11 +147,11 @@ func realTemplatePeersServer(t *testing.T) *peersServer {
 
 	server := testPeersServer(t)
 
-	tmpl, err := template.ParseFiles("peers.html")
+	tmpl, err := template.ParseFiles("peers.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers.html: %v", err)
 	}
-	indexTmpl, err := template.ParseFiles("peers-index.html")
+	indexTmpl, err := template.ParseFiles("peers-index.html", "nav.html")
 	if err != nil {
 		t.Fatalf("parse peers-index.html: %v", err)
 	}

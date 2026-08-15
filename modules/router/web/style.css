@@ -1,0 +1,867 @@
+/* One stylesheet for every page router-web serves.
+ *
+ * It used to be four <style> blocks, one per template, which had drifted: the
+ * status page and the uplink page defined the same .uplink band twice with
+ * different margins, and the peers pages had their own table rules that looked
+ * nothing like the uplink page's. A shared file is what makes a change to the
+ * table look like a change to the table rather than to one page's idea of one.
+ *
+ * Served from /style.css by registerStatusRoutes, which is registered on BOTH
+ * listeners — the LAN one and the mesh one — because every page links it and
+ * the mesh is what answers when the LAN is the thing that is broken.
+ *
+ * NO WEB FONTS, and that is a constraint rather than an omission. This UI is
+ * read during outages, from a phone, over a tunnel, with the WAN down. A font
+ * from a CDN would render as a blank page or a flash of nothing in exactly the
+ * situation the page exists for, and it would tell a third party when someone
+ * looked at their own router. Everything below uses the system stack, and the
+ * personality comes from the type treatment rather than from the faces.
+ */
+
+:root {
+  /* Cool, light, legible in daylight — this is read in a house, not a NOC, so
+     it is deliberately not the dark terminal palette the subject invites. */
+  --paper: #eef2f5;
+  --card: #ffffff;
+  --ink: #101720;
+  --muted: #5c6a78;
+  --line: #dbe3e9;
+  --line-strong: #c3cfd8;
+  --hover: #f5f8fa;
+
+  /* One accent, used only for links, the current nav item, and the sparkline.
+     Teal because it belongs to the world of network equipment without being
+     the acid green that every "hacker dashboard" reaches for. */
+  --accent: #0d6e7d;
+  --accent-weak: #e4f0f2;
+
+  /* Status. These carry meaning, never decoration, and nothing else on the
+     page is allowed to use them. */
+  --ok: #16704a;
+  --warn: #a85c05;
+  --bad: #a92a20;
+  --idle: #78868f;
+
+  --fs-micro: 0.6875rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-lg: 1.0625rem;
+  --fs-h1: 1.5rem;
+
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  /* Every figure on every page is set in this, and always with tabular
+     numerals: these tables are read by scanning a column for an outlier, which
+     proportional digits make impossible. */
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Wide enough for the peers table, which is the widest thing this UI has:
+     ten columns ending in a three-button group. At 64rem the actions fell off
+     the end and behind the horizontal scroller, which is the one column that
+     must never need scrolling to reach. Every other page is centred in it and
+     the status list goes two-up rather than stretching. */
+  --measure: 76rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-size: var(--fs-base);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Keyboard focus stays visible everywhere. The action buttons on the peers
+   page drop and block traffic, so knowing what is focused is not cosmetic. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- nav strip */
+
+/* The signature of this UI, and the one place it spends any boldness.
+ *
+ * It is a strip off a piece of rack equipment rather than a website menu: a
+ * state lamp and the router's own name on the left, sections in the middle.
+ * The hostname is there because these routers come in pairs with near-identical
+ * pages, and reading the wrong one is a mistake that costs an hour — the page
+ * should answer "which box is this" without being asked. The lamp is there
+ * because "is the line up" is the question behind most visits, and on the
+ * devices pages there was previously no way to see it without navigating away.
+ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--card);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.topbar-inner {
+  width: min(var(--measure), calc(100% - 2rem));
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 3rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brand:hover .brand-host {
+  text-decoration: underline;
+}
+
+/* Ringed rather than plain so it reads as a lamp, and so it is still visible
+   against the card when the state is unknown and the fill is pale. */
+.lamp {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--idle);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--idle) 22%, transparent);
+  flex: none;
+}
+
+.lamp-ok {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+.lamp-degraded {
+  background: var(--warn);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent);
+}
+
+.lamp-down {
+  background: var(--bad);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent);
+}
+
+.navlinks {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navlinks a {
+  display: block;
+  padding: 0.9rem 0.6rem 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: var(--fs-sm);
+  border-bottom: 2px solid transparent;
+}
+
+.navlinks a:hover {
+  color: var(--ink);
+}
+
+.navlinks a.current {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------------- page shell */
+
+main {
+  width: min(var(--measure), calc(100% - 2rem));
+  margin: 1.5rem auto 3rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: var(--fs-h1);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0.5rem 0;
+}
+
+.section {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.note {
+  margin: 0.4rem 0 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+p.error {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+footer {
+  margin-top: 1.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-family: var(--mono);
+}
+
+.footer-line + .footer-line {
+  margin-top: 0.35rem;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--paper);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------- label / value grid */
+
+/* A fixed label column, not max-content. Per-section intrinsic sizing gave
+   every section a different value origin, so three lists that describe one
+   router read as three unrelated blocks with a ragged left edge down the
+   middle of the page. */
+dl {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 0.55rem 1.25rem;
+  margin: 0;
+}
+
+/* Two pairs abreast once there is room for them. A spec sheet this long is
+   easier to scan as a block than as a single column running off the fold, and
+   the fixed label column is what keeps the four tracks aligned. */
+@media (min-width: 62rem) {
+  dl {
+    grid-template-columns: 11rem minmax(0, 1fr) 11rem minmax(0, 1fr);
+  }
+}
+
+/* The label is the quiet half. It was bold here before, which made a wall of
+   forty labels shout and left the values — the part anyone came to read —
+   as the recessive element. */
+dt {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ tables */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+/* Tight horizontal padding, deliberately. The peers table carries ten columns
+   including a three-button group, and every 0.1rem of cell padding costs 2rem
+   of table width across the row — enough to push the actions off the card and
+   behind the scroller, which is where they are least useful. */
+th,
+td {
+  text-align: left;
+  padding: 0.45rem 0.45rem;
+  border-bottom: 1px solid var(--line);
+}
+
+th:first-child,
+td:first-child {
+  padding-left: 0;
+}
+
+th:last-child,
+td:last-child {
+  padding-right: 0;
+}
+
+/* Column heads as micro-labels: uppercase, tracked, quiet. They name the
+   column once and then get out of the way of the figures under them. */
+th {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  border-bottom-color: var(--line-strong);
+  white-space: nowrap;
+}
+
+tbody tr:hover td,
+table tr:hover td {
+  background: var(--hover);
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  /* Never wrap a figure. "45.5 MB" broken across two lines, with the up/down
+     pair broken across two more, turned a five-row table into a five-inch one
+     and made the column impossible to scan. */
+  white-space: nowrap;
+}
+
+td.num {
+  font-family: var(--mono);
+}
+
+td.name {
+  color: var(--muted);
+}
+
+/* A row whose peer holds most of the device's traffic. Tinted rather than
+   badged: it is a property of the whole row. */
+tr.high td {
+  background: #fdf3f2;
+}
+
+tr.high:hover td {
+  background: #fbe9e7;
+}
+
+/* Silent past the staleness threshold. Greyed, never hidden or sorted away —
+   the byte count is still the honest total for the connection. */
+td.stale {
+  color: var(--idle);
+}
+
+/* The per-row buttons are a group, not a column. Left to wrap they stacked
+   three deep and set the height of every row in the table. The cell refuses to
+   wrap and the table-wrap scroller absorbs the width instead. */
+td.actions {
+  white-space: nowrap;
+}
+
+td.actions form {
+  display: inline-block;
+}
+
+td.actions form + form {
+  margin-left: 0.2rem;
+}
+
+td.actions button {
+  padding: 0.18rem 0.45rem;
+}
+
+/* Wide tables on a narrow screen scroll sideways inside their own box rather
+   than stretching the card past the viewport. */
+.scroll {
+  max-height: 26rem;
+  overflow: auto;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+/* A three-column list has no business spanning the width the peers table
+   needs. Capped so address, name and last-seen stay near each other and the
+   eye does not have to cross the page to pair a name with its figure. */
+.table-wrap.narrow table {
+  max-width: 44rem;
+}
+
+.ongoing {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------ uplink band */
+
+/* The left edge carries the state. One rule, four colours, and no icon: it is
+   the same lamp idea as the nav, given the height of a whole section. */
+.uplink {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--idle);
+  border-radius: 3px;
+}
+
+.uplink-ok {
+  border-left-color: var(--ok);
+}
+.uplink-degraded {
+  border-left-color: var(--warn);
+}
+.uplink-down {
+  border-left-color: var(--bad);
+}
+.uplink-unknown {
+  border-left-color: var(--idle);
+}
+
+.uplink-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+
+.uplink-state {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.uplink-ok .uplink-state {
+  color: var(--ok);
+}
+.uplink-degraded .uplink-state {
+  color: var(--warn);
+}
+.uplink-down .uplink-state {
+  color: var(--bad);
+}
+.uplink-unknown .uplink-state {
+  color: var(--muted);
+}
+
+.uplink-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uplink-figures b {
+  font-weight: 400;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.uplink-figures span {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ meters */
+
+.uplink-meters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.5rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meter {
+  flex: 1 1 7rem;
+  min-width: 7rem;
+}
+
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: var(--fs-sm);
+}
+
+.meter-head b {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.meter-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.meter-track {
+  position: relative;
+  display: block;
+  height: 8px;
+  margin-top: 0.3rem;
+  background: var(--line);
+  border-radius: 2px;
+}
+
+.meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ok);
+  border-radius: 2px;
+}
+
+/* Where the good range ends. The whole point of the tick: it makes the bar
+   readable as a position rather than as a colour, which is what a red/green
+   pair alone does not manage for every reader. */
+.meter-good {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--muted);
+}
+
+.meter-warn .meter-fill {
+  background: var(--warn);
+}
+.meter-bad .meter-fill {
+  background: var(--bad);
+}
+.meter-unknown .meter-value {
+  color: var(--idle);
+}
+
+/* --------------------------------------------------------------- sparkline */
+
+.spark {
+  display: block;
+  margin-top: 0.7rem;
+  width: 100%;
+  height: 28px;
+}
+
+.section .spark,
+.target .spark {
+  height: 48px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.spark-loss {
+  fill: var(--bad);
+}
+
+/* ----------------------------------------------------------- uplink targets */
+
+.target {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.target-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.9rem;
+}
+
+.target-name {
+  font-weight: 650;
+  font-size: var(--fs-lg);
+}
+
+.addr {
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.live-ok {
+  color: var(--ok);
+}
+.live-bad {
+  color: var(--bad);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.6rem 1rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.figures b {
+  display: block;
+  font-weight: 600;
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+
+.figures span {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-lg);
+}
+
+/* ------------------------------------------------------------------ chips */
+
+/* One chip shape for every small tag on every page. They differ only by
+   colour, and the colour always means something. */
+.role,
+.label,
+.shape,
+code.port {
+  display: inline-block;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.role {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--muted);
+}
+
+/* The Voice twin is tinted so the two rows of a pair read as a pair rather
+   than as two unrelated targets that happen to share an address. */
+.tin-voice {
+  border-color: #b9a7d6;
+  background: #f4effa;
+  color: #4a367a;
+}
+
+.label {
+  color: var(--muted);
+}
+
+/* Filled green rather than left as plain text: it is the one label derived
+   from the payload signature rather than from a port number, and the point of
+   the colour is that a call can be picked out of a long table at a glance.
+   Green because it marks recognised traffic, not a problem — the status chips
+   below mean something is being acted on. */
+.label.call {
+  background: var(--ok);
+  color: #fff;
+}
+
+code.port {
+  font-family: var(--mono);
+  background: var(--paper);
+  color: var(--muted);
+}
+
+/* A port the router drops LAN->WAN. Bordered rather than filled so it reads as
+   a note on the port and not as another status. */
+code.port.suspect {
+  color: var(--bad);
+  font-weight: 700;
+  border: 1px solid var(--bad);
+  background: transparent;
+}
+
+.more {
+  font-size: var(--fs-micro);
+  color: var(--idle);
+}
+
+.dir {
+  display: block;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.devname {
+  color: var(--muted);
+}
+
+/* Status chips, in the order of what actually happens to the packets. */
+.shape {
+  font-weight: 600;
+}
+
+.blocked {
+  background: var(--bad);
+  color: #fff;
+}
+
+.throttled {
+  background: #e8a29b;
+  color: #4a100c;
+}
+
+.imo {
+  background: #f0c66a;
+  color: #4a3505;
+}
+
+/* Lighter than the throttle chip on purpose. Both end in the same tc class,
+   but this one is a volume budget the device spent rather than a standing
+   decision about the peer, and it clears itself once the device eases off. */
+.cdn-quota {
+  background: #f6d7e4;
+  color: #5a1c38;
+}
+
+/* ------------------------------------------------------------------ forms */
+
+button {
+  font: inherit;
+  font-size: var(--fs-sm);
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--hover);
+  border-color: var(--muted);
+}
+
+/* The destructive ones say so before they are pressed. */
+form.device button {
+  background: #fdf3f2;
+  border-color: var(--bad);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+form.device button:hover {
+  background: #fbe4e1;
+}
+
+form.capture {
+  display: inline;
+}
+
+form.capture button {
+  background: var(--accent-weak);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+form.capture button:hover {
+  background: #d6e9ec;
+}
+
+/* Use div instead of p: the banner contains a form, and a form inside a
+   paragraph is auto-closed by the parser, which would drop these selectors. */
+div.capture {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+div.capture .figure {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------- utilities */
+
+/* Available to a screen reader, absent from the layout. The bars are
+   aria-hidden, so this is where a non-visual reader is told which side of the
+   threshold the figure landed. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 34rem) {
+  main {
+    width: calc(100% - 1rem);
+    padding: 1rem;
+  }
+
+  .topbar-inner {
+    width: calc(100% - 1rem);
+    gap: 0.75rem;
+  }
+
+  dl {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  dt {
+    margin-top: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

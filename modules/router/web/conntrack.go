@@ -391,6 +391,40 @@ func parseMarkedFlows(r io.Reader, lanNet netip.Prefix, mark uint64) ([]MarkedFl
 	return marked, nil
 }
 
+// deviceIdle returns, for every LAN address in the dump, how long ago it last
+// carried a packet. Addresses with no flow the timeout table can date are
+// absent rather than zero, which the caller renders as "no answer".
+//
+// Both ends of every flow are considered, and neither the public-peer filter
+// nor the one-end-on-the-LAN rule the other two readers apply is used here.
+// That is the point: those readers answer "who is this device talking to on the
+// internet", and for that a LAN-to-LAN flow or a lookup against the router is
+// noise. This one answers "is this device alive", and for that a DNS query to
+// the router is among the best evidence there is — it is often the only thing a
+// mostly-idle phone emits.
+func deviceIdle(r io.Reader, lanNet netip.Prefix, timeouts *timeoutTable) (map[netip.Addr]time.Duration, error) {
+	seen := map[netip.Addr]time.Duration{}
+	err := eachFlow(r, func(f flow) {
+		idle, ok := timeouts.idle(f)
+		if !ok {
+			return
+		}
+		for _, addr := range [...]netip.Addr{f.Src, f.Dst} {
+			if !lanNet.Contains(addr) {
+				continue
+			}
+			if best, found := seen[addr]; found && best <= idle {
+				continue
+			}
+			seen[addr] = idle
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return seen, nil
+}
+
 // eachFlow calls fn for every usable line of a conntrack dump.
 func eachFlow(r io.Reader, fn func(flow)) error {
 	scanner := bufio.NewScanner(r)
