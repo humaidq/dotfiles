@@ -132,6 +132,18 @@ chmod 600 "$local_pcap"
 scp -q "$NETWATCH_HOST:/var/lib/dnsmasq/dnsmasq.leases" \
 	"$NETWATCH_DIR/leases" || skip "lease fetch failed"
 
+# The router's neighbour table, which is what maps an IPv6 address back to a
+# MAC. The lease file cannot: nothing hands out an IPv6 address here, so no
+# lease records one. Reconstructing a link-local from the MAC covers only the
+# devices that still derive theirs that way, which on this network is a
+# minority and not the interesting one.
+#
+# Best-effort, unlike the lease fetch above. Losing this costs attribution for
+# some IPv6 queries; losing the leases costs it for every device, which is why
+# only one of the two is fatal. No sudo: the table is world-readable.
+ssh "$NETWATCH_HOST" 'ip neigh show' > "$NETWATCH_DIR/neighbours" 2>/dev/null ||
+	: > "$NETWATCH_DIR/neighbours"
+
 # Refresh the DNS indexes from the router's resolver history. dnsmap.tsv and
 # baseline.tsv are unioned by seed, not replaced: baseline.tsv is passed again
 # as the existing baseline to merge into baseline.tsv.new, so a domain does
@@ -144,6 +156,7 @@ ssh "$NETWATCH_HOST" 'journalctl -u blocky --no-pager --since '\'"$NETWATCH_JOUR
 		"$NETWATCH_DIR/dnsq.tsv" \
 		"$NETWATCH_DIR/baseline.tsv.new" \
 		"$NETWATCH_DIR/baseline.tsv" \
+		"$NETWATCH_DIR/neighbours" \
 	|| skip "resolver history import failed"
 
 # The ipv6.* fields sit beside their IPv4 counterparts rather than at the end,

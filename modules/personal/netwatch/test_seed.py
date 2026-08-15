@@ -212,3 +212,52 @@ class TestAtomicWrite(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+NEIGH = "\n".join([
+    # EUI-64: _eui64 could reconstruct this one from the lease alone.
+    "192.168.0.10 dev enp2s0 lladdr aa:bb:cc:dd:ee:01 REACHABLE",
+    "fe80::a8bb:ccff:fedd:ee01 dev enp2s0 lladdr aa:bb:cc:dd:ee:01 STALE",
+    # RFC 7217 stable-privacy: nothing but the table can map this.
+    "fe80::10e7:2429:3f27:5c78 dev enp2s0 lladdr aa:bb:cc:dd:ee:01 REACHABLE",
+    # No lladdr, so no MAC to map to.
+    "192.168.0.77 dev enp2s0  FAILED",
+])
+
+
+class TestNeighbourIndex(unittest.TestCase):
+    def test_maps_every_address_with_an_lladdr(self):
+        index = seed._neighbour_index(NEIGH)
+        self.assertEqual(index["fe80::10e7:2429:3f27:5c78"],
+                         "aa:bb:cc:dd:ee:01")
+        self.assertEqual(index["192.168.0.10"], "aa:bb:cc:dd:ee:01")
+
+    def test_skips_entries_with_no_mac(self):
+        self.assertNotIn("192.168.0.77", seed._neighbour_index(NEIGH))
+
+    def test_empty_input_is_not_an_error(self):
+        self.assertEqual(seed._neighbour_index(""), {})
+
+
+class TestClientIndexWithNeighbours(unittest.TestCase):
+    def test_a_stable_privacy_address_maps_only_with_the_table(self):
+        without = seed._client_index(LEASES)
+        self.assertNotIn("fe80::10e7:2429:3f27:5c78", without)
+        withit = seed._client_index(LEASES, NEIGH)
+        self.assertEqual(withit["fe80::10e7:2429:3f27:5c78"],
+                         "aa:bb:cc:dd:ee:01")
+
+    def test_the_eui64_reconstruction_still_works_without_a_table(self):
+        # A run against stored data, or one where the fetch failed.
+        index = seed._client_index(LEASES)
+        self.assertEqual(index["fe80::a8bb:ccff:fedd:ee01"],
+                         "aa:bb:cc:dd:ee:01")
+
+    def test_queries_from_a_stable_privacy_address_reach_dnsq(self):
+        log = ['INFO queryLog: query resolved answer=AAAA (2606:4700::1111) '
+               'client_ip=fe80::10e7:2429:3f27:5c78 '
+               'question_name=six.example. response_type=RESOLVED']
+        _, without, _ = seed.build_indexes(log, LEASES)
+        self.assertEqual(without.strip(), "")
+        _, withit, _ = seed.build_indexes(log, LEASES, neigh_text=NEIGH)
+        self.assertIn("aa:bb:cc:dd:ee:01\tsix.example\tRESOLVED", withit)

@@ -170,8 +170,7 @@ func TestPeerIdleTakesTheFreshestFlow(t *testing.T) {
 ipv4     2 tcp      6 431998 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport=2 dport=443 packets=2 bytes=100 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=2 packets=2 bytes=100 [ASSURED] mark=0 use=1
 `
 	table := fakeTimeouts(map[string]string{tcpEstablished: "432000"}, nil)
-	peers, err := parseConntrack(
-		strings.NewReader(fixture), netip.MustParseAddr("192.168.0.10"), table)
+	peers, err := parseConntrack(strings.NewReader(fixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), table)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -189,8 +188,7 @@ ipv4     2 tcp      6 431998 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport
 }
 
 func TestPeerHasNoIdleWithoutATable(t *testing.T) {
-	peers, err := parseConntrack(
-		strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -284,8 +282,7 @@ ipv4     2 udp      17 100 src=192.168.0.20 dst=192.168.0.1 sport=5353 dport=53 
 	table := fakeTimeouts(map[string]string{
 		tcpEstablished: "432000", tcpUnack: "300", udpStream: "120", udpPlain: "30",
 	}, nil)
-	idle, err := deviceIdle(
-		strings.NewReader(fixture), netip.MustParsePrefix("192.168.0.0/24"), table)
+	idle, err := deviceIdle(strings.NewReader(fixture), lanAddrs("192.168.0.0/24"), table)
 	if err != nil {
 		t.Fatalf("deviceIdle: %v", err)
 	}
@@ -310,8 +307,7 @@ func TestDeviceIdleKeepsTheFreshestFlowPerDevice(t *testing.T) {
 ipv4     2 tcp      6 431997 ESTABLISHED src=192.168.0.10 dst=203.0.113.20 sport=2 dport=443 packets=2 bytes=100 src=203.0.113.20 dst=198.51.100.1 sport=443 dport=2 packets=2 bytes=100 [ASSURED] mark=0 use=1
 `
 	table := fakeTimeouts(map[string]string{tcpEstablished: "432000", tcpUnack: "300"}, nil)
-	idle, err := deviceIdle(
-		strings.NewReader(fixture), netip.MustParsePrefix("192.168.0.0/24"), table)
+	idle, err := deviceIdle(strings.NewReader(fixture), lanAddrs("192.168.0.0/24"), table)
 	if err != nil {
 		t.Fatalf("deviceIdle: %v", err)
 	}
@@ -326,12 +322,24 @@ func TestDeviceIdleOmitsWhatItCannotDate(t *testing.T) {
 	const fixture = `ipv4     2 unknown  47 500 src=192.168.0.10 dst=203.0.113.10 packets=10 bytes=400 src=203.0.113.10 dst=198.51.100.1 packets=8 bytes=300 mark=0 use=1
 `
 	table := fakeTimeouts(map[string]string{tcpEstablished: "432000"}, nil)
-	idle, err := deviceIdle(
-		strings.NewReader(fixture), netip.MustParsePrefix("192.168.0.0/24"), table)
+	idle, err := deviceIdle(strings.NewReader(fixture), lanAddrs("192.168.0.0/24"), table)
 	if err != nil {
 		t.Fatalf("deviceIdle: %v", err)
 	}
 	if _, ok := idle[netip.MustParseAddr("192.168.0.10")]; ok {
 		t.Fatal("an undatable flow produced an entry")
 	}
+}
+
+// lanAddrs builds the interest set the devices index passes to deviceIdle, from
+// a prefix, for tests that predate the set. Real callers build it from the
+// neighbour table instead, which is the point of the change: an IPv6 address is
+// in no prefix this program is configured with.
+func lanAddrs(prefix string) addrSet {
+	p := netip.MustParsePrefix(prefix)
+	set := newAddrSet()
+	for addr := p.Addr(); p.Contains(addr); addr = addr.Next() {
+		set.add(addr)
+	}
+	return set
 }

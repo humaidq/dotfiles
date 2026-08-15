@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -26,6 +27,19 @@ let
 
   # dnsmasq only serves DNS to blocky, on loopback.
   dnsmasqUpstream = "127.0.0.1:5353";
+
+  # Link-local addresses mapped to DHCP names, regenerated from the neighbour
+  # table. See v6-names.py for why this exists and why it is link-local only.
+  v6NamesFile = "/var/lib/dnsmasq-v6-names/hosts";
+
+  # fe80::/16, which is where every IPv6 query on this network is sourced from:
+  # the RA advertises the router's link-local as the resolver, and a packet to a
+  # link-local destination must carry a link-local source. Routed to dnsmasq so
+  # the PTRs above are the ones blocky gets; without this the lookup goes
+  # upstream and comes back NXDOMAIN, which is what it did before.
+  v6ReverseZone = "8.e.f.ip6.arpa";
+
+  v6Names = pkgs.writers.writePython3Bin "v6-names" { } (builtins.readFile ./v6-names.py);
 
   # blocky's custom DNS resolver runs ahead of its conditional resolver and
   # matches subdomains, so any mapping at or above the local domain (e.g.
@@ -81,6 +95,10 @@ in
         domain = cfg.localDomain;
         local = [
           "/${cfg.localDomain}/"
+          # Reverse zone for link-local addresses, so an IPv6 client's PTR is
+          # answered here and not forwarded to an upstream that has never heard
+          # of it.
+          "/${v6ReverseZone}/"
           # Reverse zone for the LAN, so client IPs resolve back to their DHCP
           # hostnames. blocky uses this for its client lookups.
           "/${reverseZone}/"
@@ -91,6 +109,10 @@ in
           "/use-application-dns.net/"
         ];
         expand-hosts = true;
+
+        # The generated IPv6 names. dnsmasq re-reads this on SIGHUP, which is
+        # what the generator sends when the file actually changes.
+        addn-hosts = v6NamesFile;
         host-record = [ "${cfg.localDomain},${cfg.dhcp.routerAddress}" ];
 
         # Wildcards taken over from blocky's custom DNS. DHCP leases and the
@@ -113,6 +135,63 @@ in
       };
     };
 
+    # The generated link-local -> DHCP name map, and what keeps it current.
+    #
+    # A timer rather than an event, because there is no event to hang it on: a
+    # device configures its own IPv6 address and tells nothing, so the first
+    # anyone here knows of it is a neighbour table entry appearing. A minute is
+    # short enough that a device is named in the DNS log almost as soon as it
+    # starts querying, and the work is two file reads and a join.
+    systemd.tmpfiles.rules = [
+      "d ${dirOf v6NamesFile} 0755 root root -"
+      # Created empty so dnsmasq has something to read at first start. Without
+      # it dnsmasq logs a warning about the missing addn-hosts file on every
+      # boot before the timer has first fired.
+      "f ${v6NamesFile} 0644 root root -"
+    ];
+
+    systemd.services.dnsmasq-v6-names = {
+      description = "Map IPv6 link-local addresses to DHCP names for dnsmasq";
+      after = [ "dnsmasq.service" ];
+      wants = [ "dnsmasq.service" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+      };
+
+      path = with pkgs; [
+        iproute2
+        coreutils
+      ];
+
+      # The generator exits 1 when the rendered file is byte-identical to what
+      # is already there, which is the common case: link-local addresses are
+      # stable per device, so this changes only when a device joins or leaves.
+      # Signalling dnsmasq unconditionally would mean a reload every minute
+      # forever, and dnsmasq re-reads its lease file on SIGHUP.
+      script = ''
+        set -uo pipefail
+        ip -6 neigh show dev ${cfg.lan0} > /run/dnsmasq-v6-neigh
+        if ${v6Names}/bin/v6-names /run/dnsmasq-v6-neigh \
+            ${lib.escapeShellArg cfg.dhcp.leasesFile} \
+            ${lib.escapeShellArg cfg.localDomain} \
+            ${lib.escapeShellArg v6NamesFile}; then
+          systemctl kill -s HUP dnsmasq.service || true
+        fi
+        rm -f /run/dnsmasq-v6-neigh
+      '';
+    };
+
+    systemd.timers.dnsmasq-v6-names = {
+      description = "Refresh the IPv6 name map for dnsmasq";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "30s";
+        OnUnitActiveSec = "1m";
+        AccuracySec = "10s";
+      };
+    };
+
     services.resolved.enable = false;
 
     services.blocky = {
@@ -132,6 +211,7 @@ in
           conditional.mapping = {
             "${cfg.localDomain}" = dnsmasqUpstream;
             "${reverseZone}" = dnsmasqUpstream;
+            "${v6ReverseZone}" = dnsmasqUpstream;
             "use-application-dns.net" = dnsmasqUpstream;
           }
           // lib.mapAttrs (_: _: dnsmasqUpstream) shadowingMappings;

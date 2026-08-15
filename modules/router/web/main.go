@@ -567,6 +567,11 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 	leasesPath := os.Getenv("ROUTER_DHCP_LEASES_FILE")
 	peers := newPeersServer(prefix, table, peersTmpl, indexTmpl, leasesPath)
 	peers.namer = newNamerFromEnv()
+	// Set unconditionally, unlike lowTrust below. The neighbour table is no
+	// longer just the low-trust pool's way of finding a MAC — it is what tells
+	// the page which IPv6 addresses belong to the device whose page it is, so
+	// without it every device is IPv4-only again.
+	peers.neighbours = newNeighbourCache(readNeighbours(getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0")))
 	// Captures are opt-in on the directory: a router without one keeps every
 	// route and every pixel it had before this feature.
 	if dir := strings.TrimSpace(os.Getenv("ROUTER_CAPTURE_DIR")); dir != "" {
@@ -579,7 +584,6 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 	// the buttons can only promise drops nothing implements. Unset leaves both
 	// fields nil, which mux() and the template read as "no such feature".
 	if strings.TrimSpace(os.Getenv("ROUTER_LOWTRUST")) != "" {
-		peers.neighbours = readNeighbours
 		peers.lowTrust = lowTrustMembership
 	}
 	peers.nav = nav

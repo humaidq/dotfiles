@@ -220,15 +220,20 @@ type view struct {
 	Up, Down uint64
 }
 
-func (f flow) from(local netip.Addr) (view, bool) {
+// from takes the whole set of addresses one device holds rather than a single
+// address, because a device is a MAC and its conversations are spread across
+// its IPv4 lease and however many IPv6 addresses it has configured for itself.
+// Matching one address at a time is what put a device's two families on two
+// pages, one of which was unreachable.
+func (f flow) from(local addrSet) (view, bool) {
 	var v view
 	switch {
-	case f.Src == local:
+	case local.has(f.Src):
 		// The local end opened this flow: the service is what it dialled, and
 		// the original direction is upload.
 		v.Peer, v.Port = f.Dst, portKey{Proto: f.Proto, Port: f.DPort}
 		v.Up, v.Down = f.Orig, f.Reply
-	case f.Dst == local:
+	case local.has(f.Dst):
 		// Opened towards the local end, so both are the other way round.
 		v.Peer, v.Port = f.Src, portKey{Proto: f.Proto, Port: f.SPort}
 		v.Down, v.Up = f.Orig, f.Reply
@@ -251,7 +256,13 @@ func (f flow) from(local netip.Addr) (view, bool) {
 // timeouts may be nil, in which case no peer gets an idle time. That is the
 // only impurity this parser has, and it is passed in rather than read here so
 // the aggregation stays testable against a fixture alone.
-func parseConntrack(r io.Reader, device netip.Addr, timeouts *timeoutTable) ([]Peer, error) {
+//
+// device is every address the device currently holds. Peers are keyed on the
+// far end alone, so a device that reached the same service over both families
+// still gets one row per address the SERVICE answered on — which is correct:
+// those are genuinely two endpoints, and one of them may be blocked while the
+// other is not.
+func parseConntrack(r io.Reader, device addrSet, timeouts *timeoutTable) ([]Peer, error) {
 	totals := map[netip.Addr]*Peer{}
 	// Per-peer port totals, kept beside the peers rather than on them because
 	// they are accumulated by key and only ordered at the end.
@@ -347,7 +358,7 @@ func parseMarkedFlows(r io.Reader, lanNet netip.Prefix, mark uint64) ([]MarkedFl
 		default:
 			return
 		}
-		v, ok := f.from(device)
+		v, ok := f.from(newAddrSet(device))
 		if !ok || !isPublicAddr(v.Peer) {
 			return
 		}
@@ -391,9 +402,9 @@ func parseMarkedFlows(r io.Reader, lanNet netip.Prefix, mark uint64) ([]MarkedFl
 	return marked, nil
 }
 
-// deviceIdle returns, for every LAN address in the dump, how long ago it last
-// carried a packet. Addresses with no flow the timeout table can date are
-// absent rather than zero, which the caller renders as "no answer".
+// deviceIdle returns, for every address of interest in the dump, how long ago
+// it last carried a packet. Addresses with no flow the timeout table can date
+// are absent rather than zero, which the caller renders as "no answer".
 //
 // Both ends of every flow are considered, and neither the public-peer filter
 // nor the one-end-on-the-LAN rule the other two readers apply is used here.
@@ -402,7 +413,13 @@ func parseMarkedFlows(r io.Reader, lanNet netip.Prefix, mark uint64) ([]MarkedFl
 // noise. This one answers "is this device alive", and for that a DNS query to
 // the router is among the best evidence there is — it is often the only thing a
 // mostly-idle phone emits.
-func deviceIdle(r io.Reader, lanNet netip.Prefix, timeouts *timeoutTable) (map[netip.Addr]time.Duration, error) {
+//
+// Takes the set of addresses worth dating rather than a LAN prefix, because a
+// device's IPv6 addresses are not inside any prefix this program is told about
+// — they come from the neighbour table, keyed on the device's MAC. Passing the
+// prefix meant every v6 flow was ignored and a device that had gone entirely
+// v6 read as idle.
+func deviceIdle(r io.Reader, interest addrSet, timeouts *timeoutTable) (map[netip.Addr]time.Duration, error) {
 	seen := map[netip.Addr]time.Duration{}
 	err := eachFlow(r, func(f flow) {
 		idle, ok := timeouts.idle(f)
@@ -410,9 +427,10 @@ func deviceIdle(r io.Reader, lanNet netip.Prefix, timeouts *timeoutTable) (map[n
 			return
 		}
 		for _, addr := range [...]netip.Addr{f.Src, f.Dst} {
-			if !lanNet.Contains(addr) {
+			if !interest.has(addr) {
 				continue
 			}
+			addr = addr.Unmap()
 			if best, found := seen[addr]; found && best <= idle {
 				continue
 			}

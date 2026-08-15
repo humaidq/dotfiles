@@ -330,35 +330,9 @@ func parseShapingSets(docs map[string][]byte) *shapeIndex {
 	return index
 }
 
-// readNeighbours shells out to the kernel's IPv4 neighbour table, the live
-// answer to "which MAC holds this address" and the only source that notices an
-// address changing hands. It is the same table the lowtrust CLI resolves from,
-// and like that CLI the page falls back to the lease file when the kernel has
-// evicted the entry — see render() for why that window matters.
-func readNeighbours(ctx context.Context) ([]byte, error) {
-	return exec.CommandContext(ctx, "ip", "-4", "neigh", "show").Output()
-}
-
-// macForDevice finds device's MAC in `ip -4 neigh show` output. Each line is
-// "<addr> dev <iface> lladdr <mac> <state>"; a line with no lladdr field (the
-// entry is FAILED, or incomplete) has none to find. Returning "" for that case
-// rather than an error lets the caller skip the nft lookup entirely instead of
-// asking it about an empty MAC.
-func macForDevice(raw []byte, device netip.Addr) string {
-	want := device.String()
-	for _, line := range strings.Split(string(raw), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) == 0 || fields[0] != want {
-			continue
-		}
-		for i, f := range fields {
-			if f == "lladdr" && i+1 < len(fields) {
-				return fields[i+1]
-			}
-		}
-	}
-	return ""
-}
+// readNeighbours, macForDevice and the rest of the neighbour-table reading
+// live in neighbours.go, which is also where the two address families are
+// merged into one device.
 
 // lowTrustMembership reports whether a device's MAC is in the low-trust sets.
 // Returns "", "temp" or "permanent"; permanent wins, because that is what

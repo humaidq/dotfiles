@@ -51,7 +51,7 @@ func testPeersServer(t *testing.T) *peersServer {
 	// testPeersServerWithoutLowTrust for the other one. Stubs rather than the
 	// real functions so render() never shells out to ip(8) or nft(8) on
 	// whatever machine runs the suite.
-	server.neighbours = func(context.Context) ([]byte, error) { return nil, nil }
+	server.neighbours = newNeighbourCache(func(context.Context) ([]byte, error) { return nil, nil })
 	server.lowTrust = func(context.Context, string) string { return "" }
 	// Nil rather than the real table, which would read this machine's conntrack
 	// sysctls and make every last-seen assertion depend on how the host running
@@ -61,13 +61,15 @@ func testPeersServer(t *testing.T) *peersServer {
 }
 
 // testPeersServerWithoutLowTrust is the shape bongo runs: router-web with the
-// pool disabled. Nil is the disabled state for both fields, which is what
-// newPeersServer already leaves them at — clearing them explicitly here so the
-// intent survives someone re-adding a default in the constructor.
+// pool disabled.
+//
+// Only lowTrust is cleared. The neighbour table is no longer part of the pool's
+// wiring — it is what merges a device's IPv4 and IPv6 addresses onto one page,
+// so main.go sets it on every router and clearing it here would test a shape
+// that does not exist.
 func testPeersServerWithoutLowTrust(t *testing.T) *peersServer {
 	t.Helper()
 	server := testPeersServer(t)
-	server.neighbours = nil
 	server.lowTrust = nil
 	return server
 }
@@ -838,9 +840,9 @@ func TestPageOmitsLowTrustBlockWhenDisabled(t *testing.T) {
 // not the pool's. Both steps are injected, so this never shells out.
 func TestPageShowsLowTrustMembership(t *testing.T) {
 	server := testPeersServer(t)
-	server.neighbours = func(context.Context) ([]byte, error) {
+	server.neighbours = newNeighbourCache(func(context.Context) ([]byte, error) {
 		return []byte("192.168.0.10 dev lan0 lladdr aa:bb:cc:dd:ee:01 REACHABLE\n"), nil
-	}
+	})
 	server.lowTrust = func(_ context.Context, mac string) string {
 		if mac != "aa:bb:cc:dd:ee:01" {
 			t.Fatalf("looked up membership for %q, want aa:bb:cc:dd:ee:01", mac)
@@ -865,7 +867,7 @@ func TestPageShowsLowTrustMembership(t *testing.T) {
 // button that could only fail.
 func TestPageFallsBackToTheLeaseMAC(t *testing.T) {
 	server := testPeersServer(t)
-	server.neighbours = func(context.Context) ([]byte, error) { return []byte(""), nil }
+	server.neighbours = newNeighbourCache(func(context.Context) ([]byte, error) { return []byte(""), nil })
 	server.lowTrust = func(_ context.Context, mac string) string {
 		// The MAC the fixture lease at 192.168.0.10 was handed to.
 		if mac != "aa:bb:cc:dd:ee:01" {
@@ -887,9 +889,9 @@ func TestPageFallsBackToTheLeaseMAC(t *testing.T) {
 // report the previous holder's membership for the current one.
 func TestPagePrefersTheNeighbourMACOverTheLease(t *testing.T) {
 	server := testPeersServer(t)
-	server.neighbours = func(context.Context) ([]byte, error) {
+	server.neighbours = newNeighbourCache(func(context.Context) ([]byte, error) {
 		return []byte("192.168.0.10 dev lan0 lladdr aa:bb:cc:dd:ee:ff REACHABLE\n"), nil
-	}
+	})
 	server.lowTrust = func(_ context.Context, mac string) string {
 		if mac != "aa:bb:cc:dd:ee:ff" {
 			t.Fatalf("looked up membership for %q, want the neighbour table's aa:bb:cc:dd:ee:ff", mac)
@@ -917,7 +919,7 @@ func TestPageMarksLowTrustUnknownWithNoMACAnywhere(t *testing.T) {
 		t.Fatalf("parse template: %v", err)
 	}
 	server.tmpl = tmpl
-	server.neighbours = func(context.Context) ([]byte, error) { return []byte(""), nil }
+	server.neighbours = newNeighbourCache(func(context.Context) ([]byte, error) { return []byte(""), nil })
 	called := false
 	server.lowTrust = func(context.Context, string) string { called = true; return "permanent" }
 

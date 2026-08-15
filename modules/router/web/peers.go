@@ -62,10 +62,16 @@ type peersPageData struct {
 	// The MAC is here because it is the identifier the low-trust pool keys on:
 	// making a device's membership permanent means copying this value into the
 	// sops secret, and having it on the page saves a trip to the router.
-	Name  string
-	MAC   string
-	Peers []peerRow
-	Error string
+	Name string
+	MAC  string
+	// The other addresses this device holds, beyond the one in the URL. Shown
+	// because the peer table below is a union across all of them, and a page
+	// that silently merged two address families would leave a reader unable to
+	// tell whether a row is missing or merely on an address they did not know
+	// the device had.
+	AlsoAddrs []string
+	Peers     []peerRow
+	Error     string
 	// What this device's capture slot is doing. Zero when no capture
 	// directory is configured, which the template reads as "no banner".
 	Capture captureSlot
@@ -104,6 +110,10 @@ type deviceRow struct {
 	// formatted string cannot do: "3s" sorts after "1d 4h" as text.
 	idle  time.Duration
 	dated bool
+	// Every address this device holds, which is what the row is dated against.
+	// A device that has gone quiet on IPv4 and is busy over IPv6 is active, and
+	// dating the lease address alone said the opposite.
+	addrs []netip.Addr
 }
 
 // byLastActive orders the devices list: most recently active first, then the
@@ -182,7 +192,7 @@ type peersServer struct {
 	// enabled: nothing else on the page needs a MAC, so on a router without
 	// the pool this would be a fork of ip(8) per page render for a value
 	// nobody reads.
-	neighbours func(ctx context.Context) ([]byte, error)
+	neighbours *neighbourCache
 	// lowTrust reports a MAC's low-trust pool membership. Injectable so tests
 	// never shell out to nft(8); the real implementation is lowTrustMembership
 	// in shaping.go.
@@ -242,10 +252,7 @@ func (s *peersServer) handleIndex(w http.ResponseWriter, r *http.Request) {
 		data.Error = "Cannot read the DHCP lease file, so no devices can be listed. A peers page is still reachable directly at /peers/<address>."
 	}
 	data.Nav = s.nav.data("devices", true)
-	data.Leases = make([]deviceRow, 0, len(leases))
-	for _, entry := range leases {
-		data.Leases = append(data.Leases, deviceRow{lease: entry})
-	}
+	data.Leases = s.deviceRows(r.Context(), leases)
 
 	// One dump serves both the prioritised table and the last-seen column. The
 	// connection table is the largest thing this page reads, and sampling it
@@ -302,20 +309,114 @@ func (s *peersServer) annotateLastSeen(rows []deviceRow, raw []byte, readErr err
 	if s.timeouts == nil || readErr != nil || raw == nil {
 		return
 	}
-	idle, err := deviceIdle(strings.NewReader(string(raw)), s.lanNet, s.timeouts)
+	interest := newAddrSet()
+	for _, row := range rows {
+		interest.add(row.addrs...)
+	}
+	idle, err := deviceIdle(strings.NewReader(string(raw)), interest, s.timeouts)
 	if err != nil {
 		log.Printf("peers index: parse conntrack for last seen: %v", err)
 		return
 	}
 	for i := range rows {
-		seen, ok := idle[rows[i].Addr]
-		if !ok {
+		// The freshest of the device's addresses, for the reason the peers page
+		// takes the freshest flow: a device is as awake as its liveliest
+		// address, and a stale IPv4 entry must not bury a busy IPv6 one.
+		for _, addr := range rows[i].addrs {
+			seen, ok := idle[addr.Unmap()]
+			if !ok || (rows[i].dated && seen >= rows[i].idle) {
+				continue
+			}
+			rows[i].idle, rows[i].dated = seen, true
+		}
+		if rows[i].dated {
+			rows[i].LastSeen = formatDuration(rows[i].idle)
+			rows[i].Stale = rows[i].idle >= staleAfter
+		}
+	}
+}
+
+// deviceRows turns the DHCP leases and the neighbour table into one list.
+//
+// Leases first, each folded together with every other address its MAC holds, so
+// a phone appears once carrying its IPv4 lease and its SLAAC addresses rather
+// than once per address or — as before — only in IPv4.
+//
+// Then whatever the neighbour table knows that no lease does: a device with a
+// static address, or one that only ever configured itself over IPv6. Those had
+// no way to appear at all, because the list was the DHCP lease file and nothing
+// hands out an IPv6 address here for a lease file to record.
+func (s *peersServer) deviceRows(ctx context.Context, leases []lease) []deviceRow {
+	neigh := s.neighbours.get(ctx)
+	entries := parseNeighbours(neigh)
+
+	byMAC := map[string][]netip.Addr{}
+	for _, entry := range entries {
+		byMAC[entry.MAC] = append(byMAC[entry.MAC], entry.Addr)
+	}
+
+	rows := make([]deviceRow, 0, len(leases))
+	claimed := map[string]bool{}
+	for _, entry := range leases {
+		row := deviceRow{lease: entry, addrs: []netip.Addr{entry.Addr}}
+		mac := strings.ToLower(entry.MAC)
+		if mac == "" {
+			// No MAC on the lease, so nothing to join the families on. The
+			// live table may still know one for the address.
+			mac = macForDevice(neigh, entry.Addr)
+		}
+		if mac != "" {
+			claimed[mac] = true
+			for _, addr := range byMAC[mac] {
+				if addr != entry.Addr {
+					row.addrs = append(row.addrs, addr)
+				}
+			}
+		}
+		rows = append(rows, row)
+	}
+
+	for mac, addrs := range byMAC {
+		if claimed[mac] {
 			continue
 		}
-		rows[i].LastSeen = formatDuration(seen)
-		rows[i].Stale = seen >= staleAfter
-		rows[i].idle, rows[i].dated = seen, true
+		rows = append(rows, deviceRow{
+			// Keyed on the address the page will be reached by, chosen with
+			// pickDeviceAddr rather than taken at random: a map iterates in a
+			// different order every render, and a link that moves between
+			// reloads is not a link.
+			lease: lease{Addr: pickDeviceAddr(addrs), MAC: mac},
+			addrs: addrs,
+		})
 	}
+	return rows
+}
+
+// pickDeviceAddr chooses the address that names a device with no DHCP lease.
+//
+// A routable address wins over a link-local one: fe80:: works as a page key but
+// tells a reader nothing they can use elsewhere, and IPv4 wins over IPv6 among
+// routable ones because it is the shorter thing to read and to type. Lowest
+// address breaks the remaining ties, so the choice is stable across renders.
+func pickDeviceAddr(addrs []netip.Addr) netip.Addr {
+	best := netip.Addr{}
+	rank := func(a netip.Addr) int {
+		switch {
+		case a.IsLinkLocalUnicast():
+			return 2
+		case a.Is4():
+			return 0
+		default:
+			return 1
+		}
+	}
+	for _, addr := range addrs {
+		if !best.IsValid() || rank(addr) < rank(best) ||
+			(rank(addr) == rank(best) && addr.Less(best)) {
+			best = addr
+		}
+	}
+	return best
 }
 
 func (s *peersServer) priorityNow(raw []byte, readErr error, leases []lease) ([]priorityRow, string) {
@@ -473,16 +574,31 @@ func (s *peersServer) registerRoutes(mux *http.ServeMux) {
 }
 
 // device parses and validates the {device} path value against the LAN prefix.
+// device parses and vets the address in the URL.
+//
+// The vetting is what keeps this page pointed at the LAN. Without it, /peers
+// followed by any address would report which of this network's devices are
+// talking to it, which is the network's business and not a visitor's.
+//
+// Two ways to pass, because there are now two kinds of device. One is inside
+// the configured IPv4 range, which is every DHCP client. The other is a
+// neighbour on the LAN interface, which is how an IPv6-only or statically
+// addressed device qualifies — there is no configured IPv6 prefix to test
+// against, the delegated one changes on every redial, and a neighbour on lan0
+// is on the local link by definition. Neither route admits an internet address.
 func (s *peersServer) device(r *http.Request) (netip.Addr, bool) {
 	addr, err := netip.ParseAddr(r.PathValue("device"))
 	if err != nil {
 		return netip.Addr{}, false
 	}
 	addr = addr.Unmap()
-	if !s.lanNet.Contains(addr) {
-		return netip.Addr{}, false
+	if s.lanNet.Contains(addr) {
+		return addr, true
 	}
-	return addr, true
+	if macForDevice(s.neighbours.get(r.Context()), addr) != "" {
+		return addr, true
+	}
+	return netip.Addr{}, false
 }
 
 func (s *peersServer) handlePage(w http.ResponseWriter, r *http.Request) {
@@ -498,6 +614,12 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	ctx, cancel := context.WithTimeout(r.Context(), conntrackTimeout)
 	defer cancel()
 
+	// Read once and use for everything that needs it: the address union below,
+	// the MAC on the page, and low-trust membership. Three reads would be three
+	// forks of ip(8) per render, and worse, three views of a table that changes
+	// under them.
+	neigh := s.neighbours.get(ctx)
+
 	raw, err := s.conntrack(ctx)
 	if err != nil {
 		// Deliberately not an empty page: an unreadable table and an idle
@@ -506,7 +628,16 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 		http.Error(w, "cannot read connection table", http.StatusInternalServerError)
 		return
 	}
-	peers, err := parseConntrack(strings.NewReader(string(raw)), device, s.timeouts)
+	// Every address this device holds, not just the one in the URL. The lease
+	// address is always in the set even when the neighbour table has nothing —
+	// a device the kernel has evicted still gets its own page, it just gets the
+	// IPv4 half of it.
+	mac := macForDevice(neigh, device)
+	others := addressesForMAC(neigh, mac)
+	addresses := newAddrSet(device)
+	addresses.add(others...)
+
+	peers, err := parseConntrack(strings.NewReader(string(raw)), addresses, s.timeouts)
 	if err != nil {
 		log.Printf("peers: parse conntrack: %v", err)
 		http.Error(w, "cannot parse connection table", http.StatusInternalServerError)
@@ -539,6 +670,13 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	// A failure here is deliberately silent: the lease file being unreadable
 	// costs a name and a MAC, and saying so in the page's error banner would
 	// imply the connection table below it is suspect, which it is not.
+	sort.Slice(others, func(i, j int) bool { return others[i].Less(others[j]) })
+	for _, addr := range others {
+		if addr != device {
+			data.AlsoAddrs = append(data.AlsoAddrs, addr.String())
+		}
+	}
+
 	if leases, err := readLeases(s.leasesPath, s.lanNet); err == nil {
 		for _, entry := range leases {
 			if entry.Addr == device {
@@ -568,18 +706,19 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 	// Both nil on a router without the pool, which is what keeps the whole
 	// lookup — a fork of ip(8) and up to two of nft(8), per page render — off
 	// a router that has no sets for them to read.
-	if s.neighbours != nil && s.lowTrust != nil {
+	if s.lowTrust != nil {
 		data.LowTrustEnabled = true
-		mac := data.MAC
-		if raw, err := s.neighbours(ctx); err == nil {
-			if live := macForDevice(raw, device); live != "" {
-				mac = live
-			}
+		// The live MAC wins, and the lease MAC covers the window where the
+		// kernel has evicted a sleeping device's entry but its lease has not
+		// expired. Only when both are empty is membership genuinely unknown.
+		poolMAC := mac
+		if poolMAC == "" {
+			poolMAC = data.MAC
 		}
-		if mac == "" {
+		if poolMAC == "" {
 			data.LowTrustUnknown = true
 		} else {
-			data.LowTrust = s.lowTrust(ctx, mac)
+			data.LowTrust = s.lowTrust(ctx, poolMAC)
 		}
 	}
 	for _, peer := range peers {

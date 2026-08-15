@@ -16,7 +16,7 @@ ipv4     2 tcp      6 100 ESTABLISHED src=192.168.0.99 dst=203.0.113.50 sport=22
 `
 
 func TestParseConntrackAggregatesPerPeer(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestParseConntrackAggregatesPerPeer(t *testing.T) {
 }
 
 func TestParseConntrackSkipsUnrelatedFlows(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestParseConntrackSkipsUnrelatedFlows(t *testing.T) {
 }
 
 func TestParseConntrackEmptyForIdleDevice(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.77"), nil)
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), newAddrSet(netip.MustParseAddr("192.168.0.77")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestParseConntrackEmptyForIdleDevice(t *testing.T) {
 }
 
 func TestParseConntrackRecordsServicePorts(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -98,7 +98,7 @@ const inboundFixture = `ipv4     2 udp      17 30 src=203.0.113.60 dst=192.168.0
 `
 
 func TestParseConntrackReadsInboundServicePortAndMark(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(inboundFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(inboundFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestProtocolField(t *testing.T) {
 }
 
 func TestParseConntrackSplitsDirection(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestParseConntrackSplitsDirection(t *testing.T) {
 func TestParseConntrackDirectionForInboundFlow(t *testing.T) {
 	// The peer opened this one, so the original-direction counter is download
 	// and the reply is upload — the opposite assignment to the case above.
-	peers, err := parseConntrack(strings.NewReader(inboundFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(inboundFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -167,7 +167,7 @@ const unrepliedFixture = `ipv4     2 udp      17 20 src=192.168.0.10 dst=203.0.1
 `
 
 func TestParseConntrackUnrepliedFlow(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(unrepliedFixture), netip.MustParseAddr("192.168.0.10"), nil)
+	peers, err := parseConntrack(strings.NewReader(unrepliedFixture), newAddrSet(netip.MustParseAddr("192.168.0.10")), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}

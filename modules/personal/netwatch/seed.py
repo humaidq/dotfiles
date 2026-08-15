@@ -59,8 +59,44 @@ def _eui64(mac):
         first, parts[1], parts[2], parts[3], parts[4], parts[5])
 
 
-def _client_index(leases_text):
-    """Map every address a device is known by back to its MAC."""
+def _neighbour_index(neigh_text):
+    """Map every address in the router's neighbour table back to its MAC.
+
+    This is the only source that covers an RFC 7217 address, and on this
+    network that is most of them: _eui64 below reconstructs a link-local from
+    a MAC, which works for the devices that still derive one that way and for
+    no others. Measured on the router, the table covers 10 of 11 IPv6 resolver
+    clients where the reconstruction covers 7 — and the four it adds are the
+    newer handsets, which are the ones being watched.
+
+    Entries with no lladdr — FAILED, INCOMPLETE — have no MAC to map to. The
+    MAC is found by name rather than by position, because the fields after the
+    address vary between iproute2 versions and entry types.
+    """
+    index = {}
+    for line in neigh_text.split("\n"):
+        fields = line.split()
+        if not fields:
+            continue
+        for position, field in enumerate(fields):
+            if field == "lladdr" and position + 1 < len(fields):
+                index[fields[0]] = fields[position + 1].lower()
+                break
+    return index
+
+
+def _client_index(leases_text, neigh_text=""):
+    """Map every address a device is known by back to its MAC.
+
+    Three sources, in ascending order of authority. The lease file gives the
+    IPv4 address. _eui64 reconstructs a link-local for the devices that derive
+    one from their MAC. The neighbour table, last because it is the live
+    answer, gives every address the router has actually spoken to — including
+    the RFC 7217 link-locals the reconstruction cannot produce.
+
+    The neighbour table is optional: a run against a stored capture, or one
+    where the fetch failed, still gets the first two.
+    """
     index = {}
     for line in leases_text.split("\n"):
         parts = line.split()
@@ -71,6 +107,7 @@ def _client_index(leases_text):
         link_local = _eui64(mac)
         if link_local:
             index[link_local] = mac
+    index.update(_neighbour_index(neigh_text))
     return index
 
 
@@ -132,7 +169,7 @@ def _read_pairs(text):
 
 def build_indexes(
     lines, leases_text, existing_dnsmap="", existing_baseline="",
-    now_ts=0, keep_days=DNSMAP_KEEP_DAYS
+    now_ts=0, keep_days=DNSMAP_KEEP_DAYS, neigh_text=""
 ):
     """Return (dnsmap_tsv, dnsq_tsv, baseline_tsv).
 
@@ -146,7 +183,7 @@ def build_indexes(
     Without this, a run that only sees a shrinking window of history would
     make long-known domains look newly resolved.
     """
-    clients = _client_index(leases_text)
+    clients = _client_index(leases_text, neigh_text)
     # Retained rows are emitted before freshly seen ones, and the reader takes
     # the last row for an address. A reassigned address therefore resolves to
     # whatever owns it now, and stale entries age out rather than pinning an
@@ -214,24 +251,29 @@ def _read_if_present(path):
 
 
 def main(argv):
-    if len(argv) not in (5, 6):
+    if len(argv) not in (5, 6, 7):
         sys.stderr.write(
             "usage: seed LEASES DNSMAP_OUT DNSQ_OUT BASELINE_TSV_OUT"
-            " [EXISTING_BASELINE]\n"
+            " [EXISTING_BASELINE [NEIGHBOURS]]\n"
             "resolver log is read from stdin\n"
             "DNSMAP_OUT and EXISTING_BASELINE (or BASELINE_TSV_OUT if"
             " EXISTING_BASELINE is omitted) are read before being"
             " overwritten, so their prior contents are unioned in\n"
+            "NEIGHBOURS is `ip neigh show` output from the router; without it"
+            " IPv6 clients are attributed only where _eui64 can reconstruct"
+            " them\n"
         )
         return 2
     with open(argv[1]) as handle:
         leases = handle.read()
+    neigh = _read_if_present(argv[6]) if len(argv) == 7 else ""
     existing_dnsmap = _read_if_present(argv[2])
     existing_baseline_path = argv[5] if len(argv) == 6 else argv[4]
     existing_baseline = _read_if_present(existing_baseline_path)
     dnsmap, dnsq, baseline = build_indexes(
         sys.stdin.read().split("\n"), leases,
         existing_dnsmap, existing_baseline, int(time.time()),
+        neigh_text=neigh,
     )
     outputs = ((argv[2], dnsmap), (argv[3], dnsq), (argv[4], baseline))
     for path, data in outputs:
