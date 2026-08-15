@@ -112,23 +112,86 @@
       .uplink-down .uplink-state { color: #c62828; }
       .uplink-unknown .uplink-state { color: #555; }
 
-      .uplink-figures {
+      /* One bar per figure. The band answers "is the line all right", and a
+         bar answers that in a glance where "5.70 ms p50 / 6.29 ms p95" has to
+         be read and compared against a number the reader has to already know.
+         The exact figures live on /uplink, and in each bar's tooltip. */
+      .uplink-meters {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.25rem 1.25rem;
-        margin: 0.5rem 0 0;
+        gap: 0.6rem 1.5rem;
+        margin: 0.7rem 0 0;
         padding: 0;
         list-style: none;
-        font-size: 0.95rem;
       }
 
-      .uplink-figures b {
+      .meter {
+        flex: 1 1 7rem;
+        min-width: 7rem;
+      }
+
+      .meter-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .meter-head b {
         font-weight: 400;
         color: #444;
       }
 
-      .uplink-figures span {
+      .meter-value {
         font-family: monospace;
+        color: #222;
+      }
+
+      .meter-track {
+        position: relative;
+        display: block;
+        height: 9px;
+        margin-top: 0.3rem;
+        background: #e6e6e6;
+      }
+
+      .meter-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        background: #2e7d32;
+      }
+
+      /* Where the good range ends. The whole point of the tick: it makes the
+         bar readable as a position rather than as a colour, which is what a
+         red/green pair alone does not manage for every reader. */
+      .meter-good {
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        width: 1px;
+        background: #6d6d6d;
+      }
+
+      .meter-warn .meter-fill { background: #ef6c00; }
+      .meter-bad .meter-fill { background: #c62828; }
+      .meter-unknown .meter-value { color: #777; }
+
+      /* Available to a screen reader, absent from the layout. The bars are
+         aria-hidden, so this is where a non-visual reader is told which side
+         of the threshold the figure landed. */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       .spark {
@@ -167,12 +230,20 @@
           <span class="uplink-state" id="uplink-band">Uplink: {{ .StateText }}</span>
           <a href="/uplink">history and events</a>
         </div>
-        <ul class="uplink-figures">
-          <li><b>Latency</b> <span>{{ .Latency }}</span></li>
-          <li><b>Jitter</b> <span>{{ .Jitter }}</span></li>
-          <li><b>Loss 24h</b> <span>{{ .Loss }}</span></li>
-          <li><b>Transit</b> <span>{{ .Transit }}</span></li>
-          <li><b>Session drops</b> <span>{{ .Flaps }}</span></li>
+        <ul class="uplink-meters">
+          {{ range .Meters }}
+          <li class="meter meter-{{ .State }}" title="{{ .Title }}">
+            <span class="meter-head">
+              <b>{{ .Label }}</b>
+              <span class="meter-value">{{ .Value }}</span>
+            </span>
+            <span class="sr-only">{{ .State }}</span>
+            <span class="meter-track" aria-hidden="true">
+              <span class="meter-fill" style="width: {{ .Fill }}%"></span>
+              <span class="meter-good" style="left: {{ .Good }}%"></span>
+            </span>
+          </li>
+          {{ end }}
         </ul>
         {{ .Sparkline }}
       </section>

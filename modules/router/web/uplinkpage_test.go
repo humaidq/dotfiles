@@ -191,6 +191,135 @@ func TestLandingBandRenders(t *testing.T) {
 	})
 }
 
+// TestBandMetersScaleAndClassify is the arithmetic behind the bars, which is
+// the whole reading: a bar is only useful if being past the tick means the
+// figure is past the threshold.
+func TestBandMetersScaleAndClassify(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		reading           float64
+		good, limit       float64
+		wantState         string
+		wantFill, wantTck int
+	}{
+		// Well inside the good range. The floor is what stops an excellent
+		// reading rendering as an empty track, which reads as "no data".
+		{"healthy", 6, 30, 60, meterOK, 10, 50},
+		{"floored", 0.2, 30, 60, meterOK, 2, 50},
+		// Between the two thresholds: past the tick, not yet a fault.
+		{"warning", 45, 30, 60, meterWarn, 75, 50},
+		{"bad", 61, 30, 60, meterBad, 100, 50},
+		// Clamped, not overflowed: a 900 ms reading is a full bar, not nine of
+		// them, and the CSS width would otherwise be nonsense.
+		{"clamped", 900, 30, 60, meterBad, 100, 50},
+		// A good range of zero is the session-drop case: one drop is already
+		// not good, and the tick sits at the left edge.
+		{"zero good range", 1, 0, 3, meterWarn, 33, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bar := newMeter("Latency", "x", "y", tc.reading, tc.good, tc.limit)
+			if bar.State != tc.wantState {
+				t.Errorf("state = %q, want %q", bar.State, tc.wantState)
+			}
+			if bar.Fill != tc.wantFill {
+				t.Errorf("fill = %d, want %d", bar.Fill, tc.wantFill)
+			}
+			if bar.Good != tc.wantTck {
+				t.Errorf("tick = %d, want %d", bar.Good, tc.wantTck)
+			}
+		})
+	}
+}
+
+// TestBandMetersStayUnknownWithoutHistory is the distinction the bars exist to
+// preserve: a store with nothing in it must not render five green bars sitting
+// at zero, which is what a healthy line looks like.
+func TestBandMetersStayUnknownWithoutHistory(t *testing.T) {
+	service := newTestService(t, newTestStore(t), seededTargets()...)
+	band := service.band()
+
+	if len(band.Meters) != 5 {
+		t.Fatalf("got %d meters, want 5", len(band.Meters))
+	}
+	for _, bar := range band.Meters {
+		// Session drops are the exception: zero events in an empty store is a
+		// real answer, not a missing one.
+		if bar.Label == "Drops 24h" {
+			continue
+		}
+		if bar.State != meterUnknown {
+			t.Errorf("%s = %q with no history, want %q", bar.Label, bar.State, meterUnknown)
+		}
+		if bar.Fill != 0 {
+			t.Errorf("%s bar is %d%% full with no history", bar.Label, bar.Fill)
+		}
+	}
+}
+
+// TestBandMetersCarryTheLongFormInTheTooltip: the status page trades the
+// numbers for bars, so the numbers have to survive somewhere on it. The detail
+// page keeps printing them in full, and is asserted on separately.
+func TestBandMetersCarryTheLongFormInTheTooltip(t *testing.T) {
+	store := newTestStore(t)
+	now := time.Now().Truncate(time.Minute)
+	if err := store.writeMinute(minuteRow{
+		TS: now.Add(-time.Minute), Target: "cloudflare", Role: roleCore, Address: "1.1.1.1",
+		Sent: 60, Received: 60, RTTMin: 4.7, RTTP50: 5.7, RTTP95: 6.29, RTTMax: 6.8, Jitter: 0.4,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	band := newTestService(t, store, seededTargets()...).band()
+
+	latency := band.Meters[0]
+	if latency.Value != "6.3 ms" {
+		t.Errorf("latency bar label = %q, want the p95 at one decimal", latency.Value)
+	}
+	if !strings.Contains(latency.Title, "5.70 ms p50 / 6.29 ms p95") {
+		t.Errorf("latency tooltip = %q, want the long form the band used to print", latency.Title)
+	}
+	if latency.State != meterOK {
+		t.Errorf("6.29 ms of p95 classified as %q, want %q", latency.State, meterOK)
+	}
+}
+
+// TestLandingBandRendersBars covers the template half: the widths have to
+// survive html/template's CSS-context escaping, or every bar renders empty.
+func TestLandingBandRendersBars(t *testing.T) {
+	tmpl, err := template.ParseFiles("index.html")
+	if err != nil {
+		t.Fatalf("parse index.html: %v", err)
+	}
+	store := newTestStore(t)
+	now := time.Now().Truncate(time.Minute)
+	if err := store.writeMinute(minuteRow{
+		TS: now.Add(-time.Minute), Target: "cloudflare", Role: roleCore, Address: "1.1.1.1",
+		Sent: 60, Received: 60, RTTMin: 4.7, RTTP50: 5.7, RTTP95: 6.29, RTTMax: 6.8, Jitter: 0.4,
+	}); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	service := newTestService(t, store, seededTargets()...)
+
+	recorder := httptest.NewRecorder()
+	landingMux(pageData{}, tmpl, service).ServeHTTP(recorder,
+		httptest.NewRequest(http.MethodGet, "/", nil))
+	body := recorder.Body.String()
+
+	for _, want := range []string{
+		`class="meter meter-ok"`,
+		`class="meter-fill" style="width: 10%"`,
+		`class="meter-good" style="left: 50%"`,
+		"6.3 ms",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("band is missing %q:\n%s", want, body)
+		}
+	}
+	// The long form belongs on /uplink now, not here.
+	if strings.Contains(body, "p50 / ") && !strings.Contains(body, `title="5.70 ms p50`) {
+		t.Error("the long latency string leaked back onto the status page outside a tooltip")
+	}
+}
+
 func TestUplinkRoutesOnlyExistWhenConfigured(t *testing.T) {
 	tmpl, err := template.ParseFiles("index.html")
 	if err != nil {

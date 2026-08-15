@@ -847,22 +847,80 @@ func TestPageShowsLowTrustMembership(t *testing.T) {
 	}
 }
 
-// TestPageOmitsLowTrustWhenMACUnknown covers a device with no neighbour-table
-// entry (asleep, or the table was just flushed): lowTrust must not be asked
-// about an empty MAC, and the page must not claim membership it never checked.
-func TestPageOmitsLowTrustWhenMACUnknown(t *testing.T) {
+// TestPageFallsBackToTheLeaseMAC is the sleeping-device case, and the reason
+// the fallback exists. The kernel drops a neighbour entry within minutes of a
+// device going quiet, but its conntrack flows and its DHCP lease both outlive
+// that by hours — so the page is asked about a device it can still see peers
+// for, and whose MAC is sitting in the lease file it already read for the
+// name. Resolving from the neighbour table alone reported a pool member as a
+// non-member for most of the time it was asleep, and then offered an add
+// button that could only fail.
+func TestPageFallsBackToTheLeaseMAC(t *testing.T) {
 	server := testPeersServer(t)
+	server.neighbours = func(context.Context) ([]byte, error) { return []byte(""), nil }
+	server.lowTrust = func(_ context.Context, mac string) string {
+		// The MAC the fixture lease at 192.168.0.10 was handed to.
+		if mac != "aa:bb:cc:dd:ee:01" {
+			t.Fatalf("looked up membership for %q, want the lease's aa:bb:cc:dd:ee:01", mac)
+		}
+		return "temp"
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if !strings.HasSuffix(rec.Body.String(), "|temp") {
+		t.Fatalf("membership not resolved from the lease MAC: %q", rec.Body.String())
+	}
+}
+
+// TestPagePrefersTheNeighbourMACOverTheLease pins the precedence. The lease
+// file is the fallback, never the override: it is the only one of the two that
+// can still name a device that gave the address up, so letting it win would
+// report the previous holder's membership for the current one.
+func TestPagePrefersTheNeighbourMACOverTheLease(t *testing.T) {
+	server := testPeersServer(t)
+	server.neighbours = func(context.Context) ([]byte, error) {
+		return []byte("192.168.0.10 dev lan0 lladdr aa:bb:cc:dd:ee:ff REACHABLE\n"), nil
+	}
+	server.lowTrust = func(_ context.Context, mac string) string {
+		if mac != "aa:bb:cc:dd:ee:ff" {
+			t.Fatalf("looked up membership for %q, want the neighbour table's aa:bb:cc:dd:ee:ff", mac)
+		}
+		return "permanent"
+	}
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if !strings.HasSuffix(rec.Body.String(), "|permanent") {
+		t.Fatalf("membership not resolved from the neighbour table: %q", rec.Body.String())
+	}
+}
+
+// TestPageMarksLowTrustUnknownWithNoMACAnywhere covers the device that has
+// neither source: no neighbour entry and no lease, which is where a long-dead
+// address ends up while its connections are still in the table. lowTrust must
+// not be asked about an empty MAC, and the page must record that it could not
+// ask rather than answering "not a member" — the two are what the add button
+// hangs off.
+func TestPageMarksLowTrustUnknownWithNoMACAnywhere(t *testing.T) {
+	server := testPeersServer(t)
+	tmpl, err := template.New("peers.html").Parse(`{{.LowTrust}}|{{.LowTrustUnknown}}`)
+	if err != nil {
+		t.Fatalf("parse template: %v", err)
+	}
+	server.tmpl = tmpl
 	server.neighbours = func(context.Context) ([]byte, error) { return []byte(""), nil }
 	called := false
 	server.lowTrust = func(context.Context, string) string { called = true; return "permanent" }
 
 	rec := httptest.NewRecorder()
-	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	// Not in the lease fixture, so neither source can name it.
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.99", nil))
 	if called {
 		t.Fatal("lowTrust was consulted for a device with no MAC")
 	}
-	if !strings.HasSuffix(rec.Body.String(), "||") {
-		t.Fatalf("LowTrust should be empty when the MAC is unknown: %q", rec.Body.String())
+	if got, want := rec.Body.String(), "|true"; got != want {
+		t.Fatalf("page data = %q, want %q", got, want)
 	}
 }
 
@@ -911,6 +969,31 @@ func TestLowTrustBadgeAbsentByDefault(t *testing.T) {
 	}
 	if strings.Contains(body, "/lowtrust/remove") {
 		t.Errorf("device not in the pool must not offer a remove button:\n%s", body)
+	}
+}
+
+// TestLowTrustBadgeSaysUnknownWithoutAMAC is the other half of the render-side
+// fix: with no MAC to look up, the page must not offer the add button. Pressing
+// it invoked `lowtrust add <ip>`, which resolves the address exactly as the
+// page just failed to, so the only possible outcome was a 500.
+func TestLowTrustBadgeSaysUnknownWithoutAMAC(t *testing.T) {
+	var buf bytes.Buffer
+	tmpl := template.Must(template.ParseFiles("peers.html"))
+	data := peersPageData{Device: "192.168.50.10", LowTrustEnabled: true, LowTrustUnknown: true}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatal(err)
+	}
+	body := buf.String()
+	if !strings.Contains(body, "membership is unknown") {
+		t.Errorf("page does not say membership could not be determined:\n%s", body)
+	}
+	for _, unwanted := range []string{
+		`action="/peers/192.168.50.10/lowtrust"`,
+		`action="/peers/192.168.50.10/lowtrust/remove"`,
+	} {
+		if strings.Contains(body, unwanted) {
+			t.Errorf("offered %s for a device whose MAC is unknown:\n%s", unwanted, body)
+		}
 	}
 }
 

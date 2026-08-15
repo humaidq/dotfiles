@@ -43,29 +43,25 @@ p.error { color: #a00; font-weight: 600; }
 <body>
 <h1>Peers for {{.Device}}</h1>
 <p class="note"><a href="/peers">all devices</a> &middot; <a href="/">gateway status</a> &middot; <a href="/uplink">uplink quality</a></p>
-<p class="note">Name <span class="name">{{if .Name}}{{.Name}}{{else}}&mdash;{{end}}</span> &middot; MAC <code>{{if .MAC}}{{.MAC}}{{else}}&mdash;{{end}}</code> &mdash; both as DHCP has them, so a device with a static address shows neither.</p>
-<p class="note">Live connection table. A peer that has stopped is not listed, and an idle device shows nothing. History lives on the dashboard.</p>
-<p class="note">Bytes are per peer for the life of each connection, split by direction from this device: &uarr; sent, &darr; received.</p>
-<p class="note">Traffic names the far end's port, not the payload: &ldquo;HTTPS&rdquo; means tcp/443 and nothing more. <span class="label call">call</span> is different &mdash; it means the router matched the STUN signature on this conversation. A <code class="port suspect">red port</code> is one dropped LAN&rarr;WAN by the port blocklist.</p>
-<p class="note"><strong>drop</strong> ends this device&rsquo;s current connections to the peer and nothing more &mdash; the app may reconnect at once. <strong>block</strong> also stops it coming back, in both directions, for every device, until the router reboots.</p>
+<p class="note">Name <span class="name">{{if .Name}}{{.Name}}{{else}}&mdash;{{end}}</span> &middot; MAC <code>{{if .MAC}}{{.MAC}}{{else}}&mdash;{{end}}</code></p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 <form class="device" method="post" action="/peers/{{.Device}}/drop-all" style="margin: 0 0 1rem">
 <button type="submit">drop all connections</button>
 </form>
-<p class="note">Ends every connection this device has, to every peer at once, and blocks nothing. Its apps reconnect from scratch.</p>
 {{if .LowTrustEnabled}}
 {{if eq .LowTrust "permanent"}}
-<p class="note">This device is a <strong>low-trust</strong> pool member (permanent). Change it in the sops secret.</p>
+<p class="note">In the <strong>low-trust</strong> pool (permanent) &mdash; change it in the sops secret.</p>
 {{else if eq .LowTrust "temp"}}
 <form class="device" method="post" action="/peers/{{.Device}}/lowtrust/remove" style="margin: 0 0 1rem">
 <button type="submit">remove from low-trust pool</button>
 </form>
-<p class="note">This device is temporarily in the <strong>low-trust</strong> pool: stricter egress, and no voice-tin priority. Cleared by the next rebuild.</p>
+<p class="note">In the <strong>low-trust</strong> pool until the next rebuild.</p>
+{{else if .LowTrustUnknown}}
+<p class="note"><strong>Low-trust</strong> membership is unknown &mdash; no MAC in the neighbour table or the leases. Use <code>lowtrust</code> by MAC.</p>
 {{else}}
 <form class="device" method="post" action="/peers/{{.Device}}/lowtrust" style="margin: 0 0 1rem">
 <button type="submit">add to low-trust pool</button>
 </form>
-<p class="note">Stricter egress for this device: extra blocked ports and subnets, public STUN dropped, and no voice-tin priority. Cleared by the next rebuild.</p>
 {{end}}
 {{end}}
 {{if eq .Capture.State "running"}}
@@ -75,7 +71,7 @@ p.error { color: #a00; font-weight: 600; }
 </form>
 <span class="figure">capturing &mdash; {{.Capture.Bytes}} of {{.Capture.Limit}}, {{.Capture.Elapsed}} elapsed</span>
 </div>
-<p class="note">Stops on its own at the limit or after 30 minutes, whichever comes first. Stopping downloads the file and leaves a copy here.</p>
+<p class="note">Stops at the limit or 30 minutes. Stopping downloads the file and keeps a copy.</p>
 {{else if eq .Capture.State "ready"}}
 <div class="capture">
 <a href="/peers/{{.Device}}/capture.pcap">download capture</a>
@@ -85,12 +81,12 @@ p.error { color: #a00; font-weight: 600; }
 <button type="submit">discard</button>
 </form>
 </div>
-<p class="note">Kept for 24 hours, then deleted. Starting a new capture for this device replaces it.</p>
+<p class="note">Kept 24 hours. A new capture replaces it.</p>
 {{else if eq .Capture.State "idle"}}
 <form class="capture" method="post" action="/peers/{{.Device}}/capture/start" style="margin: 0 0 1rem">
 <button type="submit">start capture</button>
 </form>
-<p class="note">Records this device&rsquo;s full packets, in both directions, to a file you download. It follows the address this page is for &mdash; a device&rsquo;s traffic under a different address is not in it. Stops on its own at 200 MiB or 30 minutes.</p>
+<p class="note">Full packets both ways, for this address only. Stops at 200 MiB or 30 minutes.</p>
 {{end}}
 {{if .Peers}}
 <table>

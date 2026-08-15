@@ -59,7 +59,13 @@ let
       iproute2
       nftables
     ];
-    text = builtins.readFile ./lowtrust.bash;
+    # Read when the neighbour table has no entry for an address, which is the
+    # normal state for a device that is merely asleep. Same option dnsmasq is
+    # configured from, so the two cannot drift apart.
+    text = ''
+      export LEASE_FILE=${lib.escapeShellArg cfg.dhcp.leasesFile}
+    ''
+    + builtins.readFile ./lowtrust.bash;
   };
 in
 {

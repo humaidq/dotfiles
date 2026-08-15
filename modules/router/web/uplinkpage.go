@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -49,6 +50,12 @@ type uplinkService struct {
 }
 
 // uplinkBand is the one-line summary at the top of the landing page.
+//
+// It carries each figure twice. The strings are the long form — "5.70 ms p50 /
+// 6.29 ms p95" — and are what the detail page prints, where the reader came
+// for numbers. Meters are the same readings as bars, and are what the status
+// page shows: that page is opened to answer "is the line all right", and a row
+// of five measurements answers it slower than five bars do.
 type uplinkBand struct {
 	State     string
 	StateText string
@@ -57,7 +64,89 @@ type uplinkBand struct {
 	Loss      string
 	Transit   string
 	Flaps     string
+	Meters    []meter
 	Sparkline template.HTML
+}
+
+// meter is one band figure reduced to what a bar needs: a short value, how
+// full the bar is, where "good" ends on it, and which side of that the reading
+// falls. Title keeps the long form for the tooltip, so nothing the band used
+// to say is actually lost.
+type meter struct {
+	Label string
+	Value string
+	Title string
+	// Both 0-100, as a percentage of the bar's width. Good is where the tick
+	// goes, so the bar reads without relying on its colour.
+	Fill int
+	Good int
+	// meterOK, meterWarn, meterBad or meterUnknown.
+	State string
+}
+
+const (
+	meterOK      = "ok"
+	meterWarn    = "warn"
+	meterBad     = "bad"
+	meterUnknown = "unknown"
+)
+
+// Where each bar's good range ends and where the bar itself ends. The second
+// number is both the "this is a fault" threshold and the full-scale value, so
+// a bar that is full is a bar that is bad — there is no reading that fills it
+// while still being fine.
+//
+// Chosen for this line rather than in the abstract: the core anchors are
+// in-country and answer in single-digit milliseconds, so 30 ms of p95 already
+// means something is queueing. Loss reuses the 2% that opens a degradation
+// episode in uplink.go, so the bar and the event log cannot disagree about
+// what a bad minute is. Transit is judged loosely because it crosses an ocean
+// and a submarine cable reroute is not this router's fault.
+const (
+	meterLatencyGood, meterLatencyLimit = 30.0, 60.0
+	meterJitterGood, meterJitterLimit   = 5.0, 15.0
+	meterLossGood, meterLossLimit       = 0.5, episodeLossThreshold * 100
+	meterTransitGood, meterTransitLimit = 120.0, 250.0
+	// Any dropped session is worth seeing, so the good range is zero: one flap
+	// puts the bar a third of the way along and out of the good zone.
+	meterFlapsGood, meterFlapsLimit = 0.0, 3.0
+)
+
+// newMeter builds a bar from a reading and its two thresholds.
+func newMeter(label, value, title string, reading, good, limit float64) meter {
+	bar := meter{Label: label, Value: value, Title: title, State: meterOK}
+	switch {
+	case reading > limit:
+		bar.State = meterBad
+	case reading > good:
+		bar.State = meterWarn
+	}
+	bar.Fill = scaleToBar(reading, limit)
+	bar.Good = scaleToBar(good, limit)
+	// A healthy line reads near zero on every bar, and an empty track looks
+	// like a missing measurement rather than a good one. A sliver says "this
+	// was measured, and it is nowhere near the limit".
+	if bar.Fill < 2 {
+		bar.Fill = 2
+	}
+	return bar
+}
+
+func scaleToBar(value, limit float64) int {
+	if limit <= 0 || value <= 0 {
+		return 0
+	}
+	if value >= limit {
+		return 100
+	}
+	return int(value / limit * 100)
+}
+
+// unknownMeter is the bar for a figure the history cannot answer yet. Empty
+// rather than zero-and-green: "not measured" and "measured, excellent" are the
+// two readings this page must never confuse.
+func unknownMeter(label string) meter {
+	return meter{Label: label, Value: "—", Title: "not measured yet", State: meterUnknown}
 }
 
 // band builds the summary. Every field degrades to an em dash rather than
@@ -81,6 +170,13 @@ func (s *uplinkService) band() *uplinkBand {
 		band.StateText = "link down"
 	}
 
+	// Every bar starts unknown and is replaced only by a reading that actually
+	// arrived, so a store that cannot answer leaves an empty track rather than
+	// a green one.
+	latency, jitter, loss, transit := unknownMeter("Latency"), unknownMeter("Jitter"),
+		unknownMeter("Loss 24h"), unknownMeter("Transit")
+	flaps := unknownMeter("Drops 24h")
+
 	// The core anchors carry the headline latency. The peer is excluded on
 	// purpose — its RTT measures the access node's control plane, not the
 	// line. See the comment at the top of uplink.go.
@@ -91,6 +187,13 @@ func (s *uplinkService) band() *uplinkBand {
 		} else if ok && row.Received > 0 {
 			band.Latency = fmt.Sprintf("%s p50 / %s p95", formatMillis(row.RTTP50), formatMillis(row.RTTP95))
 			band.Jitter = formatMillis(row.Jitter)
+			// The bar is judged on p95, not the median: the median is what the
+			// line does when nothing is happening, and p95 is what someone on a
+			// call actually notices.
+			latency = newMeter("Latency", formatMillisCompact(row.RTTP95), band.Latency+" to "+core,
+				row.RTTP95, meterLatencyGood, meterLatencyLimit)
+			jitter = newMeter("Jitter", formatMillisCompact(row.Jitter), band.Jitter+" to "+core,
+				row.Jitter, meterJitterGood, meterJitterLimit)
 			if band.State == stateUnknown {
 				band.State, band.StateText = stateOK, "healthy"
 			}
@@ -99,7 +202,10 @@ func (s *uplinkService) band() *uplinkBand {
 		if sent, received, err := s.store.lossSince(core, now.Add(-bandWindow)); err != nil {
 			log.Printf("uplink: band loss: %v", err)
 		} else if sent > 0 {
-			band.Loss = fmt.Sprintf("%.2f%% of %d", float64(sent-received)/float64(sent)*100, sent)
+			pct := float64(sent-received) / float64(sent) * 100
+			band.Loss = fmt.Sprintf("%.2f%% of %d", pct, sent)
+			loss = newMeter("Loss 24h", formatPercentCompact(pct), band.Loss+" probes to "+core,
+				pct, meterLossGood, meterLossLimit)
 		}
 
 		if rows, err := s.store.since(core, now.Add(-bandWindow)); err != nil {
@@ -110,20 +216,29 @@ func (s *uplinkService) band() *uplinkBand {
 	}
 
 	// Named as well as timed: with several transit anchors "78 ms p50" alone
-	// does not say which continent answered it.
-	if transit := s.bestWithRole(roleTransit); transit != "" {
-		if row, ok, err := s.store.latest(transit); err != nil {
+	// does not say which continent answered it. The bar drops the name into the
+	// tooltip — on the status page the question is whether the number is fine,
+	// and which anchor produced it is a detail-page concern.
+	if name := s.bestWithRole(roleTransit); name != "" {
+		if row, ok, err := s.store.latest(name); err != nil {
 			log.Printf("uplink: band transit: %v", err)
 		} else if ok && row.Received > 0 {
-			band.Transit = fmt.Sprintf("%s p50 (%s)", formatMillis(row.RTTP50), transit)
+			band.Transit = fmt.Sprintf("%s p50 (%s)", formatMillis(row.RTTP50), name)
+			transit = newMeter("Transit", formatMillisCompact(row.RTTP50), band.Transit,
+				row.RTTP50, meterTransitGood, meterTransitLimit)
 		}
 	}
 
-	if flaps, err := s.store.countEvents(eventPPPDown, now.Add(-bandWindow)); err != nil {
+	if count, err := s.store.countEvents(eventPPPDown, now.Add(-bandWindow)); err != nil {
 		log.Printf("uplink: band flaps: %v", err)
 	} else {
-		band.Flaps = fmt.Sprintf("%d in 24h", flaps)
+		band.Flaps = fmt.Sprintf("%d in 24h", count)
+		flaps = newMeter("Drops 24h", strconv.Itoa(count),
+			fmt.Sprintf("%d PPP session drops in the last 24 hours", count),
+			float64(count), meterFlapsGood, meterFlapsLimit)
 	}
+
+	band.Meters = []meter{latency, jitter, loss, transit, flaps}
 
 	// A degraded anchor downgrades the state, but never upgrades a down link.
 	if band.State != stateDown {
@@ -561,6 +676,37 @@ func boolToInt(value bool) int {
 // well it is known. Sub-millisecond RTTs are real on this link — the peer
 // answers in under a millisecond — and rounding them to "1 ms" would erase the
 // difference between a healthy access node and a busy one.
+// formatMillisCompact is formatMillis narrowed to what fits beside a bar. Two
+// decimals are right in a table of measurements and wrong next to a bar, where
+// the bar carries the magnitude and the number is only there to be quoted.
+func formatMillisCompact(value float64) string {
+	switch {
+	case value <= 0:
+		return "—"
+	case value < 10:
+		return fmt.Sprintf("%.1f ms", value)
+	default:
+		return fmt.Sprintf("%.0f ms", value)
+	}
+}
+
+// formatPercentCompact renders a loss percentage in at most four characters.
+// Anything under a tenth of a percent becomes "<0.1%" rather than rounding to
+// "0%": zero loss and nearly-zero loss look the same on the bar, and the label
+// is the only place the difference can survive.
+func formatPercentCompact(value float64) string {
+	switch {
+	case value <= 0:
+		return "0%"
+	case value < 0.1:
+		return "<0.1%"
+	case value < 10:
+		return fmt.Sprintf("%.1f%%", value)
+	default:
+		return fmt.Sprintf("%.0f%%", value)
+	}
+}
+
 func formatMillis(value float64) string {
 	switch {
 	case value <= 0:

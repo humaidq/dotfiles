@@ -229,10 +229,11 @@ func parseShapingSets(docs map[string][]byte) *shapeIndex {
 	return index
 }
 
-// readNeighbours shells out to the kernel's IPv4 neighbour table. It is the
-// only place a device's MAC is available to the page — dnsmasq's lease file
-// carries an address and a hostname, not a MAC — and is the same table the
-// lowtrust CLI itself resolves an address to a MAC from.
+// readNeighbours shells out to the kernel's IPv4 neighbour table, the live
+// answer to "which MAC holds this address" and the only source that notices an
+// address changing hands. It is the same table the lowtrust CLI resolves from,
+// and like that CLI the page falls back to the lease file when the kernel has
+// evicted the entry — see render() for why that window matters.
 func readNeighbours(ctx context.Context) ([]byte, error) {
 	return exec.CommandContext(ctx, "ip", "-4", "neigh", "show").Output()
 }

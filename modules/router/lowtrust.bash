@@ -26,6 +26,12 @@ readonly TABLES=("inet router-blocklists" "inet router-filter")
 readonly SET="lowtrust_macs_temp"
 readonly PERM_SET="lowtrust_macs"
 
+# Second source for an address→MAC lookup, behind the neighbour table. Set from
+# cfg.dhcp.leasesFile by tools.nix; the default is only for running this by
+# hand on a router that predates that wiring.
+LEASE_FILE="${LEASE_FILE:-/var/lib/dnsmasq/dnsmasq.leases}"
+readonly LEASE_FILE
+
 nft() {
 	if [ "$(id -u)" -eq 0 ] || command nft list tables >/dev/null 2>&1; then
 		command nft "$@"
@@ -68,7 +74,23 @@ resolve_mac() {
 	fi
 
 	mac=$(ip neigh show "$target" 2>/dev/null | awk '/lladdr/ {print $5; exit}')
-	[ -n "$mac" ] || die "no neighbour entry for $target — the device must have talked to the router recently"
+
+	# The neighbour table is the live answer, and the only one that notices an
+	# address changing hands, so it is asked first. But the kernel evicts an
+	# entry within minutes of a device going quiet, while its lease lasts hours
+	# — and a device is put in the pool precisely when it is misbehaving, which
+	# includes the case where it has just gone to sleep. Without this fallback
+	# `lowtrust add <ip>` refuses for most of the time a device is asleep, and
+	# the peers page button refuses with it.
+	#
+	# Lease line is: <expiry> <mac> <addr> <name> <clientid>. Last match wins,
+	# matching how router-web reads the same file — a device that renewed under
+	# a new name appears twice and the later line is the current one.
+	if [ -z "$mac" ] && [ -r "$LEASE_FILE" ]; then
+		mac=$(awk -v want="$target" '$3 == want { found = $2 } END { if (found != "") print found }' "$LEASE_FILE")
+	fi
+
+	[ -n "$mac" ] || die "no neighbour entry or DHCP lease for $target — the device has been off the network long enough for both to expire; use its MAC instead"
 	printf '%s' "$mac" | tr 'A-F' 'a-f'
 }
 

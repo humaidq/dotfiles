@@ -56,6 +56,13 @@ type peersPageData struct {
 	// the tool refuses to remove a permanent member and a button that cannot
 	// work should not be shown.
 	LowTrust string
+	// Set when the pool is enabled but no MAC could be found for this device,
+	// in either the neighbour table or the lease file. Kept apart from a
+	// LowTrust of "": that one means "asked the sets, not a member", this one
+	// means "there was nothing to ask about". Conflating them is what made a
+	// sleeping pool member render an add button — which then failed, because
+	// `lowtrust add` resolves the address the same way the page just did.
+	LowTrustUnknown bool
 }
 
 type indexPageData struct {
@@ -410,20 +417,34 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 		data.Capture = s.captures.Get(device)
 	}
 	// The pool is keyed on MAC, not address, so the address has to be resolved
-	// first. A device asleep or absent from the neighbour table simply has no
-	// MAC to look up, and LowTrust is left at its zero value rather than
-	// guessed at — that zero value is exactly what "not in the pool" means to
-	// the template.
+	// first, and from two places rather than one. The neighbour table is the
+	// live answer and wins when it has an entry — it is the only source that
+	// notices an address changing hands. But the kernel evicts an entry within
+	// minutes of a device going quiet, while the device's conntrack flows and
+	// its DHCP lease both outlive that by hours, so a page rendered from the
+	// neighbour table alone reports a sleeping pool member as a non-member for
+	// most of the time it is asleep. The lease MAC is already on this page
+	// under data.MAC; falling back to it costs nothing and covers exactly that
+	// window.
+	//
+	// Only when both are empty is membership genuinely unknown, and that is
+	// recorded as its own state rather than folded into "not a member".
 	//
 	// Both nil on a router without the pool, which is what keeps the whole
 	// lookup — a fork of ip(8) and up to two of nft(8), per page render — off
 	// a router that has no sets for them to read.
 	if s.neighbours != nil && s.lowTrust != nil {
 		data.LowTrustEnabled = true
+		mac := data.MAC
 		if raw, err := s.neighbours(ctx); err == nil {
-			if mac := macForDevice(raw, device); mac != "" {
-				data.LowTrust = s.lowTrust(ctx, mac)
+			if live := macForDevice(raw, device); live != "" {
+				mac = live
 			}
+		}
+		if mac == "" {
+			data.LowTrustUnknown = true
+		} else {
+			data.LowTrust = s.lowTrust(ctx, mac)
 		}
 	}
 	for _, peer := range peers {
