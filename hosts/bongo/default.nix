@@ -141,6 +141,87 @@
         "g.huma.id" = "10.10.0.12,10.20.0.250";
       };
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      uplink = {
+        enable = true;
+        # Measured on this line at 4.7-6.9 ms with 0.4 ms deviation and no
+        # loss, which is what an in-country anycast node looks like: neither
+        # resolver leaves the ISP's network, so both are core anchors whatever
+        # their operator's headquarters is. Two rather than one so that a
+        # single sick anycast node reads as one anchor degrading rather than as
+        # the uplink failing.
+        anchors = [
+          {
+            name = "cloudflare";
+            address = "1.1.1.1";
+            role = "core";
+            # Paired with a Voice-marked twin. One anchor is enough for the
+            # differential — it asks whether the queue that is building is on
+            # this side of the line or the far side, and that answer does not
+            # differ per anchor. The steadiest core anchor makes the cleanest
+            # comparison.
+            pairVoice = true;
+          }
+          {
+            name = "google";
+            address = "8.8.8.8";
+            role = "core";
+          }
+          # THREE TRANSIT PATHS, CHOSEN FOR PHYSICAL DIVERSITY rather than for
+          # covering continents. From here there are essentially two distinct
+          # submarine routes, and they fail independently:
+          #
+          #   * westward, through the Red Sea corridor to Europe. This is the
+          #     one that breaks; the 2024 cable cuts took out a large share of
+          #     UAE-Europe capacity at once.
+          #   * eastward, to India and south-east Asia.
+          #
+          # Frankfurt degraded while Bangalore stays flat localises a fault to the
+          # westward path, which is a different conversation with the ISP than
+          # "everything is slow". Anchors in Africa or South America were
+          # considered and left out: no traffic from this house goes there, so
+          # a degradation on one would be unactionable, and an anchor that
+          # cannot change a decision is a row diluting the page.
+          #
+          # Vultr's per-region ping hosts. Published for latency testing and
+          # unicast per region, which is the property that matters — an anycast
+          # address would be answered by a nearer node and silently become
+          # another core anchor. The addresses are pinned rather than resolved
+          # because a name that later moves would change what is measured
+          # without changing this file; the cost is that a renumbering by the
+          # provider shows up as a step change in the baseline rather than as
+          # an error, so these are worth re-resolving occasionally.
+          {
+            name = "frankfurt";
+            address = "108.61.210.117"; # fra-de-ping.vultr.com
+            role = "transit";
+          }
+          {
+            name = "bangalore";
+            address = "139.84.130.100"; # blr-in-ping.vultr.com
+            role = "transit";
+          }
+          {
+            name = "newjersey";
+            address = "108.61.149.182"; # nj-us-ping.vultr.com
+            role = "transit";
+          }
+          # Kept alongside the three above for the one property none of them
+          # has: it can be logged into. When an anchor degrades the first
+          # question is whether the far host is simply having a bad day, and
+          # this is the only target where that can be answered rather than
+          # assumed.
+          #
+          # The endpoint is already in the tree at
+          # modules/personal/networking/nebula.nix, and this probes the public
+          # address directly over the WAN rather than the mesh address, so what
+          # is measured is the internet path and not the tunnel.
+          {
+            name = "lighthouse";
+            address = "139.84.173.48";
+            role = "transit";
+          }
+        ];
+      };
       # No shaped tier here: imo is dropped outright at every hour, and has
       # been long enough that the throttle compromise bingo runs is not worth
       # carrying at this site.

@@ -47,6 +47,13 @@ type pageData struct {
 	LoadAverage          string
 	Uptime               string
 	UpdatedAt            string
+	// Nil on a router with no uplink probing configured, which is what keeps
+	// the band out of the template there rather than rendering a row of em
+	// dashes that looks like a fault.
+	Uplink *uplinkBand
+	// Whether to offer the link to the peers list. True only on the mesh
+	// listener, which is the only one that serves it.
+	ShowPeers bool
 }
 
 func getenvDefault(key string, fallback string) string {
@@ -350,20 +357,132 @@ func loadConfig() pageData {
 // the peers mux so that a route added here cannot become mesh-only by
 // accident, and a peers route cannot become LAN-reachable by forgetting a
 // check.
-func landingMux(config pageData, tmpl *template.Template) *http.ServeMux {
-	mux := http.NewServeMux()
+// registerStatusRoutes adds the read-only status routes: the landing page, the
+// uplink history and the metrics endpoint.
+//
+// Registered on both listeners, which is the one place the two overlap. They
+// are read-only and describe the router rather than any device on it, so there
+// is nothing here that the LAN should not see — and the uplink history in
+// particular is most wanted from the LAN, during the outage it is recording.
+//
+// showPeers is set only by the mesh mux, so the link to the peers list appears
+// exactly where the link works.
+func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, showPeers bool) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
+		state := readSystemState(config)
+		state.ShowPeers = showPeers
+		if uplink != nil {
+			state.Uplink = uplink.band()
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := tmpl.Execute(w, readSystemState(config)); err != nil {
+		if err := tmpl.Execute(w, state); err != nil {
 			log.Printf("render template: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 	})
+
+	// These exist only when probing is configured. A router without it serves
+	// exactly the pages it served before the feature, and in particular does
+	// not answer /metrics with an empty body that a scrape would happily
+	// record as zero.
+	if uplink != nil {
+		mux.HandleFunc("/uplink", uplink.handlePage)
+		mux.HandleFunc("/uplink/", uplink.handlePage)
+		mux.HandleFunc("/metrics", uplink.handleMetrics)
+	}
+}
+
+// landingMux is what the LAN listener serves: status only, and no route that
+// can see or change a device.
+//
+// The split between this and meshMux is the enforcement. A peers route is
+// registered in exactly one function, and that function is called from exactly
+// one mux, so making a peers page LAN-reachable takes a deliberate edit rather
+// than a forgotten check inside a handler.
+func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService) *http.ServeMux {
+	mux := http.NewServeMux()
+	registerStatusRoutes(mux, config, tmpl, uplink, false)
 	return mux
+}
+
+// meshMux is what the mesh listener serves: everything the LAN gets, plus the
+// peers list and the per-device pages.
+//
+// The status routes are duplicated here rather than the mesh being a redirect
+// to the LAN address, because the mesh is reachable when the LAN is not — from
+// another site, or from a phone on the tunnel — and a status page that only
+// answers on the LAN is unavailable in most of the situations that send you
+// looking for it.
+func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, peers *peersServer) *http.ServeMux {
+	mux := http.NewServeMux()
+	registerStatusRoutes(mux, config, tmpl, uplink, true)
+	peers.registerRoutes(mux)
+	return mux
+}
+
+// startUplink brings up probing if it is configured.
+//
+// Opt-in on the database path, the same idiom as ROUTER_CAPTURE_DIR: unset
+// means no socket, no goroutines, no file and no routes. Every failure here is
+// logged and returns nil rather than being fatal — the landing page is the
+// service's job, and losing it because a raw socket could not be opened would
+// turn a missing capability into a full outage.
+func startUplink(staticRoot string, pppIface string) *uplinkService {
+	dbPath := strings.TrimSpace(os.Getenv("ROUTER_UPLINK_DB"))
+	if dbPath == "" {
+		return nil
+	}
+
+	anchors, err := parseAnchors(os.Getenv("ROUTER_UPLINK_ANCHORS"))
+	if err != nil {
+		log.Printf("uplink probing disabled: %v", err)
+		return nil
+	}
+
+	retention := 90 * 24 * time.Hour
+	if raw := strings.TrimSpace(os.Getenv("ROUTER_UPLINK_RETENTION_DAYS")); raw != "" {
+		days, err := strconv.Atoi(raw)
+		if err != nil || days <= 0 {
+			log.Printf("uplink probing disabled: ROUTER_UPLINK_RETENTION_DAYS %q is not a positive number", raw)
+			return nil
+		}
+		retention = time.Duration(days) * 24 * time.Hour
+	}
+
+	tmpl, err := template.ParseFiles(filepath.Join(staticRoot, "uplink.html"))
+	if err != nil {
+		log.Printf("uplink probing disabled: parse uplink template: %v", err)
+		return nil
+	}
+
+	store, err := openUplinkStore(dbPath)
+	if err != nil {
+		log.Printf("uplink probing disabled: %v", err)
+		return nil
+	}
+
+	prober, err := newUplinkProber(store, pppIface, anchors, retention)
+	if err != nil {
+		log.Printf("uplink probing disabled: %v", err)
+		store.Close()
+		return nil
+	}
+
+	// One prune at start rather than waiting an hour, so a router that has
+	// been off for a month does not serve a page built from expired rows.
+	if err := store.prune(time.Now().Add(-retention)); err != nil {
+		log.Printf("uplink: %v", err)
+	}
+
+	prober.run()
+	log.Printf("uplink probing %d anchors plus the PPP peer, keeping %d days in %s",
+		len(anchors), int(retention.Hours()/24), dbPath)
+
+	return &uplinkService{store: store, prober: prober, tmpl: tmpl, retention: retention}
 }
 
 // meshListenAddr validates that the mesh listen address names a specific
@@ -391,12 +510,15 @@ func meshListenAddr(raw string) (string, error) {
 	return raw, nil
 }
 
-// startMeshServer validates configuration and starts the peers listener in
-// its own goroutine. Failures are returned rather than fatal: no peers
-// listener means no firewall mutations, which already fails closed in the way
-// that matters, and taking the LAN landing page down over a mesh
-// misconfiguration would turn a bind mistake into a full outage.
-func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
+// startMeshServer validates configuration and starts the mesh listener in its
+// own goroutine. Failures are returned rather than fatal: no mesh listener
+// means no firewall mutations, which already fails closed in the way that
+// matters, and taking the LAN status page down over a mesh misconfiguration
+// would turn a bind mistake into a full outage.
+//
+// The mesh serves the status routes as well as the peers routes, so the
+// landing config and templates are threaded through here too.
+func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService) error {
 	validAddr, err := meshListenAddr(meshAddr)
 	if err != nil {
 		return fmt.Errorf("invalid ROUTER_LISTEN_MESH %q: %w", meshAddr, err)
@@ -441,8 +563,7 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string) error {
 		peers.neighbours = readNeighbours
 		peers.lowTrust = lowTrustMembership
 	}
-	handler := peers.mux()
-	go serveMeshWithRetry(validAddr, handler)
+	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, peers))
 	return nil
 }
 
@@ -514,7 +635,9 @@ func main() {
 	asnPath := os.Getenv("ROUTER_IP2ASN_FILE")
 	lanCIDR := os.Getenv("ROUTER_LAN_CIDR")
 
-	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl)}
+	uplink := startUplink(staticRoot, config.PPPInterface)
+
+	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink)}
 
 	lanErrs := make(chan error, 1)
 	go func() {
@@ -526,7 +649,7 @@ func main() {
 	// without one behaves exactly as it did before this feature. A mesh
 	// startup failure is logged, never fatal: see startMeshServer.
 	if meshAddr != "" && lanCIDR != "" {
-		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot); err != nil {
+		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink); err != nil {
 			log.Printf("peers page disabled: %v", err)
 		}
 	}

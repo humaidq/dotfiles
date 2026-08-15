@@ -77,6 +77,77 @@
       .footer-line + .footer-line {
         margin-top: 0.4rem;
       }
+
+      /* Uplink health band. First thing on the page because it answers the
+         question the page is usually opened to answer. */
+      .uplink {
+        margin: 0 0 1.25rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #bdbdbd;
+        border-left-width: 5px;
+        background: #fafafa;
+      }
+
+      .uplink-ok { border-left-color: #2e7d32; }
+      .uplink-degraded { border-left-color: #ef6c00; }
+      .uplink-down { border-left-color: #c62828; }
+      .uplink-unknown { border-left-color: #757575; }
+
+      .uplink-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.5rem 1rem;
+      }
+
+      .uplink-state {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 0.85rem;
+      }
+
+      .uplink-ok .uplink-state { color: #2e7d32; }
+      .uplink-degraded .uplink-state { color: #ef6c00; }
+      .uplink-down .uplink-state { color: #c62828; }
+      .uplink-unknown .uplink-state { color: #555; }
+
+      .uplink-figures {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 1.25rem;
+        margin: 0.5rem 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.95rem;
+      }
+
+      .uplink-figures b {
+        font-weight: 400;
+        color: #444;
+      }
+
+      .uplink-figures span {
+        font-family: monospace;
+      }
+
+      .spark {
+        display: block;
+        margin-top: 0.6rem;
+        width: 100%;
+        height: 28px;
+      }
+
+      .spark-line {
+        fill: none;
+        stroke: #1565c0;
+        stroke-width: 1.2;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .spark-loss {
+        fill: #c62828;
+      }
     </style>
   </head>
   <body>
@@ -85,6 +156,27 @@
       <p class="muted">
         This router is remotely managed.
       </p>
+
+      {{ if .ShowPeers }}
+      <p><a href="/peers">connected devices and their peers</a></p>
+      {{ end }}
+
+      {{ with .Uplink }}
+      <section class="uplink uplink-{{ .State }}" aria-labelledby="uplink-band">
+        <div class="uplink-head">
+          <span class="uplink-state" id="uplink-band">Uplink: {{ .StateText }}</span>
+          <a href="/uplink">history and events</a>
+        </div>
+        <ul class="uplink-figures">
+          <li><b>Latency</b> <span>{{ .Latency }}</span></li>
+          <li><b>Jitter</b> <span>{{ .Jitter }}</span></li>
+          <li><b>Loss 24h</b> <span>{{ .Loss }}</span></li>
+          <li><b>Transit</b> <span>{{ .Transit }}</span></li>
+          <li><b>Session drops</b> <span>{{ .Flaps }}</span></li>
+        </ul>
+        {{ .Sparkline }}
+      </section>
+      {{ end }}
 
       <section class="section" aria-labelledby="wan-status">
         <h2 id="wan-status">WAN / PPP Status</h2>

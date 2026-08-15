@@ -277,6 +277,120 @@ in
         description = "Download speed from WAN.";
       };
     };
+    # Continuous measurement of what the uplink is actually delivering, as
+    # opposed to how much of it is being used. node_exporter answers the
+    # second question and cannot answer the first, which is the one that gets
+    # asked when a call breaks up while the throughput graphs look idle.
+    #
+    # The prober lives in router-web (see web/uplink.go) and keeps its own
+    # SQLite history on the router, because the retention this needs (a
+    # quarter) is longer than Prometheus keeps and the history has to be
+    # readable from the LAN during the outage that produced it. The same
+    # figures are exported at /metrics for Grafana; the database is the long
+    # memory, not a replacement for the dashboard.
+    uplink = {
+      enable = lib.mkEnableOption "uplink quality probing on the status page";
+      anchors = lib.mkOption {
+        type = lib.types.listOf (
+          lib.types.submodule {
+            options = {
+              name = lib.mkOption {
+                type = lib.types.strMatching "[a-zA-Z0-9_-]+";
+                description = ''
+                  Label for this anchor. Appears as a Prometheus label and as
+                  the row heading on the page, so it wants to be short and
+                  stable — renaming one starts a new series and orphans the
+                  old history under the previous name.
+                '';
+              };
+              address = lib.mkOption {
+                type = lib.types.str;
+                description = "IPv4 address to probe. An address, never a name: a name that later resolves elsewhere silently changes what is being measured.";
+              };
+              role = lib.mkOption {
+                type = lib.types.enum [
+                  "core"
+                  "transit"
+                ];
+                description = ''
+                  What this anchor is evidence about.
+
+                  "core" is in-country and measures the ISP's own network. On
+                  this ISP the public resolvers answer from anycast nodes
+                  inside the country at around 5 ms, which makes them core
+                  anchors whatever their operator's headquarters is.
+
+                  "transit" is a unicast host abroad and is the only role that
+                  sees international peering, which is the part that actually
+                  degrades here. It has to be unicast: another anycast address
+                  would be answered by a nearer node and quietly become a
+                  second core anchor measuring the same 5 ms.
+                '';
+              };
+              pairVoice = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+                description = ''
+                  Also probe this address a second time with DSCP EF, so the
+                  packets land in CAKE's Voice tin instead of best effort.
+
+                  Not a better measurement — a second one. Read alone the Voice
+                  row is low by construction, because that tin is small and
+                  protected and almost nothing else uses it. The reading is the
+                  gap against its best-effort twin:
+
+                  - both clean: the line is fine.
+                  - best effort degraded, Voice flat: prioritisation is doing
+                    its job, bulk traffic is contending, calls are unaffected.
+                  - both degraded: the queue is upstream of this router, where
+                    the shaper cannot reach it. That is the case worth taking
+                    to the ISP, and nothing else here can distinguish it.
+
+                  An upload differential only. The tin is chosen by the DSCP
+                  written on egress; replies come back however the ISP sent
+                  them, and this router bleaches WAN DSCP on arrival anyway.
+
+                  Costs one extra probe per second and one extra row on the
+                  page, so it is off unless a specific question needs it.
+                '';
+              };
+            };
+          }
+        );
+        default = [ ];
+        example = lib.literalExpression ''
+          [
+            { name = "cloudflare"; address = "1.1.1.1"; role = "core"; }
+            { name = "lighthouse"; address = "203.0.113.10"; role = "transit"; }
+          ]
+        '';
+        description = ''
+          Fixed targets probed once a second each.
+
+          The PPP peer is always probed in addition to these and is not listed
+          here: its address is discovered from the interface and rediscovered
+          on every reconnect, since the access node is not obliged to hand back
+          the same one. It is the liveness check and nothing more — its latency
+          and jitter measure that node's control plane rather than the line,
+          which is visible in the fact that it answers with an order of
+          magnitude more jitter than targets reached *through* it.
+        '';
+      };
+      retentionDays = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 90;
+        description = ''
+          How long per-minute history is kept. Roughly 4 KB per target per day,
+          so the default costs a few tens of megabytes for a handful of
+          anchors.
+
+          Events — session drops, address changes, sustained degradation — are
+          never expired regardless of this, because a flap from four months ago
+          is exactly the kind of thing worth citing and the whole table is
+          kilobytes.
+        '';
+      };
+    };
     qos = {
       highPriorityPorts = lib.mkOption {
         type = with lib.types; listOf port;

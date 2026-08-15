@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Uplink Quality</title>
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f5f5;
+        color: #111;
+      }
+
+      body {
+        margin: 0;
+        background: #f5f5f5;
+      }
+
+      main {
+        width: min(64rem, calc(100% - 2rem));
+        margin: 2rem auto;
+        padding: 1.5rem;
+        border: 1px solid #bdbdbd;
+        background: #fff;
+      }
+
+      h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.75rem;
+      }
+
+      h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1.1rem;
+      }
+
+      p {
+        margin: 0.5rem 0;
+        line-height: 1.5;
+      }
+
+      .muted {
+        color: #444;
+      }
+
+      .section {
+        margin-top: 1.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid #d6d6d6;
+      }
+
+      .uplink {
+        margin: 1rem 0 0;
+        padding: 0.75rem 1rem;
+        border: 1px solid #bdbdbd;
+        border-left-width: 5px;
+        background: #fafafa;
+      }
+
+      .uplink-ok { border-left-color: #2e7d32; }
+      .uplink-degraded { border-left-color: #ef6c00; }
+      .uplink-down { border-left-color: #c62828; }
+      .uplink-unknown { border-left-color: #757575; }
+
+      .uplink-state {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 0.85rem;
+      }
+
+      .uplink-ok .uplink-state { color: #2e7d32; }
+      .uplink-degraded .uplink-state { color: #ef6c00; }
+      .uplink-down .uplink-state { color: #c62828; }
+      .uplink-unknown .uplink-state { color: #555; }
+
+      .uplink-figures {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem 1.25rem;
+        margin: 0.5rem 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .uplink-figures b {
+        font-weight: 400;
+        color: #444;
+      }
+
+      .uplink-figures span {
+        font-family: monospace;
+      }
+
+      .target {
+        margin-top: 1.25rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid #d6d6d6;
+      }
+
+      .target-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.4rem 0.9rem;
+      }
+
+      .target-name {
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+
+      .role {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.1rem 0.45rem;
+        border: 1px solid #bdbdbd;
+        background: #f0f0f0;
+        color: #444;
+      }
+
+      /* The Voice twin is tinted so the two rows of a pair read as a pair
+         rather than as two unrelated targets that happen to share an address. */
+      .tin-voice {
+        border-color: #7b5ea7;
+        background: #f3eefa;
+        color: #4a367a;
+      }
+
+      .addr {
+        font-family: monospace;
+        color: #444;
+      }
+
+      .note {
+        margin: 0.4rem 0 0;
+        font-size: 0.9rem;
+        color: #555;
+      }
+
+      .figures {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        gap: 0.5rem 1rem;
+        margin: 0.8rem 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .figures b {
+        display: block;
+        font-weight: 400;
+        font-size: 0.8rem;
+        color: #555;
+      }
+
+      .figures span {
+        font-family: monospace;
+        font-size: 1.05rem;
+      }
+
+      .live-ok { color: #2e7d32; }
+      .live-bad { color: #c62828; }
+
+      .spark {
+        display: block;
+        margin-top: 0.8rem;
+        width: 100%;
+        height: 48px;
+        background: #fafafa;
+        border: 1px solid #e0e0e0;
+      }
+
+      .spark-line {
+        fill: none;
+        stroke: #1565c0;
+        stroke-width: 1.2;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .spark-loss {
+        fill: #c62828;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      th, td {
+        text-align: left;
+        padding: 0.35rem 0.6rem;
+        border-bottom: 1px solid #e6e6e6;
+      }
+
+      th {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #555;
+      }
+
+      td.num {
+        font-family: monospace;
+      }
+
+      .ongoing {
+        color: #c62828;
+        font-weight: 700;
+      }
+
+      .scroll {
+        max-height: 26rem;
+        overflow-y: auto;
+      }
+
+      footer {
+        margin-top: 1.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #d6d6d6;
+        color: #444;
+        font-size: 0.9rem;
+      }
+
+      code {
+        background: #f0f0f0;
+        padding: 0.1rem 0.3rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Uplink Quality</h1>
+      <p class="muted"><a href="/">back to gateway status</a></p>
+
+      {{ with .Band }}
+      <section class="uplink uplink-{{ .State }}">
+        <span class="uplink-state">Uplink: {{ .StateText }}</span>
+        <ul class="uplink-figures">
+          <li><b>Latency</b> <span>{{ .Latency }}</span></li>
+          <li><b>Jitter</b> <span>{{ .Jitter }}</span></li>
+          <li><b>Loss 24h</b> <span>{{ .Loss }}</span></li>
+          <li><b>Transit</b> <span>{{ .Transit }}</span></li>
+          <li><b>Session drops</b> <span>{{ .Flaps }}</span></li>
+        </ul>
+      </section>
+      {{ end }}
+
+      <section class="section">
+        <h2>Targets, last 24 hours</h2>
+        <p class="muted">
+          One probe per second to each target. Latency figures are the median
+          of the per-minute percentiles; loss is counted over every probe sent.
+        </p>
+
+        {{ range .Targets }}
+        <article class="target">
+          <div class="target-head">
+            <span class="target-name">{{ .Name }}</span>
+            <span class="role">{{ .Role }}</span>
+            <span class="role tin-{{ .Tin }}">{{ .Tin }} tin</span>
+            <span class="addr">{{ .Address }}</span>
+            <span class="{{ if .LiveOK }}live-ok{{ else }}live-bad{{ end }}">now: {{ .Live }}</span>
+          </div>
+          <p class="note">{{ .Note }}</p>
+          <ul class="figures">
+            <li><b>median</b> <span>{{ .P50 }}</span></li>
+            <li><b>p95</b> <span>{{ .P95 }}</span></li>
+            <li><b>worst</b> <span>{{ .Max }}</span></li>
+            <li><b>jitter</b> <span>{{ .Jitter }}</span></li>
+            <li><b>baseline (7d)</b> <span>{{ .Baseline }}</span></li>
+            <li><b>loss</b> <span>{{ .Loss }}</span></li>
+            <li><b>probes lost</b> <span>{{ .Lost }} / {{ .Sent }}</span></li>
+            <li><b>p95 when idle</b> <span>{{ .Idle }}</span></li>
+            <li><b>p95 under load</b> <span>{{ .Loaded }}</span></li>
+            <li><b>busiest minute</b> <span>{{ .PeakDown }}</span></li>
+          </ul>
+          {{ .Sparkline }}
+        </article>
+        {{ end }}
+
+        <p class="muted">
+          <b>p95 when idle</b> against <b>p95 under load</b> is the bufferbloat
+          reading: they are the same percentile over the minutes the line was
+          nearly empty and the minutes it was nearly full. A large gap is a
+          local queueing problem to fix in the shaper, not something to raise
+          with the ISP.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>Events</h2>
+        <p class="muted">
+          Session drops, address changes, and sustained degradation. Events are
+          never expired, so this list outlives the {{ .RetentionDays }} days of
+          per-minute history below it.
+        </p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Started</th>
+                <th>Lasted</th>
+                <th>Kind</th>
+                <th>Target</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{ range .Events }}
+              <tr>
+                <td class="num">{{ .Started }}</td>
+                <td class="num {{ if .Ongoing }}ongoing{{ end }}">{{ .Duration }}</td>
+                <td>{{ .Kind }}</td>
+                <td class="num">{{ .Target }}</td>
+                <td>{{ .Detail }}</td>
+              </tr>
+              {{ else }}
+              <tr><td colspan="5" class="muted">Nothing recorded.</td></tr>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Daily summary</h2>
+        <p class="muted">
+          Up to {{ .RetentionDays }} days. The median and p95 columns are
+          averages of the per-minute percentiles, not true daily percentiles —
+          the raw samples are not kept.
+        </p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Target</th>
+                <th>Loss</th>
+                <th>Median</th>
+                <th>p95</th>
+                <th>Worst</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{ range .Days }}
+              <tr>
+                <td class="num">{{ .Day }}</td>
+                <td>{{ .Target }}</td>
+                <td class="num">{{ .Loss }}</td>
+                <td class="num">{{ .P50 }}</td>
+                <td class="num">{{ .P95 }}</td>
+                <td class="num">{{ .Max }}</td>
+              </tr>
+              {{ else }}
+              <tr><td colspan="6" class="muted">Nothing recorded.</td></tr>
+              {{ end }}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          {{ .Hostname }} — generated {{ .Generated }}. The same figures are
+          exported at <code>/metrics</code>.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

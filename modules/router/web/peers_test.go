@@ -270,7 +270,7 @@ func TestLANMuxHasNoPeersRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	lan := landingMux(pageData{}, tmpl)
+	lan := landingMux(pageData{}, tmpl, nil)
 
 	for _, path := range []string{"/peers/192.168.0.10", "/peers/192.168.0.10/throttle"} {
 		rec := httptest.NewRecorder()
@@ -311,7 +311,7 @@ func TestMeshListenAddrRejectsMalformed(t *testing.T) {
 
 func TestIndexListsLeasesWithLinks(t *testing.T) {
 	rec := httptest.NewRecorder()
-	testPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	testPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rec.Code)
@@ -329,7 +329,7 @@ func TestIndexReportsUnreadableLeaseFile(t *testing.T) {
 	server := testPeersServer(t)
 	server.leasesPath = filepath.Join(t.TempDir(), "absent")
 	rec := httptest.NewRecorder()
-	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 — a missing lease file must not fail the page", rec.Code)
@@ -353,7 +353,7 @@ func TestLANMuxHasNoIndexRoute(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	landingMux(pageData{}, tmpl, nil).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("LAN mux served a peers path with %d", rec.Code)
 	}
@@ -438,7 +438,7 @@ func TestIndexListsPrioritisedConversations(t *testing.T) {
 		`{{range .Priority}}{{.Device}}/{{.DeviceName}}>{{.Peer}}:{{.Traffic.Label}},{{.Bytes}},{{.Up}},{{.Down}};{{end}}|{{.PriorityError}}`))
 
 	rec := httptest.NewRecorder()
-	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
 	body := rec.Body.String()
 
 	// The device's lease name is carried through, so the row is readable
@@ -462,7 +462,7 @@ func TestIndexSurvivesUnreadableConntrack(t *testing.T) {
 	server.conntrack = func(context.Context) ([]byte, error) { return nil, errFake }
 
 	rec := httptest.NewRecorder()
-	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 — the device list must survive a dead connection table", rec.Code)
 	}
@@ -488,7 +488,7 @@ func TestIndexWithoutCallMarkCollectsNothing(t *testing.T) {
 		return []byte(markedFixture), nil
 	}
 	rec := httptest.NewRecorder()
-	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
 	if called {
 		t.Fatal("conntrack was read even though no priority mark is configured")
 	}
@@ -1295,7 +1295,7 @@ func TestLANMuxHasNoCaptureRoutes(t *testing.T) {
 	// fake. Do not "simplify" this back to a status check.
 	config := loadConfig()
 	tmpl := template.Must(template.New("index").Parse("landing"))
-	lan := landingMux(config, tmpl)
+	lan := landingMux(config, tmpl, nil)
 	for _, tc := range []struct {
 		method string
 		path   string

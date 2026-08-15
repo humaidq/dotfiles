@@ -137,6 +137,59 @@
       # what this router actually owns.
       lanAddress = "192.168.50.1/24";
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      # Same anchor set as bongo, which is the point: two sites on the same ISP
+      # probing identical targets means a degradation seen at one and not the
+      # other is local to that site, and one seen at both is the ISP. See the
+      # comments on bongo for what each role is evidence about.
+      uplink = {
+        enable = true;
+        anchors = [
+          {
+            name = "cloudflare";
+            address = "1.1.1.1";
+            role = "core";
+            # Paired with a Voice-marked twin. One anchor is enough for the
+            # differential — it asks whether the queue that is building is on
+            # this side of the line or the far side, and that answer does not
+            # differ per anchor. The steadiest core anchor makes the cleanest
+            # comparison.
+            pairVoice = true;
+          }
+          {
+            name = "google";
+            address = "8.8.8.8";
+            role = "core";
+          }
+          # Westward, eastward and the US, per the rationale on bongo. The two
+          # sites must probe the same addresses or the cross-site comparison
+          # this whole set exists for stops working, so these are copied rather
+          # than chosen again.
+          {
+            name = "frankfurt";
+            address = "108.61.210.117"; # fra-de-ping.vultr.com
+            role = "transit";
+          }
+          {
+            name = "bangalore";
+            address = "139.84.130.100"; # blr-in-ping.vultr.com
+            role = "transit";
+          }
+          {
+            name = "newjersey";
+            address = "108.61.149.182"; # nj-us-ping.vultr.com
+            role = "transit";
+          }
+          # Kept alongside the three above because it is the one far end that
+          # can be logged into: when an anchor degrades, the first question is
+          # whether the far host is simply having a bad day, and this is the
+          # only one where that can be answered rather than assumed.
+          {
+            name = "lighthouse";
+            address = "139.84.173.48";
+            role = "transit";
+          }
+        ];
+      };
       # Dropped outright on odd days of the month, shaped on even ones. Unlike
       # bongo this site is not willing to refuse imo every day, and a permanent
       # throttle does not hold either: once a call has gone peer to peer the

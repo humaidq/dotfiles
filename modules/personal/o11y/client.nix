@@ -10,6 +10,31 @@ in
       default = "oreamnos";
       description = "The hostname of the observability server";
     };
+    extraConfig = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      example = ''
+        prometheus.scrape "example" {
+          targets    = [{ __address__ = "127.0.0.1:9100", instance = "host" }]
+          forward_to = [prometheus.remote_write.default.receiver]
+        }
+      '';
+      description = ''
+        Alloy configuration appended verbatim to the generated client config.
+
+        For collectors that cannot go through the textfile directory. That
+        directory is 0755 root root and is written by root timers, so a service
+        running under DynamicUser — router-web, which serves the uplink prober's
+        /metrics — has no way to publish through it and has to be scraped over
+        HTTP instead.
+
+        Appended into the same file rather than dropped beside it because Alloy
+        reads one config, and everything here shares its component namespace:
+        that is what lets an added scrape forward to the
+        prometheus.remote_write.default declared above without redeclaring the
+        endpoint.
+      '';
+    };
   };
   config = lib.mkIf cfg.enable {
     services.alloy.enable = true;
@@ -116,6 +141,8 @@ in
               url = "http://${cfg.serverHost}:9001/api/v1/write"
             }
           }
+
+          ${cfg.extraConfig}
         '';
         mode = "0644";
       };

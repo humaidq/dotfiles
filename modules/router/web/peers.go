@@ -141,11 +141,12 @@ func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *templat
 // failing it. The peers pages remain reachable by address, so a broken index is
 // an inconvenience and not an outage.
 func (s *peersServer) handleIndex(w http.ResponseWriter, r *http.Request) {
-	// Registered as "GET /{$}", which matches the root and nothing else, so a
-	// request for any other path never reaches this handler. The check is kept
-	// as a guard in case that pattern is ever loosened to "GET /", which would
-	// silently make this the catch-all for the whole mux.
-	if r.URL.Path != "/" {
+	// Registered as "GET /peers" and "GET /peers/{$}", which match those two
+	// paths and nothing else, so a request for any other path never reaches
+	// this handler. The check is kept as a guard in case either pattern is
+	// ever loosened to a prefix match, which would silently make this the
+	// catch-all for everything under /peers.
+	if r.URL.Path != "/peers" && r.URL.Path != "/peers/" {
 		http.NotFound(w, r)
 		return
 	}
@@ -254,10 +255,24 @@ type peerAction struct {
 
 func addPeer(peer, _ netip.Addr) []string { return []string{"add", peer.String()} }
 
+// mux builds a mux carrying only the peers routes. Used by the tests; the mesh
+// listener composes them onto the status routes through registerRoutes.
 func (s *peersServer) mux() *http.ServeMux {
 	mux := http.NewServeMux()
+	s.registerRoutes(mux)
+	return mux
+}
+
+// registerRoutes adds every route that can see or change a device.
+//
+// The list lives under /peers rather than at the root because the root is now
+// the status page on both listeners. Both spellings are registered: a trailing
+// slash is what a browser produces after following a relative link, and a
+// redirect between them would be a third behaviour to remember.
+func (s *peersServer) registerRoutes(mux *http.ServeMux) {
 	if s.indexTmpl != nil {
-		mux.HandleFunc("GET /{$}", s.handleIndex)
+		mux.HandleFunc("GET /peers", s.handleIndex)
+		mux.HandleFunc("GET /peers/{$}", s.handleIndex)
 	}
 	mux.HandleFunc("GET /peers/{device}", s.handlePage)
 	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction(peerAction{
@@ -317,7 +332,6 @@ func (s *peersServer) mux() *http.ServeMux {
 		mux.HandleFunc("POST /peers/{device}/capture/discard", s.handleCaptureDiscard)
 		mux.HandleFunc("GET /peers/{device}/capture.pcap", s.handleCaptureDownload)
 	}
-	return mux
 }
 
 // device parses and validates the {device} path value against the LAN prefix.

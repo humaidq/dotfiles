@@ -20,9 +20,64 @@ let
       matches = map (line: builtins.match "[[:space:]]*([0-9]+)[[:space:]]*" line) stripped;
     in
     map lib.head (lib.filter (match: match != null) matches);
+
+  # name|address|role|pair quads, where pair is "voice" or empty. Flattened
+  # into one variable rather than one per anchor because the count is not known
+  # at build time, and parsed back with a parser that rejects anything
+  # malformed outright — see parseAnchors in web/uplink.go for why a skipped
+  # entry would be the worse failure.
+  anchorSpec = lib.concatMapStringsSep "," (
+    anchor:
+    "${anchor.name}|${anchor.address}|${anchor.role}|${lib.optionalString anchor.pairVoice "voice"}"
+  ) cfg.uplink.anchors;
+
+  lanHost = lib.head (lib.splitString "/" cfg.lanAddress);
 in
 {
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.uplink.enable -> cfg.uplink.anchors != [ ];
+        message = ''
+          sifr.router.uplink.enable is on with no anchors configured. The PPP
+          peer alone cannot measure line quality: it answers from the access
+          node's control plane, so its latency and jitter track that node's CPU
+          rather than the uplink. Configure at least one "core" anchor.
+        '';
+      }
+      {
+        assertion =
+          cfg.uplink.enable
+          ->
+            lib.length (lib.unique (map (anchor: anchor.name) cfg.uplink.anchors))
+            == lib.length cfg.uplink.anchors;
+        message = "sifr.router.uplink.anchors has duplicate names; each anchor is a separate metric series and a separate row in the history.";
+      }
+    ];
+
+    # The prober cannot publish through the node_exporter textfile directory
+    # the way qos-metrics.nix and host-metrics.nix do: that directory is 0755
+    # root root and router-web runs under DynamicUser. It serves /metrics on
+    # the LAN listener instead and Alloy scrapes it here.
+    #
+    # instance is pinned to the hostname to match what Alloy's own exporter
+    # components label themselves with. Without it this scrape would arrive
+    # labelled with the LAN address and the dashboard's existing
+    # instance="$node" filter would exclude every panel built on it.
+    sifr.personal.o11y.client.extraConfig =
+      lib.mkIf (cfg.uplink.enable && config.sifr.personal.o11y.client.enable)
+        ''
+          prometheus.scrape "uplink" {
+            targets = [{
+              __address__ = "${lanHost}:80",
+              instance    = "${config.networking.hostName}",
+            }]
+            metrics_path    = "/metrics"
+            scrape_interval = "30s"
+            forward_to      = [prometheus.remote_write.default.receiver]
+          }
+        '';
+
     systemd.services.router-web = {
       description = "Router landing page";
       # The mesh address (cfg.meshAddress) lives on sifr0, assigned
@@ -96,7 +151,17 @@ in
         # and the `lowtrust` tool, so the page cannot offer an action the
         # firewall does not implement — on a router without the pool the two
         # routes are never registered and the block never renders.
-        ++ lib.optional cfg.lowTrust.enable "ROUTER_LOWTRUST=1";
+        ++ lib.optional cfg.lowTrust.enable "ROUTER_LOWTRUST=1"
+        # Presence of the database path is what turns probing on: unset means
+        # no raw socket, no goroutines, no file, and neither /uplink nor
+        # /metrics registered. Under the same StateDirectory as the captures,
+        # so the history survives a restart and a redeploy — which is most of
+        # the point of keeping it on disk at all.
+        ++ lib.optionals cfg.uplink.enable [
+          "ROUTER_UPLINK_DB=%S/router-web/uplink.db"
+          "ROUTER_UPLINK_ANCHORS=${anchorSpec}"
+          "ROUTER_UPLINK_RETENTION_DAYS=${toString cfg.uplink.retentionDays}"
+        ];
         ExecStart = "${routerWeb}/bin/router-web --root ${routerWeb}/share/router-web --addr :80";
         Restart = "on-failure";
         RestartSec = "5s";
