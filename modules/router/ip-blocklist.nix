@@ -1019,9 +1019,26 @@ in
       wants = [ "nftables.service" ];
       partOf = [ "nftables.service" ];
 
+      # The script below exits 1 on a missing or malformed file, and that is
+      # the intended behaviour — but without a retry it is permanent. The
+      # realistic cause is ordering at boot: this reads a sops secret, and a
+      # unit that runs before sops-install-secrets has decrypted it sees no
+      # file, fails, and then sits failed with RemainAfterExit keeping it that
+      # way. An empty pool is a fail-open for every low-trust rule, so waiting
+      # for a human to notice is the wrong outcome for a race that resolves
+      # itself in seconds.
+      #
+      # Malformed content, by contrast, never fixes itself — hence the same
+      # bounded start limit as the STUN unit. It retries through the race and
+      # then stays failed and visible rather than looping on a bad file.
+      startLimitIntervalSec = 600;
+      startLimitBurst = 6;
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = 30;
       };
 
       path = with pkgs; [
@@ -1114,9 +1131,33 @@ in
       # The fix is the one imo-policy uses: hang off nft-blocklists-local, which
       # is RemainAfterExit true and partOf nftables.service. It receives the
       # propagated restart and pulls this oneshot along with it.
+      # Restart=on-failure because the thing this unit depends on — DNS — is
+      # the thing most likely to be briefly unavailable, and the timer below
+      # is an HOUR apart. Without a retry, a resolver that is down for the ten
+      # seconds this unit happens to run leaves the sets stale until the next
+      # elapse, which is the longest-lived hole in the whole low-trust setup.
+      #
+      # Valid on a oneshot: systemd rejects only Restart=always and
+      # Restart=on-success for Type=oneshot, precisely because a oneshot exits
+      # cleanly by design. on-failure is the supported case.
+      #
+      # THE START LIMIT IS THE POINT OF THE PAIR, not boilerplate. Left
+      # unbounded this would retry every 30s forever if the failure were
+      # permanent rather than transient — someone adding stun.l.google.com to
+      # custom-blocklist.txt would do it, since then no name resolves and the
+      # check at the end of the script fails every time. Six tries in ten
+      # minutes covers any plausible resolver blip, and then the unit stays
+      # failed and VISIBLE in systemctl instead of spinning. The hourly timer
+      # still runs after the window rolls, so a longer outage recovers on its
+      # own; it just stops pretending a permanent fault is a transient one.
+      startLimitIntervalSec = 600;
+      startLimitBurst = 6;
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = false;
+        Restart = "on-failure";
+        RestartSec = 30;
       };
 
       path = with pkgs; [
@@ -1132,6 +1173,7 @@ in
 
         v4=""
         v6=""
+        anyresolved=""
         while IFS= read -r line || [ -n "$line" ]; do
           name=''${line%%#*}
           name=$(printf '%s' "$name" | tr -d '[:space:]')
@@ -1190,6 +1232,7 @@ in
           done
 
           [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name (sinkholed here, or genuinely unresolvable)" >&2
+          [ -n "$got" ] && anyresolved=yes
         done < ${./custom-lowtrust-stun-hosts.txt}
 
         # Flush is conditional per family, not unconditional the way the MAC
@@ -1224,6 +1267,32 @@ in
           printf 'flush set inet router-blocklists lowtrust_stun6\nadd element inet router-blocklists lowtrust_stun6 { %s }\n' "''${v6%, }" | nft -f -
         else
           echo "nft-lowtrust-stun: no IPv6 addresses resolved this run, keeping previous lowtrust_stun6 contents" >&2
+        fi
+
+        # NOTHING RESOLVED AT ALL IS A FAILURE, and it has to be, because the
+        # guards above are deliberately quiet: they keep the previous contents
+        # and exit 0, so a resolver outage otherwise leaves the sets to go stale
+        # for a full hour with nothing but two log lines to show for it.
+        # Exiting non-zero is what hands the problem to Restart=on-failure on
+        # the unit, which retries in 30s instead of waiting for the timer.
+        #
+        # THE TEST IS "no name resolved", NOT "a family is empty", and the
+        # difference is the whole correctness of this check:
+        #
+        #   * Two of the three names in custom-lowtrust-stun-hosts.txt are
+        #     sinkholed by blocky on this router BY DESIGN, so "could not
+        #     resolve" for them is the healthy case and appears every run.
+        #     stun.l.google.com is not sinkholed, so a working resolver always
+        #     yields at least one address.
+        #   * An empty v6 with a non-empty v4 is ordinary — the comment above
+        #     notes a v6-less run is common here. Failing on that would retry
+        #     forever on a network that simply has no IPv6.
+        #
+        # So this fires only when every lookup came back empty, which on this
+        # router means the resolver is down rather than the names being blocked.
+        if [ -z "$anyresolved" ]; then
+          echo "nft-lowtrust-stun: nothing resolved for any name — resolver is probably down; failing so systemd retries" >&2
+          exit 1
         fi
       '';
     };
@@ -1326,9 +1395,24 @@ in
       ];
       wants = [ "network-online.target" ];
 
+      # Downloads over the WAN, so a transient failure — DNS, a dead upstream,
+      # a PPP session that has not come back yet — is the expected failure and
+      # not an exceptional one. Cheaper here than on the two units above,
+      # because this timer is 10 minutes rather than an hour and the previous
+      # ruleset stays loaded meanwhile, so the exposure is a stale list rather
+      # than an empty one. The retry just stops a blip costing a full cycle.
+      #
+      # Burst 3 and not 6: each attempt pulls several upstream lists, so a
+      # tight retry loop on a genuinely dead upstream is rude to it as well as
+      # pointless. Three tries a minute apart, then leave it to the timer.
+      startLimitIntervalSec = 600;
+      startLimitBurst = 3;
+
       serviceConfig = {
         Type = "oneshot";
         StateDirectory = "nft-blocklists";
+        Restart = "on-failure";
+        RestartSec = 60;
       };
 
       path = [
