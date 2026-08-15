@@ -14,8 +14,11 @@ import (
 // page so an operator can see that an address is already handled rather than
 // acting on it twice, or wondering why a peer looks starved.
 const (
-	shapeNone      = ""
-	shapeIMO       = "imo"
+	shapeNone = ""
+	shapeIMO  = "imo"
+	// Hyphenated, not spaced: the template uses this string as both the badge
+	// label and a CSS class, and a space would silently become two classes.
+	shapeQuota     = "cdn-quota"
 	shapeThrottled = "throttled"
 	shapeBlocked   = "blocked"
 )
@@ -38,7 +41,19 @@ var shapingSets = []struct {
 	{"local_block4", shapeBlocked}, {"local_block6", shapeBlocked},
 }
 
-var shapeRank = map[string]int{shapeNone: 0, shapeIMO: 1, shapeThrottled: 2, shapeBlocked: 3}
+// The CDN quota sits below the throttle sets rather than above them because a
+// peer in throttle4 is shaped for every device unconditionally, which is the
+// broader statement about what is happening to it. Both end in the same tc
+// class; the ordering only decides which word the page uses when a peer is
+// somehow in scope for both.
+var shapeRank = map[string]int{
+	shapeNone: 0, shapeIMO: 1, shapeQuota: 2, shapeThrottled: 3, shapeBlocked: 4,
+}
+
+// The pair sets the CDN volume quota writes when it actually shapes a packet.
+// Unlike everything in shapingSets these are keyed on device AND peer, so they
+// cannot be answered by classify() and get their own lookup — see classifyPair.
+var quotaPairSets = []string{"cdn_throttled4", "cdn_throttled6"}
 
 // tempblock keeps its rules in a table of its own rather than in the sets
 // above, so the sweep over shapingSets cannot see it and a peer blocked from
@@ -119,12 +134,17 @@ func (i *shapeIndex) addTempblockRules(raw []byte) {
 type shapeIndex struct {
 	exact    map[netip.Addr]string
 	prefixes []shapePrefix
+	// Device-and-peer pairs the CDN quota is currently shaping. Exact keys
+	// only: these sets hold addresses the quota rules observed, never prefixes.
+	pairs map[addrPair]struct{}
 }
 
 type shapePrefix struct {
 	prefix netip.Prefix
 	class  string
 }
+
+type addrPair struct{ device, peer netip.Addr }
 
 func (i *shapeIndex) classify(addr netip.Addr) string {
 	if i == nil {
@@ -138,6 +158,79 @@ func (i *shapeIndex) classify(addr netip.Addr) string {
 		}
 	}
 	return best
+}
+
+// classifyPair reports whether the CDN volume quota is currently shaping this
+// device's traffic to this peer.
+//
+// Separate from classify because the answer is not a property of the peer. An
+// Akamai edge is metered for a pool device that has blown its budget and
+// untouched for every other device on the LAN at the same moment, so a lookup
+// on the peer alone would either badge it for everyone or for no one.
+func (i *shapeIndex) classifyPair(device, peer netip.Addr) string {
+	if i == nil {
+		return shapeNone
+	}
+	if _, ok := i.pairs[addrPair{device.Unmap(), peer.Unmap()}]; ok {
+		return shapeQuota
+	}
+	return shapeNone
+}
+
+// addPairs folds one `nft -j list set` document for a concatenated set into the
+// pair index. Elements arrive as {"elem": {"val": {"concat": [device, peer]},
+// "expires": N}} — the elem wrapper is what a set with a timeout emits, and the
+// bare {"concat": [...]} form is accepted too so the parser does not depend on
+// the set keeping its timeout.
+func (i *shapeIndex) addPairs(raw []byte) {
+	var doc struct {
+		Nftables []struct {
+			Set *struct {
+				// Raw, then decoded one element at a time, for the reason add()
+				// does the same: a set holding one element this parser does not
+				// recognise would otherwise fail to decode as a whole and take
+				// every good pair beside it with it.
+				Elem []json.RawMessage `json:"elem"`
+			} `json:"set"`
+		} `json:"nftables"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return
+	}
+	for _, obj := range doc.Nftables {
+		if obj.Set == nil {
+			continue
+		}
+		for _, elem := range obj.Set.Elem {
+			var wrapper struct {
+				Concat []string `json:"concat"`
+				Elem   *struct {
+					Val struct {
+						Concat []string `json:"concat"`
+					} `json:"val"`
+				} `json:"elem"`
+			}
+			if err := json.Unmarshal(elem, &wrapper); err != nil {
+				continue
+			}
+			concat := wrapper.Concat
+			if wrapper.Elem != nil {
+				concat = wrapper.Elem.Val.Concat
+			}
+			if len(concat) != 2 {
+				continue
+			}
+			device, err := netip.ParseAddr(concat[0])
+			if err != nil {
+				continue
+			}
+			peer, err := netip.ParseAddr(concat[1])
+			if err != nil {
+				continue
+			}
+			i.pairs[addrPair{device.Unmap(), peer.Unmap()}] = struct{}{}
+		}
+	}
 }
 
 func (i *shapeIndex) add(class string, elems []json.RawMessage) {
@@ -204,7 +297,15 @@ func itoa(n int) string {
 
 // parseShapingSets builds an index from one `nft -j list set` document per set.
 func parseShapingSets(docs map[string][]byte) *shapeIndex {
-	index := &shapeIndex{exact: map[netip.Addr]string{}}
+	index := &shapeIndex{
+		exact: map[netip.Addr]string{},
+		pairs: map[addrPair]struct{}{},
+	}
+	for _, name := range quotaPairSets {
+		if raw, ok := docs[name]; ok {
+			index.addPairs(raw)
+		}
+	}
 	for _, set := range shapingSets {
 		raw, ok := docs[set.name]
 		if !ok {
@@ -311,15 +412,22 @@ func (c *shapeCache) get(ctx context.Context) *shapeIndex {
 		return c.index
 	}
 	docs := map[string][]byte{}
+	names := make([]string, 0, len(shapingSets)+len(quotaPairSets))
 	for _, set := range shapingSets {
-		raw, err := c.read(ctx, set.name)
+		names = append(names, set.name)
+	}
+	// Absent whenever the CDN quota is off, which is the same "less to say"
+	// case as the imo sets below rather than a failure.
+	names = append(names, quotaPairSets...)
+	for _, name := range names {
+		raw, err := c.read(ctx, name)
 		if err != nil {
 			// A missing set is not an error worth failing the page for: the
 			// imo sets are absent when that tier is off, and the status column
 			// simply has less to say.
 			continue
 		}
-		docs[set.name] = raw
+		docs[name] = raw
 	}
 	c.index = parseShapingSets(docs)
 	if c.readTempblock != nil {

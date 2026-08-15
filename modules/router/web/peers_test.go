@@ -53,6 +53,10 @@ func testPeersServer(t *testing.T) *peersServer {
 	// whatever machine runs the suite.
 	server.neighbours = func(context.Context) ([]byte, error) { return nil, nil }
 	server.lowTrust = func(context.Context, string) string { return "" }
+	// Nil rather than the real table, which would read this machine's conntrack
+	// sysctls and make every last-seen assertion depend on how the host running
+	// the suite happens to be tuned. Tests that want the column set their own.
+	server.timeouts = nil
 	return server
 }
 
@@ -421,9 +425,10 @@ func TestRealTemplateRendersTrafficColumn(t *testing.T) {
 	if got, want := strings.Count(body, "<tr"), 3; got != want {
 		t.Fatalf("got %d rows (including the header), want %d", got, want)
 	}
+	const cellsPerRow = 10
 	for _, row := range strings.Split(body, "<tr")[1:] {
-		if got := strings.Count(row, "<td"); got != 0 && got != 9 {
-			t.Fatalf("row has %d cells, want 9:\n%s", got, row)
+		if got := strings.Count(row, "<td"); got != 0 && got != cellsPerRow {
+			t.Fatalf("row has %d cells, want %d:\n%s", got, cellsPerRow, row)
 		}
 	}
 }
@@ -1599,5 +1604,180 @@ func TestDevicePageShowsMACForNamelessLease(t *testing.T) {
 
 	if !strings.Contains(rec.Body.String(), "aa:bb:cc:dd:ee:02") {
 		t.Error("a nameless lease lost its MAC on the page")
+	}
+}
+
+// A capture where one flow to each peer is fresh and the other is days idle,
+// so the page has something to distinguish. 432000 is the stock established
+// timeout, which fakeTimeouts supplies below.
+const idleFixture = `ipv4     2 tcp      6 431999 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport=1 dport=443 packets=10 bytes=4000 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=1 packets=8 bytes=2600 [ASSURED] mark=0 use=1
+ipv4     2 tcp      6 200000 ESTABLISHED src=192.168.0.10 dst=203.0.113.20 sport=2 dport=443 packets=2 bytes=1000 src=203.0.113.20 dst=198.51.100.1 sport=443 dport=2 packets=2 bytes=1000 [ASSURED] mark=0 use=1
+`
+
+func idlePeerRows(t *testing.T) []peerRow {
+	t.Helper()
+	var captured peersPageData
+	server := testPeersServer(t)
+	server.conntrack = func(context.Context) ([]byte, error) {
+		return []byte(idleFixture), nil
+	}
+	server.timeouts = fakeTimeouts(
+		map[string]string{"nf_conntrack_tcp_timeout_established": "432000"}, nil)
+	server.tmpl = template.Must(template.New("peers.html").Funcs(template.FuncMap{
+		"capture": func(d peersPageData) string { captured = d; return "" },
+	}).Parse(`{{capture .}}`))
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	return captured.Peers
+}
+
+func TestLastSeenSeparatesLiveFromLeftOver(t *testing.T) {
+	rows := idlePeerRows(t)
+	if len(rows) != 2 {
+		t.Fatalf("got %d rows, want 2", len(rows))
+	}
+	byAddr := map[string]peerRow{}
+	for _, row := range rows {
+		byAddr[row.Addr] = row
+	}
+
+	live := byAddr["203.0.113.10"]
+	if live.LastSeen != "1s" {
+		t.Fatalf("live peer last seen %q, want 1s", live.LastSeen)
+	}
+	if live.Stale {
+		t.Fatal("a peer with a packet a second ago was marked stale")
+	}
+
+	// 432000-200000 = 232000s. The row still carries its bytes — they are the
+	// honest total for the connection — but nothing has moved for days.
+	old := byAddr["203.0.113.20"]
+	if old.LastSeen != "2d 16h" {
+		t.Fatalf("idle peer last seen %q, want 2d 16h", old.LastSeen)
+	}
+	if !old.Stale {
+		t.Fatal("a peer idle for days was not marked stale")
+	}
+}
+
+func TestLastSeenIsBlankWhenItCannotBeWorkedOut(t *testing.T) {
+	// The default test server has no timeout table, which is the same state a
+	// router in which the sysctls cannot be read would be in. Blank, not "0s":
+	// zero is a real and very recent answer.
+	server := testPeersServer(t)
+	var captured peersPageData
+	server.tmpl = template.Must(template.New("peers.html").Funcs(template.FuncMap{
+		"capture": func(d peersPageData) string { captured = d; return "" },
+	}).Parse(`{{capture .}}`))
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if len(captured.Peers) == 0 {
+		t.Fatal("no peers rendered")
+	}
+	for _, row := range captured.Peers {
+		if row.LastSeen != "" || row.Stale {
+			t.Fatalf("%s got last seen %q stale=%v, want blank", row.Addr, row.LastSeen, row.Stale)
+		}
+	}
+}
+
+func TestCDNQuotaBadgeAppliesToTheThrottledDeviceOnly(t *testing.T) {
+	// Both devices talking to the same edge at the same moment, which is the
+	// situation the pair key exists to tell apart.
+	const fixture = `ipv4     2 tcp      6 431999 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport=1 dport=443 packets=10 bytes=4000 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=1 packets=8 bytes=2600 [ASSURED] mark=0 use=1
+ipv4     2 tcp      6 431999 ESTABLISHED src=192.168.0.99 dst=203.0.113.10 sport=2 dport=443 packets=10 bytes=4000 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=2 packets=8 bytes=2600 [ASSURED] mark=0 use=1
+`
+	shaped := func(device string) string {
+		t.Helper()
+		server := testPeersServer(t)
+		server.conntrack = func(context.Context) ([]byte, error) {
+			return []byte(fixture), nil
+		}
+		server.shapes = &shapeCache{
+			ttl: time.Hour,
+			read: func(_ context.Context, set string) ([]byte, error) {
+				if set == "cdn_throttled4" {
+					return pairDoc(`{"elem":{"val":{"concat":["192.168.0.10","203.0.113.10"]},"expires":299}}`), nil
+				}
+				return nil, errors.New("absent")
+			},
+		}
+		var captured peersPageData
+		server.tmpl = template.Must(template.New("peers.html").Funcs(template.FuncMap{
+			"capture": func(d peersPageData) string { captured = d; return "" },
+		}).Parse(`{{capture .}}`))
+		rec := httptest.NewRecorder()
+		server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/"+device, nil))
+		for _, row := range captured.Peers {
+			if row.Addr == "203.0.113.10" {
+				return row.Shape
+			}
+		}
+		t.Fatalf("peer 203.0.113.10 not rendered for %s", device)
+		return ""
+	}
+
+	if got := shaped("192.168.0.10"); got != shapeQuota {
+		t.Fatalf("the device over its budget got %q, want %q", got, shapeQuota)
+	}
+	// The fixture gives .99 flows with the same peer. Same Akamai edge, same
+	// moment, different device: no badge, because it has not spent its budget.
+	if got := shaped("192.168.0.99"); got != shapeNone {
+		t.Fatalf("a device with its budget intact got %q, want no badge", got)
+	}
+}
+
+func TestRealTemplateRendersLastSeenColumn(t *testing.T) {
+	tmpl, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	data := peersPageData{
+		Device: "192.168.0.10",
+		Peers: []peerRow{
+			{Addr: "203.0.113.10", Bytes: "30.8 kB", SharePct: "80.0", LastSeen: "1s"},
+			{Addr: "203.0.113.20", Bytes: "1 kB", SharePct: "20.0", LastSeen: "2d 16h", Stale: true},
+			// No idle time available: an em-dash, not "0s", which would claim
+			// the connection had a packet this instant.
+			{Addr: "203.0.113.30", Bytes: "1 kB", SharePct: "0.0"},
+		},
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, data); err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	body := out.String()
+	for _, want := range []string{
+		`<td class="num">1s</td>`,
+		`<td class="num stale">2d 16h</td>`,
+		`<td class="num">&mdash;</td>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("rendered page is missing %s\n%s", want, body)
+		}
+	}
+}
+
+func TestRealTemplateRendersTheQuotaBadge(t *testing.T) {
+	tmpl, err := template.ParseFiles("peers.html")
+	if err != nil {
+		t.Fatalf("parse peers.html: %v", err)
+	}
+	var out strings.Builder
+	err = tmpl.Execute(&out, peersPageData{
+		Device: "192.168.0.10",
+		Peers:  []peerRow{{Addr: "203.0.113.10", Bytes: "1 kB", SharePct: "0.0", Shape: shapeQuota}},
+	})
+	if err != nil {
+		t.Fatalf("execute peers.html: %v", err)
+	}
+	// One CSS class, not two: the constant is hyphenated precisely so the
+	// template's `class="shape {{.Shape}}"` cannot split it on a space.
+	if want := `<span class="shape cdn-quota">cdn-quota</span>`; !strings.Contains(out.String(), want) {
+		t.Fatalf("rendered page is missing %s\n%s", want, out.String())
 	}
 }

@@ -11,6 +11,16 @@ LOG = "\n".join([
     'INFO queryLog: query resolved answer=A (192.0.2.30), A (192.0.2.31) '
     'client_ip=fe80::a8bb:ccff:fedd:ee01 question_name=two.example. '
     'response_type=RESOLVED',
+    'INFO queryLog: query resolved answer=AAAA (2606:4700::1111) '
+    'client_ip=198.51.100.5 question_name=six.example. '
+    'response_type=RESOLVED',
+    'INFO queryLog: query blocked answer=AAAA (::) '
+    'client_ip=198.51.100.5 question_name=bad6.example. '
+    'response_type=BLOCKED',
+    'INFO queryLog: query resolved answer=A (192.0.2.40), '
+    'AAAA (2606:4700::2222) '
+    'client_ip=198.51.100.5 question_name=dual.example. '
+    'response_type=RESOLVED',
     'unrelated log line with no query at all',
 ])
 
@@ -48,6 +58,28 @@ class TestBuildIndexes(unittest.TestCase):
     def test_blocked_answers_are_excluded_from_dnsmap(self):
         dnsmap, _, _ = seed.build_indexes(LOG.split("\n"), LEASES)
         self.assertNotIn("0.0.0.0", dnsmap)
+
+    def test_aaaa_answers_reach_dnsmap(self):
+        dnsmap, _, _ = seed.build_indexes(LOG.split("\n"), LEASES)
+        self.assertIn("six.example\t2606:4700::1111", self._pairs(dnsmap))
+
+    def test_a_dual_stack_answer_records_both_families(self):
+        rows = self._pairs(seed.build_indexes(LOG.split("\n"), LEASES)[0])
+        self.assertIn("dual.example\t192.0.2.40", rows)
+        self.assertIn("dual.example\t2606:4700::2222", rows)
+
+    def test_the_blocked_ipv6_answer_is_excluded_from_dnsmap(self):
+        # :: would otherwise become the "resolved name" of every blocked AAAA
+        # in turn, and any peer at :: would come back explained.
+        rows = self._pairs(seed.build_indexes(LOG.split("\n"), LEASES)[0])
+        self.assertNotIn("bad6.example\t::", rows)
+
+    def test_quad_a_is_not_double_counted_as_an_a_record(self):
+        row = seed.parse_line(
+            'INFO queryLog: query resolved answer=AAAA (2606:4700::1111) '
+            'client_ip=198.51.100.5 question_name=six.example. '
+            'response_type=RESOLVED')
+        self.assertEqual(row["answers"], ["2606:4700::1111"])
 
     def test_queries_are_keyed_by_mac_via_the_lease_file(self):
         _, dnsq, _ = seed.build_indexes(LOG.split("\n"), LEASES)

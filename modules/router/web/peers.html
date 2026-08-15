@@ -14,6 +14,15 @@ span.shape { border-radius: 3px; padding: .1rem .4rem; font-size: .85em; }
 span.blocked { background: #d33; color: #fff; }
 span.throttled { background: #e88; color: #fff; }
 span.imo { background: #eb4; color: #333; }
+/* Lighter than the throttle badge on purpose. Both end in the same tc class,
+   but this one is a volume budget the device spent rather than a standing
+   decision about the peer, and it clears itself once the device eases off. */
+span.cdn-quota { background: #fbd; color: #513; }
+/* A peer that has been silent past the staleness threshold. Greyed rather than
+   hidden or sorted away: the row's byte count is still the honest total for the
+   connection, and an operator counting a device's traffic needs to see it. What
+   the colour says is "these bytes are history, not what is happening now". */
+td.stale { color: #999; }
 span.label { font-size: .85em; }
 /* The call marker is filled green rather than left as plain text: it is the one
    label here derived from the payload signature rather than from a port number,
@@ -90,7 +99,7 @@ p.error { color: #a00; font-weight: 600; }
 {{end}}
 {{if .Peers}}
 <table>
-<tr><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th class="num">Share</th><th>Traffic</th><th>Status</th><th>Actions</th></tr>
+<tr><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th class="num">Share</th><th class="num">Last seen</th><th>Traffic</th><th>Status</th><th>Actions</th></tr>
 {{range .Peers}}
 <tr{{if .High}} class="high"{{end}}>
 <td>{{.Addr}}</td>
@@ -99,6 +108,7 @@ p.error { color: #a00; font-weight: 600; }
 <td>{{.Country}}</td>
 <td class="num">{{.Bytes}}<span class="dir">&uarr; {{.Up}} &nbsp;&darr; {{.Down}}</span></td>
 <td class="num">{{.SharePct}}%</td>
+<td class="num{{if .Stale}} stale{{end}}">{{if .LastSeen}}{{.LastSeen}}{{else}}&mdash;{{end}}</td>
 <td>
 {{- with .Traffic -}}
 {{if .Label}}<span class="label{{if .Call}} call{{end}}">{{.Label}}</span> {{end}}

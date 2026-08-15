@@ -27,7 +27,28 @@ type peerRow struct {
 	High     bool
 	Shape    string
 	Traffic  traffic
+	// How long ago this peer last carried a packet, already formatted. Empty
+	// when it could not be determined, which the template renders as an
+	// em-dash — the same "no answer" the other optional columns use, and
+	// distinct from "0s", which is a real and very recent answer.
+	LastSeen string
+	// Whether that gap is long enough that the connection is best read as
+	// left-over rather than live. Drives the greying-out in the template; the
+	// text alone does not, because a table of durations is exactly the thing an
+	// eye slides over.
+	Stale bool
 }
+
+// How long a peer must be silent before the page greys it out.
+//
+// Two minutes rather than something tighter because the traffic this page is
+// usually read against is not continuous: a phone on a messaging app, a browser
+// tab holding a keep-alive. Those go quiet for tens of seconds at a time while
+// being unambiguously in use, and a threshold that flagged them would make the
+// column noise. What it is meant to separate out is the long tail — TCP entries
+// the kernel keeps for five days after the last byte, which look identical to
+// live ones by byte count.
+const staleAfter = 2 * time.Minute
 
 type peersPageData struct {
 	Device string
@@ -124,6 +145,10 @@ type peersServer struct {
 	// not exist. bongo runs this binary with the pool off, and must behave
 	// exactly as it did before the pool existed.
 	lowTrust func(ctx context.Context, mac string) string
+	// Turns each flow's conntrack countdown into a last-seen time. Nil in
+	// tests that pass their own fixture expectations; the page then renders
+	// blank last-seen cells and is otherwise unchanged.
+	timeouts *timeoutTable
 }
 
 func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -136,6 +161,7 @@ func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *templat
 		shapes:     newShapeCache(),
 		conntrack:  readConntrack,
 		runTool:    runTool,
+		timeouts:   newTimeoutTable(),
 	}
 }
 
@@ -375,7 +401,7 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 		http.Error(w, "cannot read connection table", http.StatusInternalServerError)
 		return
 	}
-	peers, err := parseConntrack(strings.NewReader(string(raw)), device)
+	peers, err := parseConntrack(strings.NewReader(string(raw)), device, s.timeouts)
 	if err != nil {
 		log.Printf("peers: parse conntrack: %v", err)
 		http.Error(w, "cannot parse connection table", http.StatusInternalServerError)
@@ -461,6 +487,16 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 			High:     share >= 70,
 		}
 		row.Shape = shapes.classify(peer.Addr)
+		// The CDN quota is per device-and-peer, so it cannot come from the
+		// address lookup above. Applied as an upgrade rather than an override:
+		// a peer that is also blocked outright should still say blocked.
+		if quota := shapes.classifyPair(device, peer.Addr); shapeRank[quota] > shapeRank[row.Shape] {
+			row.Shape = quota
+		}
+		if peer.HaveIdle {
+			row.LastSeen = formatDuration(peer.Idle)
+			row.Stale = peer.Idle >= staleAfter
+		}
 		row.Traffic = s.namer.describe(peer)
 		if info, found := s.asn.Lookup(peer.Addr); found {
 			row.ASN, row.Org, row.Country = info.Number, info.Org, info.Country

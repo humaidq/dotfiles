@@ -35,9 +35,22 @@ class TestNetKeys(unittest.TestCase):
         self.assertEqual(store.net24("192.0.2.10"), "192.0.2.0/24")
         self.assertEqual(store.net16("192.0.2.10"), "192.0.0.0/16")
 
-    def test_non_ipv4_yields_empty_keys(self):
-        self.assertEqual(store.net24("2001:db8::1"), "")
+    def test_ipv6_uses_the_subnet_and_allocation_prefixes(self):
+        address = "2606:4700:20:0:1234:5678:9abc:def0"
+        self.assertEqual(store.net24(address), "2606:4700:20::/64")
+        self.assertEqual(store.net16(address), "2606:4700:20::/48")
+
+    def test_ipv6_rotation_within_one_subnet_shares_a_narrow_key(self):
+        # The whole reason these columns exist: an endpoint renting a fresh
+        # address each session leaves no repeated address, and with v6 it can
+        # rent a fresh one per connection from its own /64.
+        self.assertEqual(store.net24("2606:4700:20::1"),
+                         store.net24("2606:4700:20::dead:beef"))
+
+    def test_garbage_yields_empty_keys(self):
+        self.assertEqual(store.net24("garbage"), "")
         self.assertEqual(store.net16("garbage"), "")
+        self.assertEqual(store.net24(""), "")
 
 
 class TestIngest(unittest.TestCase):

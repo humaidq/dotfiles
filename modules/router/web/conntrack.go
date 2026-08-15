@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Peer is one address the inspected device currently holds flows with.
@@ -32,6 +33,17 @@ type Peer struct {
 	// qos-mark chain's business, and is configured, so it is the caller that
 	// knows. See HasMark.
 	Marks map[uint64]struct{}
+	// How long ago this peer last carried a packet, and whether that could be
+	// worked out at all. Taken as the freshest of the peer's flows, because the
+	// question the page asks is whether the peer is still live — one flow with
+	// a packet a second ago says yes no matter how stale the rest are.
+	//
+	// This is what separates a conversation still in progress from the long
+	// tail of TCP entries the kernel keeps for five days after the last byte.
+	// Both look identical by byte count, which is the only other thing the
+	// table offers.
+	Idle     time.Duration
+	HaveIdle bool
 }
 
 // HasMark reports whether any flow with this peer carried the given conntrack
@@ -93,7 +105,22 @@ type flow struct {
 	// opened the flow, which is why they are kept apart until a caller says
 	// which end it is looking from. An unreplied flow leaves Reply at zero.
 	Orig, Reply uint64
+	// Seconds left on this entry's conntrack timeout. The kernel resets it to
+	// the per-state maximum on every packet and counts it down otherwise, so
+	// the gap between the two is how long the flow has been silent — the only
+	// thing in the dump that dates a flow at all.
+	Timeout     uint64
+	HaveTimeout bool
+	// The l4 state, for the protocols conntrack prints one for: "ESTABLISHED",
+	// "TIME_WAIT" and so on. Empty for udp and icmp, which have no state field.
+	State string
+	// Whether the line carried [ASSURED]. Only consulted for udp, where it is
+	// what decides which of the kernel's two udp timeouts is counting down.
+	Assured bool
 }
+
+// The flag conntrack prints once traffic has been seen in both directions.
+const assuredFlag = "[ASSURED]"
 
 // parseFlowLine reads one `conntrack -L -o extended` line. The second result is
 // false for a line carrying no usable flow — a header, a blank, or one whose
@@ -109,6 +136,9 @@ func parseFlowLine(line string) (flow, bool) {
 	for _, token := range fields {
 		key, value, found := strings.Cut(token, "=")
 		if !found {
+			if token == assuredFlag {
+				f.Assured = true
+			}
 			continue
 		}
 		switch key {
@@ -150,8 +180,34 @@ func parseFlowLine(line string) (flow, bool) {
 		f.SPort, f.DPort, f.HavePort = sports[0], dports[0], true
 	}
 	f.Orig, f.Reply = at(counts, 0), at(counts, 1)
-	f.Proto = protocolField(fields)
+
+	// conntrack prints "<l3> <l3num> <l4> <l4num> <timeout> [<state>]", so both
+	// of these are positional — but positional relative to the protocol name
+	// rather than to the start of the line, for the same reason protocolAt
+	// scans for that name instead of indexing to it.
+	name, idx := protocolAt(fields)
+	f.Proto = name
+	if idx >= 0 {
+		if idx+2 < len(fields) {
+			if parsed, err := strconv.ParseUint(fields[idx+2], 10, 64); err == nil {
+				f.Timeout, f.HaveTimeout = parsed, true
+			}
+		}
+		// Only the protocols with a state have a field here; for the rest the
+		// next field is already the tuple, which the "=" rules out.
+		if idx+3 < len(fields) && isStateField(fields[idx+3]) {
+			f.State = fields[idx+3]
+		}
+	}
 	return f, true
+}
+
+// isStateField reports whether a field is an l4 state name rather than the
+// start of the tuple or a flag. Rejecting both forms rather than matching a
+// list of state names keeps sctp's and dccp's states working without this
+// package having to enumerate them.
+func isStateField(field string) bool {
+	return field != "" && !strings.Contains(field, "=") && !strings.HasPrefix(field, "[")
 }
 
 // view is one flow seen from one end of it: who the far end is, which port
@@ -191,7 +247,11 @@ func (f flow) from(local netip.Addr) (view, bool) {
 // A flow counts when exactly one end is the device; the other end is the peer.
 // Non-public peers are dropped, which removes router-originated and
 // LAN-to-LAN traffic without needing a separate rule for either.
-func parseConntrack(r io.Reader, device netip.Addr) ([]Peer, error) {
+//
+// timeouts may be nil, in which case no peer gets an idle time. That is the
+// only impurity this parser has, and it is passed in rather than read here so
+// the aggregation stays testable against a fixture alone.
+func parseConntrack(r io.Reader, device netip.Addr, timeouts *timeoutTable) ([]Peer, error) {
 	totals := map[netip.Addr]*Peer{}
 	// Per-peer port totals, kept beside the peers rather than on them because
 	// they are accumulated by key and only ordered at the end.
@@ -215,6 +275,13 @@ func parseConntrack(r io.Reader, device netip.Addr) ([]Peer, error) {
 		entry.Down += v.Down
 		if f.Mark != 0 {
 			entry.Marks[f.Mark] = struct{}{}
+		}
+		// The freshest flow wins. A peer is as live as its liveliest
+		// conversation, and taking the maximum — or an average — would let a
+		// browser's pile of five-day-old TCP entries bury the one socket that
+		// is still moving bytes.
+		if idle, ok := timeouts.idle(f); ok && (!entry.HaveIdle || idle < entry.Idle) {
+			entry.Idle, entry.HaveIdle = idle, true
 		}
 		if v.HavePort {
 			ports[v.Peer][v.Port] += f.Bytes
@@ -356,18 +423,26 @@ func at(values []uint64, i int) uint64 {
 	return 0
 }
 
-// protocolField returns the l4 protocol name from a conntrack line, or "".
-func protocolField(fields []string) string {
-	for _, field := range fields {
+// protocolAt returns the l4 protocol name from a conntrack line and the index
+// of the field holding it, or ("", -1). The index is what lets the caller reach
+// the timeout and state fields that follow it.
+func protocolAt(fields []string) (string, int) {
+	for i, field := range fields {
 		if strings.Contains(field, "=") {
 			// Reached the key=value part of the line without finding one.
-			return ""
+			return "", -1
 		}
 		if knownProtocols[field] {
-			return field
+			return field, i
 		}
 	}
-	return ""
+	return "", -1
+}
+
+// protocolField returns the l4 protocol name from a conntrack line, or "".
+func protocolField(fields []string) string {
+	name, _ := protocolAt(fields)
+	return name
 }
 
 // orderPorts flattens the per-peer port totals, heaviest first, with the port

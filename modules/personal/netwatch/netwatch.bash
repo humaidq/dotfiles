@@ -146,9 +146,19 @@ ssh "$NETWATCH_HOST" 'journalctl -u blocky --no-pager --since '\'"$NETWATCH_JOUR
 		"$NETWATCH_DIR/baseline.tsv" \
 	|| skip "resolver history import failed"
 
+# The ipv6.* fields sit beside their IPv4 counterparts rather than at the end,
+# because analyse.py reads this by column index and a reader checking one
+# against the other should not have to count tabs across the whole row. Adding
+# or reordering fields here means changing FLOW_COLUMNS and parse_flows with it.
+#
+# ipv6.nxt rather than ip.proto for v6: ip.proto is an IPv4-header field and is
+# empty on a v6 frame, which is why v6 traffic used to arrive with no protocol
+# and no addresses and got counted as unanalysed rather than examined.
 tshark -r "$local_pcap" -T fields \
-	-e frame.time_epoch -e eth.src -e eth.dst -e ip.src -e ip.dst \
-	-e ip.proto -e tcp.srcport -e tcp.dstport -e udp.srcport \
+	-e frame.time_epoch -e eth.src -e eth.dst \
+	-e ip.src -e ip.dst -e ip.proto \
+	-e ipv6.src -e ipv6.dst -e ipv6.nxt \
+	-e tcp.srcport -e tcp.dstport -e udp.srcport \
 	-e udp.dstport -e frame.len \
 	-e tls.handshake.extensions_server_name \
 	> "$NETWATCH_DIR/flows.tsv" 2>/dev/null || skip "tshark failed"

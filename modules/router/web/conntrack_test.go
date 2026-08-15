@@ -16,7 +16,7 @@ ipv4     2 tcp      6 100 ESTABLISHED src=192.168.0.99 dst=203.0.113.50 sport=22
 `
 
 func TestParseConntrackAggregatesPerPeer(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestParseConntrackAggregatesPerPeer(t *testing.T) {
 }
 
 func TestParseConntrackSkipsUnrelatedFlows(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestParseConntrackSkipsUnrelatedFlows(t *testing.T) {
 }
 
 func TestParseConntrackEmptyForIdleDevice(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.77"))
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.77"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestParseConntrackEmptyForIdleDevice(t *testing.T) {
 }
 
 func TestParseConntrackRecordsServicePorts(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -98,7 +98,7 @@ const inboundFixture = `ipv4     2 udp      17 30 src=203.0.113.60 dst=192.168.0
 `
 
 func TestParseConntrackReadsInboundServicePortAndMark(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(inboundFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(inboundFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestProtocolField(t *testing.T) {
 }
 
 func TestParseConntrackSplitsDirection(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(conntrackFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestParseConntrackSplitsDirection(t *testing.T) {
 func TestParseConntrackDirectionForInboundFlow(t *testing.T) {
 	// The peer opened this one, so the original-direction counter is download
 	// and the reply is upload — the opposite assignment to the case above.
-	peers, err := parseConntrack(strings.NewReader(inboundFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(inboundFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -167,7 +167,7 @@ const unrepliedFixture = `ipv4     2 udp      17 20 src=192.168.0.10 dst=203.0.1
 `
 
 func TestParseConntrackUnrepliedFlow(t *testing.T) {
-	peers, err := parseConntrack(strings.NewReader(unrepliedFixture), netip.MustParseAddr("192.168.0.10"))
+	peers, err := parseConntrack(strings.NewReader(unrepliedFixture), netip.MustParseAddr("192.168.0.10"), nil)
 	if err != nil {
 		t.Fatalf("parseConntrack: %v", err)
 	}
@@ -255,5 +255,73 @@ func TestParseMarkedFlowsWithoutAMarkCollectsNothing(t *testing.T) {
 	}
 	if len(marked) != 0 {
 		t.Fatalf("got %d conversations for an unconfigured mark, want 0", len(marked))
+	}
+}
+
+func TestParseFlowLineReadsTheCountdownAndState(t *testing.T) {
+	line := `ipv4     2 tcp      6 431876 ESTABLISHED src=192.168.0.10 dst=203.0.113.10 sport=42957 dport=443 packets=100 bytes=4000 src=203.0.113.10 dst=198.51.100.1 sport=443 dport=42957 packets=90 bytes=26000 [ASSURED] mark=0 use=1`
+	f, ok := parseFlowLine(line)
+	if !ok {
+		t.Fatal("line did not parse")
+	}
+	if !f.HaveTimeout || f.Timeout != 431876 {
+		t.Fatalf("timeout = %d (have=%v), want 431876", f.Timeout, f.HaveTimeout)
+	}
+	if f.State != "ESTABLISHED" {
+		t.Fatalf("state = %q, want ESTABLISHED", f.State)
+	}
+	if !f.Assured {
+		t.Fatal("[ASSURED] was not picked up")
+	}
+}
+
+func TestParseFlowLineLeavesStateEmptyForStatelessProtocols(t *testing.T) {
+	// udp has no state column, so the field after the countdown is already the
+	// tuple. Reading it as a state would send timeoutSysctl looking for
+	// nf_conntrack_udp_timeout_src=192.168.0.10.
+	line := `ipv4     2 udp      17 30 src=192.168.0.10 dst=203.0.113.60 sport=5353 dport=53 packets=2 bytes=200 src=203.0.113.60 dst=192.168.0.10 sport=53 dport=5353 packets=2 bytes=400 mark=0 use=1`
+	f, ok := parseFlowLine(line)
+	if !ok {
+		t.Fatal("line did not parse")
+	}
+	if f.State != "" {
+		t.Fatalf("state = %q, want empty", f.State)
+	}
+	if !f.HaveTimeout || f.Timeout != 30 {
+		t.Fatalf("timeout = %d (have=%v), want 30", f.Timeout, f.HaveTimeout)
+	}
+	if f.Assured {
+		t.Fatal("a line without [ASSURED] was reported as assured")
+	}
+}
+
+func TestParseFlowLineIgnoresFlagsWhenLookingForAState(t *testing.T) {
+	// [UNREPLIED] sits between the two tuples, not where a state would be, but
+	// a parser that only rejected fields containing "=" would still have to
+	// cope if that ever changed.
+	if isStateField("[UNREPLIED]") {
+		t.Fatal("a bracketed flag was taken for a state")
+	}
+	if isStateField("src=1.2.3.4") {
+		t.Fatal("a tuple field was taken for a state")
+	}
+	if !isStateField("TIME_WAIT") {
+		t.Fatal("a real state was rejected")
+	}
+}
+
+func TestProtocolAtReportsWhereItFoundTheName(t *testing.T) {
+	fields := strings.Fields(`ipv4     2 tcp      6 431876 ESTABLISHED src=1.2.3.4`)
+	name, idx := protocolAt(fields)
+	if name != "tcp" || idx != 2 {
+		t.Fatalf("protocolAt = (%q, %d), want (tcp, 2)", name, idx)
+	}
+	// The countdown and state are positional from there.
+	if fields[idx+2] != "431876" || fields[idx+3] != "ESTABLISHED" {
+		t.Fatalf("fields after the protocol: %q", fields[idx+1:idx+4])
+	}
+
+	if _, idx := protocolAt(strings.Fields("src=1.2.3.4 dst=5.6.7.8")); idx != -1 {
+		t.Fatalf("a line with no protocol reported index %d, want -1", idx)
 	}
 }

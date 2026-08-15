@@ -93,8 +93,9 @@ func TestShapeCacheReadsOncePerTTL(t *testing.T) {
 	if first != second {
 		t.Fatal("second call rebuilt the index instead of using the cache")
 	}
-	if calls != len(shapingSets) {
-		t.Fatalf("read %d times, want one pass over %d sets", calls, len(shapingSets))
+	want := len(shapingSets) + len(quotaPairSets)
+	if calls != want {
+		t.Fatalf("read %d times, want one pass over %d sets", calls, want)
 	}
 }
 
@@ -226,5 +227,90 @@ func TestShapeCacheInvalidateForcesAReread(t *testing.T) {
 	cache.get(context.Background())
 	if calls != first*2 {
 		t.Fatalf("read %d times after invalidate, want %d", calls, first*2)
+	}
+}
+
+// A concatenated set with a timeout wraps each element as
+// {"elem":{"val":{"concat":[...]},"expires":N}}; one without a timeout emits
+// the bare {"concat":[...]}. Both forms are accepted, so the parser does not
+// break if the set ever loses its timeout.
+func pairDoc(elems string) []byte {
+	return []byte(`{"nftables":[{"set":{"name":"cdn_throttled4","elem":[` + elems + `]}}]}`)
+}
+
+func TestClassifyPairIsPerDeviceNotPerPeer(t *testing.T) {
+	index := parseShapingSets(map[string][]byte{
+		"cdn_throttled4": pairDoc(
+			`{"elem":{"val":{"concat":["192.168.0.10","203.0.113.10"]},"expires":299}}`),
+	})
+
+	device := netip.MustParseAddr("192.168.0.10")
+	peer := netip.MustParseAddr("203.0.113.10")
+	if got := index.classifyPair(device, peer); got != shapeQuota {
+		t.Fatalf("the device over its budget got %q, want %q", got, shapeQuota)
+	}
+	// The whole point of keying on the pair: the same Akamai edge is untouched
+	// for every other device on the LAN at the same moment.
+	other := netip.MustParseAddr("192.168.0.20")
+	if got := index.classifyPair(other, peer); got != shapeNone {
+		t.Fatalf("a device with its own budget intact got %q, want none", got)
+	}
+	// And the same device's other peers are not implicated either.
+	elsewhere := netip.MustParseAddr("203.0.113.99")
+	if got := index.classifyPair(device, elsewhere); got != shapeNone {
+		t.Fatalf("an unmetered peer of a throttled device got %q, want none", got)
+	}
+}
+
+func TestClassifyPairAcceptsBareConcatAndIPv6(t *testing.T) {
+	index := parseShapingSets(map[string][]byte{
+		"cdn_throttled4": pairDoc(`{"concat":["192.168.0.10","203.0.113.10"]}`),
+		"cdn_throttled6": pairDoc(
+			`{"elem":{"val":{"concat":["2001:db8::10","2606:4700::1"]},"expires":120}}`),
+	})
+	for _, tc := range []struct{ device, peer string }{
+		{"192.168.0.10", "203.0.113.10"},
+		{"2001:db8::10", "2606:4700::1"},
+	} {
+		got := index.classifyPair(
+			netip.MustParseAddr(tc.device), netip.MustParseAddr(tc.peer))
+		if got != shapeQuota {
+			t.Fatalf("%s -> %s got %q, want %q", tc.device, tc.peer, got, shapeQuota)
+		}
+	}
+}
+
+func TestClassifyPairSurvivesMalformedElements(t *testing.T) {
+	index := parseShapingSets(map[string][]byte{
+		"cdn_throttled4": pairDoc(
+			`{"concat":["not-an-address","203.0.113.10"]},` +
+				`{"concat":["192.168.0.10"]},` +
+				`"192.168.0.10",` +
+				`{"concat":["192.168.0.10","203.0.113.10"]}`),
+	})
+	got := index.classifyPair(
+		netip.MustParseAddr("192.168.0.10"), netip.MustParseAddr("203.0.113.10"))
+	if got != shapeQuota {
+		t.Fatalf("a good pair beside malformed ones was lost: %q", got)
+	}
+}
+
+func TestQuotaOutranksNothingButLosesToABlock(t *testing.T) {
+	// Both end in the same tc class, so the ordering only decides the wording.
+	// A peer that is blocked outright must not be described as merely metered.
+	if shapeRank[shapeQuota] <= shapeRank[shapeNone] {
+		t.Fatal("the quota badge must outrank no status at all")
+	}
+	if shapeRank[shapeQuota] >= shapeRank[shapeBlocked] {
+		t.Fatal("a blocked peer must not be reported as merely quota-shaped")
+	}
+}
+
+func TestNilIndexClassifiesPairAsNone(t *testing.T) {
+	var index *shapeIndex
+	got := index.classifyPair(
+		netip.MustParseAddr("192.168.0.10"), netip.MustParseAddr("203.0.113.10"))
+	if got != shapeNone {
+		t.Fatalf("nil index got %q, want none", got)
 	}
 }

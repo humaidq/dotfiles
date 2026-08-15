@@ -74,11 +74,18 @@ def targets(observations):
     return found
 
 
+def connect_arg(ip, port):
+    # openssl's host:port syntax needs a v6 literal in brackets, or it splits
+    # on the first colon and tries to connect to "2606" on port "2800:...".
+    host = "[{}]".format(ip) if ":" in ip else ip
+    return "{}:{}".format(host, port)
+
+
 def fetch(ip, port, timeout=10):
     # Retrieve a certificate. Returns a dict, or None if nothing answered.
     try:
         connected = subprocess.run(
-            ["openssl", "s_client", "-connect", "{}:{}".format(ip, port)],
+            ["openssl", "s_client", "-connect", connect_arg(ip, port)],
             input=b"", capture_output=True, timeout=timeout)
         parsed = subprocess.run(
             ["openssl", "x509", "-noout", "-subject", "-issuer", "-serial",

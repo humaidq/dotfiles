@@ -9,7 +9,17 @@ deliberately out of scope.
 import json
 import sys
 
-FLOW_COLUMNS = 12
+FLOW_COLUMNS = 15
+
+# IPv6 headers that only chain to the next one. The protocol of a v6 packet is
+# the first ipv6.nxt value that is not one of these — "0,6" is TCP behind a
+# hop-by-hop header, not protocol 0.
+#
+# 51 (AH) is deliberately absent even though it is an extension header: it is
+# in TUNNEL_PROTOS, and an AH-protected flow is exactly the thing that check
+# exists to surface, so it must stay visible as the protocol rather than be
+# skipped over to reach the payload behind it.
+EXTENSION_HEADERS = {"0", "43", "44", "60", "135", "139", "140"}
 
 
 def read_devices(path):
@@ -34,11 +44,53 @@ def _int(value):
         return 0
 
 
+def _outer(value):
+    """The first value of a possibly repeated tshark field.
+
+    tshark emits one comma-separated value per occurrence of a field in the
+    frame, and an ICMP or ICMPv6 error quotes the packet that caused it — so
+    the addresses of such a frame arrive as "outer,inner". The outer pair is
+    the conversation this device is actually having; the inner one belongs to
+    a flow already accounted for elsewhere. Taking the first value keeps the
+    peer key on the real endpoint instead of a literal "a,b" that matches
+    nothing and reads as an unexplained peer.
+    """
+    return value.split(",")[0].strip()
+
+
+def _protocol(value):
+    """The transport protocol number from ip.proto or ipv6.nxt.
+
+    Skips past extension headers, which is why this is not just _outer: a
+    fragmented or hop-by-hop-tagged v6 packet reports the chain, and the
+    protocol wanted is the one at the end of it.
+    """
+    for part in value.split(","):
+        part = part.strip()
+        if part and part not in EXTENSION_HEADERS:
+            return part
+    return ""
+
+
 def parse_flows(text):
     """Parse tshark's tab-separated output into flow dicts.
 
     Ports arrive in separate TCP and UDP columns because tshark emits one or
     the other; this collapses them into a single pair plus a protocol name.
+
+    Addresses arrive in separate IPv4 and IPv6 columns for the same reason,
+    and collapse the same way. Downstream cares about the family only through
+    the address text itself, so nothing below this function has to branch on
+    it — a v6 peer is a peer whose "ip" happens to contain colons.
+
+    A frame carrying both families is one tunnelled inside the other, and IPv4
+    wins. That is right for 6in4, where the v4 header is the outer one and the
+    tunnel is what should be reported: the row comes out as protocol 41 to a
+    real endpoint. It is wrong for 4in6, where it reports the inner
+    conversation and loses the tunnel — accepted because these fields carry no
+    header order to decide by, and no ordering gets both cases right. 4in6 is
+    also the rarer of the two here, and cannot come from a low-trust device at
+    all: the router denies that pool IPv6 to the WAN outright.
     """
     rows = []
     for line in text.split("\n"):
@@ -47,24 +99,26 @@ def parse_flows(text):
         cols = line.split("\t")
         if len(cols) < FLOW_COLUMNS:
             continue
-        proto_num = cols[5].strip()
+        ip_src = _outer(cols[3]) or _outer(cols[6])
+        ip_dst = _outer(cols[4]) or _outer(cols[7])
+        proto_num = _protocol(cols[5]) or _protocol(cols[8])
         if proto_num == "6":
-            proto, sport, dport = "tcp", cols[6], cols[7]
+            proto, sport, dport = "tcp", cols[9], cols[10]
         elif proto_num == "17":
-            proto, sport, dport = "udp", cols[8], cols[9]
+            proto, sport, dport = "udp", cols[11], cols[12]
         else:
             proto, sport, dport = proto_num or "other", "", ""
         rows.append({
             "ts": cols[0],
             "eth_src": cols[1].lower(),
             "eth_dst": cols[2].lower(),
-            "ip_src": cols[3],
-            "ip_dst": cols[4],
+            "ip_src": ip_src,
+            "ip_dst": ip_dst,
             "proto": proto,
-            "sport": _int(sport),
-            "dport": _int(dport),
-            "length": _int(cols[10]),
-            "sni": cols[11].strip(),
+            "sport": _int(_outer(sport)),
+            "dport": _int(_outer(dport)),
+            "length": _int(cols[13]),
+            "sni": cols[14].strip(),
         })
     return rows
 
@@ -106,14 +160,18 @@ def aggregate_peers(flows, mac):
 
 
 def count_unaddressed(flows, mac):
-    """Count this device's flows that carried no IPv4 address.
+    """Count this device's frames that carried no IP address of either family.
 
-    tshark's ip.src/ip.dst fields are IPv4-only, so an IPv6 flow leaves both
-    blank. aggregate_peers then drops it via its own "if not ip" check, and
-    a device using an IPv6 tunnel silently reads as idle. This does not
-    analyse that traffic — it only counts it, so the report can say the gap
-    out loud instead of reporting "0 bytes across 0 peers" as if nothing had
-    been captured at all.
+    What is left after both families are parsed is layer-2 traffic: ARP, EAPOL,
+    LLDP and the like. Some of that is unavoidable background on any LAN, so
+    the count is a coverage note rather than a finding — it exists so that a
+    device whose capture is mostly unparseable says so, instead of reading as
+    "0 bytes across 0 peers" as if nothing had been captured at all.
+
+    This used to count IPv6 as well, because tshark's ip.src/ip.dst are
+    IPv4-only fields and left a v6 frame blank in both. That is no longer true:
+    parse_flows reads ipv6.src/ipv6.dst, so v6 flows are aggregated like any
+    other and no longer land here.
     """
     mac = mac.lower()
     count = 0
@@ -295,13 +353,12 @@ def build(flows_text, dnsmap_text, queries_text, devices, baselines, run_ts):
         unaddressed = count_unaddressed(flows, mac)
         if unaddressed:
             observations.append({
-                "check": "non_ipv4_not_analysed",
+                "check": "non_ip_not_analysed",
                 "severity": 0,
-                "detail": "{} frames carried no IPv4 address and were not"
-                          " analysed; this counts IPv6 and also ARP and"
-                          " other non-IP frames, so it is a coverage note"
-                          " rather than evidence of IPv6 use".format(
-                              unaddressed),
+                "detail": "{} frames carried no IP address of either family"
+                          " and were not analysed; this is ARP and other"
+                          " layer-2 traffic, so it is a coverage note rather"
+                          " than a finding".format(unaddressed),
             })
         fresh = novelty(queries, mac, baselines)
         for domain in fresh["new_for_network"]:

@@ -648,6 +648,56 @@ in
             timeout 2h
             size 1024
           }
+
+          # Which device-and-peer pairs the quota is ACTUALLY shaping right
+          # now, as opposed to cdn_over4/6 above, which says only that a device
+          # has a budget open. The difference is the whole reason this set
+          # exists: being over budget was previously observable nowhere except
+          # the aggregate rule counters, so the peers page could not say why an
+          # Akamai edge was being held back, and an operator reading that page
+          # saw a peer with no status at all.
+          #
+          # Written to only by the statements that sit AFTER the
+          # `limit rate over` expression in lowtrust_cdn_quota, which is what
+          # makes membership mean "over budget" rather than "in scope": nft
+          # stops evaluating a rule at the first expression that does not
+          # match, so these adds are reached on exactly the packets that get
+          # the throttle mark.
+          #
+          # Keyed on the pair rather than on the device alone because that is
+          # the question the page asks — this device, this peer — and because a
+          # device pulling hard from one CDN says nothing about a second CDN it
+          # is also talking to. The two rules per family are written so the
+          # device is always the first element and the peer the second, despite
+          # saddr and daddr swapping roles between the upload and download
+          # rules.
+          #
+          # The timeout is a display window, not a quota window. A quota that
+          # fires in bursts would otherwise flicker the page's badge on and off
+          # between renders, which reads as a fault rather than as shaping; 5
+          # minutes is long enough to stay lit across a gap and short enough
+          # that a badge means something current. The bucket in cdn_over4/6 is
+          # unaffected either way — nothing reads this set but the web UI.
+          #
+          # Bounded by size: an add against a full set fails and the packet
+          # carries on to the counter and the mark, so a saturated set costs
+          # visibility on new pairs and never shaping. 4096 against the 1024
+          # devices cdn_over4 allows is four CDN peers apiece within one
+          # window, and a device fanning out wider than that is one whose badge
+          # is already lit from its first peer.
+          set cdn_throttled4 {
+            type ipv4_addr . ipv4_addr
+            flags dynamic, timeout
+            timeout 5m
+            size 4096
+          }
+
+          set cdn_throttled6 {
+            type ipv6_addr . ipv6_addr
+            flags dynamic, timeout
+            timeout 5m
+            size 4096
+          }
         ''}
 
         chain forward_blocklists {
@@ -850,15 +900,51 @@ in
             #   limit rate over 20 mbytes/hour
             #   -> Error: Could not process rule: Value too large for defined data type
             # Byte-unit rates overflow on /hour. /second and /minute are fine.
+            #
+            # The `add @cdn_throttled*` statement on each rule is placed after
+            # the rate expression and before the counter, so it runs on exactly
+            # the packets that take the mark. Device first, peer second in
+            # every key: on the upload rules the device is saddr, on the
+            # download rules it is daddr, and getting that the wrong way round
+            # would put a badge on the wrong half of the page rather than
+            # produce any visible error.
             chain lowtrust_cdn_quota {
-              oifname "${cfg.ppp}" ip daddr @cdn_quota4 update @cdn_over4 { ip saddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (upload, IPv4)"
-              oifname "${cfg.lan0}" ip saddr @cdn_quota4 update @cdn_over4 { ip daddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (download, IPv4)"
-              oifname "${cfg.ppp}" ip6 daddr @cdn_quota6 update @cdn_over6 { ip6 saddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (upload, IPv6)"
-              oifname "${cfg.lan0}" ip6 saddr @cdn_quota6 update @cdn_over6 { ip6 daddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } counter meta mark set 0x2 comment "CDN volume quota exceeded (download, IPv6)"
+              oifname "${cfg.ppp}" ip daddr @cdn_quota4 update @cdn_over4 { ip saddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } add @cdn_throttled4 { ip saddr . ip daddr } counter meta mark set 0x2 comment "CDN volume quota exceeded (upload, IPv4)"
+              oifname "${cfg.lan0}" ip saddr @cdn_quota4 update @cdn_over4 { ip daddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } add @cdn_throttled4 { ip daddr . ip saddr } counter meta mark set 0x2 comment "CDN volume quota exceeded (download, IPv4)"
+              oifname "${cfg.ppp}" ip6 daddr @cdn_quota6 update @cdn_over6 { ip6 saddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } add @cdn_throttled6 { ip6 saddr . ip6 daddr } counter meta mark set 0x2 comment "CDN volume quota exceeded (upload, IPv6)"
+              oifname "${cfg.lan0}" ip6 saddr @cdn_quota6 update @cdn_over6 { ip6 daddr limit rate over ${toString cfg.lowTrust.cdnQuota.bytesPerSecond} bytes/second burst ${cfg.lowTrust.cdnQuota.burst} } add @cdn_throttled6 { ip6 daddr . ip6 saddr } counter meta mark set 0x2 comment "CDN volume quota exceeded (download, IPv6)"
             }
           ''}
 
           chain lowtrust_policy {
+            # The pool is IPv4-only on the way out. Everything else in this
+            # chain is a specific drop against a general accept; this one is the
+            # reverse, and it is first because it makes every v6 rule below it
+            # unreachable for pool devices. They are kept anyway: they cost
+            # nothing, and they stay correct if this rule is ever narrowed.
+            #
+            # A drop, not a withheld address. RA is multicast to ff02::1, so
+            # there is no per-MAC way to stop a device configuring itself —
+            # that would take a separate VLAN, and the pool is dynamic (the
+            # `lowtrust` CLI and the sops MAC list move devices in and out
+            # between rebuilds), so no VLAN could track it. The device gets a
+            # global address and simply cannot route it off the LAN.
+            #
+            # reject rather than drop, which is the opposite of every other
+            # verdict here, for a reason specific to dual-stack: the device
+            # still tries v6 first, and Happy Eyeballs only falls back to v4
+            # after a timeout. An admin-prohibited turns that timeout into an
+            # immediate failover, so the visible cost is nothing rather than a
+            # stall on every new connection. There is no concealment to lose —
+            # a device that cannot reach anything over v6 has already learnt
+            # that from the first drop.
+            #
+            # Scoped LAN -> WAN like the rest of the chain, so v6 between LAN
+            # devices still works. Nothing is gained by breaking it: those same
+            # devices can reach each other over v4 regardless.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta nfproto ipv6 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust IPv6 rejects"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta nfproto ipv6 counter reject with icmpv6 type admin-prohibited comment "low-trust device: IPv4 only"
+
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust port drops"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" meta l4proto { tcp, udp } th dport @lowtrust_ports counter drop comment "low-trust port drop"
 

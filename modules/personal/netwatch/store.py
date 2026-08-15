@@ -8,6 +8,7 @@ network that owns them, the same data shows a count of distinct addresses
 inside one range, which is what rotation looks like.
 """
 
+import ipaddress
 import json
 import sqlite3
 import sys
@@ -43,33 +44,45 @@ CREATE TABLE IF NOT EXISTS domain_seen (
 """
 
 
-def _octets(ip):
-    parts = ip.split(".")
-    if len(parts) != 4:
-        return None
+# The prefix lengths that stand in for "the network" at each of the two scales,
+# per family. /24 and /16 for IPv4 are what the columns were named after.
+#
+# For IPv6 the equivalents are /64 and /48: /64 is one subscriber subnet, the
+# unit a host actually sits in, and /48 is the usual allocation to a single
+# customer. Anything narrower than /64 would count host bits, and a rotating v6
+# endpoint rotates its host bits constantly — the rotation query would then see
+# every packet as a new network and report nothing.
+NARROW_PREFIX = {4: 24, 6: 64}
+WIDE_PREFIX = {4: 16, 6: 48}
+
+
+def _enclosing(ip, prefixes):
     try:
-        values = [int(p) for p in parts]
+        address = ipaddress.ip_address(ip)
     except ValueError:
-        return None
-    if any(v < 0 or v > 255 for v in values):
-        return None
-    return values
+        return ""
+    network = ipaddress.ip_network(
+        (address, prefixes[address.version]), strict=False)
+    return str(network)
 
 
 def net24(ip):
-    """Enclosing /24, or empty string if the address is not IPv4."""
-    values = _octets(ip)
-    if values is None:
-        return ""
-    return "{}.{}.{}.0/24".format(*values[:3])
+    """Enclosing /24 (IPv4) or /64 (IPv6), empty if not an address.
+
+    Named for the IPv4 case because that is what the column is called and a
+    rename would need a migration of every existing store.db for no gain. Read
+    it as "the narrow enclosing network".
+    """
+    return _enclosing(ip, NARROW_PREFIX)
 
 
 def net16(ip):
-    """Enclosing /16, or empty string if the address is not IPv4."""
-    values = _octets(ip)
-    if values is None:
-        return ""
-    return "{}.{}.0.0/16".format(*values[:2])
+    """Enclosing /16 (IPv4) or /48 (IPv6), empty if not an address.
+
+    Named for the IPv4 case, as net24 is; read it as "the wide enclosing
+    network".
+    """
+    return _enclosing(ip, WIDE_PREFIX)
 
 
 def connect(path):

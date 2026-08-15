@@ -13,9 +13,20 @@ import time
 CLIENT_RE = re.compile(r"client_ip=(\S+)")
 QUESTION_RE = re.compile(r"question_name=(\S+)")
 VERDICT_RE = re.compile(r"response_type=(\w+)")
-ANSWER_RE = re.compile(r"A \((\d+\.\d+\.\d+\.\d+)\)")
+# Both families, because dnsmap is what makes a peer "explained" and a v6 peer
+# left out of it reads as an unexplained endpoint carrying volume — the tool's
+# loudest signal, fabricated.
+#
+# The leading \b is load-bearing. Without it "A \(" also matches the last A of
+# "AAAA (", and the alternation would then capture v6 answers twice. It also
+# keeps CAA out: the A in "CAA (" is preceded by another letter, so no word
+# boundary precedes it.
+ANSWER_RE = re.compile(r"\b(?:A|AAAA) \(([0-9A-Fa-f.:]+)\)")
 
-BLOCKED_ANSWERS = {"0.0.0.0", "127.0.0.1"}
+# The v6 half of blocky's zeroIp block answer, alongside the v4 one. Without
+# it every blocked AAAA would enter dnsmap as a real address for its domain,
+# and :: would come back "explained" as whatever was blocked most recently.
+BLOCKED_ANSWERS = {"0.0.0.0", "127.0.0.1", "::", "::1"}
 
 
 def parse_line(line):
