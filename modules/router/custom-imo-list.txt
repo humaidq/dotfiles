@@ -941,3 +941,139 @@
 # the range alone was never the argument.
 47.245.168.224
 47.245.168.157
+
+# Fourteenth run, 2026-08-14 16:45–16:52, and the first in a while where imo
+# clearly WON. Source: ~/inbox/192.168.50.199-20260814-1652.pcap, 50k frames,
+# 411s, from 192.168.50.199 — a different handset to the one the throttle
+# list's 2026-08-14 blocks were taken from.
+#
+# EVERYTHING THIS FILE ALREADY HOLDS WORKED, and that is the frustrating part.
+# The app made exactly one DNS query, fgw.imoim.app, which answered 0.0.0.0.
+# It then dialled the estate from its hardcoded pool and got nothing back:
+# eleven Tencent addresses on 943/1943/2943/9443 (0 bytes each, the port list),
+# 169.136.160.158 and 169.136.164.91 on 375, 169.136.158.4 on 4937,
+# 202.63.60.39 on 46216, 45.124.252.7 on 80, 150.241.249.34, 96.62.247.231 and
+# 185.250.27.164 on 443 — every one of them zero bytes returned.
+#
+# AND IT CARRIED ~21 MB ANYWAY, over five Alibaba addresses that are not in
+# this file. That is the whole finding:
+#
+#   47.245.135.251  tcp/20097  11.2 MB in, 549 kB out   ** the big one
+#   8.209.107.239   tcp/41985  505 kB in, 8.4 MB out
+#   47.251.49.170   tcp/18689  951 kB in
+#   47.251.182.44   tcp/4481   622 kB out
+#   47.251.37.18    udp/34237  38 kB
+#
+# All five are AS45102 Alibaba (netname AL-3, Alibaba Cloud LLC), all on
+# arbitrary high ports, none carrying a TLS ClientHello, all high-entropy from
+# the first payload byte — the sg.bigo.overwall signature this file has been
+# recording since the 943/1943/2943/9443 set.
+#
+# THE TIMELINE SHOWS THE FAILOVER. 47.245.135.251 and 8.209.107.239 are
+# already established at t=0, so they predate the capture. 47.251.49.170 and
+# 47.251.182.44 both begin at t=215.5 — the same second — which is a re-home
+# onto a fresh pair mid-session. The NETSTAR probe at t=333 comes after that,
+# i.e. the app was still trying the blocked estate while the Alibaba pair
+# carried the traffic.
+#
+# --- 47.245.128.0/19, completing the /17 ------------------------------------
+#
+# 47.245.135.251 falls in 47.245.128.0/19, the half of 47.245.128.0/17 that
+# this file does NOT hold. The other half, 47.245.160.0/19, was taken on the
+# eighth run as "the tightest prefix covering both observations", and the note
+# on 47.245.142.42 above says in as many words that it was reachable because it
+# "sits in 47.245.128.0/18, immediately outside the 47.245.160.0/19". This is
+# that gap being used for 11 MB rather than a stray /32.
+#
+# Taking the adjacent /19 completes the /17 and folds in 47.245.142.42 as well.
+# 8192 addresses, the same size as the /19 already here and as the Tencent /19,
+# and the same accepted trade: Alibaba is general-purpose cloud, so the
+# neighbours are other tenants, and that argument was already weighed and
+# accepted twice in this file for exactly this space.
+47.245.128.0/19
+#
+# 47.251 AND 8.209 STAY AS /32s. 47.251 is new to this file and the three
+# addresses land in three different /24s (.37, .49, .182) spread across a /16,
+# which is where you shop rather than a block being worked. 8.209.107.239 is
+# the fourth 8.209 address here after .72.63, .89.172 and .113.52, and those
+# four are equally scattered. Escalate if a fourth 47.251 or a fifth 8.209
+# turns up in one prefix; there is no case for it yet.
+8.209.107.239
+47.251.49.170
+47.251.182.44
+47.251.37.18
+#
+# STILL ANSWERING FROM THIS FILE, and correctly so: 47.245.171.201 (udp/5437,
+# 186 kB), 47.245.168.10 (tcp/5228, the LBS port), 47.245.167.194 and
+# 47.245.180.234 (443), 47.91.67.150 (5228), 47.245.168.157 (5223). bingo runs
+# imoPolicy = alternate and 2026-08-14 is an even day, so this file was
+# SHAPING rather than dropping for the whole capture. Those flows being slow
+# but alive is the policy working as written, not a leak — but it is worth
+# noting that on a throttling day the app still reaches its LBS.
+#
+# 47.245.168.10 was also ICMP-pinged 123 times across the capture, which is the
+# ping-then-probe-then-select cycle custom-lowtrust-asns.txt describes for
+# Zenlayer, running here against imo's own estate.
+
+# Fifteenth run, 2026-08-14 16:56–17:01, from a THIRD handset:
+# ~/inbox/192.168.50.125-20260814-1701.pcap, 19k frames, 247s. Same shape as
+# the fourteenth run an hour earlier on .199, which is the point — this is not
+# one device misbehaving, it is the app's normal behaviour on this LAN.
+#
+# THE ESTATE IN THIS FILE WAS AGAIN DIALLED AND AGAIN GAVE NOTHING:
+# 47.245.168.10 and 47.91.67.150 on 5228, 47.245.168.157 and 47.245.167.194 on
+# 443/5223, NETSTAR 169.136.160.158/.156/.163, 169.136.118.90 and 169.136.73.18
+# on 4937/17953/46216/375, Tencent 43.166.211.202 and 43.130.108.98 on
+# 2943/1943, 150.241.249.34, 96.62.247.231, 185.250.27.164, 103.211.231.57 —
+# all zero bytes back. Two AS36131 addresses DID hold sessions, 83.229.88.102
+# on 443 and 185.22.42.52 on 8953, both already covered here and both shaped
+# rather than dropped because the 14th is an even day.
+#
+# SIX MORE ALIBABA ADDRESSES CARRIED INSTEAD, none of them in this file:
+#
+#   47.79.0.91       tcp/41985   28 kB out
+#   47.79.235.98     tcp/33025   32 kB in
+#   47.79.123.55     udp/9658    33 kB out
+#   47.251.141.224   tcp/43009   57 kB in
+#   47.88.76.150     udp/16937   37 kB out
+#   47.77.223.126    tcp/34049   7 kB
+#   47.246.165.30    tcp/443     non-TLS payload on a TLS port
+#
+# Every one is AS45102, an arbitrary high port, no TLS ClientHello, high
+# entropy from byte 0. 47.79.0.91 uses tcp/41985 — THE SAME PORT 8.209.107.239
+# used on .199 an hour earlier, which ties the two devices' flows to one
+# operator rather than leaving them as separate coincidences.
+#
+# --- Three more 47.79 /24s, and the /16 question deferred -------------------
+#
+# 47.79 is already imo space here: five /24s (1, 120, 225, 230, 242) plus the
+# /32 47.79.237.58. These three add 0, 123 and 235.
+#
+# THAT IS EIGHT DISTINCT /24s SPREAD ACROSS THE WHOLE OF 47.79.0.0/16 — from .0
+# to .242 — which is the pattern where per-/24 is visibly losing. The /16 is
+# the honest next unit and it is NOT taken here, deliberately: 65,536 addresses
+# of general-purpose Alibaba cloud is four times the largest prefix in this
+# file (8.211.0.0/18) and this file has twice refused that trade at /17. The
+# case for it is now stronger than it has ever been and it should be revisited
+# the next time a ninth /24 appears; it is recorded rather than taken so the
+# decision is made deliberately and not by accumulation.
+47.79.0.0/24
+47.79.123.0/24
+47.79.235.0/24
+#
+# 47.251.141.224 is the FOURTH 47.251 address, after .37.18, .49.170 and
+# .182.44 from the run above — and the note there said escalate at a fourth in
+# one prefix. These four are in four different /24s (.37, .49, .141, .182), so
+# the condition is not met: still shopping across the /16, not working a block.
+47.251.141.224
+#
+# 47.88, 47.77 and 47.246 are each new to this file, one address apiece.
+47.88.76.150
+47.77.223.126
+47.246.165.30
+#
+# NOT ADDED FROM THIS CAPTURE: 47.91.109.7 and 47.91.122.115. Both are Alibaba
+# and both were tempting on the AS alone, but .109.7 sends SNI acs.m.alibaba
+# .com over real TLS — Alibaba's own app service, not imo — and .122.115 is
+# QUIC to 443 that returned nothing. 47.91.67.150 stays in this file on its own
+# 5228 evidence; the /24 around it does not follow.

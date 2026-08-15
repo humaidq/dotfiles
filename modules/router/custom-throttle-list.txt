@@ -6877,3 +6877,209 @@
 # 7-packet 546-byte probes at 2-second intervals — the client enumerating a
 # range it can no longer reach.
 # ===========================================================================
+#
+# --- Three from the .199 capture, 2026-08-14 16:52 --------------------------
+#
+# ~/inbox/192.168.50.199-20260814-1652.pcap, 50k frames, 411s. A DIFFERENT
+# handset to the .162 one the blocks above came from, and the imo findings from
+# it are in custom-imo-list.txt's fourteenth run rather than here.
+#
+# These three are the non-imo half. All AS31898 Oracle, all opaque TCP or UDP
+# on arbitrary high ports, no TLS handshake, high entropy from byte 0:
+#
+#   92.5.98.29      tcp/28289   142 kB in, 17 kB out   (Oracle Svenska AB, SE)
+#   130.61.117.77   udp/21274   12 kB in, 134 kB out   (OC-195, Oracle US)
+#   130.61.176.207  tcp/10625   11 kB in, 108 kB out   (OC-195, Oracle US)
+#
+# ORACLE AS31898 IS NOW THE MOST-SEEN CLOUD IN THIS FILE. Four Psiphon nodes
+# around line 2100, the note at 1249 on the always-free ARM tier, 129.151.240.71
+# and 213.35.104.31 from the .162 capture this afternoon, and now three more
+# from a second handset. Two devices reaching the same AS on the same day on
+# unrelated high ports is the estate, not a coincidence.
+#
+# 130.61.176.207 was also ICMP-pinged 17 times, which puts it in the
+# ping-then-probe-then-select cycle rather than in steady use — a candidate
+# being scored. Worth shaping before it gets selected.
+#
+# Still /32s and not the /19s: Oracle is general-purpose and the note above at
+# 1249 already argued this. AS31898 is NOT in custom-lowtrust-asns.txt and was
+# declined there again today — 1.87M-address clouds are not the unit.
+92.5.98.29
+130.61.117.77
+130.61.176.207
+#
+# 213.130.159.188 IS IN THIS CAPTURE TOO — 43 kB out on udp/40865 — and needed
+# no entry, because 213.130.159.0/24 above already covers it. That prefix went
+# in a few hours earlier over a decline recorded the same morning, and this is
+# the first evidence it was the right call: an eleventh address of that /24,
+# on a second device, on yet another arbitrary UDP port, caught without anyone
+# having to hand it over.
+#
+# THE DNS BYPASS ATTEMPTS IN THIS CAPTURE ALL FAILED and none is added, which
+# is the standing decision at custom-ip-blocklist.txt's "NOT ADDED,
+# deliberately" note: 8.8.8.8 took 24 kB on tcp/53 and returned ZERO, 8.8.4.4
+# took 18 kB on 443 (its DoH endpoint) and returned ZERO. The structural rule
+# in modules/router/default.nix that drops LAN->WAN udp/tcp 53 is what stopped
+# the first; per-address rows for public resolvers stay out of both files.
+#
+# 4.2.2.2 is in this capture and is NOT a DNS finding. 124 packets, ALL ICMP —
+# 62 echo requests, 62 replies, one per second. It is a reachability probe,
+# alongside two pings each to 9.9.9.9 and 8.8.4.4 and 123 to 47.245.168.10.
+# Nothing queried it, so there is nothing to block; it is the client checking
+# whether it has a working path, and the same standing decision covers it.
+# ===========================================================================
+#
+# --- The .125 capture, 2026-08-14 17:01 -------------------------------------
+#
+# ~/inbox/192.168.50.125-20260814-1701.pcap, 19k frames, 247s, a third handset.
+# The imo half is custom-imo-list.txt's fifteenth run; these four are the rest.
+#
+# THREE MORE ORACLE, AS31898, all opaque and all on arbitrary high ports:
+#
+#   158.180.54.126   udp/5225    34 kB in, 36 kB out
+#   130.61.142.202   tcp/39681   44 kB in, 19 kB out
+#   129.159.201.170  tcp/20865   7 kB in, 53 kB out
+#
+# That makes EIGHT Oracle addresses collected today across three handsets —
+# 129.151.240.71 and 213.35.104.31 from .162, 92.5.98.29 and 130.61.117.77 and
+# 130.61.176.207 from .199, and these three — in four different Oracle
+# allocations (129.151, 129.159, 130.61, 158.180, 213.35). AS31898 was declined
+# for custom-lowtrust-asns.txt this afternoon at 1,874,175 addresses and that
+# decline is getting harder to hold: eight /32s in one day is the shape that
+# argued Zenlayer in. Recorded here rather than acted on, because the size
+# objection has not changed and the right moment to revisit it is when someone
+# is looking at the ASN file rather than mid-capture.
+158.180.54.126
+130.61.142.202
+129.159.201.170
+#
+# --- 178.93.128.66, and a seventh AS on the reseller template ---------------
+#
+# 630 bytes in, 1,308 out on tcp/8427 — small, and listed for what it is rather
+# than what it moved. AS395374 CYSA-MAIN (Cyber Sainik), 9,216 addresses.
+#
+# THE REGISTRATION IS THE TEMPLATE AGAIN, exactly: inetnum 178.93.128.0/24,
+# netname NET-178-93-128-0-24, org-name "Private Customer", no PTR. That is the
+# seventh AS carrying it, after FlameHosting, the WiredISP shells, GNET,
+# Sandhill, Grand Web and CloudIP — and AS395374 is already named in
+# custom-ip-blocklist.txt alongside three of those as the rented half of the
+# imo/BIGO estate, and again in custom-imo-list.txt at 81.199.29.0/24.
+#
+# WHAT IT ACTUALLY DOES IS THE INTERESTING PART. Port 8427 carries a real TLS
+# ClientHello — and NO SNI EXTENSION AT ALL. Decoded with `-d tcp.port==8427,
+# tls`, the JA3 extension list is 23-35-13-5-13172-18-16-30032-11-10-21, with
+# no 0 for server_name. So this is neither the forged-SNI pattern (yahoo4.com,
+# rebel2.com, rochester2.com) nor an honest handshake: it is a client that
+# already knows the address and declines to name anything at all.
+#
+# AND THE ClientHello IS BYTE-IDENTICAL IN SHAPE TO TIKTOK'S in this same
+# capture — 1603010200010001fc0303, the same record length, handshake length
+# and version, differing only in the random. The TikTok flows to 71.18.20.240
+# and 154.85.66.57 produce the same prefix. That means one client stack is
+# making both connections, which is what you would expect if the tunnel is
+# riding a ByteDance networking library — a useful fingerprint, and a warning
+# that "looks like TikTok's TLS" is NOT on its own evidence of being TikTok.
+# The SNI is what separates them, and here there is none to read.
+#
+# AS395374 IS A CANDIDATE FOR custom-lowtrust-asns.txt on the template alone —
+# 9,216 addresses, the same order as the eight added there today — but it goes
+# in as a /32 first because this is one small flow and the template is
+# circumstantial. A second Cyber Sainik address settles it.
+178.93.128.66
+#
+# NOT ADDED, and each for a stated reason:
+#
+# THE TIKTOK VERDICT HOLDS ON A THIRD DEVICE. 71.18.20.240 (5,543 kB, the top
+# talker), 139.177.238.235 (3,136 kB), 71.18.222.1, 42.99.140.136/.144/.200/
+# .210 and 154.85.66.57 all carry real TLS with resolvable SNI under
+# tiktokcdn.com — v45, v31, v9, sf16-ies-music-sg, p16-common-sign. Telstra
+# AS4637 and Edgenext AS139057 are carrying TikTok's CDN, not a tunnel, and the
+# decline recorded in custom-lowtrust-asns.txt stands.
+#
+# Akamai again untouched: 95.100.170.42/.137/.152, 23.63.235.163,
+# 23.206.197.24/.48/.80/.169, 184.87.193.140, 2.16.106.133. 95.100.170.42 is on
+# the never-cover guard by name.
+#
+# 47.91.109.7 sends SNI acs.m.alibaba.com — Alibaba's own app service.
+# Etisalat: 2.20.249.186, 2.21.231.243, 5.195.172.224, 195.229.137.34. Never.
+#
+# 8.8.8.8 (7,950 bytes to tcp/53) and 8.8.4.4 (18,426 to 443) both returned
+# ZERO for the third capture running. The structural port-53 drop and the
+# standing "no public-resolver rows" decision are both holding.
+#
+# 213.130.159.84 needed no entry — 213.130.159.0/24 above already covers it.
+# Twelfth address of that /24, now seen on a third device.
+# ===========================================================================
+#
+# --- The .248 capture, 2026-08-14 17:03: Tencent, and it is NOT imo ---------
+#
+# ~/inbox/192.168.50.248-20260814-1703.pcap, 42k frames, 180s, a fourth
+# handset. Handed over with the question "I don't know what those china ips
+# are for, imo or something else". They are something else, and the capture
+# separates the two cleanly enough to be worth writing out.
+#
+# THE ANSWER: Tencent Cloud is hosting a TUNNEL here, not imo. Five addresses,
+# ~17 MB in three minutes:
+#
+#   43.157.124.212  tcp/41729   242 kB in, 4,720 kB OUT
+#   49.51.141.110   tcp/22145   200 kB in, 4,007 kB OUT
+#   49.51.159.37    tcp/41217   3,829 kB in, 187 kB out
+#   43.157.124.163  tcp/44929   3,644 kB in, 165 kB out
+#   43.157.10.4     udp/35270   284 kB in, 253 kB out
+#
+# WHAT MAKES IT NOT IMO is the port set and the outcome, in the same capture:
+#
+#   * imo's Tencent addresses are on 943/1943/2943/9443 — that is the whole
+#     signature custom-port-blocklist.txt was built around. In THIS capture
+#     43.130.73.94 was dialled on 2943 and 170.106.34.239 on 1943, and both
+#     returned ZERO bytes. The imo path was tried and it failed.
+#   * These five are on 41729, 22145, 41217, 44929 and 35270 — arbitrary and
+#     unrelated to that set — with no TLS ClientHello and high entropy from the
+#     first payload byte.
+#   * imo IS on the device: story.imostatic.com was queried and sinkholed, and
+#     47.245.168.157/.180.234/.167.194 and 47.91.67.150 were all dialled and
+#     all returned zero. So imo ran, imo failed, and this carried on regardless.
+#
+# THE UPLOAD DIRECTION IS THE UNUSUAL PART and worth recording. Two of the five
+# are heavily OUTBOUND — 4.7 MB and 4.0 MB up against ~200 kB down each — while
+# two others are the mirror image. 8.7 MB uploaded from a handset in three
+# minutes is not ordinary app behaviour, and two up plus two down on four
+# separate high ports at once reads as a multi-stream tunnel rather than a
+# single session.
+#
+# Registrations: 43.157.x is netname ACEVILLEPTELTD-SG (Aceville PTE, the SG
+# arm this repo already knows from 43.166), 49.51.x is netname TencentCloud
+# (Tencent Beijing). Both AS132203.
+#
+# /32s and not the prefixes. 43.157.124.212 and .163 share 43.157.124.0/24, but
+# two of 256 on general-purpose Tencent Cloud is the case this repo has refused
+# a dozen times — and custom-imo-list.txt's own note on the Tencent /18 says
+# blocking the range "would take unrelated tenants with it". 49.51.141 and
+# 49.51.159 are two different /24s. Nothing here is a range case yet.
+43.157.124.212
+43.157.124.163
+49.51.141.110
+49.51.159.37
+43.157.10.4
+#
+# --- THE 5.195 TRAFFIC IS YOUTUBE. DO NOT TOUCH IT. -------------------------
+#
+# The other half of this capture is ~10 MB across 5.195.174.85 (7,081 kB),
+# 5.195.173.142 (1,904 kB), 5.195.174.146 (662 kB), 5.195.173.81 (547 kB) and
+# two smaller. On volume alone they look exactly like the Tencent flows above.
+# They are Google Global Cache nodes inside Etisalat's network: every one
+# carries a real TLS handshake with SNI rr2/rr3/rr5---sn-xupn5a5u5x-*.
+# googlevideo.com, and the capture's DNS shows those exact names being resolved
+# alongside www.youtube.com, youtubei.googleapis.com, s.youtube.com and
+# redirector.googlevideo.com.
+#
+# So: AS8966 Etisalat, serving YouTube video from a cache inside the carrier.
+# This is the same category as the Meta FNA appliances — carrier-hosted CDN
+# that shows up as a huge peer share by design. Shaping any of it would slow
+# YouTube for the whole house and would look exactly like a broken line.
+#
+# IT IS ALSO THE THIRD TIME TODAY that the heaviest flow in a capture turned
+# out to be legitimate video — TikTok CDN on Telstra and Edgenext in the .162
+# and .125 captures, YouTube on Etisalat here. Volume is not evidence. The SNI
+# is, every time, and in all three cases it resolved and matched.
+# ===========================================================================
