@@ -1246,10 +1246,19 @@ in
         "nftables.service"
         "nft-blocklists-local.service"
         "network-online.target"
+        # The resolver this unit exists to ask. Ordering only binds inside a
+        # transaction, so this does not protect the timer-driven runs — but a
+        # `nixos-rebuild switch` that changes the DNS config restarts blocky
+        # and pulls this unit through nft-blocklists-local in the same
+        # transaction, and without this the two raced. On 2026-08-15 that race
+        # landed one second apart: the switch at 21:40:01, every lookup empty
+        # at 21:40:02, and a recovery on the 30-second retry.
+        "blocky.service"
       ];
       wants = [
         "nftables.service"
         "network-online.target"
+        "blocky.service"
       ];
       partOf = [ "nftables.service" ];
       wantedBy = [
@@ -1343,10 +1352,15 @@ in
           for addr in $(dig +short +timeout=3 +tries=2 "$name" A 2>/dev/null || true); do
             case "$addr" in
               *[!0-9.]*) continue ;;
-              0.0.0.0) continue ;;
+              # A sinkhole answer is still an answer, and that distinction is
+              # the whole point of tracking it: it proves the resolver is up
+              # even though this name yielded nothing usable. See the guard at
+              # the end.
+              0.0.0.0) answered=yes ; continue ;;
             esac
             v4="$v4$addr, "
             got=yes
+            answered=yes
           done
           # The character-class reject on the FIRST line of each case is load
           # bearing and the two must stay symmetrical. `dig` prints
@@ -1371,8 +1385,8 @@ in
           for addr in $(dig +short +timeout=3 +tries=2 "$name" AAAA 2>/dev/null || true); do
             case "$addr" in
               *[!0-9A-Fa-f:]*) continue ;;
-              ::) continue ;;
-              *:*) v6="$v6$addr, " ; got=yes ;;
+              ::) answered=yes ; continue ;;
+              *:*) v6="$v6$addr, " ; got=yes ; answered=yes ;;
             esac
           done
 
@@ -1433,10 +1447,29 @@ in
         #     notes a v6-less run is common here. Failing on that would retry
         #     forever on a network that simply has no IPv6.
         #
-        # So this fires only when every lookup came back empty, which on this
-        # router means the resolver is down rather than the names being blocked.
+        # So this fires only when every lookup came back empty. What that
+        # MEANS is then decided by $answered, which is set whenever the
+        # resolver returned anything at all — including the 0.0.0.0 and :: the
+        # loops above discard. The two cases need different words because they
+        # need different actions, and the version of this check that had only
+        # one message asserted "resolver is probably down" on evidence that
+        # could equally mean "every name is blocked here":
+        #
+        #   * Nothing answered: the resolver is genuinely unreachable. A
+        #     restart of blocky is the common cause and lasts a second, so the
+        #     retry is the fix and the start limit bounds it.
+        #   * Something answered, but only sinkholes: the resolver is up and
+        #     every name in the list is blocked on this router. No amount of
+        #     retrying changes that. It still exits 1, deliberately — the sets
+        #     keep their previous contents and someone needs to know the list
+        #     has stopped feeding them — and the start limit is what stops it
+        #     retrying forever.
         if [ -z "$anyresolved" ]; then
-          echo "nft-lowtrust-stun: nothing resolved for any name — resolver is probably down; failing so systemd retries" >&2
+          if [ -n "''${answered:-}" ]; then
+            echo "nft-lowtrust-stun: every name in the list is sinkholed here — the resolver answered, so this is the blocklist shadowing the STUN list, not an outage; sets keep their previous contents" >&2
+          else
+            echo "nft-lowtrust-stun: no answer for any name — the resolver is down; failing so systemd retries" >&2
+          fi
           exit 1
         fi
       '';
