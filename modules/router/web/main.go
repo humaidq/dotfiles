@@ -424,9 +424,11 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 		// load, and takes longest exactly when one of them is off.
 		if aps != nil {
 			state.AccessPoints = aps.reports()
-			// Only where the route is also registered: mesh listener, credentials
-			// present. The LAN page shows the lamps and no button.
-			state.APRebootEnabled = showPeers && aps.canReboot()
+			// On both listeners, unlike every other mutation: the reboot button
+			// is wanted from the LAN too, so it and its route below are the one
+			// deliberate exception to the read-only split. The same-origin guard
+			// on the handler is what stands in for the listener split here.
+			state.APRebootEnabled = aps.canReboot()
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmpl.Execute(w, state); err != nil {
@@ -434,6 +436,15 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}
 	})
+
+	// The AP reboot action, on both listeners. This is the one mutation the LAN
+	// listener carries: the button is wanted without the mesh, e.g. from a phone
+	// on the wifi the AP serves. Registered here rather than in meshMux so the
+	// button the page renders always has a route behind it. Guarded by the same
+	// origin check the peer and tunnel actions use.
+	if aps.canReboot() {
+		mux.HandleFunc("POST /ap/reboot", aps.handleReboot)
+	}
 
 	// These exist only when probing is configured. A router without it serves
 	// exactly the pages it served before the feature, and in particular does
@@ -446,13 +457,16 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 	}
 }
 
-// landingMux is what the LAN listener serves: status only, and no route that
-// can see or change a device.
+// landingMux is what the LAN listener serves: the status page, and the AP
+// reboot action that goes with it. It carries no route that can see or change a
+// LAN device — the peers list and the per-device pages stay on the mesh.
 //
-// The split between this and meshMux is the enforcement. A peers route is
-// registered in exactly one function, and that function is called from exactly
-// one mux, so making a peers page LAN-reachable takes a deliberate edit rather
-// than a forgotten check inside a handler.
+// The AP reboot is the one mutation here, added deliberately because it is
+// wanted from the LAN the AP serves; it is guarded by an origin check rather
+// than by the listener split. The split between this and meshMux is still the
+// enforcement for everything else: a peers route is registered in exactly one
+// function, called from exactly one mux, so making a peers page LAN-reachable
+// takes a deliberate edit rather than a forgotten check inside a handler.
 func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
 	registerStatusRoutes(mux, config, tmpl, uplink, aps, nav, false)
@@ -471,13 +485,6 @@ func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, ap
 	mux := http.NewServeMux()
 	registerStatusRoutes(mux, config, tmpl, uplink, aps, nav, true)
 	peers.registerRoutes(mux)
-	// The AP reboot action, on this listener only and only when credentials are
-	// configured — the same split that keeps every other mutation off the LAN
-	// listener. registerStatusRoutes draws the lamps on both; the button that
-	// mutates is registered here alone.
-	if aps.canReboot() {
-		mux.HandleFunc("POST /ap/reboot", aps.handleReboot)
-	}
 	// The tunnel switch, on this listener only. Taken from the nav source
 	// rather than passed in beside it so that the entry in the strip and the
 	// routes behind it are decided by one field: a router where the strip

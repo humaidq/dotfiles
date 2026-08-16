@@ -403,10 +403,10 @@ func TestHandleReboot(t *testing.T) {
 	})
 }
 
-// The button and the route are gated together: the reboot form renders on the
-// mesh listener only, and only for an AP that was listed with a login. The LAN
-// page shows the lamps and no button, and the route is a 404 where the button
-// is absent.
+// The reboot button and its route go together and appear on BOTH listeners —
+// the AP reboot is the one mutation the LAN page carries — but only for an AP
+// that was listed with a login. With no login there is no button and the route
+// is a 404 on either listener.
 func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 	tmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
 	indexTmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
@@ -426,41 +426,50 @@ func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 	noReboot.reboot = func(accessPoint) error { return nil }
 	noReboot.cycle()
 
-	t.Run("mesh with a login shows the button", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		meshMux(pageData{}, indexTmpl, nil, withReboot, testPeersServer(t), navSource{}).
-			ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-		if !strings.Contains(rec.Body.String(), `action="/ap/reboot"`) {
-			t.Error("mesh page with a login did not render the reboot button")
+	listeners := func(m *apMonitor) map[string]http.Handler {
+		return map[string]http.Handler{
+			"lan":  landingMux(pageData{}, tmpl, nil, m, navSource{}),
+			"mesh": meshMux(pageData{}, indexTmpl, nil, m, testPeersServer(t), navSource{}),
+		}
+	}
+
+	t.Run("a login shows the button on both listeners", func(t *testing.T) {
+		for name, handler := range listeners(withReboot) {
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+			if !strings.Contains(rec.Body.String(), `action="/ap/reboot"`) {
+				t.Errorf("%s page with a login did not render the reboot button", name)
+			}
 		}
 	})
 
-	t.Run("LAN never shows the button", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil, withReboot, navSource{}).
-			ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-		if strings.Contains(rec.Body.String(), "/ap/reboot") {
-			t.Error("the LAN page rendered a reboot button")
+	t.Run("a login makes the route work on both listeners", func(t *testing.T) {
+		for name, handler := range listeners(withReboot) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/ap/reboot", strings.NewReader("ap=first"))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			handler.ServeHTTP(rec, req)
+			if rec.Code != http.StatusSeeOther {
+				t.Errorf("%s POST /ap/reboot = %d, want 303", name, rec.Code)
+			}
 		}
 	})
 
-	t.Run("mesh with no login shows no button", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		meshMux(pageData{}, indexTmpl, nil, noReboot, testPeersServer(t), navSource{}).
-			ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-		if strings.Contains(rec.Body.String(), "/ap/reboot") {
-			t.Error("mesh page with no login rendered a reboot button")
-		}
-	})
+	t.Run("no login means no button and a 404 route on both listeners", func(t *testing.T) {
+		for name, handler := range listeners(noReboot) {
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+			if strings.Contains(rec.Body.String(), "/ap/reboot") {
+				t.Errorf("%s page with no login rendered a reboot button", name)
+			}
 
-	t.Run("route is absent with no login", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPost, "/ap/reboot", strings.NewReader("ap=first"))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		meshMux(pageData{}, indexTmpl, nil, noReboot, testPeersServer(t), navSource{}).
-			ServeHTTP(rec, req)
-		if rec.Code != http.StatusNotFound {
-			t.Errorf("POST /ap/reboot with no login = %d, want 404", rec.Code)
+			rec = httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/ap/reboot", strings.NewReader("ap=first"))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			handler.ServeHTTP(rec, req)
+			if rec.Code != http.StatusNotFound {
+				t.Errorf("%s POST /ap/reboot with no login = %d, want 404", name, rec.Code)
+			}
 		}
 	})
 }
