@@ -79,6 +79,17 @@
 
   users.users.${config.sifr.username}.extraGroups = [ "dnsmasq" ];
 
+  # Both spellings, as on oreamnos: which implementation is in use depends on
+  # which module is enabled, and setting only one leaves the other prompting.
+  #
+  # This is a router that is administered over the mesh and never sat in front
+  # of. A remote rebuild has to answer a sudo prompt that nothing non-interactive
+  # can answer, which is the case this exists for — and the specific grants
+  # below already amount to root, so the honest reading is that this widens the
+  # path rather than the privilege.
+  security.sudo-rs.wheelNeedsPassword = false;
+  security.sudo.wheelNeedsPassword = false;
+
   # Packet captures are a routine debugging step here, so don't prompt for a
   # password. Both paths are listed since sudo matches whatever PATH resolved.
   #
