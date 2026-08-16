@@ -42,6 +42,7 @@
   sifr = {
     basePlus.enable = true;
     personal = {
+      ssh.acceptDevKeys = true;
       ntp.useNTS = false;
       o11y = {
         server.enable = true;

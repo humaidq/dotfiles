@@ -46,6 +46,7 @@
 <dd>{{.Status.Peers}}</dd>
 </dl>
 <p class="note">A client's own address and its public key come from the peers secret, not from here &mdash; edit it with <code>sops</code> and run <code>systemctl start router-vpn</code>. A client whose key is not in that file gets no answer at all.</p>
+<p class="note">A client takes an address inside the tunnel network <em>other than</em> <code>{{.Status.Address}}</code>, which is this router's. A client configured with the router's own address handshakes, shows traffic, and has every packet dropped as a martian source &mdash; the counters here and on the client both look healthy while nothing works.</p>
 </section>
 
 <section class="section" aria-labelledby="tunnel-name">
@@ -53,7 +54,7 @@
 <dl>
 <dt>Name</dt>
 <dd>{{if .Status.FQDN}}<code>{{.Status.FQDN}}</code>{{else}}none &mdash; no zone is configured{{end}}</dd>
-<dt>Points at</dt>
+<dt>Public address</dt>
 <dd>{{if .Status.PublicAddress}}<code>{{.Status.PublicAddress}}</code>{{else}}&mdash;{{end}}</dd>
 <dt>Last reconciled</dt>
 <dd>{{if .Reported}}{{.Reported}} ago{{else}}&mdash;{{end}}</dd>

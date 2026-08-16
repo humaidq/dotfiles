@@ -426,6 +426,74 @@ td.actions button {
   font-weight: 700;
 }
 
+/* ----------------------------------------------------------- access points */
+
+/* One row per AP: lamp, name, word. No figures, by design — see aps.go for why
+   this list answers "which one" and nothing else. Rows rather than a table
+   because there are only ever a handful and two of the three columns are a
+   fixed width. */
+.aplist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ap:last-child {
+  border-bottom: 0;
+}
+
+.ap-name {
+  font-family: var(--mono);
+}
+
+/* Pushed to the right edge so the states line up in a column and a single
+   amber word is findable without reading the names. */
+.ap-state {
+  margin-left: auto;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+}
+
+.ap-ok .ap-state {
+  color: var(--ok);
+}
+.ap-degraded .ap-state {
+  color: var(--warn);
+}
+.ap-down .ap-state {
+  color: var(--bad);
+}
+
+/* The reboot button sits at the far right of each row, after the state word.
+   Small and destructively toned: pressing it power-cycles the AP and takes the
+   wifi in that area down for a minute, so it says so before it is pressed, the
+   same idea as form.device on the tunnel page. */
+.ap-reboot {
+  margin: 0 0 0 0.2rem;
+}
+.ap-reboot button {
+  font-size: var(--fs-micro);
+  padding: 0.2rem 0.5rem;
+  background: #fdf3f2;
+  border-color: var(--bad);
+  color: var(--bad);
+  font-weight: 600;
+}
+.ap-reboot button:hover {
+  background: #fbe4e1;
+}
+
 /* ------------------------------------------------------------ uplink band */
 
 /* The left edge carries the state. One rule, four colours, and no icon: it is

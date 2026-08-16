@@ -39,6 +39,27 @@
       </section>
       {{ end }}
 
+      {{ with .AccessPoints }}
+      <section class="section" aria-labelledby="ap-status">
+        <h2 id="ap-status">Access Points</h2>
+        <ul class="aplist">
+          {{ range . }}
+          <li class="ap ap-{{ .State }}">
+            <span class="lamp lamp-{{ .State }}" aria-hidden="true"></span>
+            <span class="ap-name">{{ .Name }}</span>
+            <span class="ap-state">{{ .StateText }}</span>
+            {{ if $.APRebootEnabled }}
+            <form class="ap-reboot" method="post" action="/ap/reboot">
+              <input type="hidden" name="ap" value="{{ .Name }}">
+              <button type="submit">reboot</button>
+            </form>
+            {{ end }}
+          </li>
+          {{ end }}
+        </ul>
+      </section>
+      {{ end }}
+
       <section class="section" aria-labelledby="wan-status">
         <h2 id="wan-status">WAN / PPP Status</h2>
         <dl>

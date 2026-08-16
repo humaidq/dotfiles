@@ -145,6 +145,17 @@ in
           "ROUTER_CAPTURE_DIR=%S/router-web/captures"
         ]
         ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
+        # Presence of the file is what puts the access point section on the
+        # status page. Unset means no probe socket, no goroutine and no
+        # section — the same opt-in idiom as the uplink database below.
+        ++ lib.optional (cfg.accessPoints.file != null) "ROUTER_AP_FILE=${cfg.accessPoints.file}"
+        # Presence of the credentials file is what puts the reboot button on the
+        # page and registers the route behind it. Unset means the lamps still
+        # render but nothing can reach an AP's admin interface from here — the
+        # same opt-in idiom as the list above, one step further in.
+        ++ lib.optional (
+          cfg.accessPoints.credentialsFile != null
+        ) "ROUTER_AP_CREDENTIALS=${cfg.accessPoints.credentialsFile}"
         ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80"
         # Presence alone enables the pool button and badge on the peers page.
         # Set from the same option that creates the nft sets, the drop chains
@@ -165,7 +176,19 @@ in
         ExecStart = "${routerWeb}/bin/router-web --root ${routerWeb}/share/router-web --addr :80";
         Restart = "on-failure";
         RestartSec = "5s";
+        # The AP admin login is a secret, so unlike the list it is not
+        # world-readable: it is owned by this group at 0440 and router-web joins
+        # the group to read it. The same idiom router-vpn uses to let this
+        # DynamicUser service reach a file it has no build-time uid to be granted
+        # directly. Empty when no credentials are configured, which merges
+        # cleanly with the router-vpn group vpn.nix adds the same way.
+        SupplementaryGroups = lib.optional (cfg.accessPoints.credentialsFile != null) "router-ap";
       };
     };
+
+    # The group the credentials secret is owned by. Created whenever a
+    # credentials file is configured so the sops secret can name it as its group;
+    # router-web above is its only member.
+    users.groups.router-ap = lib.mkIf (cfg.accessPoints.credentialsFile != null) { };
   };
 }

@@ -1078,18 +1078,7 @@ func readCounter(iface, name string) (uint64, error) {
 // pattern of the same 56 bytes ping(8) uses, so a capture of these probes
 // looks like what an operator expects to see.
 func echoRequest(id, seq uint16) []byte {
-	const payloadLen = 56
-
-	packet := make([]byte, 8+payloadLen)
-	packet[0] = 8 // echo request
-	packet[1] = 0 // code
-	binary.BigEndian.PutUint16(packet[4:], id)
-	binary.BigEndian.PutUint16(packet[6:], seq)
-	for i := range payloadLen {
-		packet[8+i] = byte(i)
-	}
-	binary.BigEndian.PutUint16(packet[2:], internetChecksum(packet))
-	return packet
+	return echoRequestSized(id, seq, 56)
 }
 
 // parseEchoReply returns the identifier and sequence of an echo reply.

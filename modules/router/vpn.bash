@@ -388,11 +388,36 @@ api() {
 	if ! API_STATUS=$(curl "${args[@]}" 2>"$RUNDIR/api.err"); then
 		API_STATUS="000"
 		log "Vultr API $method $path failed: $(tr -d '\n' <"$RUNDIR/api.err")"
+		return 0
 	fi
+	case "$API_STATUS" in
+	2* | 404) ;;
+	*)
+		# The status alone is not diagnosable — a 401 is "wrong key" and
+		# "your address is not on the API's allow list" alike, and those have
+		# nothing in common to do about them. The body says which. Logged here
+		# so the journal answers it, and lifted into the report by api_error so
+		# the web page does too.
+		log "Vultr API $method $path -> $API_STATUS: $(api_error)"
+		;;
+	esac
 }
 
 api_body() {
 	cat "$RUNDIR/api.body" 2>/dev/null || true
+}
+
+# The reason out of an error response, as one line of plain text. Truncated
+# because it is remote-controlled text on its way into a journal and a web page,
+# and empty rather than noisy when the body is not the JSON we expect. It never
+# carries the API key: this is the response, not the request.
+api_error() {
+	local reason
+	reason=$(api_body | jq -r 'if type == "object" then (.error // "") else "" end' 2>/dev/null || true)
+	if [ -z "$reason" ]; then
+		reason=$(api_body | tr -d '\n')
+	fi
+	printf '%.200s' "$reason"
 }
 
 random_label() {
@@ -445,6 +470,19 @@ ddns_find_record() {
 # pass after the switch goes on.
 ddns_sync() {
 	NOTE=""
+
+	# Recorded before anything to do with the zone, and whether or not there is
+	# one. This is the address a client dials, so it is what the page falls back
+	# to when there is no name — on a router configured without a zone that is
+	# the only endpoint there will ever be, and on one whose zone is refusing
+	# requests it is the difference between a page that can still be acted on
+	# and a page full of em dashes.
+	local addr
+	addr=$(public_address)
+	if is_globally_routable "$addr"; then
+		PUBLIC_ADDR="$addr"
+	fi
+
 	if ! ddns_configured; then
 		return 0
 	fi
@@ -459,10 +497,16 @@ ddns_sync() {
 		RECORD_ID=""
 		log "ephemeral name for this session: $LABEL.$VPN_DNS_ZONE"
 	fi
-	FQDN="$LABEL.$VPN_DNS_ZONE"
+	# FQDN is set by the branches below, on success only, and never here.
+	#
+	# It was set at this point once, and that is a claim the page then makes on
+	# this script's behalf: the endpoint to point a client at. When the zone
+	# refused the record, the page went on offering a name that had never been
+	# created — which resolves to whatever a wildcard in the zone says, and
+	# reads as the tunnel being broken rather than the record being missing.
+	# A name is reported when it exists, or not at all.
+	FQDN=""
 
-	local addr
-	addr=$(public_address)
 	if ! is_globally_routable "$addr"; then
 		NOTE="the PPP interface has no globally routable IPv4 (${addr:-none}), so the name was not updated; the tunnel cannot be reached from the internet through it"
 		log "$NOTE"
@@ -476,7 +520,7 @@ ddns_sync() {
 		api PATCH "/domains/$VPN_DNS_ZONE/records/$RECORD_ID" "$patch"
 		case "$API_STATUS" in
 		2*)
-			PUBLIC_ADDR="$addr"
+			FQDN="$LABEL.$VPN_DNS_ZONE"
 			return 0
 			;;
 		404)
@@ -486,7 +530,7 @@ ddns_sync() {
 			RECORD_ID=""
 			;;
 		*)
-			NOTE="cannot update $FQDN (Vultr answered $API_STATUS); the name may still point at an old address"
+			NOTE="cannot update $LABEL.$VPN_DNS_ZONE — Vultr answered $API_STATUS: $(api_error). The name may still point at an old address."
 			log "$NOTE"
 			return 0
 			;;
@@ -498,7 +542,7 @@ ddns_sync() {
 		# Adopted rather than duplicated.
 		api PATCH "/domains/$VPN_DNS_ZONE/records/$RECORD_ID" "$patch"
 		if [[ "$API_STATUS" == 2* ]]; then
-			PUBLIC_ADDR="$addr"
+			FQDN="$LABEL.$VPN_DNS_ZONE"
 			log "adopted the existing record for $FQDN"
 			return 0
 		fi
@@ -511,11 +555,11 @@ ddns_sync() {
 	case "$API_STATUS" in
 	2*)
 		RECORD_ID=$(api_body | jq -r '.record.id // ""')
-		PUBLIC_ADDR="$addr"
+		FQDN="$LABEL.$VPN_DNS_ZONE"
 		log "published $FQDN -> $addr"
 		;;
 	*)
-		NOTE="cannot create $FQDN (Vultr answered $API_STATUS); the tunnel is up but has no name"
+		NOTE="cannot create $LABEL.$VPN_DNS_ZONE — Vultr answered $API_STATUS: $(api_error). The tunnel is up but has no name; reach it at ${addr}:${VPN_PORT} meanwhile."
 		log "$NOTE"
 		;;
 	esac
@@ -548,7 +592,7 @@ ddns_delete() {
 		;;
 	*)
 		FQDN="$LABEL.$VPN_DNS_ZONE"
-		NOTE="cannot delete $FQDN (Vultr answered $API_STATUS); it still points at this line and will be retried"
+		NOTE="cannot delete $FQDN — Vultr answered $API_STATUS: $(api_error). It still points at this line and will be retried."
 		log "$NOTE"
 		;;
 	esac

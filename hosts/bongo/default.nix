@@ -66,6 +66,18 @@
     restartUnits = [ "nft-lowtrust-macs.service" ];
   };
 
+  # The access point list the status page renders. Readable by everyone on the
+  # router rather than by an owner: router-web runs under DynamicUser, so there
+  # is no uid at build time to grant it. The contents are infrastructure labels
+  # and LAN addresses, not the device list that lowtrust-macs keeps at 0400 — the
+  # secret exists to keep those labels out of this public repository, not out of
+  # the router's own filesystem.
+  sops.secrets."router/access-points" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    mode = "0444";
+    restartUnits = [ "router-web.service" ];
+  };
+
   # The clients allowed into the tunnel: one public key and its allowed IPs per
   # line. A secret rather than a NixOS option because the entries name devices
   # and this repository is public — the same reasoning as the low-trust MAC list
@@ -166,6 +178,7 @@
     autoupgrade.enable = true;
     basePlus.enable = true;
     personal = {
+      ssh.acceptDevKeys = true;
       net = {
         sifr0 = true;
         cacheOverPublic = true;
@@ -284,6 +297,7 @@
         53
         853
       ];
+      accessPoints.file = config.sops.secrets."router/access-points".path;
       # Same policy as bingo, and the lists behind it are shared: the ports,
       # subnets, ASNs and STUN hosts all live in modules/router and apply
       # wherever the pool is enabled. Only membership is per-site, because only

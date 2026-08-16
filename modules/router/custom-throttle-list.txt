@@ -7083,3 +7083,190 @@
 # and .125 captures, YouTube on Etisalat here. Volume is not evidence. The SNI
 # is, every time, and in all three cases it resolved and matched.
 # ===========================================================================
+#
+# --- AS197207 MCCI IN FULL — AN ASN-WIDE ENTRY, AND THE FIRST IN THIS FILE ---
+#
+# Mobile Communication Company of Iran (Hamrah-e Aval), every prefix the repo's
+# ip2asn-combined.tsv has for AS197207: 59 IPv4 CIDRs covering 2,289,920 addresses,
+# plus 14 IPv6. Everything below this comment down to the next divider is that
+# expansion.
+#
+# WHY A WHOLE ASN, WHEN THIS FILE HAS ALWAYS BEEN PER-ADDRESS. The single-address
+# MCCI entry above (113.203.97.98, 2026-08-12) came with a warning that it was
+# "the most perishable entry in this file" — a mobile carrier address behind CGNAT,
+# reassigned in hours. That warning was correct, and the consequence arrived on
+# 2026-08-16: a second MCCI address, 5.217.245.116, in a different /20
+# (5.217.240.0/20 against 113.203.96.0/20). Two addresses, one AS, four days.
+# Chasing individual mobile addresses through a carrier's pool is the losing end
+# of exactly the rotation this file exists to stop, so the AS is the handle.
+#
+# THE EVIDENCE FOR 5.217.245.116 IS THIN, AND SAYING SO IS THE POINT. What was
+# actually seen: opaque UDP on two high ports, one out and one back, strongly
+# asymmetric outbound, lasting seconds and already absent from conntrack when it
+# was checked minutes later. That is a connection attempt, not a characterised
+# session. It is nowhere near the sustained-share evidence behind the confirmed
+# entries in this file, and it should not be read as though it were.
+#
+# What raises it above nothing is the AS match plus a resolver record: the same
+# handset had been looking up conduit.psiphon.ca that day, blocked at the name.
+# Conduit is Psiphon's peer-to-peer proxy mode, which turns volunteers' own
+# devices into exits, and Iran is Psiphon's principal market — so a mobile-carrier
+# peer there is the expected shape, which is the same reasoning the 113.203.97.98
+# note gives.
+#
+# THE COMPETING EXPLANATION IS NOT RULED OUT. The same handset also runs imo, and
+# imo call media goes peer-to-peer straight to a carrier address on two high UDP
+# ports — the documented signature, and indistinguishable on the wire from what
+# was seen here. An ordinary outgoing call to a mobile in Iran produces this
+# capture. Attribution rests on the Psiphon lookup and the AS repeat, not on the
+# flow, and a flow that brief cannot carry it alone.
+#
+# SO THE COLLATERAL IS REAL AND WAS ACCEPTED DELIBERATELY. An ASN-wide cap slows
+# genuine calls to Iranian mobiles as well as any Psiphon exit in that space.
+# The narrower option — the single address, as before — was on the table and was
+# declined by the operator in favour of this, with the call-collateral stated
+# first. Recorded so a later reader does not mistake it for an oversight and
+# quietly narrow it back.
+#
+# What bounds the damage is direction, as with the single-address entry: this file
+# only shapes traffic between this house and MCCI space, so an unrelated subscriber
+# inheriting a pool address is untouched unless somebody here is already talking to
+# them. The difference is that "somebody here talking to an Iranian mobile" is no
+# longer hypothetical — it is the competing explanation above. If calls to Iran
+# start being reported as bad, this block is the first thing to look at.
+#
+# 113.203.97.98 above is now inside 113.203.96.0/20 here. Left in place rather than
+# deleted because its comment carries the reasoning this entry is built on;
+# collapse_addresses merges the two at build time, so the duplication costs nothing.
+#
+# A SNAPSHOT, NOT A SUBSCRIPTION. These prefixes come from ip2asn-combined.tsv as
+# it stands today; MCCI's announcements will drift and this list will not follow.
+# The same file's note on 154.17.253.112 records that table being confidently wrong,
+# though for MCCI it was checked against live RIPE data and agreed.
+#
+5.22.0.0/17
+5.52.0.0/16
+5.106.0.0/16
+5.201.192.0/18
+5.208.0.0/13
+5.216.0.0/15
+5.218.0.0/16
+5.250.0.0/17
+31.2.128.0/17
+37.63.128.0/17
+37.98.0.0/18
+37.98.80.0/20
+37.98.96.0/21
+37.129.0.0/16
+46.51.0.0/19
+46.51.36.0/23
+46.51.40.0/21
+46.51.64.0/18
+46.164.64.0/18
+62.102.128.0/20
+69.194.64.0/18
+80.242.0.0/20
+82.180.192.0/18
+83.120.0.0/14
+85.239.192.0/19
+86.55.0.0/16
+86.107.0.0/20
+86.107.208.0/20
+89.45.48.0/20
+89.196.0.0/16
+89.198.0.0/15
+91.133.128.0/17
+91.251.0.0/16
+93.110.0.0/16
+94.101.240.0/20
+95.64.0.0/17
+109.108.160.0/19
+109.203.128.0/19
+109.225.128.0/18
+113.203.0.0/17
+130.255.192.0/18
+158.58.0.0/17
+164.138.128.0/18
+172.80.128.0/17
+176.65.192.0/19
+178.131.120.0/21
+178.131.192.0/18
+185.5.156.0/22
+185.22.29.0/24
+188.122.96.0/19
+188.209.192.0/20
+188.210.64.0/20
+188.210.192.0/20
+188.212.48.0/20
+188.229.0.0/18
+188.229.64.0/19
+188.229.116.0/23
+192.15.0.0/16
+204.18.0.0/16
+2a02:4540::/41
+2a02:4540:80::/42
+2a02:4540:c0::/43
+2a02:4540:f8::/45
+2a02:4540:5000::/41
+2a02:4540:5080::/43
+2a02:4540:50c0::/42
+2a02:4540:7000::/41
+2a02:4540:9000::/41
+2a02:4540:9080::/42
+2a02:4540:c000::/41
+2a02:4540:e000::/41
+2a02:4540:e080::/48
+2a02:4540:e0c0::/42
+#
+# --- AS63023 GTHost — A CLEAN TUNNEL, AND THE FIRST FROM THIS OPERATOR ------
+#
+# 23.166.88.127, tcp/8080. ARIN gives NetName NAT64-SERVER / AS-GTHOST, OrgName
+# Barilink LLC, inside 23.166.88.0/24; Team Cymru resolves the announcement to
+# AS63023 AS-GLOBALTELEHOST (GTHost), a VPS reseller. Rented compute, so the
+# hosting-AS row of the usual table applies without argument: a handset has no
+# reason to hold a long connection to a leased server.
+#
+# This is the least ambiguous entry added in a while, so the evidence is worth
+# stating plainly rather than gestured at:
+#
+#   * ONE peer. Not a dominant share — the sole remote address the device spoke
+#     to across a full five-minute capture. The 70-100% band this file usually
+#     argues from was 100.0%, with nothing else to divide it against.
+#   * One TCP connection, one source port, open for the entire window and still
+#     ESTABLISHED afterwards. Its conntrack counters were several times the
+#     capture's own totals, so the session long predates the window. A call ends
+#     and a stream ends; this did neither.
+#   * No TLS records at all. Not a handshake seen mid-session, not a resumed
+#     session — nothing tshark recognises as TLS on the flow. Opaque payload on
+#     an unremarkable proxy port.
+#   * Download-heavy, on the order of eleven to one. That rules out the two
+#     shapes this file has misread before: a call is roughly symmetric and a
+#     live broadcast is upload-heavy. This is a tunnel carrying someone's
+#     browsing.
+#   * NOTHING IN THE RESOLVER EXPLAINS IT, and the absence is the finding rather
+#     than a gap in the evidence. Across the same window that device's only
+#     lookups were repeats of www.google.com — Android's connectivity probe. A
+#     device pulling that much while resolving nothing is resolving inside the
+#     tunnel, which is the whole detection this repo is built on.
+#
+# THE TRAPS WERE CHECKED, not assumed away. Only one LAN address ever appears on
+# that host, so it is not the paired-port relay case that the Hik-Connect note
+# above describes and that costs the house its cameras when it is got wrong. It
+# is not CDN edge: no SNI, no matching name, and GTHost sells virtual machines
+# rather than serving content — the Akamai-bought-Linode caution elsewhere in
+# this file cuts the other way here, since the netname is not a CDN's to begin
+# with. And the same device was unremarkable an hour earlier, pulling video from
+# a carrier-hosted Google cache with a matching SNI, so this is a tunnel that
+# came up rather than a device that always looked like this.
+#
+# THROTTLED RATHER THAN BLOCKED, for the reason in this file's header and not as
+# a hedge about the verdict. The verdict is not in doubt; the lever is chosen
+# because dropping a node hands the client a clean failure to route around, and
+# this operator has 193 announced prefixes to move within. A cap gives it nothing
+# to detect.
+#
+# FIRST SIGHTING OF AS63023 — no GTHost address appears anywhere else in these
+# lists. Recorded so that a second one is recognised as a range problem straight
+# away instead of being filed as another singleton; the MCCI block above is what
+# it costs to notice that pattern four days late.
+23.166.88.127

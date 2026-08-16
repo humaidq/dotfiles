@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -14,8 +16,8 @@ import (
 func TestStylesheetIsServedOnBothListeners(t *testing.T) {
 	tmpl := template.Must(template.New("index").Parse("landing"))
 	muxes := map[string]http.Handler{
-		"lan":  landingMux(pageData{}, tmpl, nil, navSource{}),
-		"mesh": meshMux(pageData{}, tmpl, nil, testPeersServer(t), navSource{}),
+		"lan":  landingMux(pageData{}, tmpl, nil, nil, navSource{}),
+		"mesh": meshMux(pageData{}, tmpl, nil, nil, testPeersServer(t), navSource{}),
 	}
 	for name, mux := range muxes {
 		t.Run(name, func(t *testing.T) {
@@ -40,6 +42,55 @@ func TestStylesheetIsEmbeddedNotReadFromDisk(t *testing.T) {
 	if !strings.Contains(stylesheet, ".topbar") {
 		t.Fatal("the embedded stylesheet is empty or wrong")
 	}
+}
+
+// The validator has to track the content. It used to be a date written by hand,
+// and an edit to style.css that did not also bump it served 304 to every
+// browser holding the previous copy — new markup, old rules, which reads as
+// broken CSS rather than as a stale cache. It is derived from the bytes now, so
+// this asserts the three behaviours that depend on it.
+func TestStylesheetValidatorTracksContent(t *testing.T) {
+	handler := http.HandlerFunc(serveStylesheet)
+
+	t.Run("etag is the content hash", func(t *testing.T) {
+		sum := sha256.Sum256([]byte(stylesheet))
+		want := `"` + hex.EncodeToString(sum[:8]) + `"`
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/style.css", nil))
+		if got := rec.Header().Get("ETag"); got != want {
+			t.Errorf("ETag = %q, want %q", got, want)
+		}
+	})
+
+	// The case that actually broke: a client whose cached copy predates the
+	// switch has an If-Modified-Since and no ETag, and must be sent the real
+	// stylesheet rather than an empty 304.
+	t.Run("a date-only cache is refreshed", func(t *testing.T) {
+		request := httptest.NewRequest(http.MethodGet, "/style.css", nil)
+		request.Header.Set("If-Modified-Since", "Sat, 15 Aug 2026 00:00:00 GMT")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, request)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200 — a stale cache must be refreshed", rec.Code)
+		}
+		if !strings.Contains(rec.Body.String(), ".topbar") {
+			t.Error("body is empty; the client would keep rendering the old stylesheet")
+		}
+	})
+
+	// And an unchanged stylesheet still revalidates cheaply, which is the whole
+	// point of having a validator.
+	t.Run("a matching etag still gets 304", func(t *testing.T) {
+		request := httptest.NewRequest(http.MethodGet, "/style.css", nil)
+		request.Header.Set("If-None-Match", stylesheetETag)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, request)
+
+		if rec.Code != http.StatusNotModified {
+			t.Errorf("status = %d, want 304", rec.Code)
+		}
+	})
 }
 
 func renderNav(t *testing.T, nav navData) string {

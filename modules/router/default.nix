@@ -267,6 +267,55 @@ in
       };
     };
 
+    # The access points, listed on the status page with one lamp each. See
+    # web/aps.go for what the three states mean and how they are measured.
+    #
+    # These hang off a switch rather than off the router, so there is no link
+    # state to read and no PHY to interrogate: the state is inferred from ICMP,
+    # which is all a router can ask an unmanaged AP it has no credentials for.
+    accessPoints = {
+      file = lib.mkOption {
+        type = with lib.types; nullOr path;
+        default = null;
+        description = ''
+          Path to the decrypted file listing access points, one
+          `name,address` per line, `#` comments allowed. Null disables the
+          section: no list, no probe socket, no goroutine.
+
+          A path rather than a list of strings for the same reason
+          `lowTrust.macFile` is one: this repository is public and anything
+          given to a NixOS option ends up world-readable in the Nix store.
+          Point it at a sops secret's `.path`.
+
+          A malformed line disables the whole list rather than being skipped —
+          an access point silently missing from the page reads as one that is
+          fine, which is the failure the page exists to prevent.
+        '';
+      };
+
+      credentialsFile = lib.mkOption {
+        type = with lib.types; nullOr path;
+        default = null;
+        description = ''
+          Path to the decrypted admin login the reboot button uses, as one
+          `username:password` line. Null disables the button entirely: no
+          reboot form on the status page and no route behind it — the list
+          above still draws the lamps.
+
+          One login shared by every access point on the list, so this is only
+          useful where they are configured identically. The reboot protocol is
+          the IP-COM/Tenda `goform` login, so it fits those and not, for
+          example, a UniFi access point.
+
+          A path rather than a string for the same reason `file` is one: this
+          repository is public and an option value ends up world-readable in
+          the Nix store. Point it at a sops secret's `.path`, kept readable by
+          the router-ap group rather than world-readable — unlike the list, this
+          is a secret.
+        '';
+      };
+    };
+
     bandwidth = {
       upload = lib.mkOption {
         type = lib.types.str;

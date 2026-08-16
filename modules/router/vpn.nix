@@ -279,7 +279,15 @@ in
     # — after every mount that could hide it. One authority, and one that runs
     # late enough to be the last word.
 
-    environment.systemPackages = [ routervpn ];
+    # wireguard-tools alongside the reconciler, purely so the tunnel can be
+    # debugged. The script carries its own copy in runtimeInputs and needs
+    # nothing here — but without `wg show` on a PATH there is no way to answer
+    # "did this peer ever complete a handshake, and when", which is the first
+    # question every failing client asks and the only place the answer exists.
+    environment.systemPackages = [
+      routervpn
+      pkgs.wireguard-tools
+    ];
 
     # THE PORT AND THE GATE.
     #

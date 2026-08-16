@@ -41,7 +41,7 @@ func TestLANListenerServesNoPeerRoute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
-	lan := landingMux(pageData{}, tmpl, nil, navSource{})
+	lan := landingMux(pageData{}, tmpl, nil, nil, navSource{})
 
 	for _, route := range peerRoutes {
 		t.Run(route.method+" "+route.path, func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestMeshListenerServesStatusAndPeers(t *testing.T) {
 		t.Fatalf("parse index.html: %v", err)
 	}
 	peers := testPeersServer(t)
-	mesh := meshMux(pageData{}, indexTmpl, nil, peers, navSource{})
+	mesh := meshMux(pageData{}, indexTmpl, nil, nil, peers, navSource{})
 
 	// The status page, which is the whole point of the change: it used to be
 	// LAN-only, and the mesh is what is reachable when the LAN is not.
@@ -100,7 +100,7 @@ func TestLANStatusPageOffersNoPeersLink(t *testing.T) {
 	}
 
 	rec := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, navSource{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	landingMux(pageData{}, tmpl, nil, nil, navSource{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 	if strings.Contains(rec.Body.String(), `href="/peers"`) {
 		t.Error("LAN status page links to a route it does not serve")
 	}
@@ -128,7 +128,7 @@ func TestMeshStatusRoutesIncludeUplink(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse index.html: %v", err)
 	}
-	mesh := meshMux(pageData{}, indexTmpl, service, testPeersServer(t), navSource{})
+	mesh := meshMux(pageData{}, indexTmpl, service, nil, testPeersServer(t), navSource{})
 
 	for _, path := range []string{"/uplink", "/metrics"} {
 		rec := httptest.NewRecorder()

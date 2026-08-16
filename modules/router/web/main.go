@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"html/template"
@@ -52,6 +54,16 @@ type pageData struct {
 	// the band out of the template there rather than rendering a row of em
 	// dashes that looks like a fault.
 	Uplink *uplinkBand
+	// The access points, one lamp each. Empty on a router with no list
+	// configured, which keeps the section out of the page entirely — the same
+	// reason Uplink is a pointer.
+	AccessPoints []apReport
+	// Whether each access point carries a reboot button. True only when
+	// credentials are configured and only on the mesh listener, which is the
+	// only one that registers the route behind it — the button and the handler
+	// are turned on by the same condition so the page cannot offer an action the
+	// mux does not serve.
+	APRebootEnabled bool
 	// Whether to offer the link to the peers list. True only on the mesh
 	// listener, which is the only one that serves it.
 	ShowPeers bool
@@ -63,11 +75,21 @@ type pageData struct {
 //go:embed style.css
 var stylesheet string
 
-// A fixed modification time for the embedded stylesheet, so conditional
-// requests work and every router serving the same build agrees on the answer.
-// Not the process start time, which would make every restart look like a new
-// stylesheet to every cache.
-var buildTime = time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC)
+// The embedded stylesheet's cache validator, derived from its own bytes.
+//
+// Conditional requests need a validator that is stable across restarts and
+// identical on every router serving the same build, which rules out the process
+// start time. This was a hand-written date, and a hand-written date is a trap:
+// editing style.css without also bumping it serves 304 to every browser holding
+// the previous copy, which renders the new markup against the old rules and
+// looks like broken CSS rather than a stale cache. That happened. Deriving the
+// validator from the content means it cannot disagree with what is served.
+//
+// Truncated to 16 hex characters: this is a cache key, not a signature.
+var stylesheetETag = func() string {
+	sum := sha256.Sum256([]byte(stylesheet))
+	return `"` + hex.EncodeToString(sum[:8]) + `"`
+}()
 
 func getenvDefault(key string, fallback string) string {
 	value := strings.TrimSpace(os.Getenv(key))
@@ -380,7 +402,7 @@ func loadConfig() pageData {
 //
 // showPeers is set only by the mesh mux, so the link to the peers list appears
 // exactly where the link works.
-func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, nav navSource, showPeers bool) {
+func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource, showPeers bool) {
 	// The stylesheet every page links. Registered here because this function is
 	// the one thing both listeners run, and a page served over the mesh with no
 	// stylesheet is what the LAN-only alternative would produce.
@@ -396,6 +418,15 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 		state.Nav = nav.data("status", showPeers)
 		if uplink != nil {
 			state.Uplink = uplink.band()
+		}
+		// Read from the last cycle rather than probed here: a page that pings
+		// three access points before it renders is a page that takes seconds to
+		// load, and takes longest exactly when one of them is off.
+		if aps != nil {
+			state.AccessPoints = aps.reports()
+			// Only where the route is also registered: mesh listener, credentials
+			// present. The LAN page shows the lamps and no button.
+			state.APRebootEnabled = showPeers && aps.canReboot()
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmpl.Execute(w, state); err != nil {
@@ -422,9 +453,9 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 // registered in exactly one function, and that function is called from exactly
 // one mux, so making a peers page LAN-reachable takes a deliberate edit rather
 // than a forgotten check inside a handler.
-func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, nav navSource) *http.ServeMux {
+func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, nav, false)
+	registerStatusRoutes(mux, config, tmpl, uplink, aps, nav, false)
 	return mux
 }
 
@@ -436,10 +467,17 @@ func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService,
 // another site, or from a phone on the tunnel — and a status page that only
 // answers on the LAN is unavailable in most of the situations that send you
 // looking for it.
-func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, peers *peersServer, nav navSource) *http.ServeMux {
+func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, peers *peersServer, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, nav, true)
+	registerStatusRoutes(mux, config, tmpl, uplink, aps, nav, true)
 	peers.registerRoutes(mux)
+	// The AP reboot action, on this listener only and only when credentials are
+	// configured — the same split that keeps every other mutation off the LAN
+	// listener. registerStatusRoutes draws the lamps on both; the button that
+	// mutates is registered here alone.
+	if aps.canReboot() {
+		mux.HandleFunc("POST /ap/reboot", aps.handleReboot)
+	}
 	// The tunnel switch, on this listener only. Taken from the nav source
 	// rather than passed in beside it so that the entry in the strip and the
 	// routes behind it are decided by one field: a router where the strip
@@ -545,7 +583,7 @@ func meshListenAddr(raw string) (string, error) {
 //
 // The mesh serves the status routes as well as the peers routes, so the
 // landing config and templates are threaded through here too.
-func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, nav navSource) error {
+func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource) error {
 	validAddr, err := meshListenAddr(meshAddr)
 	if err != nil {
 		return fmt.Errorf("invalid ROUTER_LISTEN_MESH %q: %w", meshAddr, err)
@@ -591,7 +629,7 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 		peers.lowTrust = lowTrustMembership
 	}
 	peers.nav = nav
-	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, peers, nav))
+	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, aps, peers, nav))
 	return nil
 }
 
@@ -666,6 +704,7 @@ func main() {
 	lanCIDR := os.Getenv("ROUTER_LAN_CIDR")
 
 	uplink := startUplink(staticRoot, config.PPPInterface)
+	aps := startAccessPoints()
 	vpn := startVPN(staticRoot)
 	// Read once rather than per render: the hostname cannot change under a
 	// running process, and the nav strip is on every page. Not taken from
@@ -684,7 +723,7 @@ func main() {
 		vpn.nav = nav
 	}
 
-	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, nav)}
+	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, aps, nav)}
 
 	lanErrs := make(chan error, 1)
 	go func() {
@@ -696,7 +735,7 @@ func main() {
 	// without one behaves exactly as it did before this feature. A mesh
 	// startup failure is logged, never fatal: see startMeshServer.
 	if meshAddr != "" && lanCIDR != "" {
-		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, nav); err != nil {
+		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, aps, nav); err != nil {
 			log.Printf("peers page disabled: %v", err)
 		}
 	}
@@ -720,5 +759,10 @@ func serveStylesheet(w http.ResponseWriter, r *http.Request) {
 	// looking at them during an outage will reload hard, and an hour of stale
 	// CSS after a router upgrade is a worse trade than re-sending 8 KB.
 	w.Header().Set("Cache-Control", "max-age=300")
-	http.ServeContent(w, r, "style.css", buildTime, strings.NewReader(stylesheet))
+	w.Header().Set("ETag", stylesheetETag)
+	// A zero modification time deliberately: it suppresses Last-Modified and
+	// with it If-Modified-Since handling, so the ETag is the only validator.
+	// A client still holding the old date-based copy has no ETag to send, gets
+	// a full 200 back, and is on the content-derived validator from then on.
+	http.ServeContent(w, r, "style.css", time.Time{}, strings.NewReader(stylesheet))
 }

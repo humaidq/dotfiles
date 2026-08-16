@@ -43,15 +43,17 @@ type vpnStatus struct {
 	Address   string `json:"address"`
 	PublicKey string `json:"publicKey"`
 	Peers     int    `json:"peers"`
-	// The ephemeral name: the random label, and the same thing qualified with
-	// the zone. Both empty when DNS is not configured or the record has not
-	// been created yet.
+	// The ephemeral name. Label is the random word this session was given and
+	// survives a failed publish; FQDN is set only once the record actually
+	// exists in the zone, so an endpoint offered here is one that resolves.
 	Label string `json:"label"`
 	FQDN  string `json:"fqdn"`
-	// The address the record points at, which is the PPP address as of the
-	// last pass rather than as of now — the two differ for up to a minute
-	// after a redial, and saying which one this is matters when the question
-	// being asked is why a client cannot connect.
+	// The line's public address as of the last pass rather than as of now —
+	// the two differ for up to a minute after a redial, and which one this is
+	// matters when the question being asked is why a client cannot connect.
+	//
+	// Recorded whether or not the zone is configured or reachable, because it
+	// is what a client can be pointed at when there is no name to use.
 	PublicAddress string `json:"publicAddress"`
 	RecordID      string `json:"recordId"`
 	Updated       string `json:"updated"`
