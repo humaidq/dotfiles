@@ -316,7 +316,18 @@
         # currently using. Without this the router hands out a new server key
         # on every reboot — every client config invalidated — and forgets the
         # record it is meant to delete on disable.
-        "/var/lib/router-vpn"
+        #
+        # Ownership is spelled out because impermanence creates the persisted
+        # directory itself, and its default of 0755 root:root is what router-web
+        # ends up looking at once the bind mount is in place. The reconciler
+        # corrects it on every pass either way; declaring it here means the
+        # directory is never wrong in the first place.
+        {
+          directory = "/var/lib/router-vpn";
+          user = "root";
+          group = "router-vpn";
+          mode = "0750";
+        }
       ];
     };
   };

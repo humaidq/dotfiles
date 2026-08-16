@@ -242,8 +242,17 @@ in
       # every client config. Caught here rather than discovered from a client
       # that will not handshake.
       {
+        # An entry is either a path or an attrset carrying ownership with it,
+        # and this feature wants the second form — so the check has to read
+        # both, or turning the entry into the form the directory actually needs
+        # would trip the assertion that asked for it.
         assertion =
-          !(config.sifr.persist.enable or false) || builtins.elem stateDir (config.sifr.persist.dirs or [ ]);
+          !(config.sifr.persist.enable or false)
+          || builtins.elem stateDir (
+            map (entry: if builtins.isString entry then entry else entry.directory or "") (
+              config.sifr.persist.dirs or [ ]
+            )
+          );
         message = ''
           sifr.router.vpn.enable needs "${stateDir}" in sifr.persist.dirs on a
           host with impermanence. It holds the WireGuard server key, the
@@ -256,17 +265,19 @@ in
 
     users.groups.${group} = { };
 
-    # 0750 on the directory and 0660 on the switch: router-web is in the group
-    # and can flip the switch, and can read the reconciler's report next to it,
-    # but private.key stays 0600 root and out of reach.
+    # THE STATE DIRECTORY IS NOT DECLARED HERE, and that is deliberate.
     #
-    # The switch is created rather than assumed so the path unit below has
-    # something to watch from the first boot, and it is created "off" so a
-    # router that has never been told otherwise comes up with no tunnel.
-    systemd.tmpfiles.rules = [
-      "d ${stateDir} 0750 root ${group} -"
-      "f ${desiredFile} 0660 root ${group} - off"
-    ];
+    # It was two systemd.tmpfiles rules — 0750 root:${group} on the directory,
+    # 0660 on the switch — and on an impermanent host they did nothing useful.
+    # The directory is a bind mount from /persist, established after
+    # systemd-tmpfiles-setup has run, so tmpfiles set the permissions on a
+    # directory that was then covered over by the persisted one: 0755 root:root,
+    # no switch file, and router-web failing every write with EACCES while the
+    # rule sat in /etc/tmpfiles.d looking correct.
+    #
+    # ensure_state_dir in vpn.bash does it instead, as root, on every reconcile
+    # — after every mount that could hide it. One authority, and one that runs
+    # late enough to be the last word.
 
     environment.systemPackages = [ routervpn ];
 

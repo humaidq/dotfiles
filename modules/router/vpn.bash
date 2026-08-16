@@ -97,6 +97,32 @@ ensure_rundir() {
 	trap 'rm -rf "$RUNDIR"' EXIT
 }
 
+# The directory and the switch file, enforced here rather than declared with
+# tmpfiles.
+#
+# tmpfiles was the obvious home for this and it silently lost. On an impermanent
+# host the directory is a bind mount from /persist, and that mount is
+# established after systemd-tmpfiles-setup has run: tmpfiles dressed a directory
+# that was then covered over, so what router-web actually saw was impermanence's
+# own 0755 root:root with no switch file in it, and every write failed with
+# EACCES. Run from here it is applied as root in multi-user, after every mount
+# that could hide it, on every pass.
+#
+# 0750 on the directory and 0660 on the file is the whole of router-web's
+# privilege: it can rewrite this one file and create nothing, which is why the
+# file has to exist before it is ever asked to.
+ensure_state_dir() {
+	[ -d "$VPN_STATE_DIR" ] || mkdir -p "$VPN_STATE_DIR"
+	chgrp "$VPN_STATE_GROUP" "$VPN_STATE_DIR"
+	chmod 0750 "$VPN_STATE_DIR"
+
+	# Created off. A router that has never been told otherwise must not come up
+	# with a port open to the internet.
+	[ -e "$DESIRED" ] || printf 'off\n' >"$DESIRED"
+	chgrp "$VPN_STATE_GROUP" "$DESIRED"
+	chmod 0660 "$DESIRED"
+}
+
 read_desired() {
 	local raw=""
 	if [ -r "$DESIRED" ]; then
@@ -558,6 +584,9 @@ apply() {
 	ensure_rundir
 	trap report_failure ERR
 
+	# Before the lock, which lives in the directory this creates.
+	ensure_state_dir
+
 	# The timer, the path unit and a person at the keyboard can all land here at
 	# once. Serialised rather than raced: two passes creating the same DNS
 	# record is the failure this prevents.
@@ -581,7 +610,18 @@ switch_to() {
 }
 
 status() {
+	# read_desired answers "off" for a file it cannot read, which is the right
+	# answer for the reconciler — it fails towards the closed port — and the
+	# wrong one to show a person, who would read it as a tunnel that is down.
+	# Both files are group-readable and the group is router-web's, not a
+	# human's, so this is the normal case for someone at the keyboard.
+	if [ -e "$DESIRED" ] && [ ! -r "$DESIRED" ]; then
+		die "cannot read the switch — run this as root"
+	fi
 	echo "switch:   $(read_desired)"
+	if [ -e "$OBSERVED" ] && [ ! -r "$OBSERVED" ]; then
+		die "cannot read the report — run this as root"
+	fi
 	if [ -r "$OBSERVED" ]; then
 		jq . "$OBSERVED"
 	else

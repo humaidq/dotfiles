@@ -1,4 +1,25 @@
 { vars, ... }:
+let
+  # Touch-free development keys, one per machine that originates SSH. Each is a
+  # non-resident FIDO credential minted on that machine's own YubiKey with
+  # `-O no-touch-required`, so the private half never leaves the token and
+  # nothing secret is shared between hosts or stored in this repo:
+  #
+  #   ssh-keygen -t ed25519-sk -O no-touch-required -O application=ssh:dev-<host> \
+  #              -C dev-<host> -N "" -f ~/.ssh/id_ed25519_sk_dev
+  #
+  # The `no-touch-required` prefix below is NOT decoration. sshd checks the
+  # user-presence bit on every signature and rejects the key outright unless the
+  # authorized_keys entry opts in. Dropping the prefix produces an authentication
+  # failure that looks nothing like its cause.
+  #
+  # These are weaker than the touch keys by design: anything running as the user
+  # on the originating machine can use them silently. That is the point -- it is
+  # what lets agents and remote sessions work unattended.
+  devKeys = [
+    "no-touch-required sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAILIgDij/HTlP53qhiklklAHvfSTkkqzxiTV2OFWIebucAAAADHNzaDpkZXYtYW5vYQ== dev-anoa"
+  ];
+in
 {
   config = {
     services.openssh.settings = {
@@ -7,7 +28,7 @@
       PermitRootLogin = "no";
     };
 
-    users.users.root.openssh.authorizedKeys.keys = [
+    users.users.root.openssh.authorizedKeys.keys = devKeys ++ [
       "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIC+JivWVZLN5Q+gQp+Y+YOHr0tglTPujT5uqz0Vk//YnAAAABHNzaDo= HK05"
       "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIBDT3fTXfORHii5qehplQUj0JQztBhELP9D+22/8cg+9AAAAD3NzaDpodW1haWQtYW5vYQ== humaid-nano-anoa-ssh-git"
 
@@ -43,6 +64,13 @@
         ServerAliveCountMax = 3;
         HashKnownHosts = false;
         UserKnownHostsFile = "~/.ssh/known_hosts";
+        # id_ed25519_sk_dev is not one of ssh's built-in identity filenames, so
+        # without this it is never offered and every session falls back to a
+        # touch key. Explicitly configured identities are tried before the
+        # built-in defaults, which is what puts the touch-free key ahead of
+        # id_ed25519_sk -- the server takes the first key it accepts, so losing
+        # that race means a touch prompt even though a no-touch key exists.
+        IdentityFile = "~/.ssh/id_ed25519_sk_dev";
         ControlMaster = "no";
         ControlPath = "~/.ssh/master-%r@%n:%p";
         ControlPersist = "no";
