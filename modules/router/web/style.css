@@ -763,6 +763,57 @@ code.port.suspect {
   color: #5a1c38;
 }
 
+/* ----------------------------------------------------------------- tunnel */
+
+/* The remote-access band, built like the uplink one and deliberately not
+   sharing its classes: this is a switch someone pressed, not a measurement,
+   and the two must not come to look interchangeable. Its own colours for the
+   same reason — "on" is the accent rather than --ok, because a tunnel being up
+   is a state the operator chose, not a health check that passed. */
+.tunnel {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--idle);
+  border-radius: 3px;
+}
+
+.tunnel-on {
+  border-left-color: var(--accent);
+}
+.tunnel-off {
+  border-left-color: var(--idle);
+}
+.tunnel-settling {
+  border-left-color: var(--warn);
+}
+
+.tunnel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.tunnel-state {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.tunnel-on .tunnel-state {
+  color: var(--accent);
+}
+.tunnel-off .tunnel-state {
+  color: var(--muted);
+}
+.tunnel-settling .tunnel-state {
+  color: var(--warn);
+}
+
 /* ------------------------------------------------------------------ forms */
 
 button {

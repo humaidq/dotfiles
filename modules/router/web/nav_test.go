@@ -114,7 +114,7 @@ func TestNavSourceReportsUnknownWithoutProbing(t *testing.T) {
 // Every page template must invoke the shared strip, or the section it belongs
 // to loses its navigation the moment someone lands on it directly.
 func TestEveryPageTemplateInvokesTheNav(t *testing.T) {
-	for _, page := range []string{"index.html", "uplink.html", "peers.html", "peers-index.html"} {
+	for _, page := range []string{"index.html", "uplink.html", "peers.html", "peers-index.html", "vpn.html"} {
 		body, err := readFileString(page)
 		if err != nil {
 			t.Fatalf("read %s: %v", page, err)

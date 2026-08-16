@@ -26,6 +26,9 @@ missing entry — one is a gap, the other looks like a broken router.
       {{ if .ShowPeers }}
       <li><a href="/peers"{{ if eq .Active "devices" }} class="current" aria-current="page"{{ end }}>Devices</a></li>
       {{ end }}
+      {{ if .ShowVPN }}
+      <li><a href="/vpn"{{ if eq .Active "vpn" }} class="current" aria-current="page"{{ end }}>Tunnel</a></li>
+      {{ end }}
     </ul>
   </div>
 </nav>

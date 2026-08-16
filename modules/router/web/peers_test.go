@@ -48,9 +48,14 @@ func testPeersServer(t *testing.T) *peersServer {
 	if err != nil {
 		t.Fatalf("LoadGeoTable: %v", err)
 	}
+	// Populated directly rather than through a path, so tests never depend on
+	// the polling interval or on files existing.
+	tables := &tableWatcher{}
+	tables.asn.Store(table)
+	tables.geo.Store(geo)
 	leases := writeLeases(t, "1 aa:bb:cc:dd:ee:01 192.168.0.10 device-a 01:aa\n"+
 		"2 aa:bb:cc:dd:ee:02 192.168.0.20 * 01:bb\n")
-	server := newPeersServer(netip.MustParsePrefix("192.168.0.0/24"), table, tmpl, indexTmpl, leases)
+	server := newPeersServer(netip.MustParsePrefix("192.168.0.0/24"), tables, tmpl, indexTmpl, leases)
 	server.conntrack = func(context.Context) ([]byte, error) {
 		return []byte(conntrackFixture), nil
 	}
@@ -66,7 +71,6 @@ func testPeersServer(t *testing.T) *peersServer {
 	// sysctls and make every last-seen assertion depend on how the host running
 	// the suite happens to be tuned. Tests that want the column set their own.
 	server.timeouts = nil
-	server.geo = geo
 	return server
 }
 
@@ -220,7 +224,10 @@ func TestActionLogsToJournal(t *testing.T) {
 		`peer="203.0.113.10"`,
 		"asn=64496",
 		`org="Example Hosting"`,
-		"cc=NL",
+		// The geolocation, not the AS registration — the log names the same
+		// thing the page's Country column does, so the two can be correlated.
+		// The fixture places this address in AE while its AS row says NL.
+		"cc=AE",
 		`device="192.168.0.10"`,
 		`result="ok"`,
 	} {

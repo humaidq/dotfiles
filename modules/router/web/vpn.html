@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tunnel — remote access</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+{{ template "nav" .Nav }}
+<main>
+<h1>Remote access tunnel</h1>
+
+<section class="tunnel tunnel-{{.State}}" aria-labelledby="tunnel-state">
+<div class="tunnel-head">
+<span class="tunnel-state" id="tunnel-state">{{.StateText}}</span>
+{{if eq .Switch "on"}}
+<form class="device" method="post" action="/vpn/disable">
+<button type="submit">switch the tunnel off</button>
+</form>
+{{else}}
+<form class="capture" method="post" action="/vpn/enable">
+<button type="submit">switch the tunnel on</button>
+</form>
+{{end}}
+</div>
+{{if .Settling}}
+<p class="note">The switch and the tunnel service disagree, which usually means the change is still being applied &mdash; reload in a moment. If it stays this way, <code>journalctl -u router-vpn</code> has the reason.</p>
+{{end}}
+</section>
+
+{{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+{{with .Status.Note}}<p class="note">{{.}}</p>{{end}}
+
+{{if .Status.Enabled}}
+<section class="section" aria-labelledby="tunnel-client">
+<h2 id="tunnel-client">Point a client here</h2>
+<dl>
+<dt>Endpoint</dt>
+<dd>{{if .Endpoint}}<code>{{.Endpoint}}</code>{{else}}&mdash;{{end}}</dd>
+<dt>Server public key</dt>
+<dd>{{if .Status.PublicKey}}<code>{{.Status.PublicKey}}</code>{{else}}&mdash;{{end}}</dd>
+<dt>Tunnel network</dt>
+<dd><code>{{.Status.Address}}</code> on <code>{{.Status.Interface}}</code></dd>
+<dt>Clients configured</dt>
+<dd>{{.Status.Peers}}</dd>
+</dl>
+<p class="note">A client's own address and its public key come from the peers secret, not from here &mdash; edit it with <code>sops</code> and run <code>systemctl start router-vpn</code>. A client whose key is not in that file gets no answer at all.</p>
+</section>
+
+<section class="section" aria-labelledby="tunnel-name">
+<h2 id="tunnel-name">Ephemeral name</h2>
+<dl>
+<dt>Name</dt>
+<dd>{{if .Status.FQDN}}<code>{{.Status.FQDN}}</code>{{else}}none &mdash; no zone is configured{{end}}</dd>
+<dt>Points at</dt>
+<dd>{{if .Status.PublicAddress}}<code>{{.Status.PublicAddress}}</code>{{else}}&mdash;{{end}}</dd>
+<dt>Last reconciled</dt>
+<dd>{{if .Reported}}{{.Reported}} ago{{else}}&mdash;{{end}}</dd>
+</dl>
+<p class="note">Kept pointed at the current WAN address for as long as the tunnel is on, and deleted from the zone when it is switched off. Switching off and on again takes a new name; a reboot keeps this one.</p>
+</section>
+{{else}}
+<section class="section" aria-labelledby="tunnel-what">
+<h2 id="tunnel-what">What switching it on does</h2>
+<p>Creates the tunnel interface, opens its UDP port towards the internet on the WAN, and publishes a fresh random name in the zone pointed at this line. All three are undone when it is switched off, including deleting the name.</p>
+<p class="note">The switch survives a reboot: a router that comes back up with the tunnel on brings it back up with it.</p>
+</section>
+{{end}}
+</main>
+</body>
+</html>

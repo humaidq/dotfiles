@@ -17,12 +17,16 @@ type navData struct {
 	// whose left end changes shape between pages is not a strip.
 	State     string
 	StateText string
-	// Which entry to mark current: "status", "uplink" or "devices".
+	// Which entry to mark current: "status", "uplink", "devices" or "vpn".
 	Active string
 	// Whether each section is reachable from the listener serving this page.
 	// See nav.html for why a link that 404s is worse than a link that is absent.
 	ShowUplink bool
 	ShowPeers  bool
+	// The tunnel switch, which is mesh-only for the same reason the device
+	// pages are: it changes what the router does, and the LAN listener changes
+	// nothing. It is also opt-in on the router having the feature at all.
+	ShowVPN bool
 }
 
 // navSource builds a navData per request from the two things that vary: the
@@ -34,6 +38,11 @@ type navData struct {
 type navSource struct {
 	host   string
 	uplink *uplinkService
+	// The tunnel service, nil on a router without the feature. Held here as
+	// well as being the thing the routes are registered from, so that the entry
+	// in the strip and the routes behind it cannot disagree — meshMux takes the
+	// service from this field rather than being handed a second copy.
+	vpn *vpnService
 }
 
 func (n navSource) data(active string, showPeers bool) navData {
@@ -44,6 +53,9 @@ func (n navSource) data(active string, showPeers bool) navData {
 		Active:     active,
 		ShowUplink: n.uplink != nil,
 		ShowPeers:  showPeers,
+		// showPeers is "is this the mesh listener", which is exactly the
+		// condition the switch has to obey as well.
+		ShowVPN: showPeers && n.vpn != nil,
 	}
 	if n.uplink != nil {
 		if band := n.uplink.band(); band != nil {

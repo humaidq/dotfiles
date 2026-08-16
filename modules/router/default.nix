@@ -20,6 +20,7 @@ in
     ./ip-blocklist.nix
     ./suricata.nix
     ./tools.nix
+    ./vpn.nix
     ./web.nix
   ];
 

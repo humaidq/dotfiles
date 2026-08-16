@@ -440,6 +440,14 @@ func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, pe
 	mux := http.NewServeMux()
 	registerStatusRoutes(mux, config, tmpl, uplink, nav, true)
 	peers.registerRoutes(mux)
+	// The tunnel switch, on this listener only. Taken from the nav source
+	// rather than passed in beside it so that the entry in the strip and the
+	// routes behind it are decided by one field: a router where the strip
+	// offers /vpn and the mux does not serve it would be a 404 on the one page
+	// that changes what the WAN can reach.
+	if nav.vpn != nil {
+		nav.vpn.registerRoutes(mux)
+	}
 	return mux
 }
 
@@ -546,16 +554,12 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 	if err != nil {
 		return fmt.Errorf("ROUTER_LAN_CIDR %q: %w", lanCIDR, err)
 	}
-	var table *ASNTable
-	if asnPath != "" {
-		table, err = LoadASNTable(asnPath)
-		if err != nil {
-			// Degrade rather than fail: attribution is the nice-to-have, the
-			// peer list is the point.
-			log.Printf("ip2asn table unavailable, peers will show unknown ASNs: %v", err)
-			table = nil
-		}
-	}
+	// Both attribution tables, loaded now and re-read whenever geoip-update
+	// replaces either file. Degrade rather than fail: attribution is the
+	// nice-to-have, the peer list is the point, and a router that has not
+	// downloaded them yet gets empty columns rather than wrong ones.
+	tables := newTableWatcher(asnPath, strings.TrimSpace(os.Getenv("ROUTER_GEOIP_FILE")))
+	go tables.watch(tableWatchInterval)
 	peersTmpl, err := template.ParseFiles(filepath.Join(staticRoot, "peers.html"), filepath.Join(staticRoot, "nav.html"))
 	if err != nil {
 		return fmt.Errorf("parse peers template: %w", err)
@@ -565,7 +569,7 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 		return fmt.Errorf("parse peers index template: %w", err)
 	}
 	leasesPath := os.Getenv("ROUTER_DHCP_LEASES_FILE")
-	peers := newPeersServer(prefix, table, peersTmpl, indexTmpl, leasesPath)
+	peers := newPeersServer(prefix, tables, peersTmpl, indexTmpl, leasesPath)
 	peers.namer = newNamerFromEnv()
 	// Set unconditionally, unlike lowTrust below. The neighbour table is no
 	// longer just the low-trust pool's way of finding a MAC — it is what tells
@@ -662,6 +666,7 @@ func main() {
 	lanCIDR := os.Getenv("ROUTER_LAN_CIDR")
 
 	uplink := startUplink(staticRoot, config.PPPInterface)
+	vpn := startVPN(staticRoot)
 	// Read once rather than per render: the hostname cannot change under a
 	// running process, and the nav strip is on every page. Not taken from
 	// config, which carries the env-supplied settings and never has it —
@@ -671,7 +676,13 @@ func main() {
 	if hostname, err := os.Hostname(); err == nil && strings.TrimSpace(hostname) != "" {
 		navHost = hostname
 	}
-	nav := navSource{host: navHost, uplink: uplink}
+	nav := navSource{host: navHost, uplink: uplink, vpn: vpn}
+	// The page renders the strip like every other, so it needs the same source.
+	// Set after nav is built rather than inside startVPN, which runs before the
+	// strip exists.
+	if vpn != nil {
+		vpn.nav = nav
+	}
 
 	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, nav)}
 

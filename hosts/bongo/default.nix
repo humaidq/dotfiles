@@ -66,6 +66,25 @@
     restartUnits = [ "nft-lowtrust-macs.service" ];
   };
 
+  # The clients allowed into the tunnel: one public key and its allowed IPs per
+  # line. A secret rather than a NixOS option because the entries name devices
+  # and this repository is public — the same reasoning as the low-trust MAC list
+  # above. Read by root at reconcile time, so adding a client is a `sops` edit
+  # and `systemctl start router-vpn`, with no rebuild and no restart of anything
+  # else.
+  sops.secrets."router/vpn-peers" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    mode = "0400";
+  };
+
+  # Vultr API key with write access to the huma.id zone, for the ephemeral name
+  # the tunnel publishes while it is on. Only the reconciler reads it;
+  # router-web, which is the thing exposed on a network, never does.
+  sops.secrets."vultr/api-key" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    mode = "0400";
+  };
+
   # Gated on dnsmasq itself: the client specialisation turns dnsmasq off, and
   # the NixOS module only declares the dnsmasq user when it is enabled. A
   # secret owned by a user that does not exist fails manifest validation, and
@@ -269,6 +288,23 @@
         macFile = config.sops.secrets."router/lowtrust-macs".path;
       };
       suricata.enable = false;
+      # Off until someone switches it on from the mesh web UI, which is the
+      # whole design: this exists for travelling, and a port open to the
+      # internet for the fifty weeks a year nobody is travelling is what the
+      # runtime switch avoids. See modules/router/vpn.nix.
+      vpn = {
+        enable = true;
+        # The whole /24 belongs to the one travel router this exists for, which
+        # is why its peer line claims the range rather than a /32. A second
+        # client would mean splitting it: WireGuard refuses to let two peers
+        # claim overlapping allowed IPs, so the range cannot simply be shared.
+        address = "10.90.0.1/24";
+        peersFile = config.sops.secrets."router/vpn-peers".path;
+        ddns = {
+          zone = "huma.id";
+          apiKeyFile = config.sops.secrets."vultr/api-key".path;
+        };
+      };
     };
 
     persist = {
@@ -276,6 +312,11 @@
       btrfs.enable = true;
       dirs = [
         "/var/lib/nft-blocklists"
+        # The tunnel's server key, its switch and the ephemeral name it is
+        # currently using. Without this the router hands out a new server key
+        # on every reboot — every client config invalidated — and forgets the
+        # record it is meant to delete on disable.
+        "/var/lib/router-vpn"
       ];
     };
   };

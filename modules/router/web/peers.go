@@ -169,8 +169,11 @@ type priorityRow struct {
 }
 
 type peersServer struct {
-	lanNet     netip.Prefix
-	asn        *ASNTable
+	lanNet netip.Prefix
+	// Both range tables, re-read when geoip-update replaces the files. Nil is
+	// usable and means no attribution — see tables.go for why holding the
+	// tables directly was wrong.
+	tables     *tableWatcher
 	tmpl       *template.Template
 	indexTmpl  *template.Template
 	leasesPath string
@@ -202,11 +205,6 @@ type peersServer struct {
 	// not exist. bongo runs this binary with the pool off, and must behave
 	// exactly as it did before the pool existed.
 	lowTrust func(ctx context.Context, mac string) string
-	// Where a peer is, as opposed to where its network is registered. Nil on a
-	// router that has not fetched the database yet, which leaves the column
-	// empty rather than falling back to the registration — a registration
-	// printed under a "Country" heading is the bug this replaces.
-	geo *GeoTable
 	// Builds the shared nav strip. Zero value is usable: an empty hostname and
 	// a grey lamp, which is what a test server renders and what a router with
 	// no probing shows.
@@ -217,10 +215,10 @@ type peersServer struct {
 	timeouts *timeoutTable
 }
 
-func newPeersServer(lanNet netip.Prefix, asn *ASNTable, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
+func newPeersServer(lanNet netip.Prefix, tables *tableWatcher, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
 	return &peersServer{
 		lanNet:     lanNet,
-		asn:        asn,
+		tables:     tables,
 		tmpl:       tmpl,
 		indexTmpl:  indexTmpl,
 		leasesPath: leasesPath,
@@ -455,10 +453,10 @@ func (s *peersServer) priorityNow(raw []byte, readErr error, leases []lease) ([]
 			Down:       formatBytes(conv.Peer.Down),
 			Traffic:    s.namer.describe(conv.Peer),
 		}
-		if info, found := s.asn.Lookup(conv.Peer.Addr); found {
+		if info, found := s.tables.asnTable().Lookup(conv.Peer.Addr); found {
 			row.ASN, row.Org = info.Number, info.Org
 		}
-		if code, found := s.geo.Lookup(conv.Peer.Addr); found {
+		if code, found := s.tables.geoTable().Lookup(conv.Peer.Addr); found {
 			row.Country = code
 		}
 		rows = append(rows, row)
@@ -754,10 +752,10 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 			row.Stale = peer.Idle >= staleAfter
 		}
 		row.Traffic = s.namer.describe(peer)
-		if info, found := s.asn.Lookup(peer.Addr); found {
+		if info, found := s.tables.asnTable().Lookup(peer.Addr); found {
 			row.ASN, row.Org = info.Number, info.Org
 		}
-		if code, found := s.geo.Lookup(peer.Addr); found {
+		if code, found := s.tables.geoTable().Lookup(peer.Addr); found {
 			row.Country = code
 		}
 		data.Peers = append(data.Peers, row)
@@ -864,9 +862,13 @@ func (s *peersServer) logAction(action string, peer, device netip.Addr, result s
 		log.Printf("peer-action action=%s peer=\"-\" device=%q result=%q", action, device, result)
 		return
 	}
-	info, _ := s.asn.Lookup(peer)
+	info, _ := s.tables.asnTable().Lookup(peer)
+	// The country here is the geolocation, not the AS registration the info
+	// struct carries — the log line names the same thing the page does, or it
+	// is useless for correlating one against the other.
+	country, _ := s.tables.geoTable().Lookup(peer)
 	log.Printf("peer-action action=%s peer=%q asn=%d org=%q cc=%s device=%q result=%q",
-		action, peer, info.Number, info.Org, info.Country, device, result)
+		action, peer, info.Number, info.Org, country, device, result)
 }
 
 // captureRequest applies the two guards every capture route needs: the CSRF
