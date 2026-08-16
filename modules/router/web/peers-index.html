@@ -18,7 +18,7 @@
 {{if .Priority}}
 <div class="table-wrap">
 <table class="priority">
-<tr><th>Device</th><th>Peer</th><th>AS</th><th>Organisation</th><th>Country</th><th class="num">Bytes</th><th>Traffic</th></tr>
+<tr><th>Device</th><th>Peer</th><th>AS</th><th>Organisation</th><th title="Where the network is, from MaxMind GeoLite2 — not where its operator is registered. The two differ for a CDN: an anycast prefix is registered to one country and answers from dozens.">Country</th><th class="num">Bytes</th><th>Traffic</th></tr>
 {{range .Priority}}
 <tr>
 <td><a href="/peers/{{.Device}}">{{.Device}}</a>{{if .DeviceName}} <span class="devname">{{.DeviceName}}</span>{{end}}</td>

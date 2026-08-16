@@ -11,8 +11,20 @@ import (
 
 // ASNInfo is the attribution shown next to a peer.
 type ASNInfo struct {
-	Number  uint32
-	Org     string
+	Number uint32
+	Org    string
+	// The country recorded against the AS or prefix allocation. NOT a
+	// geolocation of the address, and the difference is not academic: every
+	// anycast prefix in the table reads US, because that is where its operator
+	// is registered, no matter which of its hundreds of sites answers you.
+	// Cloudflare's 1.1.1.1, Google's 8.8.8.8 and Fastly's 2a04:4e42::/32 are
+	// all US here while a geo-IP database will place them in whatever country
+	// you happen to be querying from.
+	//
+	// It is still worth showing — for a VPS or a hosting range, which is what
+	// this page is usually read against, the registration is the answer people
+	// want. It just must not be labelled "Country", which is what sent someone
+	// to check a Fastly node against a geo-IP database and find it disagreed.
 	Country string
 }
 

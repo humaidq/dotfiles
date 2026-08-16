@@ -39,6 +39,15 @@ func testPeersServer(t *testing.T) *peersServer {
 	if err != nil {
 		t.Fatalf("parse index template: %v", err)
 	}
+	// The country column comes from the geo table, never from the ASN table's
+	// registration column — that swap is the whole point of geo.go. The fixture
+	// deliberately places 203.0.113.10 somewhere the ASN row does not, so a
+	// regression that read the registration again would show NL and fail.
+	geo, err := LoadGeoTable(writeTSV(t,
+		"203.0.113.0\t203.0.113.255\tAE\n"))
+	if err != nil {
+		t.Fatalf("LoadGeoTable: %v", err)
+	}
 	leases := writeLeases(t, "1 aa:bb:cc:dd:ee:01 192.168.0.10 device-a 01:aa\n"+
 		"2 aa:bb:cc:dd:ee:02 192.168.0.20 * 01:bb\n")
 	server := newPeersServer(netip.MustParsePrefix("192.168.0.0/24"), table, tmpl, indexTmpl, leases)
@@ -57,6 +66,7 @@ func testPeersServer(t *testing.T) *peersServer {
 	// sysctls and make every last-seen assertion depend on how the host running
 	// the suite happens to be tuned. Tests that want the column set their own.
 	server.timeouts = nil
+	server.geo = geo
 	return server
 }
 
@@ -82,7 +92,7 @@ func TestPeersPageListsPeersWithASN(t *testing.T) {
 		t.Fatalf("status = %d, want 200", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, "203.0.113.10,64496,Example Hosting,NL,") {
+	if !strings.Contains(body, "203.0.113.10,64496,Example Hosting,AE,") {
 		t.Fatalf("peer row with ASN attribution missing from body: %q", body)
 	}
 	// 30800 of 35800 total bytes = 86.0%.

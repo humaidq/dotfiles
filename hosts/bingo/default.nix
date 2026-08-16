@@ -42,6 +42,21 @@
     sopsFile = ../../secrets/bingo.yaml;
   };
 
+  # MaxMind licence key for the GeoLite2 country database, so the peers page
+  # can report where a peer is rather than where its network is registered.
+  # In all.yaml because both routers fetch the same database with the same key.
+  sops.secrets."maxmind/license-key" = {
+    sopsFile = ../../secrets/all.yaml;
+    mode = "0400";
+    restartUnits = [ "geoip-update.service" ];
+  };
+
+  sifr.router.geoip = {
+    enable = true;
+    accountId = "1394850";
+    licenseKeyFile = config.sops.secrets."maxmind/license-key".path;
+  };
+
   sops.secrets."router/lowtrust-macs" = {
     sopsFile = ../../secrets/bingo.yaml;
     mode = "0400";

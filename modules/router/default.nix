@@ -16,6 +16,7 @@ in
     ./host-metrics.nix
     ./pppd.nix
     ./client-mode.nix
+    ./geoip.nix
     ./ip-blocklist.nix
     ./suricata.nix
     ./tools.nix

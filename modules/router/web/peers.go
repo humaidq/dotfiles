@@ -202,6 +202,11 @@ type peersServer struct {
 	// not exist. bongo runs this binary with the pool off, and must behave
 	// exactly as it did before the pool existed.
 	lowTrust func(ctx context.Context, mac string) string
+	// Where a peer is, as opposed to where its network is registered. Nil on a
+	// router that has not fetched the database yet, which leaves the column
+	// empty rather than falling back to the registration — a registration
+	// printed under a "Country" heading is the bug this replaces.
+	geo *GeoTable
 	// Builds the shared nav strip. Zero value is usable: an empty hostname and
 	// a grey lamp, which is what a test server renders and what a router with
 	// no probing shows.
@@ -451,7 +456,10 @@ func (s *peersServer) priorityNow(raw []byte, readErr error, leases []lease) ([]
 			Traffic:    s.namer.describe(conv.Peer),
 		}
 		if info, found := s.asn.Lookup(conv.Peer.Addr); found {
-			row.ASN, row.Org, row.Country = info.Number, info.Org, info.Country
+			row.ASN, row.Org = info.Number, info.Org
+		}
+		if code, found := s.geo.Lookup(conv.Peer.Addr); found {
+			row.Country = code
 		}
 		rows = append(rows, row)
 	}
@@ -747,7 +755,10 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 		}
 		row.Traffic = s.namer.describe(peer)
 		if info, found := s.asn.Lookup(peer.Addr); found {
-			row.ASN, row.Org, row.Country = info.Number, info.Org, info.Country
+			row.ASN, row.Org = info.Number, info.Org
+		}
+		if code, found := s.geo.Lookup(peer.Addr); found {
+			row.Country = code
 		}
 		data.Peers = append(data.Peers, row)
 	}
