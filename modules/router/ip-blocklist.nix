@@ -192,6 +192,19 @@ let
           router-blocklists lowtrust_block4 lowtrust_block6
       '';
 
+  # The carve-out from the ASN expansion. Same generator as the two lists above
+  # — it is the same shape of input, a hand-written file of ranges — but it
+  # feeds a set the policy chain RETURNS on rather than drops on.
+  lowTrustAllow =
+    pkgs.runCommand "nft-lowtrust-allow.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-lowtrust-allow-subnets.txt} "$out" \
+          router-blocklists lowtrust_allow4 lowtrust_allow6
+      '';
+
   # Addresses that no generated range may ever swallow. Not a general whitelist
   # — it is a tripwire for the ASN expansion below, which turns fifteen numbers
   # into millions of addresses and is therefore the one place in this repo where
@@ -636,6 +649,25 @@ in
             flags interval
           }
 
+          # The carve-out from the pair above, expanded from
+          # custom-lowtrust-allow-subnets.txt. Its own set and its own generator
+          # for the same one-writer-per-set reason given for lowtrust_asn4/6.
+          #
+          # A set rather than a handful of literal ranges in the chain because
+          # the list is expected to grow: the ASN expansion turns 29 provider
+          # numbers into millions of addresses, and every app the house depends
+          # on that rents from one of those providers will need an entry here
+          # the first time someone notices it is broken.
+          set lowtrust_allow4 {
+            type ipv4_addr
+            flags interval
+          }
+
+          set lowtrust_allow6 {
+            type ipv6_addr
+            flags interval
+          }
+
           # Populated from custom-lowtrust-stun-hosts.txt by nft-lowtrust-stun,
           # on a timer rather than at build time because these names resolve to
           # addresses that move. No `flags interval`: these are host addresses
@@ -1005,12 +1037,81 @@ in
             # the TCP fallback at least exposes a TLS ClientHello and an SNI to
             # look at. Forcing the fallback trades the device nothing and buys
             # back visibility.
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust QUIC drops"
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 counter drop comment "low-trust QUIC drop"
+            #
+            # STUN ON 443 IS EXEMPTED, and the "degrades rather than fails"
+            # argument above is exactly why it has to be. That argument is about
+            # HTTP/3, which has a TCP sibling to fall back to. STUN has none:
+            # udp/443 is a deliberate NAT-traversal port, offered precisely
+            # because middleboxes pass 443 when they pass nothing else, and a
+            # drop there is a hard failure with no fallback path.
+            #
+            # The 2026-08-16 baseline capture of a working Comera call is the
+            # evidence. Throughout the call the client sends a STUN Binding
+            # Request every 10s from its media socket to the same server address
+            # on udp/3478 AND udp/443, as a pair, and both are answered. This
+            # rule as written killed exactly the 443 half of every pair. It was
+            # also the ONLY rule in this chain that the call touched — none of
+            # its three destinations are in lowtrust_asn4, lowtrust_block4,
+            # lowtrust_stun4, local_block4 or remote_block4, and none of its
+            # ports are in lowtrust_ports.
+            #
+            # Matched by signature rather than by carving out Comera's addresses
+            # because the addresses are AWS and rotate, and because Botim and
+            # GoChat — the other two apps custom-lowtrust-stun-hosts.txt says
+            # must keep working — traverse the same way. The offset expression
+            # is the one already proven in the qos-mark chain: the STUN magic
+            # cookie, four bytes into the UDP payload.
+            #
+            # Written as one inverted match rather than an accept placed ahead
+            # of the drop, on purpose. An `accept` here would return from the
+            # whole hook and let a pool device reach anything in lowtrust_asn4
+            # or lowtrust_block4 by shaping its first eight bytes like STUN; a
+            # `return` would skip the rest of this chain for the same packet
+            # and leak the same way, only more quietly. Inverted, a STUN packet
+            # simply does not match this rule and falls through to the provider
+            # and subnet drops below, which still apply to it in full.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 @th,96,32 != 0x2112a442 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust QUIC drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport 443 @th,96,32 != 0x2112a442 counter drop comment "low-trust QUIC drop (STUN on 443 exempted)"
 
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust subnet drops"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_block4 counter drop comment "low-trust subnet drop (IPv4)"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_block6 counter drop comment "low-trust subnet drop (IPv6)"
+
+            # The carve-out from the provider block below. Placed HERE, and the
+            # position is the whole design:
+            #
+            #   * after the port drops, the IPv6 reject and the QUIC drop, so an
+            #     allowed destination is still held to all of those;
+            #   * after the hand-written subnet drops, so an entry in
+            #     custom-lowtrust-subnets.txt still beats one in
+            #     custom-lowtrust-allow-subnets.txt — the hand-written block is
+            #     the more specific statement of intent;
+            #   * before the provider drops, which is the only thing it is meant
+            #     to override.
+            #
+            # `return` and not `accept`. Both would do here, because
+            # forward_lowtrust is a base chain of its own and an accept in it
+            # would not spare the packet from forward_blocklists at the same
+            # hook — custom-ip-blocklist.txt and the throttle list keep applying
+            # either way. return is still the honest verb: it says "this chain
+            # has nothing further to say about this packet", which is exactly
+            # true, and it does not read as a grant of passage to someone
+            # skimming for how a pool device could get out.
+            #
+            # What it skips inside this chain is the provider drops and the
+            # generic-STUN drop under them. The latter is harmless to skip: that
+            # rule is address-scoped to the three names in
+            # custom-lowtrust-stun-hosts.txt, which are Google, Nextcloud and
+            # BlackBerry, and are disjoint from anything that will ever be in
+            # the allow list.
+            #
+            # Counted so the file above can be audited. A zero counter means
+            # every range in custom-lowtrust-allow-subnets.txt has gone stale —
+            # the same reasoning default.nix gives for counting its STUN
+            # signature match, and the same failure mode: a rule that has
+            # quietly stopped matching looks identical to one nobody needed.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_allow4 counter return comment "low-trust provider carve-out (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_allow6 counter return comment "low-trust provider carve-out (IPv6)"
 
             # Whole hosting networks. Its own log prefix rather than sharing
             # nft-block-lowtrust with the rules above: this pair is the one
@@ -1027,9 +1128,19 @@ in
             # whole-address blocking were both rejected. stun.l.google.com's
             # addresses are shared with unrelated Google services, so this must
             # stay port-scoped rather than becoming an address block.
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip daddr @lowtrust_stun4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust STUN drops"
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip daddr @lowtrust_stun4 counter drop comment "low-trust public STUN drop (IPv4)"
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 3478, 5349, 19302 } ip6 daddr @lowtrust_stun6 counter drop comment "low-trust public STUN drop (IPv6)"
+            #
+            # 443 joined the port list when the QUIC drop above stopped covering
+            # STUN. Until then this list could end at the three STUN ports,
+            # because anything a tunnel client aimed at udp/443 died in that rule
+            # regardless of address; exempting the signature there reopened
+            # generic discovery on 443 for exactly the three servers this set
+            # exists to deny. Adding the port closes it with no new collateral:
+            # the match is still address-scoped to those three names, so an app's
+            # own STUN and TURN on 443 — the case the exemption was written for —
+            # is untouched.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 443, 3478, 5349, 19302 } ip daddr @lowtrust_stun4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust " comment "sample low-trust STUN drops"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 443, 3478, 5349, 19302 } ip daddr @lowtrust_stun4 counter drop comment "low-trust public STUN drop (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" udp dport { 443, 3478, 5349, 19302 } ip6 daddr @lowtrust_stun6 counter drop comment "low-trust public STUN drop (IPv6)"
           }
         ''}
 
@@ -1136,6 +1247,12 @@ in
         ${lib.optionalString cfg.lowTrust.enable ''
           nft -f ${lowTrustPorts}
           nft -f ${lowTrustSubnets}
+          # Before the ASN list, so that on a reload the carve-out is never
+          # observably absent while the provider ranges it exempts are already
+          # loaded. Each nft -f is its own transaction, so the window between
+          # two of them is real; this order makes it fail safe rather than
+          # briefly cutting Botim off on every rebuild.
+          nft -f ${lowTrustAllow}
           nft -f ${lowTrustASNs}
           ${lib.optionalString cfg.lowTrust.cdnQuota.enable ''
             nft -f ${cdnQuotaASNs}

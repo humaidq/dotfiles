@@ -11,9 +11,16 @@
 # tunnel client uses them for; app-specific STUN and TURN are not here and are
 # not touched.
 #
-# The drop is port-scoped to 3478/5349/19302 rather than applied to the whole
-# address, because stun.l.google.com resolves onto Google edge addresses shared
-# with unrelated services. Port-scoped, the collateral is only STUN.
+# The drop is port-scoped to 443/3478/5349/19302 rather than applied to the
+# whole address, because stun.l.google.com resolves onto Google edge addresses
+# shared with unrelated services. Port-scoped, the collateral is only STUN.
+#
+# 443 is in that list because the low-trust QUIC drop no longer covers it. That
+# rule used to take every udp/443 packet, which made generic STUN discovery on
+# 443 unreachable for free; it now exempts the STUN signature, so apps that
+# traverse on 443 keep working — which is the whole point, Comera does exactly
+# this every 10s for the life of a call — and the three names here need the port
+# named explicitly to stay denied.
 stun.l.google.com
 stun.nextcloud.com
 stun.voip.blackberry.com

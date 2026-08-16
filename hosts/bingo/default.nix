@@ -63,24 +63,13 @@
     restartUnits = [ "nft-lowtrust-macs.service" ];
   };
 
-  # The access point list the status page renders. Readable by everyone on the
-  # router rather than by an owner: router-web runs under DynamicUser, so there
-  # is no uid at build time to grant it. The contents are infrastructure labels
-  # and LAN addresses, not the device list that lowtrust-macs keeps at 0400 — the
-  # secret exists to keep those labels out of this public repository, not out of
-  # the router's own filesystem.
-  sops.secrets."router/access-points" = {
-    sopsFile = ../../secrets/bingo.yaml;
-    mode = "0444";
-    restartUnits = [ "router-web.service" ];
-  };
-
-  # The admin login the reboot button uses, one `username:password` line shared
-  # by all three IP-COM APs. Unlike the list above this is a secret, so it is
-  # group-readable at 0440 rather than world-readable: router-web joins the
+  # The access point list the status page renders, `name,address,username,password`
+  # per line. It now carries the APs' admin logins for the reboot button, so it
+  # is group-readable at 0440 rather than world-readable: router-web joins the
   # router-ap group (see modules/router/web.nix) to read it, and nothing else on
-  # the router can.
-  sops.secrets."router/ap-credentials" = {
+  # the router can. router-web runs under DynamicUser, so the group is how it is
+  # granted access with no uid to name at build time.
+  sops.secrets."router/access-points" = {
     sopsFile = ../../secrets/bingo.yaml;
     group = "router-ap";
     mode = "0440";
@@ -266,7 +255,6 @@
       ];
       suricata.enable = false;
       accessPoints.file = config.sops.secrets."router/access-points".path;
-      accessPoints.credentialsFile = config.sops.secrets."router/ap-credentials".path;
       lowTrust = {
         enable = true;
         macFile = config.sops.secrets."router/lowtrust-macs".path;

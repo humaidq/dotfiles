@@ -242,60 +242,69 @@ func TestStatusPageRendersAccessPoints(t *testing.T) {
 	}
 }
 
-func TestParseAPCredentials(t *testing.T) {
-	t.Run("username and password", func(t *testing.T) {
-		creds, ok := parseAPCredentials("admin:s3cret\n")
-		if !ok || creds.username != "admin" || creds.password != "s3cret" {
-			t.Fatalf("parseAPCredentials = %+v ok=%v", creds, ok)
-		}
-	})
-	// The first non-empty, non-comment line is the login; the password keeps any
-	// colons past the first.
-	t.Run("skips comments and keeps colons in the password", func(t *testing.T) {
-		creds, ok := parseAPCredentials("# the login\n\nadmin:a:b:c\n")
-		if !ok || creds.username != "admin" || creds.password != "a:b:c" {
-			t.Fatalf("parseAPCredentials = %+v ok=%v", creds, ok)
-		}
-	})
+// The four-field form carries a login; the two-field form does not. Both are
+// valid, and a three-field line is not: it is ambiguous about which half of the
+// login was left off.
+func TestParseAccessPointsCredentials(t *testing.T) {
+	points, err := parseAccessPoints(
+		"lamp-only,10.20.0.160\nwith-login,10.20.0.161,admin,s3cret\n")
+	if err != nil {
+		t.Fatalf("parseAccessPoints: %v", err)
+	}
+	if points[0].canReboot() {
+		t.Error("a two-field AP should carry no login")
+	}
+	if !points[1].canReboot() || points[1].Username != "admin" || points[1].Password != "s3cret" {
+		t.Errorf("four-field AP = %+v, want admin/s3cret", points[1])
+	}
 	for name, raw := range map[string]string{
-		"no colon":        "adminsecret\n",
-		"empty password":  "admin:\n",
-		"empty username":  ":secret\n",
-		"empty":           "",
-		"only a comment":  "# nothing\n",
-		"only whitespace": "   \n",
+		"three fields":   "with-login,10.20.0.161,admin\n",
+		"empty username": "with-login,10.20.0.161,,s3cret\n",
+		"empty password": "with-login,10.20.0.161,admin,\n",
+		"bad address":    "with-login,nope,admin,s3cret\n",
 	} {
 		t.Run("rejects "+name, func(t *testing.T) {
-			if _, ok := parseAPCredentials(raw); ok {
-				t.Fatalf("parseAPCredentials(%q) succeeded, want it rejected", raw)
+			if _, err := parseAccessPoints(raw); err == nil {
+				t.Fatalf("parseAccessPoints(%q) succeeded, want an error", raw)
 			}
 		})
 	}
 }
 
 // A nil monitor answers the feature question rather than panicking, so the mux
-// and the template can ask it before a monitor exists.
+// and the template can ask it before a monitor exists. A monitor whose APs
+// carry no login is off even with a reboot function wired.
 func TestCanRebootNilAndDisabled(t *testing.T) {
 	var nilMonitor *apMonitor
 	if nilMonitor.canReboot() {
 		t.Error("a nil monitor reports it can reboot")
 	}
-	monitor := newAPMonitor([]accessPoint{
+	// Reboot function wired, but the one AP has no login.
+	lampOnly := newAPMonitor([]accessPoint{
 		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160")},
 	}, func(netip.Addr) apSample { return apSample{} })
-	if monitor.canReboot() {
+	lampOnly.reboot = func(accessPoint) error { return nil }
+	if lampOnly.canReboot() {
+		t.Error("a monitor whose APs have no login reports it can reboot")
+	}
+	// An AP with a login but no reboot function wired is also off.
+	noFunc := newAPMonitor([]accessPoint{
+		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160"), Username: "admin", Password: "x"},
+	}, func(netip.Addr) apSample { return apSample{} })
+	if noFunc.canReboot() {
 		t.Error("a monitor with no reboot function reports it can reboot")
 	}
 }
 
-func TestRebootByNameResolvesAddress(t *testing.T) {
-	var got netip.Addr
+func TestRebootByNameResolvesAP(t *testing.T) {
+	var got accessPoint
 	monitor := newAPMonitor([]accessPoint{
-		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160")},
-		{Name: "ground", Addr: netip.MustParseAddr("10.20.0.163")},
+		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160"), Username: "admin", Password: "pw1"},
+		{Name: "ground", Addr: netip.MustParseAddr("10.20.0.163"), Username: "admin", Password: "pw2"},
+		{Name: "lamp-only", Addr: netip.MustParseAddr("10.20.0.164")},
 	}, func(netip.Addr) apSample { return apSample{} })
-	monitor.reboot = func(addr netip.Addr) error {
-		got = addr
+	monitor.reboot = func(p accessPoint) error {
+		got = p
 		return nil
 	}
 
@@ -303,20 +312,24 @@ func TestRebootByNameResolvesAddress(t *testing.T) {
 		t.Fatalf("rebootByName: %v", err)
 	}
 	// The name is resolved against the configured list, not trusted off the
-	// wire: "ground" reaches ground's address and nothing else.
-	if got != netip.MustParseAddr("10.20.0.163") {
-		t.Errorf("rebooted %v, want ground's address", got)
+	// wire: "ground" reaches ground's address and its own login.
+	if got.Addr != netip.MustParseAddr("10.20.0.163") || got.Password != "pw2" {
+		t.Errorf("rebooted %+v, want ground with its own login", got)
 	}
 
 	if err := monitor.rebootByName("nowhere"); err != errUnknownAP {
 		t.Errorf("rebootByName(unknown) = %v, want errUnknownAP", err)
 	}
+	// An AP that exists but was listed without a login is not rebootable.
+	if err := monitor.rebootByName("lamp-only"); err != errNoRebootCreds {
+		t.Errorf("rebootByName(lamp-only) = %v, want errNoRebootCreds", err)
+	}
 }
 
 func TestHandleReboot(t *testing.T) {
-	newMonitor := func(reboot func(netip.Addr) error) *apMonitor {
+	newMonitor := func(reboot func(accessPoint) error) *apMonitor {
 		m := newAPMonitor([]accessPoint{
-			{Name: "first", Addr: netip.MustParseAddr("10.20.0.160")},
+			{Name: "first", Addr: netip.MustParseAddr("10.20.0.160"), Username: "admin", Password: "pw"},
 		}, func(netip.Addr) apSample { return apSample{} })
 		m.reboot = reboot
 		return m
@@ -329,7 +342,7 @@ func TestHandleReboot(t *testing.T) {
 
 	t.Run("success redirects to the status page", func(t *testing.T) {
 		called := false
-		monitor := newMonitor(func(netip.Addr) error {
+		monitor := newMonitor(func(accessPoint) error {
 			called = true
 			return nil
 		})
@@ -347,7 +360,7 @@ func TestHandleReboot(t *testing.T) {
 	})
 
 	t.Run("unknown AP is 404", func(t *testing.T) {
-		monitor := newMonitor(func(netip.Addr) error { return nil })
+		monitor := newMonitor(func(accessPoint) error { return nil })
 		req := httptest.NewRequest(http.MethodPost, "/ap/reboot", strings.NewReader("ap=nowhere"))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		rec := httptest.NewRecorder()
@@ -361,7 +374,7 @@ func TestHandleReboot(t *testing.T) {
 	// of this service, which is the first thing worth knowing when nothing
 	// happened.
 	t.Run("reboot failure is 502", func(t *testing.T) {
-		monitor := newMonitor(func(netip.Addr) error { return io.ErrUnexpectedEOF })
+		monitor := newMonitor(func(accessPoint) error { return io.ErrUnexpectedEOF })
 		rec := httptest.NewRecorder()
 		monitor.handleReboot(rec, post())
 		if rec.Code != http.StatusBadGateway {
@@ -373,7 +386,7 @@ func TestHandleReboot(t *testing.T) {
 	// device and must not be reachable from a cross-site page.
 	t.Run("cross-site is refused", func(t *testing.T) {
 		called := false
-		monitor := newMonitor(func(netip.Addr) error {
+		monitor := newMonitor(func(accessPoint) error {
 			called = true
 			return nil
 		})
@@ -391,28 +404,34 @@ func TestHandleReboot(t *testing.T) {
 }
 
 // The button and the route are gated together: the reboot form renders on the
-// mesh listener only, and only when credentials are configured. The LAN page
-// shows the lamps and no button, and the route is a 404 where the button is
-// absent.
+// mesh listener only, and only for an AP that was listed with a login. The LAN
+// page shows the lamps and no button, and the route is a 404 where the button
+// is absent.
 func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 	tmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
 	indexTmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
-	points := []accessPoint{{Name: "first", Addr: netip.MustParseAddr("10.20.0.160")}}
+	withCreds := []accessPoint{
+		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160"), Username: "admin", Password: "pw"},
+	}
+	lampOnly := []accessPoint{{Name: "first", Addr: netip.MustParseAddr("10.20.0.160")}}
 	probe := func(netip.Addr) apSample { return apSample{Sent: 5, Received: 5} }
 
-	withReboot := newAPMonitor(points, probe)
-	withReboot.reboot = func(netip.Addr) error { return nil }
+	withReboot := newAPMonitor(withCreds, probe)
+	withReboot.reboot = func(accessPoint) error { return nil }
 	withReboot.cycle()
 
-	noReboot := newAPMonitor(points, probe)
+	// A monitor with a reboot function wired but an AP that carries no login:
+	// the button must still not render, and the route must still 404.
+	noReboot := newAPMonitor(lampOnly, probe)
+	noReboot.reboot = func(accessPoint) error { return nil }
 	noReboot.cycle()
 
-	t.Run("mesh with credentials shows the button", func(t *testing.T) {
+	t.Run("mesh with a login shows the button", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		meshMux(pageData{}, indexTmpl, nil, withReboot, testPeersServer(t), navSource{}).
 			ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 		if !strings.Contains(rec.Body.String(), `action="/ap/reboot"`) {
-			t.Error("mesh page with credentials did not render the reboot button")
+			t.Error("mesh page with a login did not render the reboot button")
 		}
 	})
 
@@ -425,30 +444,63 @@ func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 		}
 	})
 
-	t.Run("mesh without credentials shows no button", func(t *testing.T) {
+	t.Run("mesh with no login shows no button", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		meshMux(pageData{}, indexTmpl, nil, noReboot, testPeersServer(t), navSource{}).
 			ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 		if strings.Contains(rec.Body.String(), "/ap/reboot") {
-			t.Error("mesh page without credentials rendered a reboot button")
+			t.Error("mesh page with no login rendered a reboot button")
 		}
 	})
 
-	t.Run("route is absent without credentials", func(t *testing.T) {
+	t.Run("route is absent with no login", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/ap/reboot", strings.NewReader("ap=first"))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		meshMux(pageData{}, indexTmpl, nil, noReboot, testPeersServer(t), navSource{}).
 			ServeHTTP(rec, req)
 		if rec.Code != http.StatusNotFound {
-			t.Errorf("POST /ap/reboot without credentials = %d, want 404", rec.Code)
+			t.Errorf("POST /ap/reboot with no login = %d, want 404", rec.Code)
 		}
 	})
 }
 
-// The exchange logs in and only then reboots, and the password crosses the wire
-// base64-encoded, which is the AP's own scheme.
-func TestIPCOMRebootLogsInThenReboots(t *testing.T) {
+// detectAPKind reads which login page the root URL redirects to. login.asp is
+// the legacy firmware; anything else is treated as modern.
+func TestDetectAPKind(t *testing.T) {
+	for name, tc := range map[string]struct {
+		loginPath string
+		want      apKind
+	}{
+		"modern": {"/login.html", apModern},
+		"legacy": {"/login.asp", apLegacy},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/" {
+					http.Redirect(w, r, tc.loginPath, http.StatusFound)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+			server := httptest.NewServer(mux)
+			defer server.Close()
+
+			kind, err := detectAPKind(server.Client(), server.URL)
+			if err != nil {
+				t.Fatalf("detectAPKind: %v", err)
+			}
+			if kind != tc.want {
+				t.Errorf("detectAPKind = %v, want %v", kind, tc.want)
+			}
+		})
+	}
+}
+
+// The modern flow logs in and only then reboots, and the password crosses the
+// wire base64-encoded, which is the AP's own scheme.
+func TestIPCOMRebootModern(t *testing.T) {
 	var steps []string
 	var sentPassword string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -479,8 +531,8 @@ func TestIPCOMRebootLogsInThenReboots(t *testing.T) {
 	defer server.Close()
 
 	creds := apCredentials{username: "admin", password: "test-pw-not-real"}
-	if err := ipcomRebootURL(server.Client(), creds, server.URL+"/goform/modules"); err != nil {
-		t.Fatalf("ipcomRebootURL: %v", err)
+	if err := ipcomRebootModern(server.Client(), creds, server.URL+"/goform/modules"); err != nil {
+		t.Fatalf("ipcomRebootModern: %v", err)
 	}
 	if strings.Join(steps, ",") != "login,reboot" {
 		t.Errorf("steps = %v, want login then reboot", steps)
@@ -490,9 +542,9 @@ func TestIPCOMRebootLogsInThenReboots(t *testing.T) {
 	}
 }
 
-// A rejected login stops before the reboot: wrong credentials must not still
-// power-cycle the AP.
-func TestIPCOMRebootStopsOnRejectedLogin(t *testing.T) {
+// A rejected modern login stops before the reboot: wrong credentials must not
+// still power-cycle the AP.
+func TestIPCOMRebootModernStopsOnRejectedLogin(t *testing.T) {
 	rebooted := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var body map[string]json.RawMessage
@@ -504,10 +556,72 @@ func TestIPCOMRebootStopsOnRejectedLogin(t *testing.T) {
 	}))
 	defer server.Close()
 
-	err := ipcomRebootURL(server.Client(), apCredentials{username: "admin", password: "wrong"},
+	err := ipcomRebootModern(server.Client(), apCredentials{username: "admin", password: "wrong"},
 		server.URL+"/goform/modules")
 	if err == nil {
-		t.Fatal("ipcomRebootURL succeeded with a rejected login")
+		t.Fatal("ipcomRebootModern succeeded with a rejected login")
+	}
+	if rebooted {
+		t.Error("the reboot was issued after the login was rejected")
+	}
+}
+
+// The legacy flow posts a form login to /login/Auth, then GETs the reboot. The
+// password is base64 here too, and the reboot only fires once the login has
+// landed somewhere other than login.asp.
+func TestIPCOMRebootLegacy(t *testing.T) {
+	var steps []string
+	var sentPassword string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login/Auth", func(w http.ResponseWriter, r *http.Request) {
+		steps = append(steps, "login")
+		_ = r.ParseForm()
+		sentPassword = r.PostFormValue("password")
+		http.Redirect(w, r, "/index.asp", http.StatusFound)
+	})
+	mux.HandleFunc("/index.asp", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("/goform/SysToolReboot", func(w http.ResponseWriter, _ *http.Request) {
+		steps = append(steps, "reboot")
+		w.WriteHeader(http.StatusOK)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	creds := apCredentials{username: "admin", password: "test-pw-not-real"}
+	if err := ipcomRebootLegacy(server.Client(), creds, server.URL); err != nil {
+		t.Fatalf("ipcomRebootLegacy: %v", err)
+	}
+	if strings.Join(steps, ",") != "login,reboot" {
+		t.Errorf("steps = %v, want login then reboot", steps)
+	}
+	if want := base64.StdEncoding.EncodeToString([]byte("test-pw-not-real")); sentPassword != want {
+		t.Errorf("password on the wire = %q, want the base64 %q", sentPassword, want)
+	}
+}
+
+// A rejected legacy login redirects back to login.asp, and the reboot must not
+// fire.
+func TestIPCOMRebootLegacyStopsOnRejectedLogin(t *testing.T) {
+	rebooted := false
+	mux := http.NewServeMux()
+	mux.HandleFunc("/login/Auth", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/login.asp", http.StatusFound)
+	})
+	mux.HandleFunc("/login.asp", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("/goform/SysToolReboot", func(w http.ResponseWriter, _ *http.Request) {
+		rebooted = true
+		w.WriteHeader(http.StatusOK)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	err := ipcomRebootLegacy(server.Client(), apCredentials{username: "admin", password: "wrong"}, server.URL)
+	if err == nil {
+		t.Fatal("ipcomRebootLegacy succeeded with a rejected login")
 	}
 	if rebooted {
 		t.Error("the reboot was issued after the login was rejected")

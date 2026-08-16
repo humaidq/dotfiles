@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/netip"
+	neturl "net/url"
 	"os"
 	"strings"
 	"sync"
@@ -72,11 +73,24 @@ const (
 	apGigabitCeiling = 10 * time.Millisecond
 )
 
-// accessPoint is one AP to watch: the label to print, and where to reach it.
+// accessPoint is one AP to watch: the label to print, where to reach it, and
+// the admin login the reboot button uses.
+//
+// Username and Password are empty for an AP listed with no credentials, which is
+// the whole of the per-AP reboot switch: no login, no button, no route that can
+// reach that AP's admin interface. They are per-AP because the APs on one site
+// turned out not to share a password, and one of them does not even share a
+// firmware — see rebootAccessPoint.
 type accessPoint struct {
-	Name string
-	Addr netip.Addr
+	Name     string
+	Addr     netip.Addr
+	Username string
+	Password string
 }
+
+// canReboot reports whether this AP was listed with a login. Password alone
+// decides it: parseAccessPoints only ever sets the two together.
+func (p accessPoint) canReboot() bool { return p.Password != "" }
 
 // apReport is what the template renders. State is the lamp class shared with
 // the nav strip and the uplink band; StateText is the word beside it.
@@ -84,6 +98,10 @@ type apReport struct {
 	Name      string
 	State     string
 	StateText string
+	// Whether to draw a reboot button for this AP: it was listed with a login
+	// and the monitor has a reboot function wired. Set in reports() rather than
+	// carried through a cycle because it does not depend on the probe.
+	CanReboot bool
 }
 
 // apSample is one cycle's measurement of one AP, before it is turned into a
@@ -97,8 +115,10 @@ type apSample struct {
 	LargeOK bool
 }
 
-// parseAccessPoints reads the AP list: one `name,address` per line, `#`
-// comments and blank lines skipped.
+// parseAccessPoints reads the AP list: one `name,address` or
+// `name,address,username,password` per line, `#` comments and blank lines
+// skipped. The two-field form lists an AP with a lamp and no reboot button; the
+// four-field form adds the login the button uses.
 //
 // Malformed input disables the feature rather than being skipped, matching
 // parseAnchors. The failure that a skipped line produces here is the worst one
@@ -118,10 +138,27 @@ func parseAccessPoints(raw string) ([]accessPoint, error) {
 			continue
 		}
 
-		name, address, ok := strings.Cut(text, ",")
-		name = strings.TrimSpace(name)
-		address = strings.TrimSpace(address)
-		if !ok || name == "" || address == "" {
+		// Split into up to four fields. A password may not contain a comma, which
+		// is the one character the list format spends on separators; nothing else
+		// about it is constrained.
+		fields := strings.SplitN(text, ",", 4)
+		point := accessPoint{Name: strings.TrimSpace(fields[0])}
+
+		switch len(fields) {
+		case 2:
+			// name,address — a lamp and no button.
+		case 4:
+			point.Username = strings.TrimSpace(fields[2])
+			point.Password = strings.TrimSpace(fields[3])
+			if point.Username == "" || point.Password == "" {
+				return nil, fmt.Errorf("line %d: username and password must both be set, got %q", line, text)
+			}
+		default:
+			return nil, fmt.Errorf("line %d: want `name,address` or `name,address,username,password`, got %q", line, text)
+		}
+
+		address := strings.TrimSpace(fields[1])
+		if point.Name == "" || address == "" {
 			return nil, fmt.Errorf("line %d: want `name,address`, got %q", line, text)
 		}
 
@@ -134,12 +171,13 @@ func parseAccessPoints(raw string) ([]accessPoint, error) {
 		if !addr.Is4() {
 			return nil, fmt.Errorf("line %d: address %q is not IPv4", line, address)
 		}
-		if seen[name] {
-			return nil, fmt.Errorf("line %d: duplicate name %q", line, name)
+		if seen[point.Name] {
+			return nil, fmt.Errorf("line %d: duplicate name %q", line, point.Name)
 		}
-		seen[name] = true
+		seen[point.Name] = true
 
-		points = append(points, accessPoint{Name: name, Addr: addr})
+		point.Addr = addr
+		points = append(points, point)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
@@ -189,11 +227,11 @@ type apMonitor struct {
 	probe    apProbe
 	interval time.Duration
 	ceiling  time.Duration
-	// Reboots one AP by address, or nil when no credentials are configured. Nil
-	// is the whole of the feature switch: no button on the page, no route on the
-	// mux and no way to reach an AP's admin interface from this process. Injected
-	// so rebootByName can be tested without an access point to talk to.
-	reboot func(netip.Addr) error
+	// Reboots one AP, or nil in a test that does not exercise it. In production
+	// it is always set; whether any given AP can actually be rebooted is decided
+	// per AP by whether it was listed with a login. Injected so rebootByName can
+	// be tested without an access point to talk to.
+	reboot func(accessPoint) error
 
 	mu sync.Mutex
 	// Last verdict per AP, by name, and whether each has ever answered a large
@@ -226,11 +264,16 @@ func (m *apMonitor) reports() []apReport {
 
 	out := make([]apReport, 0, len(m.points))
 	for _, point := range m.points {
-		if report, ok := m.last[point.Name]; ok {
-			out = append(out, report)
-			continue
+		report, ok := m.last[point.Name]
+		if !ok {
+			report = apReport{Name: point.Name, State: stateUnknown, StateText: "checking"}
 		}
-		out = append(out, apReport{Name: point.Name, State: stateUnknown, StateText: "checking"})
+		// Set here rather than at cycle time: it does not depend on the probe, and
+		// putting it here means the placeholder before the first cycle carries it
+		// too — a button that only appears a minute after a restart would be a
+		// button someone waits for and reloads to find.
+		report.CanReboot = m.reboot != nil && point.canReboot()
+		out = append(out, report)
 	}
 	return out
 }
@@ -271,27 +314,44 @@ func (m *apMonitor) run() {
 // things to whoever clicked, and the list is not something a reader chose.
 var errUnknownAP = errors.New("unknown access point")
 
-// canReboot reports whether the reboot feature is on. A nil receiver counts as
+// errNoRebootCreds is what rebootByName returns for an AP that exists on the
+// list but carries no login, which is a 404 to the handler for the same reason:
+// no button was ever drawn for it, so a request to reboot it did not come from
+// this page.
+var errNoRebootCreds = errors.New("access point has no reboot credentials")
+
+// canReboot reports whether the reboot feature is on: a reboot function is
+// wired and at least one AP was listed with a login. A nil receiver counts as
 // off, so the mux and the template can ask the question without first checking
 // whether a monitor exists at all.
 func (m *apMonitor) canReboot() bool {
-	return m != nil && m.reboot != nil
+	if m == nil || m.reboot == nil {
+		return false
+	}
+	for _, point := range m.points {
+		if point.canReboot() {
+			return true
+		}
+	}
+	return false
 }
 
-// rebootByName resolves a name to its address and reboots that AP.
+// rebootByName resolves a name to its AP and reboots it.
 //
 // The name is what the page rendered and posted back, so it is resolved against
 // the same list the lamps were drawn from rather than trusting an address off
-// the wire — the button can only ever reach an AP that was configured.
+// the wire — the button can only ever reach an AP that was configured. An AP
+// listed without a login answers errNoRebootCreds rather than errUnknownAP: the
+// name is real, the button simply was never drawn for it.
 func (m *apMonitor) rebootByName(name string) error {
 	for _, point := range m.points {
 		if point.Name != name {
 			continue
 		}
-		if m.reboot == nil {
-			return fmt.Errorf("reboot not configured")
+		if m.reboot == nil || !point.canReboot() {
+			return errNoRebootCreds
 		}
-		return m.reboot(point.Addr)
+		return m.reboot(point)
 	}
 	return errUnknownAP
 }
@@ -309,7 +369,7 @@ func (m *apMonitor) handleReboot(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(r.PostFormValue("ap"))
 	err := m.rebootByName(name)
 	switch {
-	case errors.Is(err, errUnknownAP):
+	case errors.Is(err, errUnknownAP), errors.Is(err, errNoRebootCreds):
 		http.NotFound(w, r)
 		return
 	case err != nil:
@@ -324,32 +384,10 @@ func (m *apMonitor) handleReboot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-// apCredentials is the one admin login shared by the access points. One rather
-// than one per AP because they are configured identically and a per-AP file
-// would be three copies of the same secret to keep in step.
+// apCredentials is one AP's admin login.
 type apCredentials struct {
 	username string
 	password string
-}
-
-// parseAPCredentials reads `username:password` from the secret's first
-// non-empty, non-comment line. The password may contain colons; only the first
-// splits the two.
-func parseAPCredentials(raw string) (apCredentials, bool) {
-	scanner := bufio.NewScanner(strings.NewReader(raw))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		user, pass, ok := strings.Cut(line, ":")
-		user = strings.TrimSpace(user)
-		if !ok || user == "" || pass == "" {
-			return apCredentials{}, false
-		}
-		return apCredentials{username: user, password: pass}, true
-	}
-	return apCredentials{}, false
 }
 
 // How long the whole login-then-reboot exchange gets. Generous because a busy
@@ -358,29 +396,69 @@ func parseAPCredentials(raw string) (apCredentials, bool) {
 // request.
 const apRebootTimeout = 15 * time.Second
 
-// ipcomReboot logs into one IP-COM access point and asks it to reboot.
+// apKind is which of the two firmware families an AP runs. They share a vendor
+// and a base64 password scheme and nothing else that matters here: the modern
+// one is a JSON API on /goform/modules, the legacy one a form login and a GET
+// reboot on a GoAhead server. The two are told apart by the login page the root
+// URL redirects to.
+type apKind int
+
+const (
+	apModern apKind = iota
+	apLegacy
+)
+
+// rebootAccessPoint logs into one AP and reboots it, picking the protocol from
+// what firmware it turns out to be running.
 //
-// The device authorises by source address once a login from that address
-// succeeds, so the cookie jar is belt-and-braces rather than the mechanism: the
-// login is repeated on every reboot instead of a session being cached, which
-// costs one extra request and removes any question of an expired session
-// turning a reboot into a silent no-op.
-//
-// The password is base64, not hashed — that is the AP's scheme, matching the
-// Encode() in its own login.js, not a choice made here.
-func ipcomReboot(creds apCredentials, addr netip.Addr) error {
+// A fresh cookie jar and client per call: the login is repeated every time
+// rather than a session cached, which costs one request and removes any
+// question of an expired session turning a reboot into a silent no-op. Both
+// families also authorise by source address once logged in, so the jar is
+// belt-and-braces on the modern one and the mechanism on the legacy one.
+func rebootAccessPoint(point accessPoint) error {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return err
 	}
 	client := &http.Client{Timeout: apRebootTimeout, Jar: jar}
-	return ipcomRebootURL(client, creds, "http://"+addr.String()+"/goform/modules")
+	creds := apCredentials{username: point.Username, password: point.Password}
+	base := "http://" + point.Addr.String()
+
+	kind, err := detectAPKind(client, base)
+	if err != nil {
+		return fmt.Errorf("detect firmware: %w", err)
+	}
+	switch kind {
+	case apLegacy:
+		return ipcomRebootLegacy(client, creds, base)
+	default:
+		return ipcomRebootModern(client, creds, base+"/goform/modules")
+	}
 }
 
-// ipcomRebootURL is ipcomReboot with the endpoint and client supplied, so the
-// exchange can be tested against an httptest server. The address form above is
-// the only caller in production.
-func ipcomRebootURL(client *http.Client, creds apCredentials, url string) error {
+// detectAPKind asks the root URL which login page it redirects to. The modern
+// firmware lands on login.html, the legacy one on login.asp; the client follows
+// the redirect, so the final path is the tell. Anything else is treated as
+// modern, whose reboot flow reports a clear error if that guess is wrong rather
+// than doing something surprising.
+func detectAPKind(client *http.Client, base string) (apKind, error) {
+	resp, err := client.Get(base + "/")
+	if err != nil {
+		return apModern, err
+	}
+	resp.Body.Close()
+	if strings.HasSuffix(resp.Request.URL.Path, ".asp") {
+		return apLegacy, nil
+	}
+	return apModern, nil
+}
+
+// ipcomRebootModern runs the JSON goform flow: log in, then post sysReboot.
+//
+// The password is base64, not hashed — that is the AP's scheme, matching the
+// Encode() in its own login.js, not a choice made here.
+func ipcomRebootModern(client *http.Client, creds apCredentials, url string) error {
 	now := time.Now()
 	login := map[string]any{
 		"sysLogin": map[string]any{
@@ -411,6 +489,46 @@ func ipcomRebootURL(client *http.Client, creds apCredentials, url string) error 
 	// success, not a failure.
 	if err := apPostJSON(client, url, map[string]string{"sysReboot": ""}, nil); err != nil {
 		return fmt.Errorf("reboot: %w", err)
+	}
+	return nil
+}
+
+// ipcomRebootLegacy runs the older GoAhead flow: a form login to /login/Auth,
+// then a GET to /goform/SysToolReboot.
+//
+// Success on the login is that the redirect does not land back on login.asp —
+// the page's own login.js decides the same way, by the response not being the
+// login page again. The password is base64 here too, the same Encode().
+func ipcomRebootLegacy(client *http.Client, creds apCredentials, base string) error {
+	now := time.Now()
+	form := neturl.Values{}
+	form.Set("usertype", "admin")
+	form.Set("username", creds.username)
+	form.Set("password", base64.StdEncoding.EncodeToString([]byte(creds.password)))
+	form.Set("time", fmt.Sprintf("%d;%d;%d;%d;%d;%d",
+		now.Year(), int(now.Month()), now.Day(), now.Hour(), now.Minute(), now.Second()))
+
+	resp, err := client.PostForm(base+"/login/Auth", form)
+	if err != nil {
+		return fmt.Errorf("login: %w", err)
+	}
+	resp.Body.Close()
+	// The client followed the redirect: a good login ends on index.asp, a bad
+	// one back on login.asp. Match on the failure so anything unexpected is not
+	// silently taken for success.
+	if strings.Contains(resp.Request.URL.Path, "login.asp") {
+		return fmt.Errorf("login rejected: wrong credentials")
+	}
+
+	// A cache-buster like the page's Math.random(); the value is irrelevant. The
+	// reply is not read, for the same reason as the modern reboot above.
+	rebootResp, err := client.Get(base + "/goform/SysToolReboot?r=1")
+	if err != nil {
+		return fmt.Errorf("reboot: %w", err)
+	}
+	rebootResp.Body.Close()
+	if rebootResp.StatusCode != http.StatusOK {
+		return fmt.Errorf("reboot: status %s", rebootResp.Status)
 	}
 	return nil
 }
@@ -591,37 +709,18 @@ func startAccessPoints() *apMonitor {
 	}
 
 	monitor := newAPMonitor(points, prober.sample)
-	monitor.reboot = loadAPReboot()
+	// Always wired: whether any given AP can be rebooted is decided per AP by
+	// whether its line carried a login, not by a separate switch. The list is
+	// the switch now — an AP written as `name,address` gets a lamp and no button.
+	monitor.reboot = rebootAccessPoint
 	monitor.run()
-	log.Printf("watching %d access points from %s", len(points), path)
-	return monitor
-}
 
-// loadAPReboot returns the reboot function if credentials are configured, or nil
-// to leave the feature off.
-//
-// Opt-in on the credentials file, one step beyond the list itself: a router that
-// lists its APs to draw the lamps does not gain the ability to reboot them until
-// the login is also given. The list is world-readable labels; the login is a
-// secret, so it comes from its own file, read here and held only in this
-// process's memory.
-func loadAPReboot() func(netip.Addr) error {
-	path := strings.TrimSpace(os.Getenv("ROUTER_AP_CREDENTIALS"))
-	if path == "" {
-		return nil
+	rebootable := 0
+	for _, point := range points {
+		if point.canReboot() {
+			rebootable++
+		}
 	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("access point reboot disabled: read %s: %v", path, err)
-		return nil
-	}
-	creds, ok := parseAPCredentials(string(raw))
-	if !ok {
-		log.Printf("access point reboot disabled: %s: want `username:password`", path)
-		return nil
-	}
-	log.Printf("access point reboot enabled")
-	return func(addr netip.Addr) error {
-		return ipcomReboot(creds, addr)
-	}
+	log.Printf("watching %d access points from %s (%d with reboot logins)", len(points), path, rebootable)
+	return monitor
 }
