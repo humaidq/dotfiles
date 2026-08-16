@@ -474,6 +474,68 @@ func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 	})
 }
 
+// A reboot holds the lamp at "rebooting" from the click, through the AP still
+// being up and then down, and clears only once it has gone down and come back.
+func TestRebootStatePhases(t *testing.T) {
+	samples := make(chan apSample, 8)
+	monitor := newAPMonitor([]accessPoint{
+		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160"), Username: "admin", Password: "pw"},
+	}, func(netip.Addr) apSample { return <-samples })
+	monitor.reboot = func(accessPoint) error { return nil }
+
+	monitor.markRebooting("first")
+	// Painted at once, before any probe: the page the click redirects to shows it.
+	if got := monitor.reports()[0].State; got != stateRebooting {
+		t.Fatalf("right after the click state = %q, want %q", got, stateRebooting)
+	}
+
+	healthy := apSample{Sent: 5, Received: 5, Large: 2 * time.Millisecond, LargeOK: true}
+	down := apSample{Sent: 5}
+
+	// Still up because it has not restarted yet: an immediate probe catching it
+	// alive must not clear the flag.
+	samples <- healthy
+	monitor.cycle()
+	if got := monitor.reports()[0].State; got != stateRebooting {
+		t.Errorf("while still up state = %q, want %q", got, stateRebooting)
+	}
+
+	// Down while it boots: still rebooting, not "off".
+	samples <- down
+	monitor.cycle()
+	if got := monitor.reports()[0].State; got != stateRebooting {
+		t.Errorf("while down state = %q, want %q", got, stateRebooting)
+	}
+
+	// Back and healthy: the reboot is done and the real verdict shows.
+	samples <- healthy
+	monitor.cycle()
+	if got := monitor.reports()[0].State; got != stateOK {
+		t.Errorf("after recovery state = %q, want %q", got, stateOK)
+	}
+}
+
+// An AP that never comes back does not claim to be rebooting forever: past the
+// window the override drops and the real "off" verdict shows.
+func TestRebootWindowGivesUp(t *testing.T) {
+	monitor := newAPMonitor([]accessPoint{
+		{Name: "first", Addr: netip.MustParseAddr("10.20.0.160"), Username: "admin", Password: "pw"},
+	}, func(netip.Addr) apSample { return apSample{Sent: 5} })
+	monitor.reboot = func(accessPoint) error { return nil }
+
+	monitor.markRebooting("first")
+	// Backdate the reboot past the window.
+	monitor.rebooting["first"].since = monitor.rebooting["first"].since.Add(-2 * monitor.rebootWindow)
+
+	monitor.cycle()
+	if _, ok := monitor.rebooting["first"]; ok {
+		t.Error("a reboot past the window is still tracked")
+	}
+	if got := monitor.reports()[0].State; got != stateDown {
+		t.Errorf("after the window state = %q, want the real %q", got, stateDown)
+	}
+}
+
 // detectAPKind reads which login page the root URL redirects to. login.asp is
 // the legacy firmware; anything else is treated as modern.
 func TestDetectAPKind(t *testing.T) {

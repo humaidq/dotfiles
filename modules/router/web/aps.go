@@ -57,6 +57,18 @@ const (
 
 	apInterval = 60 * time.Second
 
+	// How often to probe while an AP is rebooting, and how long to keep calling
+	// it that before giving up and showing whatever the probe actually finds.
+	//
+	// The fast poll runs only while a reboot is in flight — probing every AP with
+	// a 65 kB echo every couple of seconds around the clock would be wasteful, but
+	// for the minute a reboot takes it is what turns the lamp from a stale
+	// "healthy" into the AP going down and coming back. The window is longer than
+	// a reboot needs so a slow one still resolves on its own; past it, an AP that
+	// never came back stops claiming to be rebooting and shows as off.
+	apRebootPoll   = 2 * time.Second
+	apRebootWindow = 4 * time.Minute
+
 	// The round trip below which a 65000-byte echo proves the path is faster
 	// than 100 Mbit.
 	//
@@ -91,6 +103,20 @@ type accessPoint struct {
 // canReboot reports whether this AP was listed with a login. Password alone
 // decides it: parseAccessPoints only ever sets the two together.
 func (p accessPoint) canReboot() bool { return p.Password != "" }
+
+// stateRebooting is the lamp for an AP that this page has just asked to reboot,
+// held from the click until the AP has gone down and come back. It is not one of
+// the probe verdicts in uplinkpage.go because nothing measures it: it is what
+// the page knows that a probe cannot, that the last thing done to this AP was
+// power-cycle it. A string like the others because it is a CSS class suffix too.
+const stateRebooting = "rebooting"
+
+// rebootProgress tracks one in-flight reboot so the lamp can tell the difference
+// between an AP that has not gone down yet and one that has come back.
+type rebootProgress struct {
+	since   time.Time
+	sawDown bool
+}
 
 // apReport is what the template renders. State is the lamp class shared with
 // the nav strip and the uplink band; StateText is the word beside it.
@@ -233,22 +259,39 @@ type apMonitor struct {
 	// be tested without an access point to talk to.
 	reboot func(accessPoint) error
 
+	// How long a reboot claims the lamp for, and how fast to poll while one is in
+	// flight. Fields rather than the constants directly so a test does not have
+	// to wait real minutes.
+	rebootWindow time.Duration
+	rebootPoll   time.Duration
+	// Woken when a reboot is triggered so the run loop drops to the fast poll
+	// without waiting out the current sleep. Buffered one: a signal that arrives
+	// while a cycle is running is not lost, and a second one is redundant.
+	wake chan struct{}
+
 	mu sync.Mutex
 	// Last verdict per AP, by name, and whether each has ever answered a large
 	// probe. Held rather than recomputed because the page renders from whatever
 	// the last cycle found, not from a probe run inside the request.
 	last     map[string]apReport
 	sawLarge map[string]bool
+	// In-flight reboots by name. Present means the lamp shows "rebooting" and the
+	// run loop is on the fast poll.
+	rebooting map[string]*rebootProgress
 }
 
 func newAPMonitor(points []accessPoint, probe apProbe) *apMonitor {
 	return &apMonitor{
-		points:   points,
-		probe:    probe,
-		interval: apInterval,
-		ceiling:  apGigabitCeiling,
-		last:     map[string]apReport{},
-		sawLarge: map[string]bool{},
+		points:       points,
+		probe:        probe,
+		interval:     apInterval,
+		ceiling:      apGigabitCeiling,
+		rebootWindow: apRebootWindow,
+		rebootPoll:   apRebootPoll,
+		wake:         make(chan struct{}, 1),
+		last:         map[string]apReport{},
+		sawLarge:     map[string]bool{},
+		rebooting:    map[string]*rebootProgress{},
 	}
 }
 
@@ -279,6 +322,12 @@ func (m *apMonitor) reports() []apReport {
 }
 
 // cycle probes every AP once and replaces the verdicts.
+//
+// An AP with a reboot in flight is not reported by its probe alone: until it has
+// gone down and come back, its lamp says "rebooting" rather than the "off" that
+// an AP mid-boot would otherwise show and that reads as a fault. The override is
+// resolved here, against the same probe the lamp is drawn from, so reboots and
+// ordinary probing cannot disagree about an AP's state.
 func (m *apMonitor) cycle() {
 	for _, point := range m.points {
 		sample := m.probe(point.Addr)
@@ -288,23 +337,87 @@ func (m *apMonitor) cycle() {
 			m.sawLarge[point.Name] = true
 		}
 		state, text := apState(sample, m.sawLarge[point.Name], m.ceiling)
+		state, text = m.applyReboot(point.Name, sample, state, text)
 		m.last[point.Name] = apReport{Name: point.Name, State: state, StateText: text}
 		m.mu.Unlock()
 	}
 }
 
-// run probes immediately and then on the interval.
+// applyReboot overrides one AP's verdict while a reboot is in flight. Must be
+// called with m.mu held.
+//
+// The three phases of a reboot, in order: still up because it has not restarted
+// yet, down while it boots, then back. The lamp says "rebooting" through the
+// first two and only clears once the AP has both gone down and returned — an
+// immediate probe that catches it still up would otherwise clear the flag before
+// the reboot had even begun. A reboot that never comes back is not held forever:
+// past the window the override is dropped and the real "off" verdict shows.
+func (m *apMonitor) applyReboot(name string, sample apSample, state, text string) (string, string) {
+	progress, ok := m.rebooting[name]
+	if !ok {
+		return state, text
+	}
+	reachable := sample.Received > 0
+	if !reachable {
+		progress.sawDown = true
+	}
+	switch {
+	case time.Since(progress.since) > m.rebootWindow:
+		delete(m.rebooting, name)
+		return state, text
+	case progress.sawDown && reachable:
+		delete(m.rebooting, name)
+		return state, text
+	default:
+		return stateRebooting, "rebooting"
+	}
+}
+
+// markRebooting records that an AP was just asked to reboot and paints its lamp
+// at once, before the next probe, so the page the click redirects to already
+// shows it. It then wakes the run loop onto the fast poll.
+func (m *apMonitor) markRebooting(name string) {
+	m.mu.Lock()
+	m.rebooting[name] = &rebootProgress{since: time.Now()}
+	m.last[name] = apReport{Name: name, State: stateRebooting, StateText: "rebooting"}
+	m.mu.Unlock()
+
+	select {
+	case m.wake <- struct{}{}:
+	default:
+	}
+}
+
+// anyRebooting reports whether a reboot is in flight, which is what puts the run
+// loop on the fast poll.
+func (m *apMonitor) anyRebooting() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.rebooting) > 0
+}
+
+// run probes immediately and then on an interval that tightens to rebootPoll
+// while any AP is rebooting and relaxes back to the base interval once none is.
 //
 // Immediately because the alternative is a page that says "checking" for a
 // minute after every restart, and a restart is exactly what someone does before
-// reloading this page.
+// reloading this page. Woken early by markRebooting so a click does not wait out
+// the current minute-long sleep before the fast poll begins.
 func (m *apMonitor) run() {
 	go func() {
-		m.cycle()
-		ticker := time.NewTicker(m.interval)
-		defer ticker.Stop()
-		for range ticker.C {
+		for {
 			m.cycle()
+
+			wait := m.interval
+			if m.anyRebooting() {
+				wait = m.rebootPoll
+			}
+			timer := time.NewTimer(wait)
+			select {
+			case <-timer.C:
+			case <-m.wake:
+				timer.Stop()
+			}
 		}
 	}()
 }
@@ -381,6 +494,10 @@ func (m *apMonitor) handleReboot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("ap-reboot ap=%q result=\"ok\"", name)
+	// Paint the lamp "rebooting" before the redirect lands, and put the monitor
+	// on the fast poll so the page tracks the AP down and back rather than
+	// sitting on the last "healthy" for up to a minute.
+	m.markRebooting(name)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

@@ -169,6 +169,22 @@ a:hover {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent);
 }
 
+/* Rebooting is a state the page knows rather than one it measured, so the lamp
+   pulses: it reads as "something is happening" rather than as a steady verdict,
+   and is a different colour from the amber of degraded so the two are not
+   confused. */
+.lamp-rebooting {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: lamp-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes lamp-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .navlinks {
   display: flex;
   align-items: center;
@@ -473,6 +489,9 @@ td.actions button {
 }
 .ap-down .ap-state {
   color: var(--bad);
+}
+.ap-rebooting .ap-state {
+  color: var(--accent);
 }
 
 /* The reboot button sits at the far right of each row, after the state word.
