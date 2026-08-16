@@ -207,12 +207,40 @@ in
             locations."/" = {
               proxyPass = "https://127.0.0.1:${toString cfg.unifi.uiPort}";
               proxyWebsockets = true;
+
+              # The headers have to be repeated here rather than inherited from
+              # appendHttpConfig. nginx only inherits proxy_set_header from an
+              # outer level if the current level sets none of its own, and
+              # proxyWebsockets puts Upgrade and Connection in this location —
+              # which silently drops every header from the http block, Host
+              # included.
+              #
+              # Host is the one that matters. The appliance refuses a websocket
+              # whose Origin does not match the Host it was asked for, so with
+              # Host left at 127.0.0.1:11443 and the browser sending an Origin
+              # of unifi.alq.ae it answers 500 on /api/ws/system. Plain requests
+              # are unaffected, which is why the page loads its title and then
+              # renders nothing.
+              #
+              # Connection is deliberately absent: appendHttpConfig pins it to
+              # "" for keepalive, and setting it again here would send it
+              # alongside the upgrade value rather than replacing it.
+              extraConfig = ''
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For "";
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Host $host;
+
+                # The appliance terminates TLS itself with a self-signed
+                # certificate and cannot be told not to.
+                proxy_ssl_verify off;
+                proxy_ssl_server_name on;
+
+                # Firmware and backup uploads.
+                client_max_body_size 0;
+              '';
             };
-            extraConfig = ''
-              proxy_ssl_verify off;
-              proxy_ssl_server_name on;
-              client_max_body_size 0;
-            '';
           };
         })
       ];
