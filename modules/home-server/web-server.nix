@@ -192,6 +192,29 @@ in
             enableACME = true;
           };
         }
+        (lib.mkIf cfg.unifi.enable {
+          # The controller UI. Unlike everything else here the backend is
+          # HTTPS: the appliance terminates TLS itself with a self-signed
+          # certificate and cannot be told not to, so this proxies to https://
+          # and skips verification. Websockets carry the live device state, and
+          # firmware uploads are large enough that the body limit has to go.
+          #
+          # Only the UI is proxied. Access point adoption talks to the inform
+          # port directly on the LAN and never comes through nginx.
+          "unifi.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+            locations."/" = {
+              proxyPass = "https://127.0.0.1:${toString cfg.unifi.uiPort}";
+              proxyWebsockets = true;
+            };
+            extraConfig = ''
+              proxy_ssl_verify off;
+              proxy_ssl_server_name on;
+              client_max_body_size 0;
+            '';
+          };
+        })
       ];
     };
   };

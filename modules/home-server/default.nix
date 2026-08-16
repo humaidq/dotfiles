@@ -16,6 +16,7 @@ in
     ./media.nix
     ./misc.nix
     ./nix.nix
+    ./unifi.nix
     ./vaultwarden.nix
     ./web-server.nix
   ];

@@ -11,6 +11,7 @@ let
   tailscaleEnabled = lib.attrByPath [ "sifr" "personal" "tailscale" "enable" ] false config;
   o11yClientEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "client" "enable" ] false config;
   o11yServerEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "server" "enable" ] false config;
+  unifiEnabled = lib.attrByPath [ "services" "unifi-os-server" "enable" ] false config;
   extraDirs =
     lib.optionals desktopEnabled [
       "/var/lib/bluetooth"
@@ -27,6 +28,15 @@ let
     ]
     ++ lib.optionals o11yServerEnabled [
       "/var/lib/prometheus2"
+    ]
+    # UniFi OS Server keeps the site, the adopted devices and their mongodb
+    # under its state directory; losing it means re-adopting every AP by hand.
+    # /var/lib/containers goes with it because the appliance image is several
+    # gigabytes and podman would otherwise re-import it from the store on every
+    # boot.
+    ++ lib.optionals unifiEnabled [
+      config.services.unifi-os-server.stateDir
+      "/var/lib/containers"
     ];
 in
 {

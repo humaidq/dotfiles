@@ -52,6 +52,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # UniFi OS Server, run as a podman container. Unpacks Ubiquiti's own
+    # (unfree, binary) installer, so the build needs binwalk from our nixpkgs —
+    # 3.1.0 here, which is the CLI the packaging expects.
+    unifi-os-server = {
+      url = "github:rcambrj/unifi-os-server";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";

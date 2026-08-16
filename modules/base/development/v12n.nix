@@ -29,7 +29,10 @@ in
     (mkIf cfg.docker.enable {
       users.users.${vars.user}.extraGroups = [ "docker" ];
       virtualisation.docker.enable = true;
-      virtualisation.oci-containers.backend = "docker";
+      # A default rather than a plain set: a module that ships an appliance
+      # image which only runs under podman (see home-server/unifi.nix) has to
+      # be able to claim the backend without disabling docker for the user.
+      virtualisation.oci-containers.backend = lib.mkDefault "docker";
     })
     (mkIf cfg.emulation.enable {
       environment.systemPackages = with pkgs; [

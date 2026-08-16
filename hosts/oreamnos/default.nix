@@ -69,6 +69,12 @@
 
     hasGadgetSecrets = true;
     home-server.enable = true;
+    home-server.unifi = {
+      enable = true;
+      # This host's address on bongo's LAN, which is where the access points
+      # are. Same address bongo hands out for alq.ae.
+      informAddress = "10.20.0.250";
+    };
 
     v12n.docker.enable = true;
     persist = {
