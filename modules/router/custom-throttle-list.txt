@@ -7270,3 +7270,48 @@
 # away instead of being filed as another singleton; the MCCI block above is what
 # it costs to notice that pattern four days late.
 23.166.88.127
+#
+# SECOND SIGHTING OF AS63023, and the note above asked for it to be called out
+# rather than filed as another singleton. 216.106.187.155, tcp/8080 again, PTR
+# 155-187-106-216.clients.gthost.com — tenant naming on the same VPS reseller.
+#
+# IT IS NOT A RANGE CASE, which is the thing the note above was watching for.
+# The two addresses sit in different announced prefixes (23.166.88.0/24 and
+# 216.106.187.0/24) of an operator announcing ~193 of them, so what repeats is
+# the operator, not an allocation worth taking wholesale. /32 again. What a
+# third sighting would justify is watching AS63023 as a source, not widening
+# either prefix.
+#
+# THE PORT AND THE PAYLOAD ARE THE SHARED FINGERPRINT, not the traffic ratio.
+# Same tcp/8080, same total absence of TLS — no handshake, no records, opaque
+# from the first byte, on a port whose cleartext convention means a decoder
+# labels the flow "HTTP" and shows not one readable header or verb. That is the
+# part that matched. The direction did not: the first entry was download-heavy
+# about eleven to one, this one is a good deal closer to balanced with real
+# volume both ways. Anyone matching future GTHost flows against that 11:1 shape
+# will miss this one, so the ratio is not the operator's signature and the
+# earlier row should not be read as if it were.
+#
+# The rest of the case is the usual one and held: sole peer, 100% of the
+# device's traffic for the window with nothing but push keepalives beside it;
+# one connection whose conntrack timer had been refreshed to the five-day
+# ceiling, so it long predates the window; and no answer anywhere in the
+# resolver log, for any client, that ever produced this address — it is
+# hardcoded in a config. Android's connectivity probe repeating against
+# www.google.com was present here too, which is the same tell as above.
+#
+# TRAPS CHECKED BEFORE WRITING, since the address alone justifies nothing.
+# Not CDN edge: AS63023 sells virtual machines and the PTR is tenant naming.
+# Not a fronting relay: three separate passes to 443 reset without presenting a
+# certificate at all, so there is no upstream being relayed. Not a resolver, and
+# this is the check that decides the file — DoH on 443 returned an empty body,
+# and 853 was silent. Port 53 was not probed and no conclusion is drawn from it,
+# per this network's outbound block.
+#
+# A LIVE tempblock ON 216.106.187.155 WAS APPLIED WHEN THIS WAS FOUND, and it
+# has to be flushed for this row to mean anything. A drop is evaluated before
+# the shaper, so leaving both in place caps nothing and simply drops — the
+# failure this repo has already had once, silently, across 99 addresses that had
+# been deliberately moved here to be shaped. Rebuilding does NOT clear it:
+# nftables manages its named tables individually and router_tempblock survives.
+216.106.187.155
