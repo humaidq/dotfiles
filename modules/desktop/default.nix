@@ -20,6 +20,7 @@ in
     ./sway
     ./labwc
     ./apps.nix
+    ./brightness.nix
   ];
   options.sifr.desktop = {
     enable = mkOption {

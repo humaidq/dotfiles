@@ -75,10 +75,10 @@ let
         <action name="Execute" command="${lib.getExe pkgs.wdisplays}" />
       </keybind>
       <keybind key="XF86_MonBrightnessUp">
-        <action name="Execute" command="${lib.getExe pkgs.brightnessctl} set 5%+" />
+        <action name="Execute" command="${lib.getExe config.sifr.desktop.brightness.package} up" />
       </keybind>
       <keybind key="XF86_MonBrightnessDown">
-        <action name="Execute" command="${lib.getExe pkgs.brightnessctl} set 5%-" />
+        <action name="Execute" command="${lib.getExe config.sifr.desktop.brightness.package} down" />
       </keybind>
       <keybind key="XF86_AudioRaiseVolume">
         <action name="Execute" command="${pkgs.alsa-utils}/bin/amixer set Master 5%+" />
