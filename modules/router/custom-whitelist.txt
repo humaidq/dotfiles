@@ -79,6 +79,18 @@ apkpure.com
 # have started blocking it. Remove this line if the block is wanted.
 *.muslim.com
 
+# brettcodes.com is a personal software developer's blog on Bear Blog (Caddy
+# behind Cloudflare, x-clacks-overhead header, "professional software developer
+# and hobbyist game developer"). Nothing on a content list objects to it — it is
+# caught by the nrd group's nrd7 slice, i.e. purely for having been registered
+# in the last week. Only the apex was blocked; www. and blog. resolved fine.
+#
+# The block would lift by itself once the domain is 21 days old, per the note on
+# denylists.nrd in blocky-common.nix. This entry unblocks it now and keeps it
+# unblocked if the name is ever re-registered.
+brettcodes.com
+*.brettcodes.com
+
 # gs-loc.apple.com is Apple's WiFi positioning service: a device sends the
 # access points it can see and gets a location back. Blocking it degrades Maps,
 # weather and Find My on every Apple device here, and it carries no advertising
