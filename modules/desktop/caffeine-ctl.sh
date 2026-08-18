@@ -32,7 +32,20 @@ inhibitor_alive() {
 }
 
 beeper_active() {
-  systemctl --user is-active --quiet "$BEEPER_UNIT"
+  # `is-active --quiet` succeeds only for the steady `active` state, so every
+  # transient one — activating, deactivating, and the auto-restart gap between
+  # Restart=on-failure attempts — read as "beeper dead". current_mode then
+  # downgraded a live `double` to `caffeine`, and since next_mode(caffeine) is
+  # `double`, every press re-set double and read back caffeine again: the
+  # toggle ping-ponged between the two with no way to reach decaf. Only a unit
+  # that has actually stopped counts as inactive; one on its way in or out is
+  # still the double half of the state.
+  local state
+  state="$(systemctl --user is-active "$BEEPER_UNIT" 2>/dev/null || true)"
+  case "$state" in
+    inactive | failed | unknown | '') return 1 ;;
+    *) return 0 ;;
+  esac
 }
 
 current_mode() {

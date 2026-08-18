@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "berkeley-font": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787033124,
+        "narHash": "sha256-0shvnuKorFmW9qnkzZA+rkh/XkWOSM2KUkwZt8lvujg=",
+        "ref": "refs/heads/main",
+        "rev": "63c5e8012546c850a90d9a69b45e043ff7da68b9",
+        "revCount": 1,
+        "type": "git",
+        "url": "https://git.alq.ae/humaid/berkeley-font"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.alq.ae/humaid/berkeley-font"
+      }
+    },
     "blueprint": {
       "inputs": {
         "nixpkgs": [
@@ -1213,6 +1229,7 @@
     },
     "root": {
       "inputs": {
+        "berkeley-font": "berkeley-font",
         "blueshot": "blueshot",
         "disko": "disko",
         "flake-compat": "flake-compat",

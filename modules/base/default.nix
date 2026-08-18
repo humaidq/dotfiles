@@ -169,6 +169,11 @@ in
           "root"
           cfg.username
         ];
+        # Otherwise nix's answer to a flake's `nixConfig` block is cached in
+        # ~/.local/share/nix/trusted-settings.json, which impermanence wipes on
+        # every boot, and nom/nix-output-monitor pipes stderr so nix can never
+        # ask again — it just warns and ignores our substituter and lazy-trees.
+        accept-flake-config = true;
         auto-optimise-store = true;
       };
 
@@ -208,6 +213,10 @@ in
           unstable = import inputs.nixpkgs-unstable {
             inherit (final.stdenv.hostPlatform) system;
             config.allowUnfree = true;
+          };
+
+          berkeley-mono = final.callPackage ../../overlays/berkeley-mono {
+            src = inputs.berkeley-font;
           };
 
           claude-code = final.callPackage ../../overlays/claude-code { };

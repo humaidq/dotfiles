@@ -50,12 +50,27 @@ let
     name: _: lib.hasSuffix ".${name}" ".${cfg.localDomain}"
   ) customDNSMappings;
 
+  # The mapping for the local domain itself is already served, exactly, by the
+  # host-record below — and better, since host-record also generates the PTR
+  # that address= does not. Emitting it here as well adds nothing except an
+  # address= wildcard, which matches every subdomain: with the domain handed
+  # out as the DHCP search suffix, that turns `ping abcd` into a lookup of
+  # abcd.<domain> answered with the router's own address instead of NXDOMAIN.
+  # Dropped so the zone, which is declared local below, answers unknown names
+  # the way it should.
+  #
+  # Only when the two agree. A mapping pointing the local domain somewhere
+  # other than the router is not redundant, so it keeps its wildcard and its
+  # existing behaviour. A mapping *above* the local domain (alq.ae for a
+  # v6.alq.ae LAN) is what the wildcard was written for and is untouched.
+  redundantWithHostRecord = name: value: name == cfg.localDomain && value == cfg.dhcp.routerAddress;
+
   # dnsmasq takes one address per directive, blocky takes a comma-separated
   # list, so expand them.
   shadowingAddresses = lib.concatLists (
-    lib.mapAttrsToList (
-      name: value: map (ip: "/${name}/${ip}") (lib.splitString "," value)
-    ) shadowingMappings
+    lib.mapAttrsToList (name: value: map (ip: "/${name}/${ip}") (lib.splitString "," value)) (
+      lib.filterAttrs (name: value: !redundantWithHostRecord name value) shadowingMappings
+    )
   );
 in
 
@@ -93,21 +108,30 @@ in
           "sifr0"
         ];
         domain = cfg.localDomain;
-        local = [
-          "/${cfg.localDomain}/"
-          # Reverse zone for link-local addresses, so an IPv6 client's PTR is
-          # answered here and not forwarded to an upstream that has never heard
-          # of it.
-          "/${v6ReverseZone}/"
-          # Reverse zone for the LAN, so client IPs resolve back to their DHCP
-          # hostnames. blocky uses this for its client lookups.
-          "/${reverseZone}/"
-          # Answer the DoH canary domain authoritatively (NXDOMAIN) so Firefox
-          # and other canary-respecting clients disable DNS-over-HTTPS and stay
-          # on the router's resolver. blocky cannot do this itself, as its
-          # blockType is zeroIp.
-          "/use-application-dns.net/"
-        ];
+        local = lib.unique (
+          [
+            "/${cfg.localDomain}/"
+            # Reverse zone for link-local addresses, so an IPv6 client's PTR is
+            # answered here and not forwarded to an upstream that has never heard
+            # of it.
+            "/${v6ReverseZone}/"
+            # Reverse zone for the LAN, so client IPs resolve back to their DHCP
+            # hostnames. blocky uses this for its client lookups.
+            "/${reverseZone}/"
+            # Answer the DoH canary domain authoritatively (NXDOMAIN) so Firefox
+            # and other canary-respecting clients disable DNS-over-HTTPS and stay
+            # on the router's resolver. blocky cannot do this itself, as its
+            # blockType is zeroIp.
+            "/use-application-dns.net/"
+          ]
+          # The shadowed zones too. address= below answers A for them, but it
+          # only answers A: an AAAA, HTTPS or TXT query for the same name is not
+          # matched, so dnsmasq treats it as forwardable and — with no-resolv and
+          # no upstreams — returns REFUSED. Clients read that as a broken server
+          # and retry, which is what grafana.alq.ae was doing on every AAAA and
+          # HTTPS lookup. Declaring the zone local makes those NODATA instead.
+          ++ map (name: "/${name}/") (lib.attrNames shadowingMappings)
+        );
         expand-hosts = true;
 
         # The generated IPv6 names. dnsmasq re-reads this on SIGHUP, which is

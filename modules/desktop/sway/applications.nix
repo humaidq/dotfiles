@@ -19,9 +19,50 @@ let
       Exec=${command}
     '';
   };
+
+  # fuzzel ranks launcher entries by launch count, read from
+  # $XDG_CACHE_HOME/fuzzel as "<desktop-id>|<count>" lines.  Where counts tie it
+  # falls back to .desktop scan order, which is why "Emacs" lands above "Emacs
+  # (Client)" and "Thunar Preferences" above "Thunar File Manager".  ~/.cache
+  # isn't persisted, so every boot starts from an all-zero tie; seed the entries
+  # that should always sort first and let fuzzel count up from there.
+  fuzzelPinned = {
+    "emacsclient.desktop" = 99;
+    "thunar.desktop" = 99;
+  };
+  fuzzelCacheSeed = pkgs.writeText "fuzzel-cache-seed" (
+    lib.concatMapStrings (line: line + "\n") (
+      lib.mapAttrsToList (id: count: "${id}|${toString count}") fuzzelPinned
+    )
+  );
+  seedFuzzelCache = pkgs.writeShellScript "seed-fuzzel-cache" ''
+    cache="''${XDG_CACHE_HOME:-$HOME/.cache}/fuzzel"
+    mkdir -p "$(dirname "$cache")"
+    touch "$cache"
+    # Raise pinned entries to at least their seeded count, leaving other entries
+    # -- and any higher count fuzzel has since learned -- untouched.  Written as
+    # a merge rather than an overwrite so a mid-session rebuild is harmless.
+    ${pkgs.gawk}/bin/awk -F'|' -v OFS='|' '
+      NR == FNR { want[$1] = $2; next }
+      { if ($1 in want) { if ($2 < want[$1]) $2 = want[$1]; delete want[$1] } print }
+      END { for (id in want) print id, want[id] }
+    ' ${fuzzelCacheSeed} "$cache" >"$cache.new" && mv "$cache.new" "$cache"
+  '';
 in
 {
   config = lib.mkIf cfg.enable {
+    systemd.user.services.fuzzel-cache-seed = {
+      enable = true;
+      description = "Seed fuzzel's launcher popularity cache";
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${seedFuzzelCache}";
+      };
+      partOf = [ "graphical-session.target" ];
+      wantedBy = [ "graphical-session.target" ];
+    };
+
     home-manager.users."${vars.user}" = {
       # home manager packages
       home.packages = with pkgs; [

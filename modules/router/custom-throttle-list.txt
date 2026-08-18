@@ -7315,3 +7315,11 @@
 # been deliberately moved here to be shaped. Rebuilding does NOT clear it:
 # nftables manages its named tables individually and router_tempblock survives.
 216.106.187.155
+
+
+
+# custom
+206.168.190.255
+136.175.9.11
+204.77.223.251
+136.175.8.145

@@ -1,0 +1,30 @@
+apiVersion: 1
+contactPoints:
+    - orgId: 1
+      name: grafana-default-email
+      receivers:
+        - uid: cf3rqz85bp43kd
+          type: email
+          settings:
+            addresses: <me.alerts@huma.id>
+            singleEmail: false
+          disableResolveMessage: false
+    # A contact form submission is not an incident, so it does not want the
+    # generic alert layout with its Values/Labels/Silence furniture. This point
+    # exists only to hang contact_form.subject/message off, keeping the shared
+    # grafana-default-email untouched for the infrastructure rules.
+    #
+    # disableResolveMessage because a submission "resolves" a day later purely
+    # by ageing out of the rule's 24h count window — a resolved mail there says
+    # nothing and arrives long after anyone cared.
+    - orgId: 1
+      name: contact-form
+      receivers:
+        - uid: contactformemail
+          type: email
+          settings:
+            addresses: <me.alerts@huma.id>
+            singleEmail: true
+            subject: '{{ template "contact_form.subject" . }}'
+            message: '{{ template "contact_form.message" . }}'
+          disableResolveMessage: true

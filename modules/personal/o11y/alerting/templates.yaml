@@ -1,0 +1,35 @@
+# Notification templates for Groundwave's contact form.
+#
+# The rule groups its Loki query by full_name/email/ip/user_agent, so each
+# submitter arrives as one alert instance carrying those details on .Labels,
+# and contact_form.message ranges over the group to list them all.
+#
+# Firing only: the contact point sets disableResolveMessage, because a
+# submission "resolves" a day later merely by ageing out of the rule's 24h
+# count window, which is not an event worth mailing about.
+#
+# Two constraints on the `template` body, both of which make Grafana reject the
+# file with "alerting.notifications.templates.invalidFormat" — and a rejected
+# template fails the whole alerting provisioning step, which stops Grafana from
+# starting at all, so neither is a cosmetic concern:
+#
+#   1. Nothing may appear outside a {{ define }} block, not even a Go comment.
+#      Keep prose here, in YAML comments.
+#   2. The define and end delimiters must not use whitespace trim markers.
+#      `{{- define "x" -}}` … `{{- end -}}` is rejected; `{{ define "x" }}` …
+#      `{{ end }}` is accepted. Control layout by putting the actions on the
+#      same line as the text instead.
+apiVersion: 1
+templates:
+    - orgID: 1
+      name: contact_form
+      template: |
+        {{ define "contact_form.subject" }}{{ if eq (len .Alerts.Firing) 1 }}Contact form: {{ (index .Alerts.Firing 0).Labels.full_name }}{{ else }}Contact form: {{ len .Alerts.Firing }} submissions{{ end }}{{ end }}
+        {{ define "contact_form.message" }}{{ if eq (len .Alerts.Firing) 1 }}New contact form submission on huma.id.{{ else }}{{ len .Alerts.Firing }} new contact form submissions on huma.id.{{ end }}
+        {{ range .Alerts.Firing }}
+        Name:       {{ .Labels.full_name }}
+        Email:      {{ .Labels.email }}
+        IP:         {{ .Labels.ip }}
+        User agent: {{ .Labels.user_agent }}
+        First seen: {{ .StartsAt.Format "2006-01-02 15:04 MST" }}
+        {{ end }}{{ end }}

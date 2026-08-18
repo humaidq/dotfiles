@@ -185,6 +185,47 @@ else
   fail=1
 fi
 
+# --- SIGTERM actually stops the loop ----------------------------------------
+# `trap restore_sink EXIT INT TERM` ran the handler and then *resumed* the main
+# loop, because a bash trap that returns normally continues what it interrupted.
+# The service therefore ignored `systemctl stop` and sat in `deactivating` for
+# the whole 90s TimeoutStopSec, which is what wedged the Super+c toggle. Drive
+# the real loop on the silent (AC) path and assert it dies on SIGTERM.
+set_battery Charging
+
+NOTIFY_LOG="$notify_log" PATH="$stub_bin:$PATH" \
+CAFFEINE_BEEP_SYSFS="$tmp/sysfs" \
+CAFFEINE_BEEP_AC_POLL_INTERVAL=0.05 \
+  bash "$BEEPER" &
+beeper_pid=$!
+
+sleep 0.4
+kill -TERM "$beeper_pid" 2>/dev/null || true
+
+# Poll rather than sleeping a fixed amount: the trap only fires once the
+# in-flight `sleep` returns, and a loaded machine makes a fixed wait flaky.
+gone=0
+for _ in $(seq 1 40); do
+  if ! kill -0 "$beeper_pid" 2>/dev/null; then
+    gone=1
+    break
+  fi
+  sleep 0.1
+done
+# SIGKILL first, reap second: `wait` on a beeper that ignored SIGTERM would
+# block forever, hanging the suite instead of failing this one assertion.
+if [ "$gone" -ne 1 ]; then
+  kill -KILL "$beeper_pid" 2>/dev/null || true
+fi
+wait "$beeper_pid" 2>/dev/null || true
+
+if [ "$gone" -eq 1 ]; then
+  printf 'PASS: SIGTERM stops the beeper instead of resuming the loop\n'
+else
+  printf 'FAIL: beeper still alive after SIGTERM — the trap returned into the loop\n'
+  fail=1
+fi
+
 if [ "$fail" -eq 0 ]; then
   printf '\nAll caffeine-beeper tests passed.\n'
 else

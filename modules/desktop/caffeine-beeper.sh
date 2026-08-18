@@ -151,6 +151,17 @@ main() {
 # Cover the ~0.2s window where the sink is held above the user's setting: if
 # the unit is stopped mid-tone, put their volume back rather than leaving it
 # floored. restore_sink clears its own state, so double-firing is harmless.
-trap restore_sink EXIT INT TERM
+#
+# INT/TERM must *exit*, not merely restore. A bash trap handler that returns
+# normally resumes whatever it interrupted, so a bare `trap restore_sink TERM`
+# ran restore_sink and then dropped straight back into the main loop — the
+# service silently ignored `systemctl stop` and sat in `deactivating` for the
+# full 90s TimeoutStopSec before systemd resorted to SIGKILL. While it did,
+# caffeine-ctl read the beeper as not-running and the Super+c toggle
+# ping-ponged caffeine <-> double, unable to reach decaf.
+# Exit 0, not 128+signo: being stopped is this unit's normal end, and a
+# non-zero status would trip Restart=on-failure and leave the unit failed.
+trap restore_sink EXIT
+trap 'restore_sink; exit 0' INT TERM
 
 main "$@"

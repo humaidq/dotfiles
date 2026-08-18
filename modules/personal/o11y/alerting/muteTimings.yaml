@@ -1,0 +1,10 @@
+apiVersion: 1
+muteTimes:
+    - orgId: 1
+      name: End of Day
+      time_intervals:
+        - times:
+            - start_time: "23:55"
+              end_time: "23:59"
+          weekdays: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+          location: Asia/Dubai

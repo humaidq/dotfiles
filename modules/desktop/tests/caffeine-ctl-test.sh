@@ -65,6 +65,16 @@ case "$cmd" in
   is-active)
     unit="${args[-1]}"
     state="$(cat "$SYSTEMCTL_STATE_DIR/$unit" 2>/dev/null || printf 'inactive\n')"
+    # Print the state as well as encoding it in the exit status: beeper_active
+    # reads the word so it can tell a stopped unit from one that is merely
+    # activating or deactivating, which the 0/3 exit status cannot express.
+    # --quiet is honoured exactly as real systemctl does (status only, no
+    # output), so this stub stays a faithful model of either calling style.
+    quiet=""
+    for a in "${args[@]}"; do
+      [ "$a" = "--quiet" ] && quiet=1
+    done
+    [ -n "$quiet" ] || printf '%s\n' "$state"
     [ "$state" = "active" ]
     exit $?
     ;;
@@ -230,6 +240,29 @@ check "cycle from downgraded double restores double" double "$(cat "$tmp/mode")"
 check "cycle from downgraded double restarts the beeper" "--user start caffeine-beeper" "$(last_beeper_call)"
 check "cycle from downgraded double: status now double" double "$(run_ctl status)"
 run_ctl set decaf
+
+# --- I3: a *failed* beeper still downgrades ---------------------------------
+run_ctl set double
+printf 'failed\n' > "$tmp/systemctl-state/caffeine-beeper"
+check "double with a failed beeper reports caffeine" caffeine "$(run_ctl status)"
+run_ctl set decaf
+
+# --- I4: transient unit states must NOT downgrade double --------------------
+# `deactivating` (a stop still inside TimeoutStopSec) and `activating` (the
+# auto-restart gap between Restart=on-failure attempts) are not "beeper dead".
+# Reading them as dead made the cycle non-monotonic: status reported caffeine,
+# next_mode(caffeine) is double, so every press re-set double and decaf became
+# unreachable — the toggle appeared stuck on.
+for transient in activating deactivating reloading; do
+  run_ctl set double
+  printf '%s\n' "$transient" > "$tmp/systemctl-state/caffeine-beeper"
+  check "double with a $transient beeper still reports double" double "$(run_ctl status)"
+  # The very next press must therefore reach decaf, not re-set double.
+  printf '%s\n' "$transient" > "$tmp/systemctl-state/caffeine-beeper"
+  run_ctl cycle
+  check "one press from a $transient beeper reaches decaf" decaf "$(cat "$tmp/mode")"
+  check "...and tears the inhibitor down" dead "$(inhibitor_state)"
+done
 
 # --- bad input --------------------------------------------------------------
 if run_ctl set espresso >/dev/null 2>&1; then

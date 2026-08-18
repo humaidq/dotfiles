@@ -55,13 +55,8 @@ in
       dockerfile-language-server
       dockfmt
 
-      # :lang haskell
-      # haskell-language-server #disable for now
-
-      # :lang ocaml
-      ocamlformat
-      dune
-      ocaml-top
+      # :tools ein
+      jupyter
 
       # :lang cc
       #clang
@@ -76,11 +71,13 @@ in
       # :lang javascript
       #nodejs
       # :lang latex requires texlive (defined somewhere else)
+      texlab
       # :lang markdown
       go-grip
       #pandoc
       discount
       # :lang python
+      pyright
       black
       pipenv
       python3Packages.pyflakes
@@ -89,7 +86,7 @@ in
       python3Packages.nose2
       # :lang org (texlive +...)
       gnuplot
-      sqlite # +roam2
+      sqlite # +roam
       # :lang plantuml
       #plantuml
       #graphviz

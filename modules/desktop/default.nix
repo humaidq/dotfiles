@@ -38,6 +38,9 @@ in
     };
   };
   config = mkMerge [
+    (mkIf cfg.berkeley.enable {
+      fonts.packages = [ pkgs.berkeley-mono ];
+    })
     (mkIf cfg.enableSound {
       services.pipewire = {
         enable = true;

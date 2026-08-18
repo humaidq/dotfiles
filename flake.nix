@@ -27,6 +27,11 @@
       url = "git+https://git.alq.ae/humaid/groundwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Our licensed TX-02 Berkeley Mono build; plain OTFs, not a flake.
+    berkeley-font = {
+      url = "git+https://git.alq.ae/humaid/berkeley-font";
+      flake = false;
+    };
     fleeti = {
       url = "github:ai4os-ae/fleeti";
       inputs.nixpkgs.follows = "nixpkgs";

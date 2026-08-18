@@ -1,0 +1,278 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: Main
+      folder: Main
+      interval: 5m
+      rules:
+        - uid: df3rtii3unapse
+          title: Filesystems All
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: edy9njbuhd4aob
+              model:
+                disableTextWrap: false
+                editorMode: code
+                # The "> 80" that used to live here has moved to the threshold
+                # in refId C. Filtering inside the query meant that a fleet
+                # with nothing full returned an empty vector, which Grafana
+                # scores as NoData rather than OK — so healthy disks produced a
+                # DatasourceNoData alert carrying this rule's annotations.
+                #
+                # max by (instance, device, fstype) collapses the bind mounts.
+                # node_exporter reports one series per mountpoint, so a single
+                # btrfs or ext4 root shows up two or three times over (/,
+                # /nix/store, /persist) and alerted once per mountpoint for
+                # what is one disk. Dropping mountpoint from the grouping
+                # leaves one instance per real filesystem, keyed by device.
+                expr: |
+                    max by (instance, device, fstype) (
+                      100 * (
+                        1 - node_filesystem_avail_bytes{
+                              mountpoint=~"/(|boot|nix/store|persist|persist-svc|mnt/archive|mnt/humaid/files|mnt/movies)",
+                            }
+                            /
+                            node_filesystem_size_bytes{
+                              mountpoint=~"/(|boot|nix/store|persist|persist-svc|mnt/archive|mnt/humaid/files|mnt/movies)",
+                            }
+                      )
+                    )
+                fullMetaSearch: false
+                includeNullMetadata: true
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+                useBackend: false
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 25m
+          annotations:
+            summary: '{{ $labels.instance }} {{ $labels.device }} is {{ printf "%.1f" $values.A.Value }}% full'
+            description: '{{ $labels.device }} ({{ $labels.fstype }}) on {{ $labels.instance }} is at {{ printf "%.1f" $values.A.Value }}% utilisation, over the 80% threshold.'
+          isPaused: false
+          notification_settings:
+            receiver: grafana-default-email
+            # instance in the group key puts the hostname in the email subject
+            # line, which otherwise reads only "[FIRING:2] Filesystems All
+            # Main", and splits a multi-host incident into one mail per host.
+            group_by:
+                - grafana_folder
+                - alertname
+                - instance
+        - uid: cf3ruwsnnmjnke
+          title: Offline
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 10800
+                to: 0
+              datasourceUid: edy9njbuhd4aob
+              model:
+                disableTextWrap: false
+                editorMode: code
+                # absent_over_time returns nothing at all while a host is up,
+                # so the healthy case was an empty vector — NoData, not OK, and
+                # therefore a DatasourceNoData alert every time the fleet was
+                # fine. The trailing vector(0) gives the query something to
+                # return in the healthy case; it sits below the threshold and
+                # never notifies.
+                #
+                # label_replace puts an instance label on that placeholder
+                # purely so the always-Normal instance reads "none" in the rule
+                # list instead of rendering the summary template as
+                # "[no value] has stopped reporting".
+                #
+                # absent_over_time rather than up == 0 because these hosts feed
+                # Prometheus over remote-write: a machine that goes down stops
+                # sending, and its up series goes stale rather than reporting
+                # zero.
+                expr: |-
+                    absent_over_time(up{instance="oreamnos"}[10m])
+                    or
+                    absent_over_time(up{instance="lighthouse"}[10m])
+                    or
+                    absent_over_time(up{instance="duisk"}[10m])
+                    or
+                    label_replace(vector(0), "instance", "none", "", "")
+                fullMetaSearch: false
+                includeNullMetadata: true
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+                useBackend: false
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          annotations:
+            summary: '{{ $labels.instance }} has stopped reporting to Prometheus'
+            description: No metrics have arrived from {{ $labels.instance }} for over 10 minutes.
+          isPaused: false
+          notification_settings:
+            receiver: grafana-default-email
+            group_by:
+                - grafana_folder
+                - alertname
+                - instance
+        - uid: cfe6g3n225wxse
+          title: Contact Altert
+          condition: C
+          data:
+            - refId: A
+              queryType: instant
+              relativeTimeRange:
+                from: 86400
+                to: 0
+              datasourceUid: cdy9o5iluz3swd
+              model:
+                datasource:
+                    type: loki
+                    uid: cdy9o5iluz3swd
+                editorMode: code
+                # Grouping by the logfmt fields turns each submitter into their
+                # own alert instance and carries their details into the
+                # annotations below, which is the only way the notification can
+                # say anything more specific than "someone submitted".
+                #
+                # The trailing placeholder covers the ordinary case of nobody
+                # having submitted anything in 24h: without it the query
+                # returns an empty vector, Grafana scores that NoData, and the
+                # resulting DatasourceNoData alert inherits this rule's
+                # annotations — so a quiet day mailed out "Someone submitted
+                # their details". label_replace names it so the always-Normal
+                # instance reads "none" rather than "[no value]".
+                expr: sum by (full_name, email, ip, user_agent) (count_over_time({nodename="oreamnos", source="groundwave.service"} | logfmt | event="contact_form_submission" [24h])) or label_replace(vector(0), "full_name", "none", "", "")
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                queryType: instant
+                refId: A
+            - refId: reducer
+              queryType: expression
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: avg
+                      type: query
+                datasource:
+                    name: Expression
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: reducer
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: reducer
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          annotations:
+            summary: 'Contact form: {{ $labels.full_name }} <{{ $labels.email }}>'
+            description: '{{ $labels.full_name }} <{{ $labels.email }}> submitted the contact form from {{ $labels.ip }}.'
+          isPaused: false
+          notification_settings:
+            receiver: contact-form
+            # Grouped on alertname alone, so a day with several submitters
+            # produces one mail listing all of them rather than one mail each —
+            # contact_form.message ranges over the group.
+            group_by:
+                - grafana_folder
+                - alertname
+            repeat_interval: 1d
+            active_time_intervals:
+                - End of Day

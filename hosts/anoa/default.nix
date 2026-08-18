@@ -7,6 +7,16 @@
   config,
   ...
 }:
+let
+  # Emacs pgtk rasterises into a buffer at the scale in effect when a frame was
+  # created, and never re-renders when that frame moves to a differently-scaled
+  # output.  sway then upscales the stale buffer and text goes blurry, which is
+  # what happens on every dock/undock between the scale 1 internal panel and the
+  # scale 2 externals.  Nudge Emacs to rebuild its frames once the new output
+  # layout has settled; see sifr/emacs-rescale-frames in $DOOMDIR/config.el.
+  # The [e]macs bracket stops pkill matching kanshi's own exec shell.
+  rescaleEmacsFrames = "sleep 1 && ${pkgs.procps}/bin/pkill -USR1 -f 'emacs-pgtk-.*/bin/[e]macs'";
+in
 {
   imports = [
     self.nixosModules.sifrOS.base
@@ -159,7 +169,6 @@
           ".local/share/calendars"
           ".local/share/contacts"
           ".local/share/direnv"
-          ".local/share/fonts"
           ".local/share/hamradio/QLog"
           ".local/share/keyrings"
           ".local/share/khal"
@@ -504,6 +513,7 @@
                 status = "enable";
               }
             ];
+            exec = [ rescaleEmacsFrames ];
           };
         }
         {
@@ -542,6 +552,7 @@
               ''${pkgs.sway}/bin/swaymsg "workspace 8, move workspace to output DP-1"''
               ''${pkgs.sway}/bin/swaymsg "workspace 9, move workspace to output DP-1"''
               ''${pkgs.sway}/bin/swaymsg "workspace 10, move workspace to output DP-1"''
+              rescaleEmacsFrames
             ];
           };
         }
@@ -559,6 +570,7 @@
                 mode = "1920x1080";
               }
             ];
+            exec = [ rescaleEmacsFrames ];
           };
         }
         {
@@ -580,6 +592,7 @@
                 position = "140,720";
               }
             ];
+            exec = [ rescaleEmacsFrames ];
           };
         }
       ];
