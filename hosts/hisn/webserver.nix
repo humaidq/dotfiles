@@ -37,9 +37,14 @@ let
       alias ${./error-pages/504.html};
     }
   '';
-  # Same markup as the generic pages, but the 502 sub-text is written for the
+  # Same markup as the generic pages, but the sub-text is written for the
   # people standing at the printer rather than for someone debugging a proxy.
   # Only mbzuai-cs-printer.huma.id uses this.
+  #
+  # 504 gets the booth wording too, not just 502, because the two upstream
+  # failures are indistinguishable from the booth: anoa refusing the port gives
+  # 502, anoa being off the mesh gives 504 (see the vhost below), and neither is
+  # something the person waiting for a printout can act on differently.
   printer-error-pages-loc = ''
     location = /_error/502.html {
       internal;
@@ -49,7 +54,7 @@ let
     location = /_error/504.html {
       internal;
       default_type text/html;
-      alias ${./error-pages/504.html};
+      alias ${./error-pages/504-printer.html};
     }
   '';
   upstream = "http://10.10.0.12:4232";
@@ -482,8 +487,21 @@ in
             client_max_body_size 512M;
           '';
           locations."/" = {
-            proxyPass = "http://10.10.0.14:8585";
-            extraConfig = proxyHeaders;
+            proxyPass = "http://10.10.0.50:8585";
+            extraConfig = ''
+              ${proxyHeaders}
+
+              # The http-block default is 60s, which is right for oreamnos but
+              # wrong here. The two ways this upstream fails look nothing alike:
+              # anoa up with 8585 closed gets an RST from its kernel and answers
+              # instantly, but anoa off the mesh has no tunnel at all, so nebula
+              # drops the SYN with no RST and no ICMP unreachable and nginx sits
+              # there retransmitting for the full timeout. That is the common
+              # case — anoa is a laptop — and a minute of blank tab is worse than
+              # no page at all for someone standing at the booth. 3s is far more
+              # than a handshake across the mesh needs.
+              proxy_connect_timeout 3s;
+            '';
           };
         };
 

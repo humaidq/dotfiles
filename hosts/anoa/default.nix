@@ -14,8 +14,16 @@ let
   # what happens on every dock/undock between the scale 1 internal panel and the
   # scale 2 externals.  Nudge Emacs to rebuild its frames once the new output
   # layout has settled; see sifr/emacs-rescale-frames in $DOOMDIR/config.el.
-  # The [e]macs bracket stops pkill matching kanshi's own exec shell.
-  rescaleEmacsFrames = "sleep 1 && ${pkgs.procps}/bin/pkill -USR1 -f 'emacs-pgtk-.*/bin/[e]macs'";
+  #
+  # This used to be `pkill -USR1 -f 'emacs-pgtk-.*/bin/[e]macs'`, which also
+  # matched the waiting `emacsclient --create-frame` -- emacsclient installs no
+  # SIGUSR1 handler, so the default disposition killed it, the daemon tore down
+  # the client's frame, and that raced the rescale we had just asked for.  Half
+  # the time the frame went away before it could be rebuilt.  Go through the
+  # server socket instead: it reaches the daemon and nothing else, and it runs
+  # on the normal command path rather than waiting for the daemon to next
+  # consult `special-event-map`.
+  rescaleEmacsFrames = "sleep 1 && ${pkgs.emacs30-pgtk}/bin/emacsclient --no-wait --eval '(sifr/emacs-rescale-frames)' >/dev/null 2>&1 || true";
 in
 {
   imports = [
@@ -334,6 +342,8 @@ in
     sbctl # for lanzaboote
     asdbctl # apple studio display
     intel-gpu-tools
+
+    rpi-imager
   ];
 
   # Intel VAAPI hardware video decode (iHD/intel-media-driver) so browsers
@@ -516,6 +526,20 @@ in
       };
     };
 
+    # kanshi parses ~/.config/kanshi/config once, at startup, and home-manager's
+    # unit carries no trigger on that file -- so a switch that only edits the
+    # profile list leaves the running kanshi on the config it was launched with
+    # until the next login.  That is the other half of why the rescale below
+    # looked intermittent: any session predating a change to these profiles
+    # silently ran the old exec list, or none at all.  Fold the settings into
+    # the unit so sd-switch sees the unit change and restarts kanshi.  Hashed
+    # because X-Restart-Triggers is a single unit-file line.
+    systemd.user.services.kanshi.Unit.X-Restart-Triggers = [
+      (builtins.hashString "sha256" (
+        builtins.toJSON config.home-manager.users.${vars.user}.services.kanshi.settings
+      ))
+    ];
+
     services.kanshi = {
       inherit (config.sifr.desktop.sway) enable;
 
@@ -584,6 +608,36 @@ in
                 criteria = "Dell Inc. DELL P2725H 25FCXZ3";
                 status = "enable";
                 mode = "1920x1080";
+              }
+            ];
+            exec = [ rescaleEmacsFrames ];
+          };
+        }
+        {
+          profile = {
+            name = "samsung-1080p-side-by-side";
+            # 1080p Samsung external.  Its EDID carries no real model or serial
+            # ("SAMSUNG" / 0x00000001), so this criteria would also match any
+            # other Samsung panel that lies the same way -- acceptable here,
+            # nothing else on this machine reports that pair.  Laid out exactly
+            # as it was arranged by hand: external on the left at the origin,
+            # internal to its right, top edges aligned.  Both at scale 2, so
+            # the external is 960x540 logical and the internal 1440x900, and
+            # the internal starts at x=960 where the external ends.
+            outputs = [
+              {
+                criteria = "Samsung Electric Company SAMSUNG 0x00000001";
+                status = "enable";
+                mode = "1920x1080@60Hz";
+                scale = 2.0;
+                position = "0,0";
+              }
+              {
+                criteria = "Samsung Display Corp. 0x419F Unknown";
+                status = "enable";
+                mode = "2880x1800@120Hz";
+                scale = 2.0;
+                position = "960,0";
               }
             ];
             exec = [ rescaleEmacsFrames ];
