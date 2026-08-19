@@ -1,5 +1,4 @@
 {
-  config,
   pkgs,
   inputs,
   vars,
@@ -190,15 +189,6 @@ in
       defaults.email = "acme@huma.id";
     };
 
-    # Fronts the Matomo UI. Kept in sops rather than inline the way
-    # sarim.huma.id's is, because this one guards an admin interface and this
-    # repository is public.
-    sops.secrets."web/matomo-htpasswd" = {
-      sopsFile = ../../secrets/hisn.yaml;
-      owner = "nginx";
-      mode = "640";
-    };
-
     services.nginx = {
       enable = true;
       recommendedTlsSettings = true;
@@ -360,24 +350,44 @@ in
         # Matomo needs for geolocation, and which is why the header is passed
         # through here rather than blanked the way the internal vhosts do.
         #
-        # basicAuthFile covers the whole vhost, tracking endpoints included.
-        # That is deliberate but it is not a permanent arrangement: while it is
-        # on, /matomo.php and /matomo.js answer 401, so no site can actually be
-        # tracked through this name. It exists to hold the door shut over the
-        # install window — Matomo has no way to seed a superuser other than the
-        # wizard, so before that wizard is finished the first caller to reach it
-        # owns the instance. Take it off, or narrow it to everything but the two
-        # tracking paths, once the superuser exists.
+        # /m and /m.js are aliases for /matomo.php and /matomo.js. Both of the
+        # real names are on EasyPrivacy, so a visitor running any of the usual
+        # blocklists loses the beacon — and, because the snippet fetches the
+        # tracker itself from this host, loses tracking entirely rather than
+        # degrading. The host is a subdomain of a domain nobody is filtering, so
+        # the paths are the whole of what gets matched, and renaming them at the
+        # edge is enough. Aliased rather than moved: Matomo's own UI, its update
+        # checks and matomo-archive-processing all still address the real names.
+        #
+        # proxy_pass with a URI replaces the matched part of the request, and
+        # nginx appends the query string on its own as long as that URI has no
+        # `?` of its own — which matters here, since a tracking beacon is
+        # entirely query string.
+        #
+        # No basic auth. It was only ever there to hold the door shut over the
+        # install window, because Matomo has no way to seed a superuser other
+        # than the wizard and until that is finished the first caller to reach
+        # it owns the instance. The superuser now exists, so Matomo's own login
+        # is the thing guarding the UI.
         "m.huma.id" = {
           enableACME = true;
           forceSSL = true;
-          basicAuthFile = config.sops.secrets."web/matomo-htpasswd".path;
           extraConfig = ''
             ${error-pages-loc}
           '';
-          locations."/" = {
-            proxyPass = "http://10.10.0.12";
-            extraConfig = error-pages;
+          locations = {
+            "/" = {
+              proxyPass = "http://10.10.0.12";
+              extraConfig = error-pages;
+            };
+            "= /m" = {
+              proxyPass = "http://10.10.0.12/matomo.php";
+              extraConfig = error-pages;
+            };
+            "= /m.js" = {
+              proxyPass = "http://10.10.0.12/matomo.js";
+              extraConfig = error-pages;
+            };
           };
         };
 

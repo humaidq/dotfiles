@@ -57,6 +57,29 @@ in
       memory_limit = 256M
     '';
 
+    # Matomo parallelises archiving by forking `console climulti:request`
+    # subprocesses, and it will only do so if CliMulti\Process::isSupported()
+    # passes — which shells out to `ps wwx` and pipes it through `awk`, and
+    # additionally wants to find its own pid in that output. Neither binary is
+    # on the path of a systemd service or a php-fpm worker by default, so
+    # without this the system check reports "Managing processes via CLI: not
+    # supported" and archiving silently degrades to one sequential pass.
+    #
+    # Both ends need it. The php-fpm pool is what the system check page runs
+    # under, and phpEnv is the way to get a variable past php-fpm's clear_env.
+    # The timer is where archiving actually happens, and NixOS's default unit
+    # path carries coreutils, findutils, grep and sed — but not procps or gawk.
+    services.phpfpm.pools.matomo.phpEnv.PATH = lib.makeBinPath [
+      pkgs.procps
+      pkgs.gawk
+      pkgs.coreutils
+    ];
+    systemd.services.matomo-archive-processing.path = [
+      pkgs.procps
+      pkgs.gawk
+      pkgs.coreutils
+    ];
+
     services.mysql = {
       enable = true;
       package = pkgs.mariadb;
@@ -64,8 +87,9 @@ in
       # No password anywhere, including in the installer: ensureUsers creates
       # this one IDENTIFIED WITH unix_socket, so only the `matomo` unix user —
       # which is the phpfpm pool user and the user the console runs as — can
-      # authenticate as it, and only over the local socket. The installer is
-      # given the socket path as the database host and an empty password field.
+      # authenticate as it, and only over the local socket. The installer gets
+      # `localhost` and an empty password field; see note 1 below for why that
+      # reaches the socket rather than TCP.
       ensureUsers = [
         {
           name = "matomo";
@@ -90,8 +114,30 @@ in
   # First-run notes, since none of this can be set from here:
   #
   # 1. Visit https://m.huma.id and work through the installer. On the database
-  #    page use `/run/mysqld/mysqld.sock` as the server, `matomo` as both user
-  #    and database name, and leave the password blank.
+  #    page:
+  #
+  #      Database Server  localhost      (the default — see below)
+  #      Login            matomo
+  #      Password         (blank)
+  #      Database Name    matomo
+  #      Table Prefix     matomo_        (the default)
+  #      Adapter          PDO\MYSQL
+  #      Database engine  MariaDB        (the form defaults to MySQL)
+  #
+  #    "Database engine" is not cosmetic. Matomo picks a schema class from it,
+  #    and against a MariaDB server the MySQL one emits query time limits as a
+  #    /*+ MAX_EXECUTION_TIME(n) */ hint, which MariaDB reads as a comment and
+  #    ignores — so archiving queries run with no cap. It also gets the ranking
+  #    query sort behaviour and the end-of-life check for 11.4 LTS wrong.
+  #
+  #    `localhost`, not the socket path, even though this authenticates over the
+  #    socket. Matomo only converts a path into a PDO `unix_socket` when it
+  #    appears in the *port* field (core/Db/Adapter.php), and the installer form
+  #    has no port field — a path typed into Database Server ends up in the DSN
+  #    as `host=` and fails to resolve. It works out anyway because nixpkgs
+  #    builds PHP with pdo_mysql.default_socket and mysqli.default_socket
+  #    already pointing at /run/mysqld/mysqld.sock, which is where the module
+  #    below puts it, so `localhost` lands on the right socket by itself.
   #
   #    Do this from a host on the mesh, BEFORE the public m.huma.id DNS record
   #    exists. There is no way to seed the superuser account from here — Matomo
@@ -116,7 +162,15 @@ in
   #      proxy_host_headers[] = HTTP_X_FORWARDED_HOST
   #
   #    Without the first, Matomo builds http:// URLs and drops secure cookies;
-  #    without the second, every visit is attributed to one address.
+  #    without the second, every visit is attributed to one address. The first
+  #    is also what clears the system check's "Forced SSL Connection" warning:
+  #    the connection already is TLS, at hisn — Matomo simply cannot see it.
+  #
+  #    Do NOT set force_ssl = 1 before assume_secure_protocol = 1. On its own it
+  #    is an infinite redirect: Matomo sees http, answers 302 to
+  #    https://m.huma.id, hisn terminates that and proxies back over http, and
+  #    Matomo redirects again. With assume_secure_protocol set it is redundant
+  #    anyway, because nothing ever reaches Matomo as http in the first place.
   #
   # 3. In Administration > System > General Settings, turn off "Archive reports
   #    when viewed from the browser" — the timer above does it.
