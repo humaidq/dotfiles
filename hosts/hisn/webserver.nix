@@ -82,7 +82,18 @@ let
 
     ${proxyHeaders}
   '';
-  humaidCsp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
+  # m.huma.id is Matomo, and it is a separate origin from this one, so 'self'
+  # does not cover it. Three directives need it, because the tracker touches
+  # the network three different ways: script-src to load /m.js at all, img-src
+  # because the default beacon is an Image() GET, and connect-src for the
+  # sendBeacon and XHR paths it switches to for large payloads or an explicit
+  # POST. Miss any one and tracking fails in a way that only shows up as a
+  # console violation on some pageviews.
+  #
+  # Deliberately not widened past those three, and named rather than wildcarded:
+  # nothing about analytics needs to relax style-src, font-src or object-src.
+  matomoOrigin = "https://m.huma.id";
+  humaidCsp = "default-src 'self'; script-src 'self' 'unsafe-inline' ${matomoOrigin}; style-src 'self' 'unsafe-inline'; img-src 'self' data: ${matomoOrigin}; font-src 'self' data:; connect-src 'self' ${matomoOrigin}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
   humaidHeaders = ''
     add_header Content-Security-Policy "${humaidCsp}" always;
     add_header Strict-Transport-Security "max-age=31536000" always;

@@ -305,11 +305,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769996383,
-        "narHash": "sha256-AnYjnFWgS49RlqX7LrC4uA+sCCDBj0Ry/WOJ5XWAsa0=",
+        "lastModified": 1785627969,
+        "narHash": "sha256-4dtXQk/NMePegK/nWp5NSeuZKLATItOq61lpEvmXqGw=",
         "owner": "hercules-ci",
         "repo": "flake-parts",
-        "rev": "57928607ea566b5db3ad13af0e57e921e6b12381",
+        "rev": "427bf4bd9435fdf21321c8cc628c24efc14c0f7a",
         "type": "github"
       },
       "original": {
@@ -521,18 +521,17 @@
           "humaid-site",
           "flake-compat"
         ],
-        "gitignore": "gitignore_2",
         "nixpkgs": [
           "humaid-site",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1770726378,
-        "narHash": "sha256-kck+vIbGOaM/dHea7aTBxdFYpeUl/jHOy5W3eyRvVx8=",
+        "lastModified": 1784288435,
+        "narHash": "sha256-ReRHaLgr/uVqdD8afFSn+myXIfpHeOhP0yYe0TJqAA8=",
         "owner": "cachix",
         "repo": "git-hooks.nix",
-        "rev": "5eaaedde414f6eb1aea8b8525c466dc37bba95ae",
+        "rev": "43b3c1ab9d40fb1dbb008f451988a91e375825e9",
         "type": "github"
       },
       "original": {
@@ -564,28 +563,6 @@
       }
     },
     "gitignore_2": {
-      "inputs": {
-        "nixpkgs": [
-          "humaid-site",
-          "git-hooks-nix",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1709087332,
-        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "type": "github"
-      }
-    },
-    "gitignore_3": {
       "inputs": {
         "nixpkgs": [
           "lanzaboote",
@@ -734,11 +711,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1771705474,
-        "narHash": "sha256-5+43AQVRzsdk7upzvec15FUfeyOmBSRdeDk3D8F5zgs=",
+        "lastModified": 1787125032,
+        "narHash": "sha256-QEOtpcq22BYhHAA4zMlEDNmWrXAYRvyAiMChOVFVW0s=",
         "owner": "humaidq",
         "repo": "huma.id",
-        "rev": "5fbebe432c6cd074d02bdc65768f28bd98b10493",
+        "rev": "f544ec7e9fb02f5ec69984330ec4c5c21bd830e0",
         "type": "github"
       },
       "original": {
@@ -905,11 +882,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770525450,
-        "narHash": "sha256-T7LydwjxHx4CzF2mgVyIhFVUjTYGWVafdhEaYRuGtv4=",
+        "lastModified": 1787074273,
+        "narHash": "sha256-QcBuZBTOLWPdWGg3ESS3ktuEEnXLCPqC7edkZ2tY+oA=",
         "owner": "Mic92",
         "repo": "nix-fast-build",
-        "rev": "8ac62f38ac3b21eec112b4e6d8bd98fa84b465e0",
+        "rev": "9dc2f9e264f4c4a2fc807bfbe3dba5795ffef6f6",
         "type": "github"
       },
       "original": {
@@ -1179,7 +1156,7 @@
     "pre-commit": {
       "inputs": {
         "flake-compat": "flake-compat_5",
-        "gitignore": "gitignore_3",
+        "gitignore": "gitignore_2",
         "nixpkgs": [
           "lanzaboote",
           "nixpkgs"
@@ -1458,11 +1435,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770228511,
-        "narHash": "sha256-wQ6NJSuFqAEmIg2VMnLdCnUc0b7vslUohqqGGD+Fyxk=",
+        "lastModified": 1786901030,
+        "narHash": "sha256-WSFCsDSE5ffgD2MqzkM2CYjeFiKhRF/dJUN8uedb6YE=",
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "rev": "337a4fe074be1042a35086f15481d763b8ddc0e7",
+        "rev": "27b3b12a8e6375f28ebe122f07d230ca5459bbfa",
         "type": "github"
       },
       "original": {
