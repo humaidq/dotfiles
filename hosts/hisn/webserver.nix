@@ -359,9 +359,19 @@ in
         # applies, and X-Forwarded-For carries the real client address — which
         # Matomo needs for geolocation, and which is why the header is passed
         # through here rather than blanked the way the internal vhosts do.
+        #
+        # basicAuthFile covers the whole vhost, tracking endpoints included.
+        # That is deliberate but it is not a permanent arrangement: while it is
+        # on, /matomo.php and /matomo.js answer 401, so no site can actually be
+        # tracked through this name. It exists to hold the door shut over the
+        # install window — Matomo has no way to seed a superuser other than the
+        # wizard, so before that wizard is finished the first caller to reach it
+        # owns the instance. Take it off, or narrow it to everything but the two
+        # tracking paths, once the superuser exists.
         "m.huma.id" = {
           enableACME = true;
           forceSSL = true;
+          basicAuthFile = config.sops.secrets."web/matomo-htpasswd".path;
           extraConfig = ''
             ${error-pages-loc}
           '';
