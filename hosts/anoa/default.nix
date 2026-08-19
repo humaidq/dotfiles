@@ -371,6 +371,22 @@ in
     8081
   ];
 
+  # mbzuai-cs-printer.huma.id is served from hisn and proxied back here over
+  # the mesh. The host firewall already trusts sifr0 wholesale, so this is the
+  # rule that actually gates it: nebula's own firewall defaults to inbound
+  # icmp plus the `trusted` and `gadgets` groups, and drops everything else
+  # before nginx on hisn gets a connection. Matches on the name in the peer's
+  # certificate, so only hisn reaches this port — not every node on the mesh.
+  # Definitions of this list merge, so this adds to the module's defaults
+  # rather than replacing them.
+  services.nebula.networks.sifr0.firewall.inbound = [
+    {
+      host = "hisn";
+      port = "8585";
+      proto = "tcp";
+    }
+  ];
+
   home-manager.users."${vars.user}" = {
     programs = {
       vdirsyncer.enable = true;

@@ -448,6 +448,30 @@ in
           };
         };
 
+        # Proxies to a service on anoa, not oreamnos — the only vhost here that
+        # does. anoa is a laptop, so this name is up only when that machine is
+        # on the mesh; the 502 page is the expected answer the rest of the
+        # time, which is why error-pages-loc is here rather than left off the
+        # way the static vhosts do.
+        #
+        # anoa is addressed by overlay IP because it has no entry in
+        # nebula.nix's hostMappings, unlike oreamnos. The matching inbound rule
+        # on anoa names `hisn` and port 8585; without it this returns 502 even
+        # when the laptop is up, since nebula's own firewall drops the
+        # connection before nginx there ever sees it.
+        "mbzuai-cs-printer.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+            client_max_body_size 512M;
+          '';
+          locations."/" = {
+            proxyPass = "http://10.10.0.14:8585";
+            extraConfig = proxyHeaders;
+          };
+        };
+
         "admin.fleeti.ae" = {
           enableACME = true;
           forceSSL = true;
