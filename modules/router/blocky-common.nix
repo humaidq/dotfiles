@@ -100,6 +100,7 @@
       "pixel.s.alq.ae" = "10.10.0.15";
       "bongo.s.alq.ae" = "10.10.0.16";
       "bingo.s.alq.ae" = "10.10.0.18";
+      "hisn.s.alq.ae" = "10.10.0.20";
 
       # Fix TII sites
       "jira.tii.ae" = "10.151.12.77";

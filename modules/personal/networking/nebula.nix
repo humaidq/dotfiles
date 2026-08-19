@@ -10,8 +10,40 @@ let
 
   # Network configuration constants
   nebulaPort = 4242;
-  lighthouseIP = "10.10.0.10";
-  lighthousePublicEndpoint = "139.84.173.48:4242";
+
+  # The lighthouse is moving to hisn, and it moves to a NEW overlay address
+  # rather than inheriting 10.10.0.10. That is what makes the migration safe:
+  # two lighthouses on two addresses are an ordinary nebula arrangement, and
+  # nodes register with and query both, whereas two hosts holding certificates
+  # for the SAME address is a split — every node settles on whichever answered
+  # first, and the ones that chose differently cannot discover each other.
+  #
+  # So the transition has no flag day. hisn joined as a plain client on
+  # 10.10.0.20, discoverable through the existing lighthouse with no change on
+  # any other node, and is now a lighthouse in its own right alongside the old
+  # one. Both answer until every node has been rebuilt against this list; only
+  # then does 10.10.0.10 come out.
+  #
+  # A node reaching a lighthouse it has not been rebuilt for is not a failure
+  # mode here — it simply registers with the one it knows. What does not work
+  # is the reverse: nebula refuses to start with am_lighthouse set and
+  # lighthouse.hosts non-empty, so a lighthouse never queries, and learns
+  # endpoints only from the nodes that register with it. hisn therefore cannot
+  # initiate to a host that has not yet been rebuilt against this list, which
+  # is the reason to roll the fleet promptly rather than leave it half done.
+  lighthouseIPs = [
+    "10.10.0.10"
+    "10.10.0.20"
+  ];
+  staticHosts = {
+    "10.10.0.10" = [ "139.84.173.48:4242" ];
+    # Present before hisn is a lighthouse, and deliberately so. A static entry
+    # is just "this address is reachable at this endpoint" — it does not make
+    # the host a lighthouse. Having it means nodes can reach hisn directly
+    # instead of relaying through the far side of the mesh while its services
+    # are being moved onto it.
+    "10.10.0.20" = [ "45.59.120.67:4242" ];
+  };
 
   # Host mappings
   hostMappings = {
@@ -31,6 +63,10 @@ let
     "10.10.0.13" = [
       "duisk"
       "duisk.alq"
+    ];
+    "10.10.0.20" = [
+      "hisn"
+      "hisn.alq"
     ];
   };
 
@@ -144,11 +180,14 @@ in
       ca = ./ca-sifr0.crt;
 
       # Lighthouse and relay configuration (for non-lighthouse nodes)
-      lighthouses = lib.mkIf (!cfg.isLighthouse) [ lighthouseIP ];
-      relays = lib.mkIf (!cfg.isLighthouse) [ lighthouseIP ];
-      staticHostMap = {
-        ${lighthouseIP} = [ lighthousePublicEndpoint ];
-      };
+      lighthouses = lib.mkIf (!cfg.isLighthouse) lighthouseIPs;
+      relays = lib.mkIf (!cfg.isLighthouse) lighthouseIPs;
+      # Given to every host, lighthouses included. A lighthouse listing its own
+      # address here is what the single-lighthouse config already did, and
+      # nebula ignores it; the value of handing the whole map out uniformly is
+      # that a client can reach a static host directly during a migration
+      # rather than only once some lighthouse has learned about it.
+      staticHostMap = staticHosts;
 
       # Network behavior settings
       settings = {

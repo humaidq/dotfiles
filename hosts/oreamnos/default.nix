@@ -376,6 +376,29 @@
         port = "3389";
         proto = "udp";
       }
+      # Allow hisn access. These match on the name in the peer's Nebula
+      # certificate, not on an address, so hisn inheriting duisk's overlay
+      # role is not enough — without these three its reverse proxy reaches
+      # this host and is refused, and cache.huma.id, the groundwave vhosts and
+      # admin.fleeti.ae all return 502.
+      #
+      # Added rather than renamed so the old host keeps working while both are
+      # up; the duisk block below goes when that host does.
+      {
+        host = "hisn";
+        port = "5000"; # nix cache
+        proto = "tcp";
+      }
+      {
+        host = "hisn";
+        port = "4232"; # groundwave
+        proto = "tcp";
+      }
+      {
+        host = "hisn";
+        port = "4231"; # fleeti
+        proto = "tcp";
+      }
       # Allow duisk access
       {
         host = "duisk";

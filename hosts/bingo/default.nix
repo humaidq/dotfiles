@@ -219,14 +219,18 @@
             address = "108.61.149.182"; # nj-us-ping.vultr.com
             role = "transit";
           }
-          # Kept alongside the three above because it is the one far end that
-          # can be logged into: when an anchor degrades, the first question is
+          # Kept alongside the three above because it is the one end that can
+          # be logged into: when an anchor degrades, the first question is
           # whether the far host is simply having a bad day, and this is the
           # only one where that can be answered rather than assumed.
+          #
+          # Core rather than transit since the merge into hisn moved it
+          # in-country — see the fuller note on bongo, which this site copies
+          # so the cross-site comparison keeps working.
           {
-            name = "lighthouse";
-            address = "139.84.173.48";
-            role = "transit";
+            name = "hisn";
+            address = "45.59.120.67";
+            role = "core";
           }
         ];
       };

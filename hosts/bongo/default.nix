@@ -273,10 +273,20 @@
           # modules/personal/networking/nebula.nix, and this probes the public
           # address directly over the WAN rather than the mesh address, so what
           # is measured is the internet path and not the tunnel.
+          #
+          # Core, not transit, since the host moved in-country with the merge
+          # into hisn. That is a change of meaning and not just of address:
+          # what it measures now is the ISP's own network, and the loggable
+          # far end this list wanted is no longer available for the
+          # international leg — that question falls back to the three Vultr
+          # anchors, none of which can be logged into. Renaming it starts a
+          # fresh series, which is correct here: the old `lighthouse` history
+          # is 12,000 km of peering and would be misleading grafted onto a
+          # 5 ms baseline.
           {
-            name = "lighthouse";
-            address = "139.84.173.48";
-            role = "transit";
+            name = "hisn";
+            address = "45.59.120.67";
+            role = "core";
           }
         ];
       };

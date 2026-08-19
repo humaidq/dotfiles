@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nix Cache</title>
+    <style>
+        body {
+            background-image: url(./nixstore-bg.jpeg);
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: inter, -apple-system, blinkmacsystemfont, source sans pro, roboto, sans-serif;
+            text-align: center;
+        }
+        .center-div {
+            width: 60%;
+            background-color: #c0c0c0;
+            color: #000;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        img {
+          max-width: 100%;
+          max-height: 300px;
+          height: auto;
+        }
+        ul {
+          list-style-type: none;
+        }
+        pre {
+            white-space: pre-wrap; /* Allow wrapping */
+            word-wrap: break-word; /* Break words if necessary */
+            overflow-wrap: break-word; /* Ensure the word breaks at any character */
+            max-width: 100%; /* Prevent horizontal scrolling */
+        }
+        @media screen and (max-width: 768px) {
+            .center-div {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="center-div">
+      <img src="./nixstore.jpeg" />
+      <h1>Humaid's Nix Binary Cache</h1>
+      <p><pre>cache.huma.id:YJG69WGZ8iUFwrZFrXbLY50m9jXNmJUas1vwtksUFFM=</pre></p>
+      <p><a href="/nix-cache-info">Nix Cache Info</a></p>
+      <p><a href="https://github.com/humaidq/dotfiles">dotfiles</a></p>
+    </div>
+</body>
+</html>
+
