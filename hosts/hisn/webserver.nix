@@ -37,6 +37,21 @@ let
       alias ${./error-pages/504.html};
     }
   '';
+  # Same markup as the generic pages, but the 502 sub-text is written for the
+  # people standing at the printer rather than for someone debugging a proxy.
+  # Only mbzuai-cs-printer.huma.id uses this.
+  printer-error-pages-loc = ''
+    location = /_error/502.html {
+      internal;
+      default_type text/html;
+      alias ${./error-pages/502-printer.html};
+    }
+    location = /_error/504.html {
+      internal;
+      default_type text/html;
+      alias ${./error-pages/504.html};
+    }
+  '';
   upstream = "http://10.10.0.12:4232";
   groundwaveHeaders = ''
     add_header Strict-Transport-Security "max-age=31536000" always;
@@ -463,7 +478,7 @@ in
           enableACME = true;
           forceSSL = true;
           extraConfig = ''
-            ${error-pages-loc}
+            ${printer-error-pages-loc}
             client_max_body_size 512M;
           '';
           locations."/" = {
