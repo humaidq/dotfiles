@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   inputs,
   vars,
@@ -187,6 +188,15 @@ in
     security.acme = {
       acceptTerms = true;
       defaults.email = "acme@huma.id";
+    };
+
+    # Fronts the Matomo UI. Kept in sops rather than inline the way
+    # sarim.huma.id's is, because this one guards an admin interface and this
+    # repository is public.
+    sops.secrets."web/matomo-htpasswd" = {
+      sopsFile = ../../secrets/hisn.yaml;
+      owner = "nginx";
+      mode = "640";
     };
 
     services.nginx = {
