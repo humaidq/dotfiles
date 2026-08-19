@@ -335,6 +335,32 @@ in
           };
         };
 
+        # Matomo, which runs on oreamnos. Unlike cache.huma.id this proxies to
+        # that host's nginx on port 80 rather than to a service port, because
+        # Matomo is PHP behind php-fpm and its nginx vhost is the application —
+        # the fastcgi socket is not something that can be reached across the
+        # mesh. The vhost there is addSSL, not forceSSL, precisely so this hop
+        # is not answered with a redirect back to this machine.
+        #
+        # No proxy_set_header of its own in the location: error-pages sets only
+        # proxy_intercept_errors and error_page, neither of which triggers
+        # nginx's rule that a location defining any proxy_set_header discards
+        # every one inherited from the http block. So proxyDefaults still
+        # applies, and X-Forwarded-For carries the real client address — which
+        # Matomo needs for geolocation, and which is why the header is passed
+        # through here rather than blanked the way the internal vhosts do.
+        "m.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+          locations."/" = {
+            proxyPass = "http://10.10.0.12";
+            extraConfig = error-pages;
+          };
+        };
+
         # Served by Caddy on the old lighthouse host, which existed for this
         # one static page and nothing else. Moved onto nginx rather than
         # carried over as a second web server: the two would have fought over

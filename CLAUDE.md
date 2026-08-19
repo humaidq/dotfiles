@@ -8,7 +8,6 @@ Personal NixOS flake ("sifrOS") managing every machine the user owns: workstatio
 
 ## Common commands
 
-- Evaluate the flake and build every host (run before pushing): `nix flake check`
 - Format the whole tree (nixfmt + deadnix + statix + shellcheck via treefmt): `nix fmt`
 - Rebuild the current host from local checkout: `sudo nixos-rebuild switch --flake .#<hostname>`
 - Rebuild from GitHub: `sudo nixos-rebuild switch --flake github:humaidq/dotfiles#<hostname> --refresh`
@@ -16,7 +15,7 @@ Personal NixOS flake ("sifrOS") managing every machine the user owns: workstatio
 - Edit a sops-encrypted secret: `sops secrets/<file>.yaml` (keys and access rules live in `.sops.yaml`)
 - Build just one host without switching: `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`
 
-CI runs `nix flake show` only — `nix flake check` is the real gate and must pass locally.
+**Do not run `nix flake check`.** It builds every host and takes about an hour. Never run it in an agent session, and don't offer to. To validate a change, build only the hosts it touches with `nix build .#nixosConfigurations.<host>.config.system.build.toplevel`, and use `nix eval` on specific config attributes to check the generated result. `nix flake check` is the user's pre-push gate to run themselves. CI runs `nix flake show` only.
 
 ## Architecture
 

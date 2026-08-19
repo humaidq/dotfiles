@@ -10,6 +10,8 @@ let
 
   # Network configuration constants
   nebulaPort = 4242;
+  # Loopback only; see the stats block below.
+  statsPort = 9599;
 
   # The lighthouse is moving to hisn, and it moves to a NEW overlay address
   # rather than inheriting 10.10.0.10. That is what makes the migration safe:
@@ -152,6 +154,24 @@ in
       ]
     );
 
+    # instance is pinned to the hostname for the same reason the router's
+    # uplink scrape does it: Alloy's own exporter components label themselves
+    # that way, and a scrape that arrived labelled 127.0.0.1:9599 would be
+    # excluded by every panel filtering on instance.
+    sifr.personal.o11y.client.extraConfig =
+      lib.mkIf (cfg.sifr0 && config.sifr.personal.o11y.client.enable)
+        ''
+          prometheus.scrape "nebula" {
+            targets = [{
+              __address__ = "127.0.0.1:${toString statsPort}",
+              instance    = "${config.networking.hostName}",
+            }]
+            metrics_path    = "/metrics"
+            scrape_interval = "30s"
+            forward_to      = [prometheus.remote_write.default.receiver]
+          }
+        '';
+
     # SSH configuration for Nebula network access only
     services.openssh = lib.mkIf cfg.sifr0 {
       enable = true;
@@ -200,6 +220,33 @@ in
           "10.0.0.0/8"
           "192.168.1.0/24"
         ];
+
+        # Nebula's own view of the mesh, which nothing else can supply: how
+        # many tunnels are up, how many handshakes are being retried, what the
+        # certificate has left to live. node_exporter sees a sifr0 interface
+        # with bytes moving through it and nothing about whether the tunnels
+        # carrying them are healthy.
+        #
+        # Bound to loopback and scraped locally by Alloy, so the listener is
+        # not another port to firewall on a public VPS.
+        #
+        # Enabled for every node rather than the lighthouse alone: the metrics
+        # cost is a few dozen series per host, and a mesh problem is usually
+        # visible from the side that cannot complete a handshake rather than
+        # from the side that never hears about it.
+        stats = {
+          type = "prometheus";
+          listen = "127.0.0.1:${toString statsPort}";
+          path = "/metrics";
+          # Namespace only. The bridge builds names as
+          # <namespace>_<subsystem>_<metric>, and an empty subsystem is
+          # dropped, so metrics arrive as nebula_hostmap_main_hosts and the
+          # like. A subsystem of "sifr0" would bake the network name into every
+          # metric name and make a second network a second set of series to
+          # write panels against.
+          namespace = "nebula";
+          interval = "10s";
+        };
 
         # Optional SSH daemon for debugging
         sshd = lib.mkIf (cfg.ssh-host-key != null) {

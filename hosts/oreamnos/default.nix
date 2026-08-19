@@ -120,6 +120,29 @@
           group = "forgejo";
           mode = "0770";
         }
+        # Matomo's data directory, which holds config.ini.php — the database
+        # credentials and, more importantly, the instance salt. Losing it means
+        # a database full of visits that the new install cannot read.
+        #
+        # 0770 rather than 0700 because the module deliberately runs the data
+        # directory as a user-private group: everything is group-writable and
+        # setgid so that a member of `matomo` can administer or back it up
+        # without being root. It sets the setgid bit itself on every start.
+        {
+          directory = "/var/lib/matomo";
+          user = "matomo";
+          group = "matomo";
+          mode = "0770";
+        }
+        # MariaDB, here only because Matomo supports no other backend. 0755 is
+        # what the mysql module's own tmpfiles rule sets, and a narrower mode
+        # here would just be widened again on activation.
+        {
+          directory = "/var/lib/mysql";
+          user = "mysql";
+          group = "mysql";
+          mode = "0755";
+        }
         "/var/lib/postgresql"
         "/var/lib/caddy"
         {

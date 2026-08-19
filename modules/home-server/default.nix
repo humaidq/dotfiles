@@ -13,6 +13,7 @@ in
     ./dav.nix
     ./db.nix
     ./immich.nix
+    ./matomo.nix
     ./media.nix
     ./misc.nix
     ./nix.nix

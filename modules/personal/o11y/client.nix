@@ -69,38 +69,39 @@ in
           loki.source.journal "journal" {
             path = "/var/log/journal"
             relabel_rules = discovery.relabel.journal.rules
-            forward_to = [loki.process.blocky.receiver]
+            forward_to = [loki.process.journal.receiver]
           }
 
-          // Promotes the querying client onto the stream, so that dashboards
-          // can offer a device picker at all. Without it the only labels are
-          // nodename and source, and a variable defined as
-          // label_values({nodename="..."}, client_ip) returns an empty list —
-          // which is exactly how the router dashboard's "Host IP" dropdown
-          // came to be a free-text box that had to be filled in from memory.
-          // Every panel still parses the field out of the line at query time;
-          // this only adds the label the picker needs.
-          //
-          // Regex rather than stage.logfmt, despite the line being mostly
-          // logfmt: blocky writes answer=CNAME (x), A (y) and
-          // response_reason=RESOLVED (upstream) — values with spaces and
-          // parentheses that a logfmt parser rejects outright. The dashboard's
-          // existing queries paper over that with | __error__ = "", which
-          // silently drops whatever failed to parse. A label built the same way
-          // would silently omit devices. Anchoring on the two adjacent fields
-          // matched 338 of 338 query lines in a sample, and client_names has
-          // never been seen to contain a space.
-          //
-          // Scoped to blocky so the rest of the journal is not parsed for
-          // fields it does not have. Hosts without the unit never match, so
-          // this is inert everywhere except the routers.
-          //
-          // Cardinality is bounded by the DHCP pool — tens of devices per
-          // network, not an open set — which is what makes a per-client label
-          // safe here when it usually is not.
-          loki.process "blocky" {
+          // Adds the handful of labels dashboards need to offer a picker at
+          // all. Without them the only labels are nodename and source, and a
+          // variable defined as label_values({nodename="..."}, client_ip)
+          // returns an empty list — which is exactly how the router
+          // dashboard's "Host IP" dropdown came to be a free-text box that had
+          // to be filled in from memory. Every panel still parses the fields
+          // out of the line at query time; these only add what the picker
+          // needs. Each stage is scoped to one unit, so the rest of the
+          // journal is never parsed for fields it does not have and a host
+          // without that unit is unaffected.
+          loki.process "journal" {
             forward_to = [loki.write.remote.receiver]
 
+            // Regex rather than stage.logfmt, despite the line being mostly
+            // logfmt: blocky writes answer=CNAME (x), A (y) and
+            // response_reason=RESOLVED (upstream) — values with spaces and
+            // parentheses that a logfmt parser rejects outright. The
+            // dashboard's existing queries paper over that with
+            // | __error__ = "", which silently drops whatever failed to parse.
+            // A label built the same way would silently omit devices.
+            // Anchoring on the two adjacent fields matched 338 of 338 query
+            // lines in a sample, and client_names has never been seen to
+            // contain a space.
+            //
+            // Cardinality is bounded by the DHCP pool — tens of devices per
+            // network, not an open set — which is what makes a per-client
+            // label safe here when it usually is not. That reasoning does not
+            // carry to hisn, whose blocky answers DoH for the open internet;
+            // it is the same argument that keeps blocky_query_total off the
+            // Prometheus side there.
             stage.match {
               selector = "{source=\"blocky.service\"}"
 
@@ -111,6 +112,39 @@ in
                 values = {
                   client_ip    = "",
                   client_names = "",
+                }
+              }
+            }
+
+            // nginx access lines, which hisn writes to the journal as JSON
+            // (see hosts/hisn/metrics.nix). Same purpose as the block above:
+            // a label the dashboard's vhost picker can enumerate, since
+            // label_values only sees labels and never fields parsed at query
+            // time. Every panel still parses the line for status, duration
+            // and the rest.
+            //
+            // server_name and not the Host header. The two agree for almost
+            // every request, but Host is whatever the client typed and would
+            // let anyone spraying junk Host headers at the address create
+            // Loki streams without limit. server_name is the block that
+            // matched, so the set is as large as the nginx config and no
+            // larger.
+            //
+            // Inert on hosts whose nginx logs the default combined format:
+            // the JSON stage finds no fields, adds no labels and passes the
+            // line through unchanged, which is also what happens to nginx's
+            // error log on hisn.
+            stage.match {
+              selector = "{source=\"nginx.service\"}"
+
+              stage.json {
+                expressions = {
+                  server = "",
+                }
+              }
+              stage.labels {
+                values = {
+                  server = "",
                 }
               }
             }
