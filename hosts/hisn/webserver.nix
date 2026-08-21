@@ -342,6 +342,13 @@ in
           };
         };
 
+        # The landing page lives under modules/home-server because oreamnos
+        # serves the identical thing on its own copy of this vhost — clients
+        # inside the mesh resolve cache.huma.id to 10.10.0.12 from nebula's
+        # host entries and never touch this host. Two copies of the page drift;
+        # one copy referenced from both does not. It sits with the home server
+        # rather than here because that is where harmonia actually runs, and
+        # this vhost is a public front for it.
         "cache.huma.id" = {
           enableACME = true;
           forceSSL = true;
@@ -354,14 +361,14 @@ in
               proxyPass = "http://10.10.0.12:5000";
             };
             "= /" = {
-              root = "${./cache-page}";
+              root = "${../../modules/home-server/cache-page}";
               extraConfig = ''
                 index index.html;
                 try_files /index.html =404;
               '';
             };
             "~* \\.jpeg$" = {
-              root = "${./cache-page}";
+              root = "${../../modules/home-server/cache-page}";
             };
           };
         };

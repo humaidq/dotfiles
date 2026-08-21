@@ -106,11 +106,39 @@ in
               client_max_body_size 50000M;
             '';
           };
+          # Mirrors the public vhost on hisn, down to the same page directory,
+          # because which of the two answers is decided by where the client is
+          # rather than by what it asked for: nebula hands every node a host
+          # entry pointing cache.huma.id at this machine, so anoa and the rest
+          # of the mesh land here and hisn only ever sees the outside world.
+          # Without these two locations the same URL gave harmonia's own
+          # generated index inside and the page below outside.
+          #
+          # `= /` is an exact match, so it takes the bare root and nothing
+          # else; every real cache request (/nix-cache-info, *.narinfo, /nar/*)
+          # still falls to the prefix match below and reaches harmonia. Nix
+          # never fetches / itself, so no substituter is affected by this.
           "cache.huma.id" = {
             inherit (tls) forceSSL;
             enableACME = true;
-            locations."/" = {
-              proxyPass = "http://127.0.0.1:5000";
+            locations = {
+              "/" = {
+                proxyPass = "http://127.0.0.1:5000";
+              };
+              "= /" = {
+                root = ./cache-page;
+                extraConfig = ''
+                  index index.html;
+                  try_files /index.html =404;
+                '';
+              };
+              # The page's background and logo. Needed as its own location for
+              # the same reason the exact match above is: with only `= /` the
+              # img and background-image requests are prefix matches and go to
+              # harmonia, which 404s them.
+              "~* \\.jpeg$" = {
+                root = ./cache-page;
+              };
             };
           };
           "sdr.alq.ae" = {

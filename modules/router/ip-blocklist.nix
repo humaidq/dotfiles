@@ -1438,6 +1438,44 @@ in
         coreutils
       ];
 
+      # WAIT FOR THE RESOLVER TO ANSWER, because `After=blocky.service` does
+      # not mean what it looks like it means. blocky's unit is Type=simple, so
+      # systemd calls the start job finished the instant the process forks —
+      # blocky then spends a couple of seconds importing ~thirty blocklists and
+      # printing its config before it binds :53. The ordering above is
+      # satisfied in that window.
+      #
+      # That is the entire "the resolver is down" failure seen on every
+      # `nixos-rebuild switch` on bingo and bongo, e.g. 2026-08-21 16:34:58:
+      # blocky stopped at :55, was re-Started at :58, this unit ran in the same
+      # second, and all three lookups failed inside that one second — dig does
+      # not sit out its +timeout=3 when nothing is listening, it takes the
+      # ICMP port-unreachable and gives up immediately. The 30s retry then
+      # succeeded, which is why the sets were never actually stale; the failure
+      # was noise, but noise indistinguishable from the real outage this unit
+      # is supposed to shout about.
+      #
+      # Polling rather than fixing the ordering: blocky speaks no sd_notify, so
+      # there is no honest Type=notify to switch it to, and gating blocky's own
+      # start job on a readiness probe would make every dependent of a working
+      # resolver wait on this one unit's convenience.
+      #
+      # Deliberately does NOT fail when the wait runs out. Any reply at all —
+      # NXDOMAIN, SERVFAIL, a sinkholed 0.0.0.0 — proves the resolver is up, so
+      # this probe only ever answers "listening or not". Deciding what an
+      # unresolvable name MEANS is the script's job, and it distinguishes an
+      # outage from a fully-sinkholed list; duplicating half that judgement
+      # here would just report it worse.
+      preStart = ''
+        for _ in $(seq 1 30); do
+          if dig +time=2 +tries=1 stun.l.google.com A >/dev/null 2>&1; then
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "nft-lowtrust-stun: resolver still not answering after 30s, resolving anyway" >&2
+      '';
+
       script = ''
         set -euo pipefail
 
