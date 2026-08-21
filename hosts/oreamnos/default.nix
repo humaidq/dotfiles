@@ -54,6 +54,7 @@
         node-key = config.sops.secrets."nebula/key".path;
       };
       work.enable = true;
+      moshi.enable = true;
     };
     v12n.emulation = {
       enable = true;
@@ -153,11 +154,17 @@
       ];
       user = {
         enable = true;
+        files = [
+          ".claude.json"
+        ];
         dirs = [
           ".local/share/direnv"
           ".config/emacs"
           ".config/doom"
           ".local/share/zsh"
+          ".claude"
+          ".codex"
+          ".local/state/moshi"
         ];
       };
     };

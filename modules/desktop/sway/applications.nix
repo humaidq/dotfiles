@@ -2,14 +2,12 @@
   config,
   pkgs,
   lib,
-  inputs,
   vars,
   ...
 }:
 let
   cfg = config.sifr.desktop.sway;
   gfxCfg = config.sifr.desktop;
-  helium = inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default;
   desktopEntry = name: command: {
     executable = true;
     text = ''
@@ -174,7 +172,7 @@ in
       # Set default applications
       xdg = {
         enable = true;
-        dataFile."applications/browser.desktop" = desktopEntry "Browser" "${helium}/bin/helium %U";
+        dataFile."applications/browser.desktop" = desktopEntry "Browser" "${lib.getExe pkgs.helium} %U";
         dataFile."applications/file.desktop" = desktopEntry "File Manager" "${pkgs.thunar}/bin/thunar %U";
         dataFile."applications/img.desktop" = desktopEntry "Image Viewer" "${pkgs.imv}/bin/imv %U";
         dataFile."applications/mail.desktop" =

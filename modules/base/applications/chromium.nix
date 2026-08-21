@@ -2,14 +2,11 @@
   config,
   lib,
   pkgs,
-  vars,
-  inputs,
   ...
 }:
 
 let
   cfg = config.sifr.applications;
-  helium = inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
 
@@ -21,11 +18,10 @@ in
   config = lib.mkIf cfg.chromium.enable {
     environment.variables.BROWSER = "helium";
 
-    environment.systemPackages = [
-      pkgs.chromium
-      helium
-    ];
+    environment.systemPackages = [ pkgs.helium ];
 
+    # Helium reads managed policy from the upstream chromium path
+    # (/etc/chromium/policies), so this file applies to it unchanged.
     environment.etc."chromium/policies/managed/vanilla.json".text = builtins.toJSON {
       DefaultBrowserSettingEnabled = false;
       BookmarkBarEnabled = false;
@@ -50,25 +46,6 @@ in
       #  "nngceckbapebfimnlniiiahkandclblb" # bitwarden
       #  "ekhagklcjbdpajgpjgmbionohlpdbjgc" # zotero connector
       #];
-    };
-
-    home-manager.users."${vars.user}" = {
-      programs.chromium = {
-        enable = true;
-        package = pkgs.chromium;
-        commandLineArgs = [
-          "--extension-mime-request-handling=always-prompt-for-install"
-          "--no-default-browser-check"
-          "--bookmark-bar-ntp"
-          "--close-confirmation"
-          "--disable-search-engine-collection"
-          "--fingerprinting-canvas-image-data-noise"
-          "--fingerprinting-canvas-measuretext-noise"
-          "--fingerprinting-client-rects-noise"
-
-          "--ozone-platform=wayland"
-        ];
-      };
     };
   };
 }

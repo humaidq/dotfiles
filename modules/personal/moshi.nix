@@ -15,6 +15,11 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [ pkgs.moshi-hook ];
 
+    # The daemon runs as a user unit, so without lingering it would only exist
+    # between login and logout. On a headless host that means it never starts
+    # at boot and dies with the last SSH session.
+    users.users."${vars.user}".linger = true;
+
     home-manager.users."${vars.user}" = {
       systemd.user.services.moshi-hook = {
         Unit = {

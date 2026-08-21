@@ -162,6 +162,7 @@ in
         ];
         dirs = [
           ".claude"
+          ".codex"
           ".xwechat"
           ".config/Code"
           ".config/aerc"

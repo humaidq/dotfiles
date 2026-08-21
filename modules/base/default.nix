@@ -223,6 +223,10 @@ in
 
           codex = final.callPackage ../../overlays/codex/package.nix { };
 
+          helium = final.callPackage ../../overlays/helium {
+            unwrapped = inputs.helium.packages.${final.stdenv.hostPlatform.system}.default;
+          };
+
           liquidctl = import ../../overlays/liquidctl { inherit prev; };
 
           ls-colors = final.callPackage ../../overlays/ls-colors { };
