@@ -224,9 +224,7 @@ let
     "74.125.250.129" # stun.l.google.com — discovery for legitimate calls
     "185.93.2.251" # BunnyCDN edge
     "143.244.56.58" # BunnyCDN edge
-    "45.59.120.67" # hisn — huma.id and the nebula lighthouse, one host now
-    "139.84.164.156" # huma.id, on duisk until the cutover
-    "139.84.173.48" # nebula lighthouse, on its own host until the cutover
+    "45.59.120.67" # hisn — huma.id and the nebula lighthouse, one host
   ];
 
   # Expands a list of AS numbers into the CIDRs they announce, read from the

@@ -13,46 +13,34 @@ let
   # Loopback only; see the stats block below.
   statsPort = 9599;
 
-  # The lighthouse is moving to hisn, and it moves to a NEW overlay address
-  # rather than inheriting 10.10.0.10. That is what makes the migration safe:
-  # two lighthouses on two addresses are an ordinary nebula arrangement, and
-  # nodes register with and query both, whereas two hosts holding certificates
-  # for the SAME address is a split — every node settles on whichever answered
-  # first, and the ones that chose differently cannot discover each other.
+  # hisn is the sole lighthouse, on 10.10.0.20. It took the role from the old
+  # `lighthouse` host on 10.10.0.10 by joining on a NEW overlay address rather
+  # than inheriting that one: two lighthouses on two addresses are an ordinary
+  # nebula arrangement that nodes register with and query in parallel, whereas
+  # two hosts holding certificates for the SAME address is a split — every node
+  # settles on whichever answered first, and the ones that chose differently
+  # cannot discover each other. Both answered until the fleet had been rebuilt
+  # against the two-entry list, and 10.10.0.10 came out afterwards.
   #
-  # So the transition has no flag day. hisn joined as a plain client on
-  # 10.10.0.20, discoverable through the existing lighthouse with no change on
-  # any other node, and is now a lighthouse in its own right alongside the old
-  # one. Both answer until every node has been rebuilt against this list; only
-  # then does 10.10.0.10 come out.
-  #
-  # A node reaching a lighthouse it has not been rebuilt for is not a failure
-  # mode here — it simply registers with the one it knows. What does not work
-  # is the reverse: nebula refuses to start with am_lighthouse set and
-  # lighthouse.hosts non-empty, so a lighthouse never queries, and learns
-  # endpoints only from the nodes that register with it. hisn therefore cannot
-  # initiate to a host that has not yet been rebuilt against this list, which
-  # is the reason to roll the fleet promptly rather than leave it half done.
+  # A node still carrying the old address in its running config is not broken
+  # by this — it already knows 10.10.0.20 and registers there. A node that
+  # never got the two-entry list is, and has to be rebuilt: nebula refuses to
+  # start with am_lighthouse set and lighthouse.hosts non-empty, so hisn never
+  # queries and learns endpoints only from the nodes that register with it, and
+  # therefore cannot initiate to a host that has not been rebuilt.
   lighthouseIPs = [
-    "10.10.0.10"
     "10.10.0.20"
   ];
+  # A static entry is just "this address is reachable at this endpoint" — it
+  # does not make the host a lighthouse. Handed to every node, lighthouse
+  # included, so a client can reach hisn directly rather than waiting for a
+  # lighthouse to have learned about it.
   staticHosts = {
-    "10.10.0.10" = [ "139.84.173.48:4242" ];
-    # Present before hisn is a lighthouse, and deliberately so. A static entry
-    # is just "this address is reachable at this endpoint" — it does not make
-    # the host a lighthouse. Having it means nodes can reach hisn directly
-    # instead of relaying through the far side of the mesh while its services
-    # are being moved onto it.
     "10.10.0.20" = [ "45.59.120.67:4242" ];
   };
 
   # Host mappings
   hostMappings = {
-    "10.10.0.10" = [
-      "lighthouse"
-      "lighthouse.alq"
-    ];
     "10.10.0.11" = [
       "serow"
       "serow.alq"
@@ -62,10 +50,6 @@ let
       "oreamnos.alq"
     ]
     ++ lib.optionals (!cfg.cacheOverPublic) vars.homeServerDomains;
-    "10.10.0.13" = [
-      "duisk"
-      "duisk.alq"
-    ];
     "10.10.0.20" = [
       "hisn"
       "hisn.alq"
@@ -202,11 +186,9 @@ in
       # Lighthouse and relay configuration (for non-lighthouse nodes)
       lighthouses = lib.mkIf (!cfg.isLighthouse) lighthouseIPs;
       relays = lib.mkIf (!cfg.isLighthouse) lighthouseIPs;
-      # Given to every host, lighthouses included. A lighthouse listing its own
-      # address here is what the single-lighthouse config already did, and
-      # nebula ignores it; the value of handing the whole map out uniformly is
-      # that a client can reach a static host directly during a migration
-      # rather than only once some lighthouse has learned about it.
+      # Given to every host, the lighthouse included — nebula ignores its own
+      # address here, and handing the map out uniformly keeps the two cases
+      # from diverging.
       staticHostMap = staticHosts;
 
       # Network behavior settings

@@ -44,9 +44,7 @@ Systems managed by this flake.
 | `bongo`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | OK     |
 | `addax`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | OK     |
 | `bingo`      | Industrial Mini PC       | J6412 i226V  | 8GB   | Intel UHD         | Router | NixOS | New    |
-| `hisn`       | VPS (UAE)                | vCPU x2      | 4GB   | None              | Server | NixOS | New    |
-| `duisk`      | Vultr VPS                | vCPU         | 2GB   | None              | Server | NixOS | Retiring |
-| `lighthouse` | Vultr VPS                | vCPU         | 1GB   | None              | Server | NixOS | Retiring |
+| `hisn`       | VPS (UAE)                | vCPU x2      | 4GB   | None              | Server | NixOS | OK     |
 | `boerbok`    | Star64                   | SiFive       | 8GB   | None              | Server | NixOS | Broken |
 | `argali`     | RPi 4B                   | BCM2711      | 8GB   | None              | Server | NixOS | Broken |
 | `arkelli`    | RPi 4B                   | BCM2711      | 8GB   | None              | Server | NixOS | Broken |

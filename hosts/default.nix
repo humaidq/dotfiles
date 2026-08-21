@@ -29,11 +29,6 @@
         host-bongo = import ./bongo;
         host-bingo = import ./bingo;
         host-hisn = import ./hisn;
-        # Both replaced by host-hisn. Kept until the cutover is done: the mesh
-        # cannot be moved to a new lighthouse endpoint in one step, so for the
-        # length of the migration all three have to be buildable.
-        host-duisk = import ./duisk;
-        host-lighthouse = import ./lighthouse;
         #host-boerbok = import ./boerbok;
 
         # Generators hosts
@@ -90,26 +85,10 @@
           modules = [
             self.nixosModules.host-hisn
             inputs.srvos.nixosModules.server
-            # No hardware-* module, unlike the two hosts this replaces. The
-            # srvos vultr one is not merely inapplicable — it configures
+            # No hardware-* module, unlike the two Vultr hosts this replaced.
+            # The srvos vultr one is not merely inapplicable — it configures
             # cloud-init for the Vultr datasource, which on this provider is a
             # service waiting on metadata that never answers.
-          ];
-        };
-        duisk = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-duisk
-            inputs.srvos.nixosModules.server
-            inputs.srvos.nixosModules.hardware-vultr-vm
-          ];
-        };
-        lighthouse = lib.nixosSystem {
-          inherit specialArgs;
-          modules = [
-            self.nixosModules.host-lighthouse
-            inputs.srvos.nixosModules.server
-            inputs.srvos.nixosModules.hardware-vultr-vm
           ];
         };
         x86-installer = lib.nixosSystem {
@@ -184,8 +163,6 @@
           oreamnos = self.nixosConfigurations.oreamnos.config.system.build.toplevel;
           serow = self.nixosConfigurations.serow.config.system.build.toplevel;
           hisn = self.nixosConfigurations.hisn.config.system.build.toplevel;
-          duisk = self.nixosConfigurations.duisk.config.system.build.toplevel;
-          lighthouse = self.nixosConfigurations.lighthouse.config.system.build.toplevel;
           anoa = self.nixosConfigurations.anoa.config.system.build.toplevel;
           bongo = self.nixosConfigurations.bongo.config.system.build.toplevel;
           bingo = self.nixosConfigurations.bingo.config.system.build.toplevel;

@@ -92,10 +92,8 @@
       "v10.alq.ae" = "192.168.50.1";
 
       # Nebula
-      "lighthouse.s.alq.ae" = "10.10.0.10";
       "serow.s.alq.ae" = "10.10.0.11";
       "oreamnos.s.alq.ae" = "10.10.0.12";
-      "duisk.s.alq.ae" = "10.10.0.13";
       "anoa.s.alq.ae" = "10.10.0.14";
       "pixel.s.alq.ae" = "10.10.0.15";
       "bongo.s.alq.ae" = "10.10.0.16";

@@ -120,22 +120,16 @@ groups:
                 # sending, and its up series goes stale rather than reporting
                 # zero.
                 #
-                # hisn is listed alongside the two hosts it replaces, and will
-                # alert from the moment this is provisioned until it is
-                # actually up. That is the intended reading rather than an
-                # oversight: a named host that has never reported is
-                # indistinguishable here from one that stopped, and the
-                # alternative — adding it only once it is healthy — is how a
-                # host ends up silently unmonitored. The lighthouse and duisk
-                # lines come out when those hosts are decommissioned.
+                # A host is listed here from the moment it is named, before it
+                # has ever reported, and alerts until it is up. That is the
+                # intended reading rather than an oversight: a named host that
+                # has never reported is indistinguishable here from one that
+                # stopped, and the alternative — adding it only once it is
+                # healthy — is how a host ends up silently unmonitored.
                 expr: |-
                     absent_over_time(up{instance="oreamnos"}[10m])
                     or
                     absent_over_time(up{instance="hisn"}[10m])
-                    or
-                    absent_over_time(up{instance="lighthouse"}[10m])
-                    or
-                    absent_over_time(up{instance="duisk"}[10m])
                     or
                     label_replace(vector(0), "instance", "none", "", "")
                 fullMetaSearch: false

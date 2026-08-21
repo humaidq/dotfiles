@@ -268,7 +268,7 @@ mismatched cert is usually just a parked host — `inlandcha.com` presents
   blocked locally because hagezi's anti-piracy list — used as an *allowlist* in
   `blocky-common.nix` — contains `*.imoim.app`. Check the allowlists before
   concluding an entry is broken.
-- `custom-blocklist.txt` is shared with duisk via `blocky-common.nix`.
+- `custom-blocklist.txt` is shared with hisn via `blocky-common.nix`.
 
 ## When the package will not download
 
