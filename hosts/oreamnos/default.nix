@@ -246,6 +246,8 @@
     openssh.authorizedKeys.keys = [
       # anoa borg ssh
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIATG8oK3/+6po+IHhKj/Dx++qUNEPSnLNY5mj+hvmtrE humaid@caprini"
+      # moshi
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfg4FZDzoq/6FKX2PP6ye7QHKVxQWjUqTcQQvpsjyyi moshi"
     ];
   };
 
