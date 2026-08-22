@@ -147,9 +147,43 @@
 # everything here. The never-cover tripwire was dry-run against these 775 CIDRs
 # before the entry went in and matches nothing.
 #
-# IF A POOL DEVICE LOSES SOMETHING and Cogent above is not the cause, this is
-# the second entry to try removing — it is the only one in the file admitted
-# without direct evidence of carrying traffic.
+# WHAT THE COLLATERAL ACTUALLY IS, added 2026-08-22 and missing when this entry
+# went in. ZENLAYER IS A BYTEDANCE NETWORK PROVIDER. TikTok's real-time comms
+# and TikTok LIVE ride Zenlayer addresses, on opaque high ports, with no DNS
+# naming the peer and with relay-failover-to-a-fresh-address when one goes away
+# — which is to say they are INDISTINGUISHABLE ON FLOW SHAPE ALONE from what
+# put this entry in the file.
+#
+# That is not hypothetical here. On 2026-08-05 a run of Zenlayer addresses on
+# ports 29009/30303/50000 was read as imo on exactly that reasoning — cloud
+# host, arbitrary high port, opaque payload, failover — and six were blocked,
+# cutting a live broadcast repeatedly. It was TikTok LIVE. Two checks would have
+# caught it and neither needs a capture: DIRECTION (that flow was 5.5:1
+# upload-heavy, i.e. broadcasting; an imo video call is roughly symmetric) and
+# THE DEVICE'S OWN DNS IN THE SAME WINDOW (rtcpc-access-fr.tiktokv.com,
+# byteglb.com, widget-sg.tiktokv.com, and no imo names at all).
+#
+# SO THE SYMPTOM TO EXPECT FROM THIS ENTRY IS NAMED, rather than left as "a
+# pool device loses something": TikTok LIVE and TikTok's RTC breaking for pool
+# devices while ordinary TikTok keeps working. That is a REAL cost and not
+# obviously an intended one — this repo blocks TikTok LIVE deliberately at the
+# IP level in custom-ip-blocklist.txt and by name in custom-blocklist.txt, and
+# an ASN entry admitted on tunnel-enumeration grounds should not be the thing
+# quietly widening that policy. Anyone reading a Zenlayer flow as a tunnel must
+# check direction and the device's DNS first, every time.
+#
+# NOT AFFECTED, checked 2026-08-22, so this is not read as a live breakage: the
+# Zenlayer addresses in custom-ip-blocklist.txt (23.90.158.131/.238,
+# 98.98.250.236, 98.98.254.102/.107) sit in the TikTok Live section and are
+# dropped on purpose under that policy, not left over from the 2026-08-05
+# misattribution. Ports 29009/30303/50000 are not in custom-port-blocklist.txt.
+#
+# IF A POOL DEVICE LOSES SOMETHING, Cogent above is still the first entry to
+# try on size alone. This is the second, and the gap between them has narrowed:
+# it remains the only entry in the file admitted without direct evidence of
+# carrying traffic, and it is now also the only one with a named, plausible
+# collateral victim rather than a hypothetical one. If what broke is TikTok
+# LIVE or a call, try this one FIRST and Cogent second.
 21859   # Zenlayer — 13 collected nodes, 656k addresses, enumerated as a pool
 
 # --- The reseller estate, added 2026-08-14 -----------------------------------
@@ -209,6 +243,69 @@
 22427   # GNET — 9,984, opaque tcp/27160 on 167.148.28.60
 137517  # FlameHosting — 10,240, SNI rochester2.com on 169.40.141.61
 31715   # CloudIP — 10,240
+
+# --- NovoServe, added 2026-08-22 ---------------------------------------------
+#
+# Three ASNs, 21,760 IPv4 addresses between them, which puts this section in
+# the same cheap tier as the reseller estate above rather than anywhere near
+# the transit entries. A Dutch bare-metal host: dedicated servers and
+# sub-allocated /24s, no CDN, no transit, no eyeball network.
+#
+# THE STANDING OBSERVATION IS THE REASON IT IS HERE. NovoServe keeps recurring
+# as a proxy endpoint. Said plainly because a later reader cannot otherwise tell
+# how much of this is measured: ONE address is directly evidenced, and before
+# this section not a single NovoServe address appeared in the throttle list, the
+# IP blocklist or the imo list.
+#
+# THE EVIDENCED ADDRESS is 102.129.246.182, in AS215224's 102.129.246.0/24,
+# reached on tcp/9153 as a sole peer — a V2Ray/Xray-family proxy endpoint.
+#
+# IT IDENTIFIED ITSELF AT THE RESOLVER, which is the reusable part. A client of
+# that family configured with a bare `IP:port` server address hands the whole
+# string to its stub, which cannot parse it and asks for it as a name — so the
+# resolver logs `102.129.246.182:9153` as an A/AAAA/HTTPS question, usually next
+# to a `_dns.resolver.arpa` SVCB for encrypted-DNS discovery. A question_name
+# containing a colon is never a hostname, and it yields the endpoint and the
+# port with no packet capture involved.
+#
+# THE CERTIFICATE TEST DOES NOT DECIDE THIS ONE, which is worth recording
+# because this file's neighbours lean on it. The endpoint serves a GENUINE
+# Let's Encrypt R13 certificate — random serial, 90-day validity,
+# CN=fleetwoord.akherrosh.fun — not the self-signed or absurd-validity
+# camouflage described in custom-throttle-list.txt. VLESS and Trojan endpoints
+# use real ACME certs precisely so that check comes back clean. What decides it
+# instead is a random-word .fun subject on a rented single-tenant box reached at
+# a bare IP:port, by a client that resolves nothing else.
+#
+# AS215224 IS THE ONE THAT MATTERS and it matches the reseller template written
+# up above: it is literally "NovoServe Customers ASN", 32 sub-allocated /24s,
+# and the observed prefix is registered through AFRINIC as ZA while being
+# announced by a Netherlands operator — the same registered-country-disagrees
+# tell as the eight ASNs in the previous section. Its neighbours are the usual
+# proxy-reseller space (154.6.x, 45.142.x, 176.111.47.0/24, 185.224.217.0/24).
+#
+# AS24875 and AS209445 go in with it as the same operator under different
+# numbers, the same reasoning as the four WiredISP shells above. Neither has
+# carrying evidence of its own and both are small enough that splitting the
+# operator would cost more than it saves.
+#
+# COLLATERAL. Nothing on this network has ever reached NovoServe space for any
+# other reason — zero addresses across all three lists before today. The
+# never-cover tripwire was left at full strength and the build passes, so none
+# of these ranges touches the resolver, the Akamai edges, STUN or this
+# operator's own hosts.
+#
+# NOT PUT IN custom-cdn-quota-asns.txt, which was the other candidate: that file
+# shapes instead of dropping because its targets are shared CDN edges the whole
+# house depends on. NovoServe is single-tenant hosting with no such edge, so the
+# reason to prefer shaping over dropping does not apply and the ordinary
+# pool-only drop is the right instrument. 102.129.246.182 is ALSO in
+# custom-throttle-list.txt as a /32 — that is deliberate and not a reversed
+# decision; see the note there, which turns on this pool being keyed on MAC
+# while the clients concerned randomise theirs.
+24875   # NovoServe — 11,520, the operator's own network
+215224  # NovoServe Customers ASN — 9,984, holds 102.129.246.0/24
+209445  # NovoServe Denmark — 256, one /24
 #
 # DELIBERATELY NOT HERE:
 #

@@ -6389,6 +6389,15 @@
 # argument is in that file; the short form is that the client is enumerating
 # contiguous Zenlayer space rather than renting scattered instances, and the
 # AS turned out to be a fraction of the size the decline was based on.
+#
+# READ THE BYTEDANCE CAVEAT IN THAT FILE BEFORE ADDING A FOURTH. Zenlayer is a
+# ByteDance network provider, TikTok LIVE and TikTok RTC ride it on opaque high
+# ports with no DNS naming the peer, and that has already been mistaken for imo
+# once at the cost of cutting a live broadcast. These three are shaped rather
+# than dropped, which bounds it, and they came from enumeration behaviour rather
+# than from a carried flow — but a Zenlayer address seen CARRYING volume needs
+# its direction and the device's own DNS checked before it lands here. Upload-
+# skewed means broadcasting, not tunnelling.
 98.98.207.97
 98.98.207.101
 128.14.66.38
@@ -7316,6 +7325,179 @@
 # nftables manages its named tables individually and router_tempblock survives.
 216.106.187.155
 
+
+# 102.129.246.182 — NovoServe B.V. (AS215224), tcp/9153. A V2Ray/Xray-family
+# proxy endpoint, observed carrying traffic as a sole peer: everything the
+# client sent went there, with nothing beside it but mDNS. No DNS answer on
+# either router has ever produced this address — it is hardcoded in a config.
+#
+# THE CLIENT NAMED ITSELF AT THE RESOLVER, which is a cheaper tell than anything
+# else in this file and worth reusing. A client of that family configured with a
+# bare `IP:port` server address passes the whole string to its stub resolver,
+# which cannot parse it and asks for it as a name — so the resolver logs
+# `102.129.246.182:9153` as an A/AAAA/HTTPS question (all NXDOMAIN), typically
+# beside a `_dns.resolver.arpa` SVCB for encrypted-DNS discovery. A
+# question_name containing a colon is never a hostname. Grepping the resolver
+# for one finds these across the LAN with no capture at all.
+#
+# TRAPS CHECKED BEFORE WRITING. Not CDN edge and not transit: AS215224 is
+# "NovoServe Customers ASN", 32 sub-allocated /24s of single-tenant hosting.
+# Not a fronting relay: the certificate is the host's own. Not a resolver, and
+# this is the check that decides the file — nothing on 9153 or 443 answers DNS,
+# and 853 is silent. Port 53 was not probed and no conclusion is drawn from it,
+# per this network's outbound block.
+#
+# THE CERTIFICATE IS GENUINE AND THAT IS NOT AN ACQUITTAL. Let's Encrypt R13,
+# random serial, 90-day validity, CN=fleetwoord.akherrosh.fun, expired
+# 2026-03-05 and still served — so the client does not validate it. The
+# self-signed/absurd-validity signature this file documents elsewhere simply
+# does not fire on ACME-issued camouflage; a random-word .fun subject on a
+# rented box reached at a bare IP:port is what carries it instead.
+#
+# WHY THIS IS HERE AS WELL AS IN custom-lowtrust-asns.txt, where AS215224 is now
+# dropped wholesale for pool devices. Pool membership is keyed on MAC, and the
+# clients this reaches randomise theirs — one rotation and the ASN drop stops
+# applying while this row still does. The two do not conflict: a pool device is
+# dropped before the shaper ever sees the packet, and this row is what remains
+# for everything else.
+102.129.246.182
+# ===========================================================================
+#
+# --- One handed over, 2026-08-21 --------------------------------------------
+#
+# 38.92.24.188 — AS26042 FiberState, LLC (US), no PTR. DESK CHECK ONLY: this
+# arrived as a bare address in a list with no capture behind it, and nothing on
+# either router has ever carried a flow to it. Said plainly because the rows
+# around it are not all like that and a later reader cannot otherwise tell.
+#
+# WHAT THE CHECK FOUND. The host is alive — ICMP answers, ~250 ms, so it is a
+# long way off. Of fifteen ports probed only tcp/22 accepts, and it does NOT
+# emit an SSH banner, which is what a service wearing port 22 for cover looks
+# like rather than an ordinary shell host. Port 22 is not in
+# custom-port-blocklist.txt and tunnelling over it is a pattern this network has
+# already seen, so an ssh-shaped endpoint on rented space is the expected shape
+# and not an exotic one.
+#
+# TRAPS CHECKED BEFORE WRITING. Not CDN edge and not transit: AS26042 is a
+# reseller, and the PTR is absent rather than tenant naming. Not a fronting
+# relay: three passes to 443 presented no certificate at all, with or without
+# SNI, so there is no upstream being relayed — nothing answers on 443 at all.
+# Not a resolver, and this is the check that decides the file — DoH on 443
+# returned no body and no status, and 853 is closed. Port 53 was not probed and
+# no conclusion is drawn from it, per this network's outbound block. No DNS
+# answer on either router has ever produced a 38.92.24.x address.
+#
+# AS26042 MATCHES THE RESELLER TEMPLATE written up in the 2026-08-14 blocks
+# above and in custom-lowtrust-asns.txt: 26,624 addresses in 64 scattered /24s,
+# spread across AfriNIC, APNIC and ARIN registrations that disagree with where
+# they are announced. Two of its /24s (102.129.216.0/24, 102.129.240.0/24) sit
+# in the same 102.129 AfriNIC stretch as the NovoServe customer prefix added
+# above under a different reseller, which is the tell that this region of
+# address space is the market rather than a provider.
+#
+# THE AS IS RECORDED AS A CANDIDATE AND NOT TAKEN. One address with no carrying
+# evidence does not justify an ASN entry, and the sole other thing pointing at
+# it is that its /24s look like the estate. A second address in AS26042, or one
+# flow actually observed, would settle it — this paragraph is the pointer.
+38.92.24.188
+# ===========================================================================
+#
+# --- The same proxy client, second provider in one day ----------------------
+#
+# 191.96.158.51 — AS209181 Zenex 5ive Limited (GB, announced from AE), tcp/8277,
+# no PTR. Sole peer: 99.7% of the client's bytes with nothing beside it but
+# mDNS, which is the same shape as 102.129.246.182 above.
+#
+# IT IS THE SAME CLIENT, RE-HOMED. The device that was using 102.129.246.182:9153
+# earlier the same day moved here, and it announced the move the same way it
+# announced the first one: the resolver logged `191.96.158.51:8277` as an
+# A/AAAA/HTTPS question, beside a `_dns.resolver.arpa` SVCB. The IP:port leak
+# described in the NovoServe entry above is now confirmed on a second endpoint,
+# which makes it a reliable handle on this client rather than a one-off.
+#
+# AND IT IS THE REASON NOT TO TRUST AN ASN ENTRY FOR THIS DEVICE. AS215224 went
+# into custom-lowtrust-asns.txt this morning on the strength of the first
+# endpoint. It would NOT have caught this one: different reseller, different AS,
+# different registry. Per-/32 and the provider-level entry are both partial here
+# for the same reason the imo list is partial — the client shops. The durable
+# handle is the resolver tell, not the address.
+#
+# TRAPS CHECKED BEFORE WRITING. Not CDN edge and not transit: AS209181 is a
+# reseller, 11,520 addresses in 34 scattered /24s, no PTR. Not a fronting relay:
+# 443 is open but presented NO certificate across three passes, with or without
+# SNI, so there is no upstream being relayed. Not a resolver, and this is the
+# check that decides the file — DoH on 443 returned no body, 853 is closed. Port
+# 53 was not probed and no conclusion is drawn from it, per this network's
+# outbound block. The carrying port itself, 8277, offers no TLS at all.
+#
+# AS209181 RENTS IN THE SAME MARKET as the estate documented above rather than
+# merely resembling it: its /24s include 102.129.253.0/24, in the same AfriNIC
+# stretch as NovoServe's 102.129.246.0/24; 154.6.174.0/24 and 154.16.143.0/24,
+# neighbours of AS215224's 154.6.x and 154.16.180.0/24; and 141.11.41.0/24,
+# alongside AS31715 CloudIP's 141.11.105.x in the reseller-estate section. Three
+# resellers, one address market, one client shopping across it.
+#
+# THE AS IS NOT TAKEN, on the same rule applied to AS26042 above: one address,
+# no second sighting. A second Zenex address settles it.
+191.96.158.51
+# ===========================================================================
+#
+# --- The stunnel fleet behind click.nsoccclite.xyz, 2026-08-22 --------------
+#
+# Four Hetzner instances (AS24940), the A records for the zone added to
+# custom-blocklist.txt the same day. PTR is `static.<rev>.clients.your-server.de`
+# on every one — Hetzner tenant naming, so each /32 is one rented box.
+#
+# ONE IMAGE, NOT FOUR HOSTS THAT HAPPEN TO MATCH. All four serve a SELF-SIGNED
+# certificate `CN=dev.kobz.stunnel, O=dev.kobz.stunnel, C=PH`, valid ten years
+# (2026-07-15 to 2036-07-12), and all four carry the SAME SERIAL:
+# 19812CD59AC86AE338AAE933D3CC59C2483BB6AB.
+#
+# That inference is safe here in a way it is NOT for the Akamai pass-throughs
+# written up above, and the difference is worth stating because this file warns
+# against exactly this reasoning elsewhere. A pass-through serves whatever its
+# upstream serves, so an identical serial across relays proves nothing. These
+# are self-signed: the certificate is generated on the box, so two boxes can
+# only present the same serial if the same key and certificate file were copied
+# onto both. Four for four is one image deployed four times.
+#
+# `stunnel` is TLS-tunnel software and `.stunnel` is not a TLD, so the subject
+# is a name no client can ever have resolved — it exists only to complete a
+# handshake for someone who already knows the address. Self-signed, nonexistent
+# CN, decade-long validity: the trojan/VLESS camouflage signature this file
+# describes, and the cleanest instance of it collected so far.
+#
+# THE CERTIFICATE IS THE HANDLE FOR FINDING THE REST. This fleet is enumerable
+# by scanning for that serial rather than by waiting for each address to turn up
+# in a capture, which is the cheap way to get ahead of it.
+#
+# TRAPS CHECKED BEFORE WRITING. Not CDN edge and not transit: Hetzner is
+# hosting and the PTR is tenant naming. Not a fronting relay: three passes to
+# 443 with named SNI presented no certificate at all, so there is no upstream
+# being relayed — only the self-signed default. Not a resolver, and this is the
+# check that decides the file — DoH on 443 returned no body, 853 is closed on
+# all four. Port 53 was not probed and no conclusion is drawn from it, per this
+# network's outbound block.
+#
+# NOT THE SAME FLEET AS THE HETZNER ADDRESSES ALREADY IN THIS FILE, checked so
+# it is not re-derived: 188.245.69.44 and 78.46.216.169 answer nothing on 443 at
+# all and share no certificate with these. No link is claimed.
+#
+# WHY /32s HERE WHEN AS24940 IS ALREADY IN custom-lowtrust-asns.txt. That entry
+# already drops these for pool devices, and the device seen using this service
+# is in the pool — so on the pool side these rows change nothing. They are here
+# for every other device on the LAN, which the ASN entry does not touch. Same
+# division as the NovoServe pair above.
+#
+# AND NOTE WHAT THE POOL DROP DID NOT REACH. The observed session did not use
+# any of these four: it went over Cloudflare Spectrum with the zone's name as
+# SNI only, which is how the client routes around the Hetzner drop. These rows
+# cover the direct path. The fronted path is not reachable from this file at
+# all — see the note in custom-blocklist.txt.
+78.47.190.255
+78.46.228.53
+188.245.57.204
+188.245.53.47
 
 
 # custom

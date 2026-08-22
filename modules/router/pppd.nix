@@ -36,8 +36,8 @@ in
           lcp-echo-interval 10
           lcp-echo-failure 3
 
-          mtu 1492
-          mru 1492
+          mtu ${toString cfg.pppMtu}
+          mru ${toString cfg.pppMtu}
 
           noresolvconf
         '';

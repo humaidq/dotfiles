@@ -2706,3 +2706,48 @@ mask-h2.icloud.com
 # (mcds, offline-pkg-api, sz-loc) are clearly a naming scheme with more behind
 # it, and the apex has no legitimate tenant to protect.
 *.dalyfeds.com
+
+# Tunnel front, 2026-08-22. Seen as the SNI (click.nsoccclite.xyz) on an
+# upload-skewed session from a low-trust pool device, at a volume no ordinary
+# app produces in either direction.
+#
+# THE CERTIFICATE SETTLES WHAT IT IS. The name resolves to four Hetzner boxes —
+# 78.47.190.255, 78.46.228.53, 188.245.57.204, 188.245.53.47 — and every one
+# serves a SELF-SIGNED certificate, `CN=dev.kobz.stunnel, O=dev.kobz.stunnel,
+# C=PH`, valid ten years (2026 to 2036). `stunnel` is TLS-tunnel software and
+# `.stunnel` is not a TLD, so the subject is a name no client can ever have
+# resolved: it exists purely to complete a handshake for someone who already
+# knows the address. Self-signed, nonexistent CN, decade-long validity — the
+# trojan/VLESS camouflage signature described in custom-throttle-list.txt, and
+# about as unambiguous as a desk check gets.
+#
+# THE SESSION DID NOT GO TO ANY OF THOSE FOUR, and that is the important part.
+# It was carried over Cloudflare Spectrum (AS209242) — Cloudflare's arbitrary-TCP
+# proxy product — with this name present only as SNI. The carrying address
+# appears in no A record for this zone, so it comes from the client's own
+# configuration rather than from DNS.
+#
+# WHICH MEANS THIS IS A DOCUMENTED BYPASS OF AN ENTRY THAT IS ALREADY WORKING.
+# AS24940 Hetzner is in custom-lowtrust-asns.txt, so all four origins are
+# already dropped for pool devices. Renting Cloudflare Spectrum puts the same
+# service on a shared edge that cannot be dropped without taking the house with
+# it — the second recorded instance of this client moving bulk traffic through a
+# CDN to get around an address-layer block, after the Akamai fronting written up
+# in custom-cdn-quota-asns.txt. That file's volume-quota mechanism is the
+# instrument built for exactly this case; Cloudflare is not currently in it.
+#
+# NAME-ONLY IS THE CORRECT LEVER and an address entry would be wrong: the
+# carrying address is shared Cloudflare edge, and the Hetzner origins are
+# already covered where it matters.
+#
+# EXPECT THIS TO BE PARTIAL. Because the carrying address does not come from
+# this zone's A records, denying the name need not end a session that is already
+# configured. It is added because it costs nothing and closes the discovery
+# path, not because it is expected to stop the tunnel on its own.
+#
+# Wildcard for the usual reason — a throwaway .xyz zone whose apex does not
+# resolve at all, no legitimate tenant to protect, and subdomains the obvious
+# next move. Note this is NOT the `.xyz`-is-a-GLSL-swizzle false positive the
+# skill warns about: the name came from a TLS ClientHello on the wire and from
+# the resolver's own query log, not from a string table.
+*.nsoccclite.xyz

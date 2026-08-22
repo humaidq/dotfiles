@@ -61,6 +61,22 @@ in
       default = "ppp0";
       description = "The PPP interface.";
     };
+    pppMtu = lib.mkOption {
+      type = lib.types.ints.positive;
+      default = 1492;
+      description = ''
+        MTU of the PPPoE uplink. 1492 is 1500 minus the 8-byte PPPoE/PPP
+        header, which is what this ISP gives; a line negotiating RFC 4638
+        baby jumbo frames would be 1500.
+
+        One number, three consumers, and they have to agree: pppd's own
+        mtu/mru, the MSS clamp in both directions, and the MTU option in the
+        LAN router advertisement. When they disagree the failure is a partial
+        one — handshakes complete and small requests work, then anything that
+        fills a segment disappears — so this is deliberately not three
+        literals in three files.
+      '';
+    };
     localDomain = lib.mkOption {
       type = lib.types.str;
       default = "home.arpa";
@@ -542,6 +558,23 @@ in
       # like the collector is, since the peers page needs it regardless of
       # whether o11y is enabled.
       "net.netfilter.nf_conntrack_acct" = 1;
+
+      # Stop rate-limiting ICMP destination-unreachable, which is the type
+      # fragmentation-needed rides on and therefore all of IPv4 path MTU
+      # discovery. The default mask is 6168 — bits 3, 4, 11 and 12 — and at the
+      # default one-per-second interval a router behind a 1492-byte PPPoE
+      # uplink can tell at most one flow per second, house-wide, that its
+      # packet was too big. Every other oversized flow is simply dropped in
+      # silence. 6160 is the same mask with bit 3 cleared, leaving source
+      # quench, time-exceeded and parameter-problem limited as before.
+      #
+      # This is not unbounded: net.ipv4.icmp_msgs_per_sec (1000/s, burst 50)
+      # is a separate global token bucket that still applies. The per-type
+      # limiter is the one that was pathologically tight for this purpose.
+      #
+      # The IPv6 side already gets this right without help — the default
+      # ratemask is 0-1,3-127, which omits type 2 (Packet Too Big).
+      "net.ipv4.icmp_ratemask" = 6160;
     }
     // lib.optionalAttrs config.networking.enableIPv6 {
       # Forwarding IPv6
@@ -598,6 +631,25 @@ in
           # one because the delegated prefix changes (e.g. on the daily PPP
           # redial); the link-local address is stable, and blocky already
           # listens on it (it binds every address on port 53).
+          #
+          # There is deliberately no MTU option here, and it is not an
+          # oversight. The uplink is 1492 and clients get 1500 off the LAN
+          # Ethernet, so advertising it would save them a round of PMTUD — but
+          # networkd cannot. systemd 260 has no `[IPv6SendRA] Mtu=`, and
+          # setting `[Link] MTUBytes=` on this interface does not reach the RA
+          # either: the only caller of sd_radv_set_mtu() is link_update_mtu()
+          # in networkd-link.c, guarded by `if (link->radv)`, and
+          # radv_configure() never sets it. The option therefore appears only
+          # if the link MTU changes while radv is already up, which does not
+          # happen at boot. Tried on 2026-08-21 and confirmed absent on the
+          # wire, with clients still at ipv6 mtu 1500 after 800s.
+          #
+          # Living without it is fine. ICMPv6 Packet Too Big is not
+          # rate-limited (the default ratemask 0-1,3-127 omits type 2), so
+          # PMTUD works; clients were observed caching mtu 1492 correctly.
+          # Advertising it properly means corerad or radvd on this link, which
+          # also means rehoming the delegated prefix that
+          # DHCPPrefixDelegation/Announce currently feeds to radv.
           ipv6SendRAConfig = {
             EmitDNS = true;
             DNS = [ "_link_local" ];
@@ -717,9 +769,35 @@ in
               iifname "${cfg.ppp}" meta l4proto ipv6-icmp icmpv6 type echo-request drop comment "Drop WAN IPv6 ping to router"
             }
 
+            # Clamped in BOTH directions, which the obvious one-line version is
+            # not. `oifname ppp0 ... size set rt mtu` only rewrites the SYN
+            # leaving the LAN, and an MSS in a SYN says what the *sender* is
+            # willing to receive — so that rule alone tells the far end to send
+            # us small segments and never tells the LAN client anything. The
+            # client keeps the MSS from the unclamped SYN-ACK (1460), emits
+            # 1500-byte frames, and every one of them is too big for ppp0.
+            #
+            # Seen in 10.20.0.197-20260821-2305.pcap: server segments capped at
+            # 1440 payload (clamped) while the phone's ran 1448 (not), each of
+            # those answered by an ICMP frag-needed. It recovers by retransmit,
+            # so it reads as "slow" rather than "broken" until ICMP is lost —
+            # and the icmp_ratemask default handled above is exactly that loss.
+            #
+            # The return direction needs a literal size, not `rt mtu`: on a
+            # WAN->LAN SYN-ACK the route lookup finds the LAN interface at 1500
+            # and clamps to nothing. MSS excludes the TCP header but not TCP
+            # options, hence mtu - 20 - 20 for v4 and mtu - 40 - 20 for v6.
+            #
+            # The `size > N` match in front of each `size set N` is load-bearing
+            # and not redundant. A literal `size set` writes the value whether
+            # or not it is an improvement, so a far end that legitimately asked
+            # for a small MSS — anything already behind a tunnel — would have it
+            # raised to ours and be blackholed by us. Clamping only ever lowers.
             chain mss-clamp {
               type filter hook forward priority mangle; policy accept;
-              oifname "${cfg.ppp}" tcp flags syn tcp option maxseg size set rt mtu comment "Clamp MSS for PPPoE WAN"
+              oifname "${cfg.ppp}" tcp flags syn tcp option maxseg size set rt mtu comment "Clamp MSS for PPPoE WAN (LAN to WAN)"
+              iifname "${cfg.ppp}" meta nfproto ipv4 tcp flags syn tcp option maxseg size > ${toString (cfg.pppMtu - 40)} tcp option maxseg size set ${toString (cfg.pppMtu - 40)} comment "Clamp MSS for PPPoE WAN (WAN to LAN, IPv4)"
+              iifname "${cfg.ppp}" meta nfproto ipv6 tcp flags syn tcp option maxseg size > ${toString (cfg.pppMtu - 60)} tcp option maxseg size set ${toString (cfg.pppMtu - 60)} comment "Clamp MSS for PPPoE WAN (WAN to LAN, IPv6)"
             }
 
             # Classification and DSCP application are deliberately separated

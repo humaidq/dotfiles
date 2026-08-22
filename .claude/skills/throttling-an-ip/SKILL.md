@@ -74,11 +74,24 @@ Read the results in this order — the first match wins:
    edge returns the identical 400 "Invalid URL" page — fetch `23.53.126.145`
    (live `a248.e.akamai.net`) and compare, byte for byte. That response only
    says an Akamai edge is on the far end, which is equally true of a relay and
-   of the real thing. Two tests separate them: **the AS** (Akamai does not
-   deploy edge clusters into DigitalOcean/Scaleway/THG/Hetzner tenant space) and
-   **sshd** (the real edge has tcp/22 closed; every relay checked answers with
-   an OpenSSH banner — a CDN appliance does not offer you a shell). Apply both
-   before shaping anything in an ISP's own space.
+   of the real thing.
+
+   **The AS is the test that decides.** Akamai does not deploy edge clusters
+   into DigitalOcean/Scaleway/THG/Hetzner tenant space, so an Akamai
+   certificate coming out of a tenant address is a relay. Corroborate it with
+   the **SNI-fallback** check below — ask for a name the upstream does not host
+   (`www.wikipedia.org`, `github.com`); a pass-through returns
+   `a248.e.akamai.net` for those too, and the real edge does not.
+
+   **sshd is a hint, not a test, and it has already been wrong.** The rule used
+   to read "the real edge has tcp/22 closed; every relay checked answers with an
+   OpenSSH banner". On 2026-08-22 a DigitalOcean address in
+   `custom-throttle-list.txt` had **tcp/22 closed** while relaying every SNI —
+   including wikipedia and github — to `a248.e.akamai.net`. A relay operator who
+   moves sshd off 22 or firewalls it defeats this check completely, and it costs
+   nothing to do. An OpenSSH banner still argues for a relay; its **absence
+   argues for nothing at all**, so never let a closed 22 talk you out of what
+   the AS says.
 2. **DoH returns DNS JSON in the body, or it serves `cloudflare-dns.com` / any
    resolver certificate, or it answers on 853** → **`custom-ip-blocklist.txt`.**
 

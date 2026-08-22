@@ -1077,3 +1077,185 @@
 # .com over real TLS — Alibaba's own app service, not imo — and .122.115 is
 # QUIC to 443 that returned nothing. 47.91.67.150 stays in this file on its own
 # 5228 evidence; the /24 around it does not follow.
+
+# --- 2026-08-22, two relay paths seen at once --------------------------------
+#
+# imo was running on two different relay paths at the same time, and the pair is
+# worth reading together: they look nothing alike on the wire, and only one of
+# them could be attributed from DNS at all.
+#
+# THE TENCENT PATH IS A SOCKS RELAY, NOT A CALL, and this file has not described
+# it before. FOUR SIMULTANEOUS LONG-LIVED TCP flows, about ten concurrent
+# connections on each, at a flat packet rate throughout — two download legs
+# (43.157.99.203:28929, 49.51.169.27:13313) and two dedicated upload legs
+# (43.157.118.99:16129, 162.62.217.76:18049), plus 162.62.125.28:9057. No TLS on
+# any of them, no rDNS, and no DNS answer on either router has ever resolved to
+# any of the five.
+#
+# Constant-bitrate-both-ways over multiplexed TCP reads as a proxy rather than a
+# call, and that reading is right: imo resolves socks.imolive2.com. The
+# attribution rests on the LBS names and nothing else — lbs.imolive2.com,
+# medialbs.imolive2.com, socks.imolive2.com, sgp.imoim.net, fgw.imoim.app,
+# api.imotech.tech, gdl.imostatic.com, alongside the BIGO and Likee names this
+# estate always travels with. Anyone matching a future flow of this shape
+# against the "encrypted opaque UDP on two high ports" signature in the notes
+# above will not recognise it. The LBS names are the handle; the shape is not.
+#
+# /32s and never a prefix, per this file's standing rule for AS132203: 43.157,
+# 49.51 and 162.62 are shared Tencent Cloud and a range takes other tenants.
+43.157.99.203
+43.157.118.99
+49.51.169.27
+162.62.217.76
+162.62.125.28
+#
+# THE ALIBABA PATH PRODUCED NO imo NAMES AT ALL — the hardcoded-relay bypass
+# described above can be total, leaving the DNS layer with nothing to flag.
+#
+# WHAT FLAGGED IT INSTEAD WAS THE :3112 PUNCH SWEEP, and that is the tell to
+# reach for when the resolver shows nothing. Ahead of the media flows it probed
+# port 3112 at 169.136.165.78 (NETSTAR, already dropped by 169.136.164.0/22 in
+# custom-ip-blocklist.txt) and at 202.168.113.9 (NETSTAR again, already dropped
+# by 202.168.112.0/20). Nothing else on a handset uses 3112; grepping for it
+# costs nothing and survives a complete DNS blackout. Both punch targets were
+# already covered, so neither is added here.
+#
+# The media then went to the Alibaba pool over TCP — 47.79.236.119:13928,
+# 47.79.228.57:42241, 47.79.255.173:13057 and 47.82.6.84:41646. TCP rather than
+# UDP because the UDP ports are already dropped in custom-port-blocklist.txt;
+# this is the fallback, not a new path.
+#
+# /32s, NOT the /24s the eight entries above would suggest. See the escalation
+# note below — the unit for this pool changed on the same day these were found.
+47.79.236.119
+47.79.228.57
+47.79.255.173
+47.82.6.84
+#
+# --- The 47.79 escalation question, settled 2026-08-22: /32 ONLY -------------
+#
+# The note above set "a ninth /24" as the point to revisit taking 47.79.0.0/16.
+# That threshold was passed and then buried on the same day, and the answer went
+# the other way from what the accumulation argument implied.
+#
+# WHAT HAPPENED. Three fresh /24s were found in one window (.228, .236, .255),
+# taking the count to eleven. Four hours later a second window produced SIX MORE
+# — .224, .2, .122, .249, .251, .229 — none adjacent to anything already listed
+# and spanning .2 to .255. Seventeen /24s, and the pool rotated clear of the
+# list within hours of the list being updated.
+#
+# THE OBVIOUS READING WAS "PER-/24 IS LOSING, TAKE THE /16", AND IT WAS
+# REFUSED. This is the fourth refusal and it is now the settled policy rather
+# than another deferral: /32s only in 47.79.0.0/16, and in the Alibaba relay
+# space generally.
+#
+# The reasoning, so it is not relitigated every capture. Rotation speed is an
+# argument for a wider prefix only if the wider prefix would actually catch the
+# next address — and at this spread the next one is as likely to be in a /24
+# nobody has seen as in one already listed, so a /24 buys almost nothing over a
+# /32 while costing 256 times as much. The /16 would catch it, but 65,536
+# addresses of general-purpose Alibaba cloud is not a proportionate price for an
+# app this network has already sealed at the DNS and port layers, and the
+# collateral would be borne by every pool device for every unrelated tenant in
+# that space. An app that rotates faster than a list can track is telling you
+# the list is the wrong instrument, not that the list should be widened until it
+# hurts.
+#
+# WHAT THIS MEANS IN PRACTICE. These rows are provenance and partial coverage,
+# not a mechanism that will ever be complete. Do not read a gap as an omission
+# to be fixed by escalation. If imo needs to actually stop, the lever is the
+# per-host imoPolicy and the DNS/port layers that do not alternate — not a
+# bigger prefix here.
+#
+# The eight pre-existing /24s above are LEFT AS THEY ARE. They carry their own
+# provenance and narrowing them to /32s would delete coverage on the strength of
+# addresses nobody re-observed. New entries are /32s from here.
+#
+# NOT ADDED: 42.115.54.143, one of the three :3112 punch targets and the only
+# one not already covered. It is AS18403 FPT Telecom, a
+# Vietnamese RESIDENTIAL ISP, which makes it the callee's own home line rather
+# than imo infrastructure — the fully-P2P case the notes above describe, where
+# the media peer is a subscriber address and no blocklist can pre-empt it.
+# Adding it would drop one household's line and catch no relay. The two punch
+# targets that WERE infrastructure are both NETSTAR and both already dropped,
+# which is the discriminator: check the AS of a punch target before treating it
+# as an endpoint.
+
+# --- Second window the same day, four hours later ----------------------------
+#
+# The six /24s that settled the escalation question above. Both handsets were
+# on imo again, both on relays that appear nowhere in this file, and a live
+# check against the imo4 nft set confirmed NOT ONE of them was a member — so on
+# a shaping day the policy was in force and reaching nothing but the push
+# keepalives. That is the practical meaning of the /32-only decision and the
+# reason it is written up there rather than here: this list documents the pool,
+# it does not contain it.
+#
+# Same four-relay split-leg shape as the Tencent path above — two download legs
+# and two upload legs held open together — but back on Alibaba and with fresh
+# addresses in every position.
+47.79.224.101
+47.79.2.211
+47.79.122.75
+47.79.249.11
+47.79.251.75
+47.79.229.250
+47.82.7.6
+#
+# 212.62.98.118 is the one worth reading twice. AS43766 MTC / Zain KSA — a SAUDI
+# MOBILE CARRIER, not cloud — carrying UDP on a single port pair, upload-skewed.
+# A carrier address in an imo flow is the case this file's notes warn can be the
+# callee's own line rather than a relay, and the discriminator was applied
+# rather than assumed: there was NO ICE sweep to any private address alongside
+# it, which is what a peer-to-peer leg always produces. One local port, one
+# remote port, no candidate enumeration — that is a relay on rented carrier
+# space, and it goes in. Compare 42.115.54.143 above, which failed the same test
+# and was refused.
+212.62.98.118
+#
+# ALREADY COVERED, checked rather than assumed: 213.130.159.47 (relay, tcp/44186)
+# falls inside 213.130.159.0/24 in custom-throttle-list.txt, and 47.91.67.150,
+# 47.245.168.224 and 47.245.167.194 are all already in this file.
+
+# --- Third window the same day, and the first at real volume -----------------
+#
+# Two handsets, ~179 MB of imo between them in ten minutes, and NOT ONE BYTE of
+# it on an address this file covered. Eight more relays, all Alibaba AS45102,
+# all new, same four-relay split-leg shape as both windows above.
+#
+# One handset ran the familiar 47.79 pool:
+47.79.248.127
+47.79.236.105
+47.79.250.185
+47.79.248.218
+#
+# The other used two Alibaba ranges this file had not seen at all — 8.209.64.0/19
+# (SG) and 47.254.128.0/19 — which is worth noting because every previous window
+# stayed inside 47.79/47.82/47.245. The pool is wider than this file's shape
+# suggested:
+8.209.75.73
+47.254.150.215
+47.254.157.231
+8.209.90.94
+#
+# THE SECOND HANDSET'S FLOW WAS UPLOAD-SKEWED, 53 MB up against 30 MB down, and
+# that shape ALONE points at broadcasting rather than a call — the exact reading
+# that produced this repo's TikTok LIVE misattribution, written up in
+# custom-lowtrust-asns.txt. It is filed as imo anyway, and the grounds are worth
+# stating because the shape argues the other way: imo's push channel
+# (47.245.180.234 on 5228/5223, already in this file) ran alongside it for the
+# whole window, two further legs fell inside 47.245.128.0/19 and 47.245.160.0/19
+# here, and the device's own DNS in that window was pure YouTube with no TikTok
+# LIVE, BIGO or Likee name anywhere. Push channel and pool, not direction.
+#
+# WHAT THE THROTTLE ACTUALLY DID, since a shaping day is the only reason to keep
+# these rows at all. The covered legs carried under a megabyte each, so the
+# 384 kbit cap was never the binding constraint on them — they are signalling,
+# not media. The uncovered relays ran at roughly 400 kbit/s, i.e. just above the
+# cap, so covering them would have bitten. That is the honest size of the win
+# available here, and it is not "imo stops".
+#
+# 47.79.236.105 IS THE SECOND ADDRESS SEEN IN 47.79.236 in one day, after .119
+# in the first window. Recorded because it is exactly the observation that used
+# to trigger a /24, and under the 2026-08-22 decision above it does not — two
+# /32s is the correct outcome, not an argument reopened.
