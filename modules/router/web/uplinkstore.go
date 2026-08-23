@@ -120,8 +120,50 @@ CREATE TABLE IF NOT EXISTS event (
   ended  INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS optical (
+  ts     INTEGER PRIMARY KEY,
+  rx     REAL    NOT NULL,
+  tx     REAL    NOT NULL,
+  temp   REAL    NOT NULL,
+  volt   REAL    NOT NULL,
+  bias   REAL    NOT NULL,
+  pon_up INTEGER NOT NULL
+) WITHOUT ROWID;
+
 CREATE INDEX IF NOT EXISTS event_ts ON event(ts);
 CREATE INDEX IF NOT EXISTS event_open ON event(kind, target) WHERE ended IS NULL;
+`
+
+// Closes rows left open by a process that stopped mid-event, in the one case
+// where the end time is knowable rather than invented: a later event of the
+// same kind and target exists, so this one demonstrably did not continue past
+// where that one began.
+//
+// Two defects put such rows in the database. peer_changed was appended and
+// never closed, so every daily redial since the feature landed was still
+// "ongoing" — a column of them, each claiming to be the current session. And
+// a restart mid-episode orphaned the open degraded row, then opened a second
+// one three bad minutes later, so an anchor that stayed degraded across a
+// deploy showed two overlapping episodes that could never end. Both are fixed
+// where they were caused; this repairs what they already wrote.
+//
+// Deliberately does not touch the newest open row for a kind and target. That
+// one is either the session currently in use or an episode still running, and
+// inventing an end for it is the failure this is fixing, not the fix.
+//
+// Idempotent: once a row has an end it no longer matches. Cheap enough to run
+// on every open — the table is a few thousand rows at most.
+const uplinkCloseSuperseded = `
+UPDATE event
+SET ended = (
+  SELECT MIN(later.ts) FROM event AS later
+  WHERE later.kind = event.kind AND later.target = event.target AND later.ts > event.ts
+)
+WHERE ended IS NULL
+  AND EXISTS (
+    SELECT 1 FROM event AS later
+    WHERE later.kind = event.kind AND later.target = event.target AND later.ts > event.ts
+  );
 `
 
 // openUplinkStore opens (creating if absent) the history database.
@@ -150,6 +192,10 @@ func openUplinkStore(path string) (*uplinkStore, error) {
 	if _, err := db.Exec(uplinkSchema); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("create schema in %s: %w", path, err)
+	}
+	if _, err := db.Exec(uplinkCloseSuperseded); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("repair open events in %s: %w", path, err)
 	}
 
 	return &uplinkStore{db: db}, nil
@@ -287,6 +333,41 @@ func (s *uplinkStore) closeEvent(id int64, at time.Time) error {
 	return err
 }
 
+// closeOpenEvents closes every unfinished event of a kind for a target.
+//
+// Plural because the caller cannot assume there is only one: a process that
+// stopped mid-episode leaves a row open, and until the resume in
+// newUplinkProber existed every restart added another.
+func (s *uplinkStore) closeOpenEvents(kind, target string, at time.Time) error {
+	_, err := s.db.Exec(`UPDATE event SET ended = ? WHERE kind = ? AND target = ? AND ended IS NULL`,
+		at.Unix(), kind, target)
+	if err != nil {
+		return fmt.Errorf("close open %s events: %w", kind, err)
+	}
+	return nil
+}
+
+// openTargets lists the targets with an unfinished event of a kind, so a
+// caller can notice one it is no longer measuring.
+func (s *uplinkStore) openTargets(kind string) ([]string, error) {
+	rows, err := s.db.Query(
+		`SELECT DISTINCT target FROM event WHERE kind = ? AND ended IS NULL`, kind)
+	if err != nil {
+		return nil, fmt.Errorf("list open %s targets: %w", kind, err)
+	}
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var target string
+		if err := rows.Scan(&target); err != nil {
+			return nil, fmt.Errorf("list open %s targets: %w", kind, err)
+		}
+		out = append(out, target)
+	}
+	return out, rows.Err()
+}
+
 // openEvent finds an unfinished event of a kind for a target, so that a
 // restart mid-episode resumes it rather than opening a second one that
 // overlaps the first.
@@ -404,7 +485,73 @@ func (s *uplinkStore) prune(before time.Time) error {
 	if _, err := s.db.Exec(`DELETE FROM minute WHERE ts < ?`, before.Unix()); err != nil {
 		return fmt.Errorf("prune minutes: %w", err)
 	}
+	if _, err := s.db.Exec(`DELETE FROM optical WHERE ts < ?`, before.Unix()); err != nil {
+		return fmt.Errorf("prune optical: %w", err)
+	}
 	return nil
+}
+
+// opticalSample is one reading of the fibre terminal's transceiver.
+//
+// Kept here beside the line history rather than in a store of its own because
+// it answers the same question from the other end: the anchors say what the
+// path is delivering, this says what the glass is doing. Reading them off one
+// page during a fault is the whole point, and that means one database.
+type opticalSample struct {
+	TS    time.Time
+	Rx    float64
+	Tx    float64
+	Temp  float64
+	Volt  float64
+	Bias  float64
+	PONUp bool
+}
+
+// appendOptical records a reading, keyed on the moment the collector produced
+// it rather than the moment this process read the file.
+//
+// That choice is what makes the sampler safe to run more often than the
+// collector: re-reading an unchanged file yields the same timestamp, the
+// primary key collides, and OR IGNORE drops it. Sampling faster than the
+// collector writes therefore costs a file read and nothing else, and a
+// collector that stalls leaves a visible gap instead of a flat line of
+// duplicated readings.
+func (s *uplinkStore) appendOptical(sample opticalSample) error {
+	pon := 0
+	if sample.PONUp {
+		pon = 1
+	}
+	_, err := s.db.Exec(
+		`INSERT OR IGNORE INTO optical (ts, rx, tx, temp, volt, bias, pon_up) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		sample.TS.Unix(), sample.Rx, sample.Tx, sample.Temp, sample.Volt, sample.Bias, pon)
+	if err != nil {
+		return fmt.Errorf("append optical sample: %w", err)
+	}
+	return nil
+}
+
+// opticalSince returns readings at or after a time, oldest first.
+func (s *uplinkStore) opticalSince(from time.Time) ([]opticalSample, error) {
+	rows, err := s.db.Query(
+		`SELECT ts, rx, tx, temp, volt, bias, pon_up FROM optical WHERE ts >= ? ORDER BY ts`, from.Unix())
+	if err != nil {
+		return nil, fmt.Errorf("read optical history: %w", err)
+	}
+	defer rows.Close()
+
+	var out []opticalSample
+	for rows.Next() {
+		var sample opticalSample
+		var ts int64
+		var pon int
+		if err := rows.Scan(&ts, &sample.Rx, &sample.Tx, &sample.Temp, &sample.Volt, &sample.Bias, &pon); err != nil {
+			return nil, fmt.Errorf("read optical history: %w", err)
+		}
+		sample.TS = time.Unix(ts, 0)
+		sample.PONUp = pon != 0
+		out = append(out, sample)
+	}
+	return out, rows.Err()
 }
 
 // targets lists the target names that have any history, so the detail page can

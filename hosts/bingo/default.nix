@@ -42,6 +42,22 @@
     sopsFile = ../../secrets/bingo.yaml;
   };
 
+  # Management login for the fibre terminal upstream of the WAN port. Same
+  # reasoning as on bongo: the username is a secret too, because the account is
+  # a root shell on the operator's equipment and this repository is public.
+  # This site's ONT is a different unit — a different serial and a newer
+  # Dropbear — but the operator provisions the same credentials on both.
+  sops.secrets."ont/username" = {
+    sopsFile = ../../secrets/bingo.yaml;
+    mode = "0400";
+    restartUnits = [ "ont-textfile.service" ];
+  };
+  sops.secrets."ont/password" = {
+    sopsFile = ../../secrets/bingo.yaml;
+    mode = "0400";
+    restartUnits = [ "ont-textfile.service" ];
+  };
+
   # MaxMind licence key for the GeoLite2 country database, so the peers page
   # can report where a peer is rather than where its network is registered.
   # In all.yaml because both routers fetch the same database with the same key.
@@ -177,6 +193,15 @@
       # what this router actually owns.
       lanAddress = "192.168.50.1/24";
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      # As on bongo, and for the same reason the anchor set is shared: an
+      # optical reading that degrades at one site and not the other is that
+      # site's own fibre, which is the one uplink question the anchors below
+      # cannot answer at all.
+      ont = {
+        enable = true;
+        usernameFile = config.sops.secrets."ont/username".path;
+        passwordFile = config.sops.secrets."ont/password".path;
+      };
       # Same anchor set as bongo, which is the point: two sites on the same ISP
       # probing identical targets means a degradation seen at one and not the
       # other is local to that site, and one seen at both is the ISP. See the
@@ -219,19 +244,12 @@
             address = "108.61.149.182"; # nj-us-ping.vultr.com
             role = "transit";
           }
-          # Kept alongside the three above because it is the one end that can
-          # be logged into: when an anchor degrades, the first question is
-          # whether the far host is simply having a bad day, and this is the
-          # only one where that can be answered rather than assumed.
-          #
-          # Core rather than transit since the merge into hisn moved it
-          # in-country — see the fuller note on bongo, which this site copies
-          # so the cross-site comparison keeps working.
-          {
-            name = "hisn";
-            address = "45.59.120.67";
-            role = "core";
-          }
+          # hisn was here and is gone, for the reason spelled out on bongo:
+          # the path to it depends on which Etisalat pool the 05:00 redial
+          # happens to draw, so it measures the lottery rather than the line.
+          # Removed from both sites together — the anchor sets are identical on
+          # purpose, and an anchor present at one site only cannot answer the
+          # cross-site question this list exists for.
         ];
       };
       # Dropped outright on odd days of the month, shaped on even ones. Unlike

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -22,11 +23,15 @@ import (
 
 // How far back each view looks.
 const (
-	bandWindow     = 24 * time.Hour
-	detailWindow   = 24 * time.Hour
-	eventWindow    = 30 * 24 * time.Hour
-	eventLimit     = 200
-	dailyWindow    = 90 * 24 * time.Hour
+	bandWindow   = 24 * time.Hour
+	detailWindow = 24 * time.Hour
+	eventWindow  = 30 * 24 * time.Hour
+	eventLimit   = 200
+	dailyWindow  = 90 * 24 * time.Hour
+	// How much optical history the trace covers. Long enough that a slow drift
+	// is visible as a slope rather than as noise, short enough that a fault
+	// last week does not compress this week into a flat line.
+	opticalWindow  = 14 * 24 * time.Hour
 	baselineWindow = 7 * 24 * time.Hour
 )
 
@@ -76,10 +81,17 @@ type meter struct {
 	Label string
 	Value string
 	Title string
-	// Both 0-100, as a percentage of the bar's width. Good is where the tick
-	// goes, so the bar reads without relying on its colour.
-	Fill int
-	Good int
+	// All 0-100, as a percentage of the bar's width.
+	//
+	// GoodStart and GoodWidth delimit the normal range as a shaded band on the
+	// track, rather than marking one edge of it with a tick. A single tick was
+	// ambiguous and demonstrably so: it meant "the good range ends here" on
+	// these bars and "this is the ideal value" on the fibre ones, which are
+	// different claims drawn identically. A band says which part of the track
+	// is fine and needs no legend to do it.
+	Fill      int
+	GoodStart int
+	GoodWidth int
 	// meterOK, meterWarn, meterBad or meterUnknown.
 	State string
 }
@@ -122,7 +134,9 @@ func newMeter(label, value, title string, reading, good, limit float64) meter {
 		bar.State = meterWarn
 	}
 	bar.Fill = scaleToBar(reading, limit)
-	bar.Good = scaleToBar(good, limit)
+	// One-sided: everything from empty up to the threshold is fine, so the
+	// band starts at zero.
+	bar.GoodStart, bar.GoodWidth = 0, scaleToBar(good, limit)
 	// A healthy line reads near zero on every bar, and an empty track looks
 	// like a missing measurement rather than a good one. A sliver says "this
 	// was measured, and it is nowhere near the limit".
@@ -349,6 +363,14 @@ type uplinkPageData struct {
 	Events        []uplinkEventView
 	Days          []uplinkDayView
 	RetentionDays int
+	// The fibre terminal. Nil when no ONT is configured, which keeps the whole
+	// section out of the page rather than rendering an empty graph.
+	ONT *ontReport
+	// The receive-power trace. Empty until there are at least two readings to
+	// draw a line between, which on a fresh router is the first few minutes.
+	ONTHistory    template.HTML
+	ONTSpan       string
+	ONTWindowDays int
 }
 
 const targetNotes = "" +
@@ -376,13 +398,13 @@ func roleNote(role, tin string) string {
 // on. The uplink page is served on both, and only the listener knows whether
 // the devices section is reachable from it — the service is one object shared
 // by both and cannot tell them apart.
-func (s *uplinkService) pageHandler(nav navSource, showPeers bool) http.HandlerFunc {
+func (s *uplinkService) pageHandler(nav navSource, ont *ontMonitor, showPeers bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.handlePage(w, r, nav.data("uplink", showPeers))
+		s.handlePage(w, r, nav.data("uplink", showPeers), ont)
 	}
 }
 
-func (s *uplinkService) handlePage(w http.ResponseWriter, r *http.Request, nav navData) {
+func (s *uplinkService) handlePage(w http.ResponseWriter, r *http.Request, nav navData, ont *ontMonitor) {
 	if r.URL.Path != "/uplink" && r.URL.Path != "/uplink/" {
 		http.NotFound(w, r)
 		return
@@ -451,6 +473,16 @@ func (s *uplinkService) handlePage(w http.ResponseWriter, r *http.Request, nav n
 			view.Duration = formatDuration(event.Ended.Sub(event.TS))
 		}
 		data.Events = append(data.Events, view)
+	}
+
+	// The fibre, from the other end of the same line. The band is the live
+	// reading, identical to the one on the status page; the graph below it is
+	// what this page exists for and the status page deliberately has not got.
+	data.ONT = ont.report()
+	if samples := ont.history(now.Add(-opticalWindow)); len(samples) > 1 {
+		data.ONTHistory = opticalSparkline(samples, 720, 48)
+		data.ONTSpan = describeOpticalSpan(samples)
+		data.ONTWindowDays = int(opticalWindow / (24 * time.Hour))
 	}
 
 	_, offset := now.Zone()
@@ -556,6 +588,118 @@ func summarise(view *uplinkTargetView, rows []minuteRow) {
 	}
 }
 
+// opticalSparkline draws receive power over the window.
+//
+// Scaled to the readings rather than to the alarm window, which is the
+// opposite of what the meters beside it do, and deliberate. On a healthy line
+// every sample sits near the middle of a 20 dB window, so drawing the window
+// would render every trace as the same flat line halfway up and the graph
+// would be decoration. The question here is "is it moving", and that needs an
+// axis that fits the data. The span is printed next to it so a trace that
+// looks dramatic cannot be mistaken for a large change.
+//
+// Minutes where the PON was down are marked rather than drawn through: a line
+// interpolated across an outage is a line claiming a measurement that was
+// never taken.
+func opticalSparkline(samples []opticalSample, width, height int) template.HTML {
+	if len(samples) < 2 {
+		return template.HTML(fmt.Sprintf(
+			`<svg class="spark" viewBox="0 0 %d %d" width="%d" height="%d" role="img" aria-label="no optical history yet"></svg>`,
+			width, height, width, height))
+	}
+
+	first := samples[0].TS.Unix()
+	last := samples[len(samples)-1].TS.Unix()
+	span := float64(last - first)
+	if span <= 0 {
+		span = 1
+	}
+
+	lo, hi := math.Inf(1), math.Inf(-1)
+	for _, s := range samples {
+		if !s.PONUp {
+			continue
+		}
+		lo = math.Min(lo, s.Rx)
+		hi = math.Max(hi, s.Rx)
+	}
+	if math.IsInf(lo, 1) {
+		lo, hi = 0, 1
+	}
+	// A line that has not moved at all would divide by zero and, worse, would
+	// draw at whatever height the rounding happened to give. Pad it into a
+	// visible band centred on the reading.
+	if hi-lo < 0.2 {
+		mid := (hi + lo) / 2
+		lo, hi = mid-0.1, mid+0.1
+	}
+
+	var line strings.Builder
+	var marks strings.Builder
+	for _, s := range samples {
+		x := float64(s.TS.Unix()-first) / span * float64(width)
+		if !s.PONUp {
+			fmt.Fprintf(&marks, `<rect x="%.1f" y="0" width="1.5" height="%d" class="spark-loss"/>`, x, height)
+			continue
+		}
+		// More light is up, which is the way round everyone expects even
+		// though the numbers are negative.
+		frac := (s.Rx - lo) / (hi - lo)
+		y := float64(height) - frac*float64(height-2) - 1
+		if line.Len() > 0 {
+			line.WriteByte(' ')
+		}
+		fmt.Fprintf(&line, "%.1f,%.1f", x, y)
+	}
+
+	return sparkWithAxis(fmt.Sprintf("%.1f", hi), fmt.Sprintf("%.1f", lo), fmt.Sprintf(
+		`<svg class="spark" viewBox="0 0 %d %d" width="%d" height="%d" preserveAspectRatio="none" role="img" `+
+			`aria-label="receive power over time, %.1f to %.1f dBm">`+
+			`%s<polyline class="spark-line" fill="none" points="%s"/></svg>`,
+		width, height, width, height, lo, hi, marks.String(), line.String()))
+}
+
+// describeOpticalSpan states what the trace's axis actually covers, so a
+// steep-looking line can be read as the fraction of a dB it usually is.
+func describeOpticalSpan(samples []opticalSample) string {
+	lo, hi := math.Inf(1), math.Inf(-1)
+	counted := 0
+	for _, s := range samples {
+		if !s.PONUp {
+			continue
+		}
+		lo = math.Min(lo, s.Rx)
+		hi = math.Max(hi, s.Rx)
+		counted++
+	}
+	if counted == 0 {
+		return "no readings with the fibre up"
+	}
+	return fmt.Sprintf("%.2f to %.2f dBm across %d readings", lo, hi, counted)
+}
+
+// sparkWithAxis puts the two ends of the vertical scale beside a trace.
+//
+// The numbers are HTML rather than <text> inside the SVG, and that is forced
+// rather than stylistic. These traces stretch to the width of the page with
+// preserveAspectRatio="none", which scales the viewBox non-uniformly — any
+// text inside would be stretched with it and render squashed or smeared
+// depending on the window. Putting them outside also means they are real text
+// at the page's own font size rather than 9px scaled by whatever the browser
+// happened to choose.
+//
+// Two numbers rather than a full axis, and no time labels at all: the heading
+// already says what window the trace covers, so the vertical scale is the only
+// thing a reader cannot otherwise know. Without it a trace that moves a tenth
+// of a dB and one that moves ten look identical, which makes the graph
+// decorative.
+func sparkWithAxis(top, bottom, svg string) template.HTML {
+	return template.HTML(fmt.Sprintf(
+		`<div class="spark-wrap"><span class="spark-axis spark-axis-top">%s</span>`+
+			`<span class="spark-axis spark-axis-bot">%s</span>%s</div>`,
+		template.HTMLEscapeString(top), template.HTMLEscapeString(bottom), svg))
+}
+
 // sparkline draws median latency over the window, with lost minutes marked.
 //
 // Inline SVG with no script and no external request: this page has to render
@@ -610,7 +754,7 @@ func sparkline(rows []minuteRow, width, height int) template.HTML {
 	}
 
 	label := fmt.Sprintf("median latency over %s, peak %s", formatDuration(time.Duration(span)*time.Second), formatMillis(top))
-	return template.HTML(fmt.Sprintf(
+	return sparkWithAxis(formatMillisCompact(top), "0", fmt.Sprintf(
 		`<svg class="spark" viewBox="0 0 %d %d" width="%d" height="%d" preserveAspectRatio="none" role="img" aria-label="%s">%s<polyline class="spark-line" points="%s"/></svg>`,
 		width, height, width, height, template.HTMLEscapeString(label), marks.String(), line.String()))
 }

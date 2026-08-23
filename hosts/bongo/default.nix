@@ -42,6 +42,21 @@
     sopsFile = ../../secrets/bongo.yaml;
   };
 
+  # Management login for the fibre terminal upstream of the WAN port. Both
+  # halves are secrets, the username included: the account is a root shell on
+  # the operator's equipment, and this repository is public. Read only by the
+  # optical collector, which runs as root — see modules/router/ont.nix.
+  sops.secrets."ont/username" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    mode = "0400";
+    restartUnits = [ "ont-textfile.service" ];
+  };
+  sops.secrets."ont/password" = {
+    sopsFile = ../../secrets/bongo.yaml;
+    mode = "0400";
+    restartUnits = [ "ont-textfile.service" ];
+  };
+
   # MaxMind licence key for the GeoLite2 country database, so the peers page
   # can report where a peer is rather than where its network is registered.
   # In all.yaml because both routers fetch the same database with the same key.
@@ -199,6 +214,14 @@
         "g.huma.id" = "10.10.0.12,10.20.0.250";
       };
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
+      # The only view of the physical line anything here has. The anchors
+      # below measure the path beyond the fibre and cannot tell a degrading
+      # splice from a congested peering; received optical power can.
+      ont = {
+        enable = true;
+        usernameFile = config.sops.secrets."ont/username".path;
+        passwordFile = config.sops.secrets."ont/password".path;
+      };
       uplink = {
         enable = true;
         # Measured on this line at 4.7-6.9 ms with 0.4 ms deviation and no
@@ -263,31 +286,26 @@
             address = "108.61.149.182"; # nj-us-ping.vultr.com
             role = "transit";
           }
-          # Kept alongside the three above for the one property none of them
-          # has: it can be logged into. When an anchor degrades the first
-          # question is whether the far host is simply having a bad day, and
-          # this is the only target where that can be answered rather than
+          # hisn was here, and is deliberately gone. It was kept for the one
+          # property none of the others has — it can be logged into, so "is
+          # the far end just having a bad day" was answerable rather than
           # assumed.
           #
-          # The endpoint is already in the tree at
-          # modules/personal/networking/nebula.nix, and this probes the public
-          # address directly over the WAN rather than the mesh address, so what
-          # is measured is the internet path and not the tunnel.
+          # It stopped being a usable anchor once the path to it turned into a
+          # lottery. The 05:00 redial draws a fresh address out of whichever
+          # Etisalat pool has capacity, and only some of those pools are peered
+          # with the host's transit at UAE-IX Dubai; the rest hairpin out
+          # through Hurricane Electric and come back, which is 85 ms to a box
+          # a few kilometres away. So the reading moves by a factor of ten on
+          # a redial while the line itself is unchanged, which is the opposite
+          # of what an anchor is for: it fired a degradation episode a day and
+          # taught the reader to ignore the event log.
           #
-          # Core, not transit, since the host moved in-country with the merge
-          # into hisn. That is a change of meaning and not just of address:
-          # what it measures now is the ISP's own network, and the loggable
-          # far end this list wanted is no longer available for the
-          # international leg — that question falls back to the three Vultr
-          # anchors, none of which can be logged into. Renaming it starts a
-          # fresh series, which is correct here: the old `lighthouse` history
-          # is 12,000 km of peering and would be misleading grafted onto a
-          # 5 ms baseline.
-          {
-            name = "hisn";
-            address = "45.59.120.67";
-            role = "core";
-          }
+          # Nothing replaces it. The loggable-far-end question now has no
+          # target, which is a real loss and a smaller one than an anchor that
+          # cries wolf. The three Vultr anchors still cover the international
+          # legs and the two public resolvers still cover the ISP's own
+          # network.
         ];
       };
       # No shaped tier here: imo is dropped outright at every hour, and has

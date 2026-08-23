@@ -16,8 +16,8 @@ import (
 func TestStylesheetIsServedOnBothListeners(t *testing.T) {
 	tmpl := template.Must(template.New("index").Parse("landing"))
 	muxes := map[string]http.Handler{
-		"lan":  landingMux(pageData{}, tmpl, nil, nil, navSource{}),
-		"mesh": meshMux(pageData{}, tmpl, nil, nil, testPeersServer(t), navSource{}),
+		"lan":  landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}),
+		"mesh": meshMux(pageData{}, tmpl, nil, nil, nil, testPeersServer(t), navSource{}),
 	}
 	for name, mux := range muxes {
 		t.Run(name, func(t *testing.T) {

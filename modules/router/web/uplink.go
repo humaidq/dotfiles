@@ -525,7 +525,87 @@ func newUplinkProber(store *uplinkStore, pppIface string, anchors []anchor, rete
 		}
 	}
 
+	prober.resumeOpenEvents()
+
 	return prober, nil
+}
+
+// resumeOpenEvents adopts anything that was still open when this process last
+// stopped, so a restart continues an event rather than abandoning it.
+//
+// Without this a restart mid-episode loses the row id, leaves the row open
+// forever, and three bad minutes later opens a second one for the same anchor:
+// the event log grows one permanently "ongoing" episode per deploy, all
+// describing the same degradation, and none of them can ever close because
+// nothing holds their ids any more. openEvent existed for exactly this from
+// the start; nothing outside the tests ever called it.
+//
+// The hysteresis is deliberately not restored alongside the id. goodRun stays
+// at zero, so a resumed episode needs its full episodeCloseAfter of good
+// minutes before it closes, which is correct: this process has not yet seen a
+// single good minute, whatever the last one saw.
+func (p *uplinkProber) resumeOpenEvents() {
+	configured := map[string]bool{}
+	for _, target := range p.targets {
+		configured[target.anchor.Name] = true
+	}
+
+	// An anchor removed from the configuration while one of its episodes was
+	// open would otherwise leave that row open forever: nothing probes the
+	// target any more, so nothing can ever record the good minutes that would
+	// close it. That is the same permanently-ongoing row this function exists
+	// to prevent, arriving by a different route.
+	//
+	// Closed at now rather than at some earlier guess. The honest statement is
+	// that the episode ran until measurement stopped; when it actually ended,
+	// if it ended, is not something this router observed.
+	if open, err := p.store.openTargets(eventDegraded); err != nil {
+		log.Printf("uplink: %v", err)
+	} else {
+		for _, target := range open {
+			if configured[target] {
+				continue
+			}
+			if err := p.store.closeOpenEvents(eventDegraded, target, time.Now()); err != nil {
+				log.Printf("uplink: %v", err)
+				continue
+			}
+			log.Printf("uplink: closing open episode for %s, no longer a configured anchor", target)
+		}
+	}
+
+	for _, target := range p.targets {
+		if target.anchor.Role == rolePeer {
+			continue
+		}
+		event, found, err := p.store.openEvent(eventDegraded, target.anchor.Name)
+		if err != nil {
+			log.Printf("uplink: resume episode for %s: %v", target.anchor.Name, err)
+			continue
+		}
+		if !found {
+			continue
+		}
+		target.episodeID = event.ID
+		target.setEpisodeOpen(true)
+		log.Printf("uplink: resuming episode for %s, open since %s",
+			target.anchor.Name, event.TS.Format(time.RFC3339))
+	}
+
+	// The same for a session that was down across the restart, so the recovery
+	// closes the original row instead of leaving it open and silently starting
+	// a second one on the next drop.
+	if p.pppIface == "" {
+		return
+	}
+	if event, found, err := p.store.openEvent(eventPPPDown, p.pppIface); err != nil {
+		log.Printf("uplink: resume ppp_down: %v", err)
+	} else if found {
+		p.pppEvent = event.ID
+		p.pppDown = true
+		log.Printf("uplink: resuming ppp_down for %s, open since %s",
+			p.pppIface, event.TS.Format(time.RFC3339))
+	}
 }
 
 // expandAnchors turns the configured list into the actual target list: the
@@ -906,6 +986,15 @@ func (p *uplinkProber) pollPPP(now time.Time) {
 	// to be handed back unchanged, so both are compared.
 	if p.pppLocal.IsValid() && (p.pppLocal != local || p.pppPeer != peer) {
 		detail := fmt.Sprintf("session moved from %s via %s to %s via %s", p.pppLocal, p.pppPeer, local, peer)
+		// The previous session ends where this one begins. Without this every
+		// peer_changed row ever written stayed open and the log read as a
+		// column of "ongoing" — one per daily redial, all claiming to still be
+		// current. An open row here means "this is the session in use now",
+		// so exactly one can be open, and a closed one's duration is how long
+		// that session lasted.
+		if err := p.store.closeOpenEvents(eventPeerChanged, p.pppIface, now); err != nil {
+			log.Printf("uplink: %v", err)
+		}
 		if _, err := p.store.appendEvent(uplinkEvent{
 			TS: now, Kind: eventPeerChanged, Target: p.pppIface, Detail: detail,
 		}); err != nil {

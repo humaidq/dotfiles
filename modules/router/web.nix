@@ -149,6 +149,16 @@ in
         # status page. Unset means no probe socket, no goroutine and no
         # section — the same opt-in idiom as the uplink database below.
         ++ lib.optional (cfg.accessPoints.file != null) "ROUTER_AP_FILE=${cfg.accessPoints.file}"
+        # The optical section on the status page. Presence of the path is the
+        # opt-in, and the file itself is the second gate: it is written by
+        # ont-textfile, which only runs where the o11y client is enabled, and
+        # router-web renders no section at all when it is missing. So this can
+        # be set on the strength of the ONT being configured without having to
+        # restate the metrics-stack condition here.
+        #
+        # A path to read, not a credential. router-web cannot reach the ONT —
+        # see the header of web/ont.go for why that separation is the point.
+        ++ lib.optional cfg.ont.enable "ROUTER_ONT_FILE=${cfg.ont.metricsFile}"
         ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80"
         # Presence alone enables the pool button and badge on the peers page.
         # Set from the same option that creates the nft sets, the drop chains

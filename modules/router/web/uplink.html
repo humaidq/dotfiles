@@ -24,6 +24,49 @@
       </section>
       {{ end }}
 
+      {{ with .ONT }}
+      <section class="uplink uplink-{{ .State }}" aria-labelledby="ont-band">
+        <div class="uplink-head">
+          <span class="uplink-state" id="ont-band">Fibre line: {{ .StateText }}</span>
+          <span class="muted">measured at the fibre box, {{ .Updated }}</span>
+        </div>
+        <ul class="uplink-meters">
+          {{ range .Meters }}
+          <li class="meter meter-{{ .State }}" title="{{ .Title }}">
+            <span class="meter-head">
+              <b>{{ .Label }}</b>
+              <span class="meter-value">{{ .Value }}</span>
+            </span>
+            <span class="sr-only">{{ .State }}</span>
+            <span class="meter-track" aria-hidden="true">
+              <span class="meter-fill" style="width: {{ .Fill }}%"></span>
+              <span class="meter-good" style="left: {{ .GoodStart }}%; width: {{ .GoodWidth }}%"></span>
+            </span>
+            <span class="meter-range">{{ .Range }}</span>
+          </li>
+          {{ end }}
+        </ul>
+        <p class="meter-legend">Shaded band on each bar is the normal range.</p>
+        {{ with .Note }}<p class="band-note">{{ . }}</p>{{ end }}
+      </section>
+      {{ end }}
+
+      {{ if .ONTHistory }}
+      <section class="section">
+        <h2>Fibre, last {{ .ONTWindowDays }} days</h2>
+        <p class="muted">
+          Light arriving from the exchange. The trace is scaled to fit the
+          readings, not to the alarm thresholds, so a shallow slope is still
+          visible — read the span below it before judging how big a move is.
+          What matters is the shape: a steady line is a healthy fibre, and a
+          slow decline is a connector or splice going. Bars mark readings taken
+          while the fibre was down.
+        </p>
+        {{ .ONTHistory }}
+        <p class="muted">{{ .ONTSpan }}</p>
+      </section>
+      {{ end }}
+
       <section class="section">
         <h2>Targets, last 24 hours</h2>
         <p class="muted">

@@ -2,12 +2,14 @@
   config,
   lib,
   pkgs,
+  utils,
   ...
 }:
 
 let
   cfg = config.sifr.router;
   pppdService = "pppd-etisalat.service";
+  pppDevice = "${utils.escapeSystemdPath "/sys/subsystem/net/devices/${cfg.ppp}"}.device";
   inherit (cfg) throttle imoThrottle;
 in
 {
@@ -15,10 +17,28 @@ in
     systemd.services = lib.mkIf config.services.pppd.enable {
       cake-sqm = {
         description = "Apply CAKE SQM to ${cfg.ppp} (upload) and ${cfg.lan0} (download)";
-        after = [ pppdService ];
-        bindsTo = [ pppdService ];
-        partOf = [ pppdService ];
-        wantedBy = [ pppdService ];
+
+        # Tied to the ppp0 *device*, not to pppd.service. A qdisc belongs to a
+        # netdev, and the daily redial (pppd-uplink-redial HUPs the daemon)
+        # destroys and recreates ppp0 while pppd.service itself stays running
+        # the whole time. Bound to the service, this unit therefore ran exactly
+        # once per boot and the upload shaper was silently gone from the first
+        # 05:00 redial onwards -- observed on 2026-08-23 with six days of
+        # uptime, `tc qdisc show dev ppp0` reporting a bare `noqueue` while the
+        # download shaper on the LAN side (a netdev that never goes away) still
+        # had its full tree. Bulk upload was unshaped for ~23 hours out of 24,
+        # and the throttle and imo penalty classes went with it.
+        #
+        # BindsTo the device stops this unit (and so runs ExecStop) when ppp0
+        # disappears; WantedBy on the same device starts it again when udev
+        # brings the new one back. After= on pppd.service only orders the
+        # first start at boot.
+        after = [
+          pppdService
+          pppDevice
+        ];
+        bindsTo = [ pppDevice ];
+        wantedBy = [ pppDevice ];
 
         path = with pkgs; [
           iproute2

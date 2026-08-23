@@ -293,7 +293,7 @@ func TestLANMuxHasNoPeersRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	lan := landingMux(pageData{}, tmpl, nil, nil, navSource{})
+	lan := landingMux(pageData{}, tmpl, nil, nil, nil, navSource{})
 
 	for _, path := range []string{"/peers/192.168.0.10", "/peers/192.168.0.10/throttle"} {
 		rec := httptest.NewRecorder()
@@ -376,7 +376,7 @@ func TestLANMuxHasNoIndexRoute(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 	rec := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, nil, navSource{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("LAN mux served a peers path with %d", rec.Code)
 	}
@@ -1405,7 +1405,7 @@ func TestLANMuxHasNoCaptureRoutes(t *testing.T) {
 	// fake. Do not "simplify" this back to a status check.
 	config := loadConfig()
 	tmpl := template.Must(template.New("index").Parse("landing"))
-	lan := landingMux(config, tmpl, nil, nil, navSource{})
+	lan := landingMux(config, tmpl, nil, nil, nil, navSource{})
 	for _, tc := range []struct {
 		method string
 		path   string

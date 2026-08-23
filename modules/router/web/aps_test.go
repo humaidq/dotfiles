@@ -209,7 +209,7 @@ func TestEchoRequestSizedCarriesThePayload(t *testing.T) {
 func TestStatusPageOmitsAccessPointsWhenUnset(t *testing.T) {
 	tmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, nil, navSource{}).ServeHTTP(
+	landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(
 		recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if body := recorder.Body.String(); strings.Contains(body, "Access Points") {
@@ -231,7 +231,7 @@ func TestStatusPageRendersAccessPoints(t *testing.T) {
 	monitor.cycle()
 
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, monitor, navSource{}).ServeHTTP(
+	landingMux(pageData{}, tmpl, nil, monitor, nil, navSource{}).ServeHTTP(
 		recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	body := recorder.Body.String()
@@ -428,8 +428,8 @@ func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 
 	listeners := func(m *apMonitor) map[string]http.Handler {
 		return map[string]http.Handler{
-			"lan":  landingMux(pageData{}, tmpl, nil, m, navSource{}),
-			"mesh": meshMux(pageData{}, indexTmpl, nil, m, testPeersServer(t), navSource{}),
+			"lan":  landingMux(pageData{}, tmpl, nil, m, nil, navSource{}),
+			"mesh": meshMux(pageData{}, indexTmpl, nil, m, nil, testPeersServer(t), navSource{}),
 		}
 	}
 
@@ -712,8 +712,8 @@ func TestAccessPointsServedOnBothListeners(t *testing.T) {
 	monitor.cycle()
 
 	for name, handler := range map[string]http.Handler{
-		"lan":  landingMux(pageData{}, tmpl, nil, monitor, navSource{}),
-		"mesh": meshMux(pageData{}, indexTmpl, nil, monitor, testPeersServer(t), navSource{}),
+		"lan":  landingMux(pageData{}, tmpl, nil, monitor, nil, navSource{}),
+		"mesh": meshMux(pageData{}, indexTmpl, nil, monitor, nil, testPeersServer(t), navSource{}),
 	} {
 		t.Run(name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()

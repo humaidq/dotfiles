@@ -635,17 +635,37 @@ td.actions button {
   inset: 0 auto 0 0;
   background: var(--ok);
   border-radius: 2px;
+  /* Above the normal-range band, so the reading is never tinted by it. */
+  z-index: 1;
 }
 
-/* Where the good range ends. The whole point of the tick: it makes the bar
-   readable as a position rather than as a colour, which is what a red/green
-   pair alone does not manage for every reader. */
+/* The normal range, drawn as a band behind the fill rather than as a tick at
+   one edge of it.
+
+   This was a 1px tick, and a tick could not say which side of itself was the
+   good side. It read as "the good range ends here" on the uplink meters and as
+   "this is the ideal value" on the fibre ones — two different claims drawn
+   identically, which is no claim at all. A band is unambiguous without a
+   legend: inside it is normal, outside it is not, and it works the same way
+   for a one-sided range that starts at zero and a two-sided one that does
+   not. */
 .meter-good {
   position: absolute;
-  top: -2px;
-  bottom: -2px;
-  width: 1px;
-  background: var(--muted);
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  background: var(--ok);
+  opacity: 0.22;
+  border-radius: 2px;
+}
+
+/* One line per section, which is all the shading needs to stop being a
+   guess. Cheaper than labelling every bar and cheaper than leaving the reader
+   to infer it, which is what the tick used to ask of them. */
+.meter-legend {
+  margin: 0.5rem 0 0;
+  font-size: var(--fs-micro);
+  color: var(--muted);
 }
 
 .meter-warn .meter-fill {
@@ -658,7 +678,60 @@ td.actions button {
   color: var(--idle);
 }
 
+/* The normal range, spelled out under the bar rather than left in the title
+   attribute. The uplink meters can rely on a tooltip because "12 ms" carries
+   its own verdict; "-13.6 dBm" does not, and this page is read by people who
+   have no reason to know what a good one looks like. A tooltip would also be
+   invisible on the phone most likely to be looking at it. */
+.meter-range {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+/* The one-sentence explanation a band shows when it is not simply healthy. */
+.band-note {
+  margin: 0.7rem 0 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
 /* --------------------------------------------------------------- sparkline */
+
+/* The two ends of the vertical scale, set beside the trace rather than inside
+   it. The traces stretch to the page width, which would distort any text drawn
+   in their own coordinate space — see sparkWithAxis in uplinkpage.go.
+
+   The wrapper indents the trace far enough to clear the numbers, so the graph
+   still runs to the right edge and only gives up the width the scale needs. */
+.spark-wrap {
+  position: relative;
+  padding-left: 2.9rem;
+  margin-top: 0.7rem;
+}
+
+.spark-wrap .spark {
+  margin-top: 0;
+}
+
+.spark-axis {
+  position: absolute;
+  left: 0;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-micro);
+  line-height: 1;
+  color: var(--muted);
+}
+
+.spark-axis-top {
+  top: 0;
+}
+
+.spark-axis-bot {
+  bottom: 0;
+}
 
 .spark {
   display: block;

@@ -348,7 +348,7 @@ func TestLANListenerServesNoTunnelRoute(t *testing.T) {
 	// service and all. Registration, not a nil check, is what has to keep it
 	// off this listener.
 	nav := navSource{vpn: testVPNService(t)}
-	lan := landingMux(pageData{}, tmpl, nil, nil, nav)
+	lan := landingMux(pageData{}, tmpl, nil, nil, nil, nav)
 
 	for _, route := range []struct{ method, path string }{
 		{http.MethodGet, "/vpn"},
@@ -380,7 +380,7 @@ func TestMeshListenerServesTheTunnelSwitch(t *testing.T) {
 	service := testVPNService(t)
 	nav := navSource{host: "bongo", vpn: service}
 	service.nav = nav
-	mesh := meshMux(pageData{}, tmpl, nil, nil, testPeersServer(t), nav)
+	mesh := meshMux(pageData{}, tmpl, nil, nil, nil, testPeersServer(t), nav)
 
 	recorder := httptest.NewRecorder()
 	mesh.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/vpn", nil))

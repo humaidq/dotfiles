@@ -14,6 +14,7 @@ in
     ./qos.nix
     ./qos-metrics.nix
     ./host-metrics.nix
+    ./ont.nix
     ./pppd.nix
     ./client-mode.nix
     ./geoip.nix

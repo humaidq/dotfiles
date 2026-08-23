@@ -41,10 +41,6 @@ type pageData struct {
 	LANClientCount       string
 	DHCPLeaseFileUpdated string
 	DHCPStaticHosts      string
-	WANRxBytes           string
-	WANTxBytes           string
-	LANRxBytes           string
-	LANTxBytes           string
 	Hostname             string
 	CurrentTime          string
 	LoadAverage          string
@@ -58,6 +54,10 @@ type pageData struct {
 	// configured, which keeps the section out of the page entirely — the same
 	// reason Uplink is a pointer.
 	AccessPoints []apReport
+	// The fibre terminal's optical readings. Nil on a router with no ONT
+	// configured, and also when the collector's file is missing — the same
+	// pointer-means-no-section idiom as Uplink above. See ont.go.
+	ONT *ontReport
 	// Whether each access point carries a reboot button. True only when
 	// credentials are configured and only on the mesh listener, which is the
 	// only one that registers the route behind it — the button and the handler
@@ -146,32 +146,6 @@ func readFileTrimmed(path string) (string, error) {
 	}
 
 	return strings.TrimSpace(string(data)), nil
-}
-
-func readInterfaceCounters(name string) (string, string) {
-	if strings.TrimSpace(name) == "" {
-		return "unavailable", "unavailable"
-	}
-
-	rxText, err := readFileTrimmed(filepath.Join("/sys/class/net", name, "statistics", "rx_bytes"))
-	if err != nil {
-		return "unavailable", "unavailable"
-	}
-	txText, err := readFileTrimmed(filepath.Join("/sys/class/net", name, "statistics", "tx_bytes"))
-	if err != nil {
-		return "unavailable", "unavailable"
-	}
-
-	rxValue, err := strconv.ParseUint(rxText, 10, 64)
-	if err != nil {
-		return "unavailable", "unavailable"
-	}
-	txValue, err := strconv.ParseUint(txText, 10, 64)
-	if err != nil {
-		return "unavailable", "unavailable"
-	}
-
-	return formatBytes(rxValue), formatBytes(txValue)
 }
 
 func countFileEntries(path string) (int, error) {
@@ -287,10 +261,6 @@ func readSystemState(data pageData) pageData {
 	data.Hostname = "unavailable"
 	data.UpdatedAt = time.Now().Format(time.RFC1123)
 	data.CurrentTime = time.Now().Format("2006-01-02 15:04:05 MST")
-	data.WANRxBytes = "unavailable"
-	data.WANTxBytes = "unavailable"
-	data.LANRxBytes = "unavailable"
-	data.LANTxBytes = "unavailable"
 
 	if loadAverage, err := os.ReadFile("/proc/loadavg"); err == nil {
 		fields := strings.Fields(string(loadAverage))
@@ -313,9 +283,6 @@ func readSystemState(data pageData) pageData {
 	}
 
 	data.PPPStartedAt, data.PPPSessionUptime = readPPPSession()
-
-	data.WANRxBytes, data.WANTxBytes = readInterfaceCounters(data.PPPInterface)
-	data.LANRxBytes, data.LANTxBytes = readInterfaceCounters(data.LANInterface)
 
 	operstatePath := filepath.Join("/sys/class/net", data.PPPInterface, "operstate")
 	if state, err := os.ReadFile(operstatePath); err == nil {
@@ -402,7 +369,7 @@ func loadConfig() pageData {
 //
 // showPeers is set only by the mesh mux, so the link to the peers list appears
 // exactly where the link works.
-func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource, showPeers bool) {
+func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, nav navSource, showPeers bool) {
 	// The stylesheet every page links. Registered here because this function is
 	// the one thing both listeners run, and a page served over the mesh with no
 	// stylesheet is what the LAN-only alternative would produce.
@@ -430,6 +397,11 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 			// on the handler is what stands in for the listener split here.
 			state.APRebootEnabled = aps.canReboot()
 		}
+		// Read per request rather than cached: the file is small, local, and
+		// rewritten every five minutes, so there is nothing to save by holding
+		// it — and a cached copy would be one more thing that can be stale
+		// without saying so.
+		state.ONT = ont.report()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmpl.Execute(w, state); err != nil {
 			log.Printf("render template: %v", err)
@@ -451,8 +423,8 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 	// not answer /metrics with an empty body that a scrape would happily
 	// record as zero.
 	if uplink != nil {
-		mux.HandleFunc("/uplink", uplink.pageHandler(nav, showPeers))
-		mux.HandleFunc("/uplink/", uplink.pageHandler(nav, showPeers))
+		mux.HandleFunc("/uplink", uplink.pageHandler(nav, ont, showPeers))
+		mux.HandleFunc("/uplink/", uplink.pageHandler(nav, ont, showPeers))
 		mux.HandleFunc("/metrics", uplink.handleMetrics)
 	}
 }
@@ -467,9 +439,9 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 // enforcement for everything else: a peers route is registered in exactly one
 // function, called from exactly one mux, so making a peers page LAN-reachable
 // takes a deliberate edit rather than a forgotten check inside a handler.
-func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource) *http.ServeMux {
+func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, aps, nav, false)
+	registerStatusRoutes(mux, config, tmpl, uplink, aps, ont, nav, false)
 	return mux
 }
 
@@ -481,9 +453,9 @@ func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService,
 // another site, or from a phone on the tunnel — and a status page that only
 // answers on the LAN is unavailable in most of the situations that send you
 // looking for it.
-func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, peers *peersServer, nav navSource) *http.ServeMux {
+func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, peers *peersServer, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, aps, nav, true)
+	registerStatusRoutes(mux, config, tmpl, uplink, aps, ont, nav, true)
 	peers.registerRoutes(mux)
 	// The tunnel switch, on this listener only. Taken from the nav source
 	// rather than passed in beside it so that the entry in the strip and the
@@ -590,7 +562,7 @@ func meshListenAddr(raw string) (string, error) {
 //
 // The mesh serves the status routes as well as the peers routes, so the
 // landing config and templates are threaded through here too.
-func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, nav navSource) error {
+func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, nav navSource) error {
 	validAddr, err := meshListenAddr(meshAddr)
 	if err != nil {
 		return fmt.Errorf("invalid ROUTER_LISTEN_MESH %q: %w", meshAddr, err)
@@ -636,7 +608,7 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 		peers.lowTrust = lowTrustMembership
 	}
 	peers.nav = nav
-	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, aps, peers, nav))
+	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, aps, ont, peers, nav))
 	return nil
 }
 
@@ -712,6 +684,22 @@ func main() {
 
 	uplink := startUplink(staticRoot, config.PPPInterface)
 	aps := startAccessPoints()
+	// Presence of the path is what puts the optical section on the status page,
+	// the same opt-in idiom as the access point list. Nothing starts here: the
+	// reading is a file the ont-textfile collector writes, so there is no
+	// goroutine, no socket and no credential in this process.
+	ont := newONTMonitor(os.Getenv("ROUTER_ONT_FILE"))
+	// The optical history shares the uplink database. Both describe the same
+	// line from opposite ends — the anchors say what the path delivers, the
+	// transceiver says what the glass is doing — and the reason the uplink
+	// history is kept on the router at all is that it has to be readable from
+	// the LAN during the outage that produced it. That argument is stronger
+	// here, not weaker: when the fibre is the fault, the mesh to the Grafana
+	// host is exactly what is not working.
+	if ont != nil && uplink != nil {
+		ont.store = uplink.store
+		go ont.recordEvery(ontSampleInterval)
+	}
 	vpn := startVPN(staticRoot)
 	// Read once rather than per render: the hostname cannot change under a
 	// running process, and the nav strip is on every page. Not taken from
@@ -730,7 +718,7 @@ func main() {
 		vpn.nav = nav
 	}
 
-	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, aps, nav)}
+	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, aps, ont, nav)}
 
 	lanErrs := make(chan error, 1)
 	go func() {
@@ -742,7 +730,7 @@ func main() {
 	// without one behaves exactly as it did before this feature. A mesh
 	// startup failure is logged, never fatal: see startMeshServer.
 	if meshAddr != "" && lanCIDR != "" {
-		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, aps, nav); err != nil {
+		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, aps, ont, nav); err != nil {
 			log.Printf("peers page disabled: %v", err)
 		}
 	}

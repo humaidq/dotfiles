@@ -30,12 +30,40 @@
             <span class="sr-only">{{ .State }}</span>
             <span class="meter-track" aria-hidden="true">
               <span class="meter-fill" style="width: {{ .Fill }}%"></span>
-              <span class="meter-good" style="left: {{ .Good }}%"></span>
+              <span class="meter-good" style="left: {{ .GoodStart }}%; width: {{ .GoodWidth }}%"></span>
             </span>
           </li>
           {{ end }}
         </ul>
+        <p class="meter-legend">Shaded band on each bar is the normal range.</p>
         {{ .Sparkline }}
+      </section>
+      {{ end }}
+
+      {{ with .ONT }}
+      <section class="uplink uplink-{{ .State }}" aria-labelledby="ont-band">
+        <div class="uplink-head">
+          <span class="uplink-state" id="ont-band">Fibre line: {{ .StateText }}</span>
+          <span class="muted">measured at the fibre box, {{ .Updated }}</span>
+        </div>
+        <ul class="uplink-meters">
+          {{ range .Meters }}
+          <li class="meter meter-{{ .State }}" title="{{ .Title }}">
+            <span class="meter-head">
+              <b>{{ .Label }}</b>
+              <span class="meter-value">{{ .Value }}</span>
+            </span>
+            <span class="sr-only">{{ .State }}</span>
+            <span class="meter-track" aria-hidden="true">
+              <span class="meter-fill" style="width: {{ .Fill }}%"></span>
+              <span class="meter-good" style="left: {{ .GoodStart }}%; width: {{ .GoodWidth }}%"></span>
+            </span>
+            <span class="meter-range">{{ .Range }}</span>
+          </li>
+          {{ end }}
+        </ul>
+        <p class="meter-legend">Shaded band on each bar is the normal range.</p>
+        {{ with .Note }}<p class="band-note">{{ . }}</p>{{ end }}
       </section>
       {{ end }}
 
@@ -105,20 +133,6 @@
           <dd>{{ .DHCPStaticHosts }}</dd>
           <dt>Lease file updated</dt>
           <dd>{{ .DHCPLeaseFileUpdated }}</dd>
-        </dl>
-      </section>
-
-      <section class="section" aria-labelledby="traffic-status">
-        <h2 id="traffic-status">Traffic Counters</h2>
-        <dl>
-          <dt>WAN RX</dt>
-          <dd>{{ .WANRxBytes }}</dd>
-          <dt>WAN TX</dt>
-          <dd>{{ .WANTxBytes }}</dd>
-          <dt>LAN RX</dt>
-          <dd>{{ .LANRxBytes }}</dd>
-          <dt>LAN TX</dt>
-          <dd>{{ .LANTxBytes }}</dd>
         </dl>
       </section>
 

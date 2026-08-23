@@ -86,7 +86,7 @@ func TestUplinkPageRenders(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil), navData{})
+	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil), navData{}, nil)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
@@ -118,7 +118,7 @@ func TestUplinkPageRendersWithNoHistory(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil), navData{})
+	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink", nil), navData{}, nil)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", recorder.Code)
@@ -135,7 +135,7 @@ func TestUplinkPageRejectsOtherPaths(t *testing.T) {
 	service := newTestService(t, newTestStore(t))
 
 	recorder := httptest.NewRecorder()
-	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink/../secrets", nil), navData{})
+	service.handlePage(recorder, httptest.NewRequest(http.MethodGet, "/uplink/../secrets", nil), navData{}, nil)
 	if recorder.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", recorder.Code)
 	}
@@ -161,7 +161,7 @@ func TestLandingBandRenders(t *testing.T) {
 
 	t.Run("with a band", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, service, nil, navSource{}).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, service, nil, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, "/", nil))
 
 		body := recorder.Body.String()
@@ -175,7 +175,7 @@ func TestLandingBandRenders(t *testing.T) {
 
 	t.Run("without one", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil, nil, navSource{}).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, "/", nil))
 
 		body := recorder.Body.String()
@@ -206,14 +206,14 @@ func TestBandMetersScaleAndClassify(t *testing.T) {
 		// reading rendering as an empty track, which reads as "no data".
 		{"healthy", 6, 30, 60, meterOK, 10, 50},
 		{"floored", 0.2, 30, 60, meterOK, 2, 50},
-		// Between the two thresholds: past the tick, not yet a fault.
+		// Between the two thresholds: past the band, not yet a fault.
 		{"warning", 45, 30, 60, meterWarn, 75, 50},
 		{"bad", 61, 30, 60, meterBad, 100, 50},
 		// Clamped, not overflowed: a 900 ms reading is a full bar, not nine of
 		// them, and the CSS width would otherwise be nonsense.
 		{"clamped", 900, 30, 60, meterBad, 100, 50},
 		// A good range of zero is the session-drop case: one drop is already
-		// not good, and the tick sits at the left edge.
+		// not good, so the normal band has no width at all.
 		{"zero good range", 1, 0, 3, meterWarn, 33, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -224,8 +224,13 @@ func TestBandMetersScaleAndClassify(t *testing.T) {
 			if bar.Fill != tc.wantFill {
 				t.Errorf("fill = %d, want %d", bar.Fill, tc.wantFill)
 			}
-			if bar.Good != tc.wantTck {
-				t.Errorf("tick = %d, want %d", bar.Good, tc.wantTck)
+			// One-sided range: the normal band always starts at the left
+			// edge, so only its width carries information here.
+			if bar.GoodStart != 0 {
+				t.Errorf("band starts at %d, want 0 for a one-sided range", bar.GoodStart)
+			}
+			if bar.GoodWidth != tc.wantTck {
+				t.Errorf("band width = %d, want %d", bar.GoodWidth, tc.wantTck)
 			}
 		})
 	}
@@ -300,14 +305,14 @@ func TestLandingBandRendersBars(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, service, nil, navSource{}).ServeHTTP(recorder,
+	landingMux(pageData{}, tmpl, service, nil, nil, navSource{}).ServeHTTP(recorder,
 		httptest.NewRequest(http.MethodGet, "/", nil))
 	body := recorder.Body.String()
 
 	for _, want := range []string{
 		`class="meter meter-ok"`,
 		`class="meter-fill" style="width: 10%"`,
-		`class="meter-good" style="left: 50%"`,
+		`class="meter-good" style="left: 0%; width: 50%"`,
 		"6.3 ms",
 	} {
 		if !strings.Contains(body, want) {
@@ -330,7 +335,7 @@ func TestUplinkRoutesOnlyExistWhenConfigured(t *testing.T) {
 	// recorded as zero, which is worse than not answering.
 	for _, path := range []string{"/uplink", "/metrics"} {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil, nil, navSource{}).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, path, nil))
 		if recorder.Code != http.StatusNotFound {
 			t.Errorf("%s status = %d without probing configured, want 404", path, recorder.Code)
