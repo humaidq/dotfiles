@@ -136,6 +136,78 @@
         </dl>
       </section>
 
+      {{ with .FullReboot }}
+      <section class="section" aria-labelledby="full-reboot">
+        <h2 id="full-reboot">Full Reboot</h2>
+        <p class="muted">
+          Restarts the whole path in order: the fibre box first, then this
+          router once the fibre is back, then every access point once the
+          network has settled. Expect six to ten minutes with no internet, and
+          no television or telephone while the fibre box is down.
+        </p>
+        <p class="muted">
+          If the fibre box does not come back the sequence stops there and
+          leaves this router running, so there is still something to look at.
+        </p>
+        <a class="danger" href="#confirm-full-reboot">Start full reboot</a>
+
+        {{ with .Runs }}
+        <!-- Collapsed by default and native: <details> needs no JavaScript,
+             remembers nothing, and degrades to an always-open list on anything
+             that does not implement it. Nobody opening this page during an
+             outage wants a reboot log first; the person who just pressed the
+             button does. -->
+        <details class="timeline">
+          <summary>Previous reboots ({{ len . }})</summary>
+          <ol class="timeline-runs">
+            {{ range . }}
+            <li>
+              <div class="timeline-head">
+                <b>{{ .Started }}</b>
+                <span class="timeline-outcome meter-{{ .State }}">{{ .Outcome }}</span>
+              </div>
+              <ol class="timeline-steps">
+                {{ range .Steps }}
+                <li class="meter-{{ .State }}">
+                  <span class="timeline-when">{{ .When }}</span>
+                  <span class="timeline-phase">{{ .Phase }}</span>
+                  <span class="timeline-detail">{{ .Detail }}</span>
+                </li>
+                {{ end }}
+              </ol>
+            </li>
+            {{ end }}
+          </ol>
+        </details>
+        {{ end }}
+      </section>
+
+      <!-- Confirmation, as a dialog rather than a second button that could be
+           reached by a stray tap. Opened by the link above via :target, so it
+           needs no JavaScript: these pages carry none, and the one page most
+           likely to be loaded on a bad connection is the wrong place to start.
+           Cancel is a link back to no fragment, which also means Escape and
+           the back button both close it. -->
+      <div class="modal" id="confirm-full-reboot" role="dialog" aria-modal="true"
+           aria-labelledby="confirm-full-reboot-title">
+        <a class="modal-scrim" href="#" aria-label="Cancel"></a>
+        <div class="modal-card">
+          <h2 id="confirm-full-reboot-title">Reboot everything on {{ .Host }}?</h2>
+          <p>
+            The fibre box, this router and every access point will restart in
+            sequence. Internet, television and telephone all stop for several
+            minutes. Anything mid-download or mid-call will drop.
+          </p>
+          <div class="modal-actions">
+            <a class="button-quiet" href="#">Cancel</a>
+            <form method="post" action="/full-reboot">
+              <button class="danger" type="submit">Yes, reboot everything</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+
       <footer>
         <div class="footer-line">Load average: {{ .LoadAverage }} | Uptime: {{ .Uptime }}</div>
         <div class="footer-line">Hostname: {{ .Hostname }} | Time: {{ .CurrentTime }}</div>

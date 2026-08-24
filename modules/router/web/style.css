@@ -1076,3 +1076,167 @@ div.capture .figure {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ----------------------------------------------------------- danger + modal */
+
+/* The one destructive control on the status page. Deliberately not styled like
+   the AP reboot button beside it: that restarts one access point, this restarts
+   the house, and the two should not look interchangeable. */
+.danger {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--bad);
+  border-radius: 3px;
+  background: var(--card);
+  color: var(--bad);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.danger:hover {
+  background: var(--bad);
+  color: var(--card);
+}
+
+.button-quiet {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.button-quiet:hover {
+  background: var(--hover);
+}
+
+/* A real modal with no JavaScript: the dialog is hidden until it is the
+   document's :target, which the "Start full reboot" link makes it. Escape and
+   the back button both clear the fragment, so both close it, and a browser
+   with scripting off still gets the confirmation rather than the bare button.
+
+   This is why the control is a link and the actual POST is the button inside:
+   the destructive request is only ever reachable from within the dialog. */
+.modal {
+  display: none;
+}
+
+.modal:target {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Covers the page and is itself the cancel affordance, so a click anywhere
+   outside the card closes the dialog the way a modal is expected to. */
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(16 23 32 / 55%);
+}
+
+.modal-card {
+  position: relative;
+  max-width: 30rem;
+  padding: 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgb(16 23 32 / 25%);
+}
+
+.modal-card h2 {
+  margin-top: 0;
+}
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.modal-actions form {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ timeline */
+
+/* The record of past full reboots, collapsed until asked for. Indented under
+   its summary so the runs read as belonging to it rather than as a new
+   section. */
+.timeline {
+  margin-top: 1rem;
+  font-size: var(--fs-sm);
+}
+
+.timeline > summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.timeline-runs {
+  margin: 0.75rem 0 0;
+  padding: 0 0 0 1rem;
+  list-style: none;
+}
+
+.timeline-runs > li {
+  padding: 0.5rem 0 0.5rem 0.85rem;
+  border-left: 2px solid var(--line-strong);
+}
+
+.timeline-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.timeline-outcome {
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* The state suffixes are shared with the meters, so a failed step is the same
+   red as a failed reading rather than a second vocabulary for the same idea. */
+.timeline-outcome.meter-ok {
+  color: var(--ok);
+}
+.timeline-outcome.meter-bad {
+  color: var(--bad);
+}
+
+.timeline-steps {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+
+.timeline-steps > li {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.timeline-steps > li.meter-bad .timeline-detail {
+  color: var(--bad);
+}
+
+.timeline-when {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-phase {
+  min-width: 7rem;
+  color: var(--ink);
+}

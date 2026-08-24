@@ -98,7 +98,20 @@ type accessPoint struct {
 	Addr     netip.Addr
 	Username string
 	Password string
+	// How this one is rebooted: apRebootHTTP (the default) or apRebootSSH.
+	//
+	// Stated in the list rather than sniffed from the device, because the two
+	// are not alternatives on the same box — an IP-COM AP has a web UI and no
+	// usable shell, a UniFi one has a shell and no local web UI. Probing to
+	// find out would mean an unauthenticated request to a device on every
+	// reboot, to learn something that does not change.
+	Method string
 }
+
+const (
+	apRebootHTTP = "http"
+	apRebootSSH  = "ssh"
+)
 
 // canReboot reports whether this AP was listed with a login. Password alone
 // decides it: parseAccessPoints only ever sets the two together.
@@ -164,23 +177,32 @@ func parseAccessPoints(raw string) ([]accessPoint, error) {
 			continue
 		}
 
-		// Split into up to four fields. A password may not contain a comma, which
-		// is the one character the list format spends on separators; nothing else
-		// about it is constrained.
-		fields := strings.SplitN(text, ",", 4)
-		point := accessPoint{Name: strings.TrimSpace(fields[0])}
+		// Split into up to five fields. A password may not contain a comma,
+		// which is the one character the list format spends on separators;
+		// nothing else about it is constrained.
+		fields := strings.SplitN(text, ",", 5)
+		point := accessPoint{Name: strings.TrimSpace(fields[0]), Method: apRebootHTTP}
 
 		switch len(fields) {
 		case 2:
 			// name,address — a lamp and no button.
-		case 4:
+		case 4, 5:
 			point.Username = strings.TrimSpace(fields[2])
 			point.Password = strings.TrimSpace(fields[3])
 			if point.Username == "" || point.Password == "" {
 				return nil, fmt.Errorf("line %d: username and password must both be set, got %q", line, text)
 			}
+			// The method is optional and defaults to http, so every list
+			// written before UniFi hardware was supported still parses and
+			// still means what it meant.
+			if len(fields) == 5 {
+				point.Method = strings.TrimSpace(fields[4])
+				if point.Method != apRebootHTTP && point.Method != apRebootSSH {
+					return nil, fmt.Errorf("line %d: reboot method %q is not %q or %q", line, point.Method, apRebootHTTP, apRebootSSH)
+				}
+			}
 		default:
-			return nil, fmt.Errorf("line %d: want `name,address` or `name,address,username,password`, got %q", line, text)
+			return nil, fmt.Errorf("line %d: want `name,address`, `name,address,username,password` or `name,address,username,password,method`, got %q", line, text)
 		}
 
 		address := strings.TrimSpace(fields[1])
@@ -534,6 +556,13 @@ const (
 // families also authorise by source address once logged in, so the jar is
 // belt-and-braces on the modern one and the mechanism on the legacy one.
 func rebootAccessPoint(point accessPoint) error {
+	// UniFi hardware has no local web UI to log into — the controller owns
+	// that — but it does run an SSH server whose login the controller sets.
+	// See apsssh.go.
+	if point.Method == apRebootSSH {
+		return rebootOverSSH(point)
+	}
+
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return err

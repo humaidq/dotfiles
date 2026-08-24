@@ -229,7 +229,7 @@ func TestONTIgnoresUnparseableLines(t *testing.T) {
 func TestStatusPageRendersONTUnauthenticated(t *testing.T) {
 	tmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, nil, writeONT(t, ontHealthy), navSource{}).ServeHTTP(
+	landingMux(pageData{}, tmpl, nil, nil, writeONT(t, ontHealthy), nil, navSource{}).ServeHTTP(
 		recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	body := recorder.Body.String()
@@ -257,7 +257,7 @@ func TestStatusPageRendersONTUnauthenticated(t *testing.T) {
 func TestStatusPageOmitsONTWhenUnset(t *testing.T) {
 	tmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(
+	landingMux(pageData{}, tmpl, nil, nil, nil, nil, navSource{}).ServeHTTP(
 		recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if body := recorder.Body.String(); strings.Contains(body, "Fibre line") {

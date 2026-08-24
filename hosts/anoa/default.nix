@@ -133,6 +133,7 @@ in
       chromium.enable = true;
       emacs.enable = true;
     };
+    v12n.docker.enable = true;
     v12n.emulation = {
       enable = true;
       systems = [

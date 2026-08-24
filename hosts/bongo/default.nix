@@ -222,6 +222,13 @@
         usernameFile = config.sops.secrets."ont/username".path;
         passwordFile = config.sops.secrets."ont/password".path;
       };
+      # The whole-estate reboot control on the status page: fibre terminal,
+      # then this router, then the access points. On this site only for now —
+      # bingo is one line away, and a control whose blast radius is a whole
+      # house is worth having run somewhere once before it exists in two
+      # places. See modules/router/fullreboot.nix for the sequence and for why
+      # router-web cannot perform any of it itself.
+      fullReboot.enable = true;
       uplink = {
         enable = true;
         # Measured on this line at 4.7-6.9 ms with 0.4 ms deviation and no

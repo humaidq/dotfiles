@@ -12,6 +12,7 @@ let
   o11yClientEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "client" "enable" ] false config;
   o11yServerEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "server" "enable" ] false config;
   unifiEnabled = lib.attrByPath [ "services" "unifi-os-server" "enable" ] false config;
+  fullRebootEnabled = lib.attrByPath [ "sifr" "router" "fullReboot" "enable" ] false config;
   extraDirs =
     lib.optionals desktopEnabled [
       "/var/lib/bluetooth"
@@ -34,6 +35,12 @@ let
     # /var/lib/containers goes with it because the appliance image is several
     # gigabytes and podman would otherwise re-import it from the store on every
     # boot.
+    # The full-reboot sequence reboots this machine in the middle of itself and
+    # has to remember, on the far side, that the access points still have to be
+    # done. That memory is a marker file, so it has to outlive the reboot.
+    ++ lib.optionals fullRebootEnabled [
+      "/var/lib/router-fullreboot"
+    ]
     ++ lib.optionals unifiEnabled [
       config.services.unifi-os-server.stateDir
       "/var/lib/containers"

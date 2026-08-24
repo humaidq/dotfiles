@@ -161,7 +161,7 @@ func TestLandingBandRenders(t *testing.T) {
 
 	t.Run("with a band", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, service, nil, nil, navSource{}).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, service, nil, nil, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, "/", nil))
 
 		body := recorder.Body.String()
@@ -175,7 +175,7 @@ func TestLandingBandRenders(t *testing.T) {
 
 	t.Run("without one", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, nil, nil, nil, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, "/", nil))
 
 		body := recorder.Body.String()
@@ -305,7 +305,7 @@ func TestLandingBandRendersBars(t *testing.T) {
 	service := newTestService(t, store, seededTargets()...)
 
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, service, nil, nil, navSource{}).ServeHTTP(recorder,
+	landingMux(pageData{}, tmpl, service, nil, nil, nil, navSource{}).ServeHTTP(recorder,
 		httptest.NewRequest(http.MethodGet, "/", nil))
 	body := recorder.Body.String()
 
@@ -335,7 +335,7 @@ func TestUplinkRoutesOnlyExistWhenConfigured(t *testing.T) {
 	// recorded as zero, which is worse than not answering.
 	for _, path := range []string{"/uplink", "/metrics"} {
 		recorder := httptest.NewRecorder()
-		landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(recorder,
+		landingMux(pageData{}, tmpl, nil, nil, nil, nil, navSource{}).ServeHTTP(recorder,
 			httptest.NewRequest(http.MethodGet, path, nil))
 		if recorder.Code != http.StatusNotFound {
 			t.Errorf("%s status = %d without probing configured, want 404", path, recorder.Code)

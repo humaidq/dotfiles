@@ -209,7 +209,7 @@ func TestEchoRequestSizedCarriesThePayload(t *testing.T) {
 func TestStatusPageOmitsAccessPointsWhenUnset(t *testing.T) {
 	tmpl := template.Must(template.ParseFiles("index.html", "nav.html"))
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, nil, nil, navSource{}).ServeHTTP(
+	landingMux(pageData{}, tmpl, nil, nil, nil, nil, navSource{}).ServeHTTP(
 		recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if body := recorder.Body.String(); strings.Contains(body, "Access Points") {
@@ -231,7 +231,7 @@ func TestStatusPageRendersAccessPoints(t *testing.T) {
 	monitor.cycle()
 
 	recorder := httptest.NewRecorder()
-	landingMux(pageData{}, tmpl, nil, monitor, nil, navSource{}).ServeHTTP(
+	landingMux(pageData{}, tmpl, nil, monitor, nil, nil, navSource{}).ServeHTTP(
 		recorder, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	body := recorder.Body.String()
@@ -428,8 +428,8 @@ func TestRebootButtonAndRouteGatedTogether(t *testing.T) {
 
 	listeners := func(m *apMonitor) map[string]http.Handler {
 		return map[string]http.Handler{
-			"lan":  landingMux(pageData{}, tmpl, nil, m, nil, navSource{}),
-			"mesh": meshMux(pageData{}, indexTmpl, nil, m, nil, testPeersServer(t), navSource{}),
+			"lan":  landingMux(pageData{}, tmpl, nil, m, nil, nil, navSource{}),
+			"mesh": meshMux(pageData{}, indexTmpl, nil, m, nil, nil, testPeersServer(t), navSource{}),
 		}
 	}
 
@@ -712,8 +712,8 @@ func TestAccessPointsServedOnBothListeners(t *testing.T) {
 	monitor.cycle()
 
 	for name, handler := range map[string]http.Handler{
-		"lan":  landingMux(pageData{}, tmpl, nil, monitor, nil, navSource{}),
-		"mesh": meshMux(pageData{}, indexTmpl, nil, monitor, nil, testPeersServer(t), navSource{}),
+		"lan":  landingMux(pageData{}, tmpl, nil, monitor, nil, nil, navSource{}),
+		"mesh": meshMux(pageData{}, indexTmpl, nil, monitor, nil, nil, testPeersServer(t), navSource{}),
 	} {
 		t.Run(name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
@@ -722,5 +722,47 @@ func TestAccessPointsServedOnBothListeners(t *testing.T) {
 				t.Errorf("%s listener did not serve the access point list", name)
 			}
 		})
+	}
+}
+
+// The optional fifth field: which protocol reboots this one.
+func TestAccessPointRebootMethod(t *testing.T) {
+	points, err := parseAccessPoints(strings.Join([]string{
+		"lamp-only,10.20.0.10",
+		"ipcom,10.20.0.11,admin,secret",
+		"unifi,10.20.0.12,admin,secret,ssh",
+		"explicit-http,10.20.0.13,admin,secret,http",
+	}, "\n"))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	want := map[string]string{
+		// A list written before UniFi support existed still means what it
+		// meant: four fields is http.
+		"lamp-only":     apRebootHTTP,
+		"ipcom":         apRebootHTTP,
+		"unifi":         apRebootSSH,
+		"explicit-http": apRebootHTTP,
+	}
+	for _, point := range points {
+		if got := point.Method; got != want[point.Name] {
+			t.Errorf("%s method = %q, want %q", point.Name, got, want[point.Name])
+		}
+	}
+	// The lamp-only entry still has no button, method or not.
+	if points[0].canReboot() {
+		t.Error("a two-field entry gained a reboot button")
+	}
+}
+
+// An unknown method is rejected at parse rather than discovered at reboot: a
+// typo here would otherwise mean a button that silently does the wrong
+// protocol against a device.
+func TestAccessPointRejectsUnknownMethod(t *testing.T) {
+	if _, err := parseAccessPoints("unifi,10.20.0.12,admin,secret,telnet"); err == nil {
+		t.Error("an unknown reboot method parsed")
+	}
+	if _, err := parseAccessPoints("unifi,10.20.0.12,admin,secret,SSH"); err == nil {
+		t.Error("method matching is case-insensitive, so a typo could slip through")
 	}
 }

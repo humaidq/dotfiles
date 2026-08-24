@@ -58,6 +58,9 @@ type pageData struct {
 	// configured, and also when the collector's file is missing — the same
 	// pointer-means-no-section idiom as Uplink above. See ont.go.
 	ONT *ontReport
+	// The whole-estate reboot control. Nil when the feature is not configured,
+	// which keeps the section and its dialog off the page. See fullreboot.go.
+	FullReboot *fullRebootView
 	// Whether each access point carries a reboot button. True only when
 	// credentials are configured and only on the mesh listener, which is the
 	// only one that registers the route behind it — the button and the handler
@@ -90,6 +93,18 @@ var stylesheetETag = func() string {
 	sum := sha256.Sum256([]byte(stylesheet))
 	return `"` + hex.EncodeToString(sum[:8]) + `"`
 }()
+
+// hostnameOrDefault is the router's own name.
+//
+// Read where it is needed rather than taken from config, which carries the
+// env-supplied settings and never has it. It cannot change under a running
+// process, so callers are free to ask more than once.
+func hostnameOrDefault() string {
+	if hostname, err := os.Hostname(); err == nil && strings.TrimSpace(hostname) != "" {
+		return hostname
+	}
+	return "router"
+}
 
 func getenvDefault(key string, fallback string) string {
 	value := strings.TrimSpace(os.Getenv(key))
@@ -369,7 +384,7 @@ func loadConfig() pageData {
 //
 // showPeers is set only by the mesh mux, so the link to the peers list appears
 // exactly where the link works.
-func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, nav navSource, showPeers bool) {
+func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, fullReboot *fullRebootService, nav navSource, showPeers bool) {
 	// The stylesheet every page links. Registered here because this function is
 	// the one thing both listeners run, and a page served over the mesh with no
 	// stylesheet is what the LAN-only alternative would produce.
@@ -402,6 +417,7 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 		// it — and a cached copy would be one more thing that can be stale
 		// without saying so.
 		state.ONT = ont.report()
+		state.FullReboot = fullReboot.view()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if err := tmpl.Execute(w, state); err != nil {
 			log.Printf("render template: %v", err)
@@ -416,6 +432,14 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 	// origin check the peer and tunnel actions use.
 	if aps.canReboot() {
 		mux.HandleFunc("POST /ap/reboot", aps.handleReboot)
+	}
+
+	// The full-reboot trigger, on both listeners for the same reason the AP
+	// reboot is: the button is wanted from the LAN, and the route exists
+	// exactly where the section that offers it renders. Same-origin guarded,
+	// and the page puts a confirmation dialog in front of it.
+	if fullReboot != nil {
+		mux.HandleFunc("POST /full-reboot", fullReboot.handleStart)
 	}
 
 	// These exist only when probing is configured. A router without it serves
@@ -439,9 +463,9 @@ func registerStatusRoutes(mux *http.ServeMux, config pageData, tmpl *template.Te
 // enforcement for everything else: a peers route is registered in exactly one
 // function, called from exactly one mux, so making a peers page LAN-reachable
 // takes a deliberate edit rather than a forgotten check inside a handler.
-func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, nav navSource) *http.ServeMux {
+func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, fullReboot *fullRebootService, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, aps, ont, nav, false)
+	registerStatusRoutes(mux, config, tmpl, uplink, aps, ont, fullReboot, nav, false)
 	return mux
 }
 
@@ -453,9 +477,9 @@ func landingMux(config pageData, tmpl *template.Template, uplink *uplinkService,
 // another site, or from a phone on the tunnel — and a status page that only
 // answers on the LAN is unavailable in most of the situations that send you
 // looking for it.
-func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, peers *peersServer, nav navSource) *http.ServeMux {
+func meshMux(config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, fullReboot *fullRebootService, peers *peersServer, nav navSource) *http.ServeMux {
 	mux := http.NewServeMux()
-	registerStatusRoutes(mux, config, tmpl, uplink, aps, ont, nav, true)
+	registerStatusRoutes(mux, config, tmpl, uplink, aps, ont, fullReboot, nav, true)
 	peers.registerRoutes(mux)
 	// The tunnel switch, on this listener only. Taken from the nav source
 	// rather than passed in beside it so that the entry in the strip and the
@@ -509,7 +533,7 @@ func startUplink(staticRoot string, pppIface string) *uplinkService {
 		return nil
 	}
 
-	prober, err := newUplinkProber(store, pppIface, anchors, retention)
+	prober, err := newUplinkProber(store, pppIface, os.Getenv("ROUTER_UPLINK_MAINTENANCE"), anchors, retention)
 	if err != nil {
 		log.Printf("uplink probing disabled: %v", err)
 		store.Close()
@@ -562,7 +586,7 @@ func meshListenAddr(raw string) (string, error) {
 //
 // The mesh serves the status routes as well as the peers routes, so the
 // landing config and templates are threaded through here too.
-func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, nav navSource) error {
+func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageData, tmpl *template.Template, uplink *uplinkService, aps *apMonitor, ont *ontMonitor, fullReboot *fullRebootService, nav navSource) error {
 	validAddr, err := meshListenAddr(meshAddr)
 	if err != nil {
 		return fmt.Errorf("invalid ROUTER_LISTEN_MESH %q: %w", meshAddr, err)
@@ -608,7 +632,7 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 		peers.lowTrust = lowTrustMembership
 	}
 	peers.nav = nav
-	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, aps, ont, peers, nav))
+	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, aps, ont, fullReboot, peers, nav))
 	return nil
 }
 
@@ -657,8 +681,27 @@ func serveMeshWithRetry(addr string, handler http.Handler) {
 func main() {
 	root := flag.String("root", ".", "directory containing static files")
 	addr := flag.String("addr", ":80", "listen address")
+	// The final phase of the full-reboot sequence. Run once from a root unit on
+	// the boot after the router restarts itself, then exits — this is the same
+	// binary rather than a script because rebooting an access point means
+	// speaking one of two vendor login protocols, and that logic already lives
+	// in aps.go. See fullreboot.go for the whole sequence.
+	rebootAPs := flag.Bool("reboot-aps", false, "reboot every access point with credentials, then exit")
 	flag.Parse()
 	config := loadConfig()
+
+	if *rebootAPs {
+		monitor := startAccessPoints()
+		count, total := rebootAllAccessPoints(monitor)
+		// The last line on stdout is what the calling script records in the
+		// timeline, so it is written for someone reading that page rather than
+		// for a log: a sentence, not a key-value pair.
+		fmt.Printf("%d of %d access points rebooted\n", count, total)
+		if count < total {
+			os.Exit(1)
+		}
+		return
+	}
 
 	staticRoot, err := filepath.Abs(*root)
 	if err != nil {
@@ -688,6 +731,8 @@ func main() {
 	// the same opt-in idiom as the access point list. Nothing starts here: the
 	// reading is a file the ont-textfile collector writes, so there is no
 	// goroutine, no socket and no credential in this process.
+	fullReboot := newFullRebootService(os.Getenv("ROUTER_FULL_REBOOT_REQUEST"),
+		os.Getenv("ROUTER_FULL_REBOOT_HISTORY"), hostnameOrDefault())
 	ont := newONTMonitor(os.Getenv("ROUTER_ONT_FILE"))
 	// The optical history shares the uplink database. Both describe the same
 	// line from opposite ends — the anchors say what the path delivers, the
@@ -706,11 +751,7 @@ func main() {
 	// config, which carries the env-supplied settings and never has it —
 	// readSystemState fills that field from os.Hostname on the status page
 	// alone, which is exactly the page that needed it before the strip existed.
-	navHost := "router"
-	if hostname, err := os.Hostname(); err == nil && strings.TrimSpace(hostname) != "" {
-		navHost = hostname
-	}
-	nav := navSource{host: navHost, uplink: uplink, vpn: vpn}
+	nav := navSource{host: hostnameOrDefault(), uplink: uplink, vpn: vpn}
 	// The page renders the strip like every other, so it needs the same source.
 	// Set after nav is built rather than inside startVPN, which runs before the
 	// strip exists.
@@ -718,7 +759,7 @@ func main() {
 		vpn.nav = nav
 	}
 
-	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, aps, ont, nav)}
+	lanServer := &http.Server{Addr: lanAddr, Handler: landingMux(config, tmpl, uplink, aps, ont, fullReboot, nav)}
 
 	lanErrs := make(chan error, 1)
 	go func() {
@@ -730,7 +771,7 @@ func main() {
 	// without one behaves exactly as it did before this feature. A mesh
 	// startup failure is logged, never fatal: see startMeshServer.
 	if meshAddr != "" && lanCIDR != "" {
-		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, aps, ont, nav); err != nil {
+		if err := startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot, config, tmpl, uplink, aps, ont, fullReboot, nav); err != nil {
 			log.Printf("peers page disabled: %v", err)
 		}
 	}

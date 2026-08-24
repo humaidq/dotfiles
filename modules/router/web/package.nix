@@ -12,7 +12,7 @@ buildGoModule {
   # written first. That costs this module its only dependency and, with the
   # cgo bindings, a C compiler at build time — which is free here because these
   # routers are x86-64 and are built natively.
-  vendorHash = "sha256-3dgQuKem9baSLR2vJ30zeZ/X7Rgg8kP5m5r7A1dVDYM=";
+  vendorHash = "sha256-7r2zA1ZEV7I9AYoOL20N+TuQoyVjqjq8NfbsujMIvx8=";
 
   postInstall = ''
     install -Dm644 ${./index.html} "$out/share/router-web/index.html"

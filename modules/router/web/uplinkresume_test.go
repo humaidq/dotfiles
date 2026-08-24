@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -392,5 +393,121 @@ func TestRemovingAnAnchorClosesItsOpenEpisode(t *testing.T) {
 	// The anchors still configured are untouched.
 	if kept.episodeOpen {
 		t.Error("resume opened an episode for a target that had none")
+	}
+}
+
+// A deliberate whole-estate reboot must not be recorded as the line failing.
+//
+// The first thing the sequence does is restart the fibre terminal, which takes
+// the PPP session down for about a minute while this process is still up and
+// watching. Without suppression every press of the button adds a session drop,
+// and "drops in the last 24 hours" stops meaning "times the line failed".
+
+func newMaintenanceMarker(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "maintenance")
+	if err := os.WriteFile(path, nil, 0o644); err != nil {
+		t.Fatalf("write marker: %v", err)
+	}
+	return path
+}
+
+func TestMaintenanceSuppressesTheSessionDrop(t *testing.T) {
+	store := newTestStore(t)
+	// startedAt well in the past, so the startup grace is not what is being
+	// tested here.
+	prober := &uplinkProber{
+		store:           store,
+		pppIface:        "sifr-no-such-iface",
+		startedAt:       time.Now().Add(-time.Hour),
+		maintenancePath: newMaintenanceMarker(t),
+	}
+
+	prober.pollPPP(time.Now())
+
+	if _, found, err := store.openEvent(eventPPPDown, prober.pppIface); err != nil {
+		t.Fatalf("open event: %v", err)
+	} else if found {
+		t.Error("a deliberate reboot recorded a session drop")
+	}
+	if prober.pppDown {
+		t.Error("the down latch was set, so the recovery would log a recovery for nothing")
+	}
+}
+
+// And the loss it causes must not open a degradation episode either.
+func TestMaintenanceSuppressesEpisodes(t *testing.T) {
+	store := newTestStore(t)
+	target := newTestTarget(roleCore)
+	start := time.Now().Add(-time.Hour)
+	prober := &uplinkProber{
+		store:           store,
+		startedAt:       start,
+		targets:         []*uplinkTarget{target},
+		maintenancePath: newMaintenanceMarker(t),
+	}
+
+	for i := range episodeOpenAfter + 2 {
+		prober.updateEpisode(target, minuteRow{
+			TS: time.Now().Add(time.Duration(i) * time.Minute), Target: target.anchor.Name,
+			Role: roleCore, Sent: 60, Received: 0,
+		})
+	}
+
+	if target.episodeOpen {
+		t.Error("a deliberate reboot opened a degradation episode")
+	}
+	if _, found, _ := store.openEvent(eventDegraded, target.anchor.Name); found {
+		t.Error("a degradation event was recorded during maintenance")
+	}
+}
+
+// Once the sequence finishes and removes the marker, events mean something
+// again — the suppression must not outlive the reboot.
+func TestEventsResumeWhenTheMarkerGoes(t *testing.T) {
+	store := newTestStore(t)
+	path := newMaintenanceMarker(t)
+	prober := &uplinkProber{
+		store:           store,
+		pppIface:        "sifr-no-such-iface",
+		startedAt:       time.Now().Add(-time.Hour),
+		maintenancePath: path,
+	}
+
+	if !prober.inMaintenance(time.Now()) {
+		t.Fatal("marker present but not in maintenance")
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if prober.inMaintenance(time.Now()) {
+		t.Fatal("still in maintenance after the marker was removed")
+	}
+
+	prober.pollPPP(time.Now())
+	if _, found, _ := store.openEvent(eventPPPDown, prober.pppIface); !found {
+		t.Error("a real session drop was missed after maintenance ended")
+	}
+}
+
+// A marker orphaned by a crash must not silence this router forever.
+func TestStaleMaintenanceMarkerIsIgnored(t *testing.T) {
+	path := newMaintenanceMarker(t)
+	stale := time.Now().Add(-maintenanceWindow - time.Minute)
+	if err := os.Chtimes(path, stale, stale); err != nil {
+		t.Fatal(err)
+	}
+	prober := &uplinkProber{maintenancePath: path}
+
+	if prober.inMaintenance(time.Now()) {
+		t.Error("a marker older than the window still suppressed events")
+	}
+}
+
+// A router without the feature has no marker path and is never in maintenance.
+func TestNoMarkerPathIsNeverMaintenance(t *testing.T) {
+	prober := &uplinkProber{}
+	if prober.inMaintenance(time.Now()) {
+		t.Error("a prober with no marker path reported maintenance")
 	}
 }

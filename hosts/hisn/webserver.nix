@@ -99,9 +99,77 @@ let
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-Host $host;
     proxy_set_header X-Forwarded-Server $hostname;
+    # Only dedicated virtual hosts may opt in to Groundwave's PoW proxy API.
+    proxy_set_header X-Groundwave-PoW-Proxy "";
+    proxy_set_header X-Original-URI "";
+    proxy_set_header X-Original-Method "";
 
     ${proxyHeaders}
   '';
+  groundwavePowProxyHeaders = ''
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For "";
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $hostname;
+    proxy_set_header X-Groundwave-PoW-Proxy "1";
+    proxy_set_header X-Original-URI $groundwave_pow_original_uri;
+    proxy_set_header X-Original-Method $groundwave_pow_original_method;
+  '';
+  groundwavePowLocations =
+    applicationUpstream:
+    let
+      internalGroundwaveLocation = path: {
+        proxyPass = "${upstream}${path}";
+        extraConfig = ''
+          internal;
+          proxy_method GET;
+          proxy_pass_request_body off;
+          proxy_set_header Content-Length "";
+          ${groundwavePowProxyHeaders}
+        '';
+      };
+      publicGroundwaveLocation = path: {
+        proxyPass = "${upstream}${path}";
+        extraConfig = ''
+          ${groundwavePowProxyHeaders}
+          ${proxyHeaders}
+        '';
+      };
+    in
+    {
+      "= /.groundwave/pow/check" = internalGroundwaveLocation "/.groundwave/pow/check";
+      "= /.groundwave/pow/challenge" = internalGroundwaveLocation "/.groundwave/pow/challenge";
+      "= /.groundwave/pow/verify" = publicGroundwaveLocation "/.groundwave/pow/verify";
+      "= /.groundwave/pow/pow.js" = publicGroundwaveLocation "/.groundwave/pow/pow.js";
+      "= /.groundwave/pow/pow-worker.js" = publicGroundwaveLocation "/.groundwave/pow/pow-worker.js";
+      "^~ /.groundwave/pow/" = {
+        extraConfig = ''
+          return 404;
+        '';
+      };
+      "/" = {
+        proxyPass = applicationUpstream;
+        extraConfig = ''
+          ${proxyDefaults}
+
+          proxy_set_header X-Groundwave-PoW-Proxy "";
+          proxy_set_header X-Original-URI "";
+          proxy_set_header X-Original-Method "";
+
+          # Capture these on the main request. The auth subrequest is forced
+          # to GET upstream, but policy still needs the browser's real method.
+          set $groundwave_pow_original_uri $request_uri;
+          set $groundwave_pow_original_method $request_method;
+          auth_request /.groundwave/pow/check;
+          # Only GET/HEAD checks return 401. Mutations return 403 and are
+          # never redirected or replayed after solving a challenge.
+          error_page 401 = /.groundwave/pow/challenge;
+        '';
+      };
+    };
   # m.huma.id is Matomo, and it is a separate origin from this one, so 'self'
   # does not cover it. Three directives need it, because the tracker touches
   # the network three different ways: script-src to load /m.js at all, img-src
@@ -519,11 +587,7 @@ in
             ${error-pages-loc}
           '';
 
-          locations = {
-            "/" = {
-              proxyPass = "http://10.10.0.12:4231";
-            };
-          };
+          locations = groundwavePowLocations "http://10.10.0.12:4231";
         };
         "sdr.huma.id" = {
           enableACME = true;

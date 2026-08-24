@@ -159,6 +159,23 @@ in
         # A path to read, not a credential. router-web cannot reach the ONT —
         # see the header of web/ont.go for why that separation is the point.
         ++ lib.optional cfg.ont.enable "ROUTER_ONT_FILE=${cfg.ont.metricsFile}"
+        # Presence of the path is what puts the Full Reboot section on the
+        # status page. Writing this file is the entirety of what router-web
+        # does for the feature: a root path unit watches for it and runs the
+        # sequence — see modules/router/fullreboot.nix. Under the state
+        # directory because that is the one place a DynamicUser service can
+        # write, and it is persisted, so a request cannot be lost.
+        ++ lib.optionals cfg.fullReboot.enable [
+          "ROUTER_FULL_REBOOT_REQUEST=%S/router-web/full-reboot.request"
+          # Read-only here. Written by the root scripts on either side of the
+          # reboot; world readable so this DynamicUser service can render the
+          # timeline without being able to rewrite what it says happened.
+          "ROUTER_FULL_REBOOT_HISTORY=/var/lib/router-fullreboot/history.tsv"
+          # While this exists the uplink prober withholds events, because the
+          # outage is this router's own doing. Same reasoning as the startup
+          # grace it sits beside in web/uplink.go.
+          "ROUTER_UPLINK_MAINTENANCE=/var/lib/router-fullreboot/maintenance"
+        ]
         ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80"
         # Presence alone enables the pool button and badge on the peers page.
         # Set from the same option that creates the nft sets, the drop chains

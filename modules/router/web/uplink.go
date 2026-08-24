@@ -98,6 +98,11 @@ const (
 	// rows are written throughout regardless, so the history and the loss
 	// meters still show the gap — only the event is withheld.
 	startupGrace = time.Minute
+	// How long a full-reboot marker may suppress events before it is treated
+	// as stale. Comfortably longer than the sequence takes — the one measured
+	// run was under three minutes — and short enough that a marker orphaned by
+	// a crash costs one quiet window rather than a silent event log.
+	maintenanceWindow = 30 * time.Minute
 )
 
 // Anchor roles.
@@ -436,8 +441,12 @@ type uplinkProber struct {
 	// Send-only, with IP_TOS set to EF. Nil when no anchor asked for a pair.
 	voiceConn net.PacketConn
 	pppIface  string
-	retention time.Duration
-	load      *loadSampler
+	// Marker written by the full-reboot sequence; while it is present and
+	// fresh, events this router causes on purpose are not recorded. Empty on a
+	// router without the feature, which makes inMaintenance always false.
+	maintenancePath string
+	retention       time.Duration
+	load            *loadSampler
 
 	targets []*uplinkTarget
 	byID    map[uint16]*uplinkTarget
@@ -460,11 +469,40 @@ func (p *uplinkProber) inStartupGrace(t time.Time) bool {
 	return !p.startedAt.IsZero() && t.Before(p.startedAt.Add(startupGrace))
 }
 
+// inMaintenance reports whether a deliberate whole-estate reboot is running.
+//
+// The same argument as the startup grace, for an outage this router causes on
+// purpose rather than suffers. The first thing a full reboot does is restart
+// the fibre terminal, which takes the PPP session down for a minute or so
+// while this process is still up and watching — so without this the button
+// records a session drop every time it is pressed, and "drops in the last 24
+// hours" stops meaning "times the line failed".
+//
+// The events are suppressed, not the measurements. Minute rows are still
+// written throughout, so the loss and the gap appear in the history and on the
+// graphs exactly as they happened; it is only the "something is wrong" claim
+// that is withheld, because nothing is.
+//
+// Bounded by the file's own age rather than trusting it to be removed. The
+// sequence deletes it when it finishes and when it aborts, but it also reboots
+// the machine in the middle of itself, and a marker left behind by a crash
+// must not silence this router's event log forever.
+func (p *uplinkProber) inMaintenance(t time.Time) bool {
+	if p.maintenancePath == "" {
+		return false
+	}
+	info, err := os.Stat(p.maintenancePath)
+	if err != nil {
+		return false
+	}
+	return t.Before(info.ModTime().Add(maintenanceWindow))
+}
+
 // newUplinkProber opens the raw socket and builds the target set. The PPP peer
 // target is always present and is not configurable: it is the liveness check,
 // and a router that could be configured without one would have no way to tell
 // "the line is down" from "the internet is unreachable".
-func newUplinkProber(store *uplinkStore, pppIface string, anchors []anchor, retention time.Duration) (*uplinkProber, error) {
+func newUplinkProber(store *uplinkStore, pppIface, maintenancePath string, anchors []anchor, retention time.Duration) (*uplinkProber, error) {
 	// A raw ICMP socket rather than the unprivileged datagram kind: the
 	// datagram sockets need net.ipv4.ping_group_range to include this
 	// service's group, and under DynamicUser the group is allocated at start
@@ -476,13 +514,14 @@ func newUplinkProber(store *uplinkStore, pppIface string, anchors []anchor, rete
 	}
 
 	prober := &uplinkProber{
-		store:     store,
-		conn:      conn,
-		pppIface:  pppIface,
-		retention: retention,
-		load:      newLoadSampler(pppIface),
-		byID:      map[uint16]*uplinkTarget{},
-		startedAt: time.Now(),
+		store:           store,
+		conn:            conn,
+		pppIface:        pppIface,
+		maintenancePath: strings.TrimSpace(maintenancePath),
+		retention:       retention,
+		load:            newLoadSampler(pppIface),
+		byID:            map[uint16]*uplinkTarget{},
+		startedAt:       time.Now(),
 	}
 
 	all := expandAnchors(anchors)
@@ -849,10 +888,11 @@ func (p *uplinkProber) updateEpisode(target *uplinkTarget, row minuteRow) {
 	if target.anchor.Role == rolePeer {
 		return
 	}
-	if p.inStartupGrace(row.TS) {
-		// pppd went down with this service and the loss in this minute is the
-		// reconnect. Returning before the counters, not after, so the window
-		// cannot bank bad minutes and open an episode the moment it closes.
+	if p.inStartupGrace(row.TS) || p.inMaintenance(row.TS) {
+		// pppd went down with this service, or the whole estate is being
+		// rebooted on purpose, and the loss in this minute is the reconnect.
+		// Returning before the counters, not after, so the window cannot bank
+		// bad minutes and open an episode the moment it closes.
 		return
 	}
 
@@ -957,7 +997,7 @@ func (p *uplinkProber) pollPPP(now time.Time) {
 		// clear on purpose: if the session is still down when the window
 		// closes, the next poll records it then, timed from the moment it was
 		// confirmed rather than from the restart.
-		if !p.pppDown && !p.inStartupGrace(now) {
+		if !p.pppDown && !p.inStartupGrace(now) && !p.inMaintenance(now) {
 			id, err := p.store.appendEvent(uplinkEvent{
 				TS: now, Kind: eventPPPDown, Target: p.pppIface,
 				Detail: "no address on the interface",

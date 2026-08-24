@@ -13,6 +13,7 @@ in
     ./dns.nix
     ./qos.nix
     ./qos-metrics.nix
+    ./fullreboot.nix
     ./host-metrics.nix
     ./ont.nix
     ./pppd.nix
