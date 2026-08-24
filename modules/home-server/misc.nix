@@ -13,6 +13,7 @@ in
   imports = [
     inputs.groundwave.nixosModules.groundwave
     inputs.fleeti.nixosModules.fleeti
+    inputs.debug-platform.nixosModules.debug-platform
   ];
   config = lib.mkIf cfg.enable {
 
@@ -41,6 +42,12 @@ in
       mode = "600";
     };
 
+    sops.secrets."debug-platform/env" = {
+      sopsFile = ../../secrets/home-server.yaml;
+      owner = "debug-platform";
+      mode = "600";
+    };
+
     nixpkgs.overlays = [
       inputs.groundwave.overlays.default
       inputs.fleeti.overlays.default
@@ -66,6 +73,30 @@ in
     nix.settings.allowed-users = [
       "fleeti-service"
     ];
+
+    # Fronted by hisn at tii-debug-platform.huma.id, behind the same Groundwave
+    # PoW gate as admin.fleeti.ae. 4233/4234 continue the 423x block that
+    # fleeti (4231) and groundwave (4232) started; the two must differ, and the
+    # module asserts as much, because the launcher runs Caddy on the first and
+    # uvicorn on the second.
+    #
+    # manageDocker is off because sifr.v12n.docker already enables the daemon
+    # on this host — the module would otherwise be a second definition of the
+    # same thing. The daemon is not optional here: submitted Python is only
+    # ever executed inside a throwaway container, so with Docker down the site
+    # loads and every evaluation fails.
+    services.debug-platform = {
+      enable = true;
+      port = 4233;
+      backendPort = 4234;
+      manageDocker = false;
+      environmentFile = config.sops.secrets."debug-platform/env".path;
+    };
+
+    systemd.services.debug-platform = {
+      after = [ "docker.service" ];
+      requires = [ "docker.service" ];
+    };
 
     services.stirling-pdf = {
       enable = true;

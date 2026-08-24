@@ -74,6 +74,27 @@
         "type": "github"
       }
     },
+    "debug-platform": {
+      "inputs": {
+        "microvm": "microvm",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787558782,
+        "narHash": "sha256-bCnMA2FoJ2z2senDgLLAdVXXDXm8H/iZwt9VsRHGoBk=",
+        "ref": "refs/heads/humaid-hosting",
+        "rev": "2346b1e0728047305c0fba9b70f6cabb262d5ddf",
+        "revCount": 31,
+        "type": "git",
+        "url": "https://git.alq.ae/humaid/DebugPlatform"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://git.alq.ae/humaid/DebugPlatform"
+      }
+    },
     "devshell": {
       "inputs": {
         "nixpkgs": [
@@ -460,7 +481,7 @@
         "flake-parts": "flake-parts_2",
         "flake-root": "flake-root_2",
         "git-hooks-nix": "git-hooks-nix",
-        "microvm": "microvm",
+        "microvm": "microvm_2",
         "nix-fast-build": "nix-fast-build",
         "nixpkgs": [
           "nixpkgs"
@@ -787,10 +808,32 @@
     "microvm": {
       "inputs": {
         "nixpkgs": [
-          "fleeti",
+          "debug-platform",
           "nixpkgs"
         ],
         "spectrum": "spectrum"
+      },
+      "locked": {
+        "lastModified": 1787551247,
+        "narHash": "sha256-ogq7JBsR2aJko074/LQOIPcectSXnq2YshD2TG0PP5A=",
+        "owner": "microvm-nix",
+        "repo": "microvm.nix",
+        "rev": "ad098ef4658203b3bbc39523ca3f72ece1553e24",
+        "type": "github"
+      },
+      "original": {
+        "owner": "microvm-nix",
+        "repo": "microvm.nix",
+        "type": "github"
+      }
+    },
+    "microvm_2": {
+      "inputs": {
+        "nixpkgs": [
+          "fleeti",
+          "nixpkgs"
+        ],
+        "spectrum": "spectrum_2"
       },
       "locked": {
         "lastModified": 1780588968,
@@ -1262,6 +1305,7 @@
       "inputs": {
         "berkeley-font": "berkeley-font",
         "blueshot": "blueshot",
+        "debug-platform": "debug-platform",
         "disko": "disko",
         "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",
@@ -1328,6 +1372,22 @@
       }
     },
     "spectrum": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1785761586,
+        "narHash": "sha256-MWOMVqJJERwjQGgRIv8d6rlEBqbLM3VZWxHkNKIIZNw=",
+        "ref": "refs/heads/main",
+        "rev": "a7762d6f54b40560dd5255ce902e6e6a5d980fe9",
+        "revCount": 1416,
+        "type": "git",
+        "url": "https://spectrum-os.org/git/spectrum"
+      },
+      "original": {
+        "type": "git",
+        "url": "https://spectrum-os.org/git/spectrum"
+      }
+    },
+    "spectrum_2": {
       "flake": false,
       "locked": {
         "lastModified": 1778940603,

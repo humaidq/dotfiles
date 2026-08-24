@@ -100,6 +100,14 @@
           user = "fleeti-service";
           mode = "0700";
         }
+        # Holds the SQLite database: accounts, per-user progress and the
+        # leaderboard. Nothing reconstructs it, so it does not survive a
+        # rollback without being named here.
+        {
+          directory = "/var/lib/debug-platform";
+          user = "debug-platform";
+          mode = "0700";
+        }
         {
           directory = "/var/lib/radicale";
           user = "radicale";
@@ -410,9 +418,10 @@
       }
       # Allow hisn access. These match on the name in the peer's Nebula
       # certificate, not on an address, so taking over the overlay role of the
-      # host hisn replaced is not enough — without these three its reverse
+      # host hisn replaced is not enough — without these four its reverse
       # proxy reaches this host and is refused, and cache.huma.id, the
-      # groundwave vhosts and admin.fleeti.ae all return 502.
+      # groundwave vhosts, admin.fleeti.ae and tii-debug-platform.huma.id all
+      # return 502.
       {
         host = "hisn";
         port = "5000"; # nix cache
@@ -426,6 +435,11 @@
       {
         host = "hisn";
         port = "4231"; # fleeti
+        proto = "tcp";
+      }
+      {
+        host = "hisn";
+        port = "4233"; # debug-platform
         proto = "tcp";
       }
     ];

@@ -36,6 +36,16 @@
       url = "github:ai4os-ae/fleeti";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # A TII (Ghaf) debugging-challenge platform, mirrored onto the forge here
+    # because the upstream on GitHub is somebody else's account and this
+    # deployment should not break when that repository moves. The default
+    # branch there is `humaid-hosting`, which is the one carrying the Nix
+    # packaging; `main` has none, so the URL deliberately takes the default
+    # rather than pinning a ref.
+    debug-platform = {
+      url = "git+https://git.alq.ae/humaid/DebugPlatform";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     blueshot = {
       url = "github:humaidq/blueshot";
       inputs.nixpkgs.follows = "nixpkgs";

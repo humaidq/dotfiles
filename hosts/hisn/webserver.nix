@@ -589,6 +589,21 @@ in
 
           locations = groundwavePowLocations "http://10.10.0.12:4231";
         };
+
+        # Same PoW treatment as admin.fleeti.ae, and for the same reason: the
+        # application has its own login, but the sign-up and submission
+        # endpoints are cheap to hammer and the evaluator spends a container
+        # per submission. The gate is in front of everything, so the SPA's own
+        # API calls ride the cookie the browser already solved for.
+        "tii-debug-platform.huma.id" = {
+          enableACME = true;
+          forceSSL = true;
+          extraConfig = ''
+            ${error-pages-loc}
+          '';
+
+          locations = groundwavePowLocations "http://10.10.0.12:4233";
+        };
         "sdr.huma.id" = {
           enableACME = true;
           forceSSL = true;
