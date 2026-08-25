@@ -12,6 +12,7 @@ in
     ./ai.nix
     ./dav.nix
     ./db.nix
+    ./hister.nix
     ./immich.nix
     ./matomo.nix
     ./media.nix

@@ -617,6 +617,24 @@ in
         }
         {
           profile = {
+            name = "dell-p2722h-external-only";
+            outputs = [
+              {
+                criteria = "Samsung Display Corp. 0x419F Unknown";
+                status = "disable";
+              }
+              {
+                criteria = "Dell Inc. DELL P2722H 5ZR83P3";
+                status = "enable";
+                mode = "1920x1080@60Hz";
+                position = "0,0";
+              }
+            ];
+            exec = [ rescaleEmacsFrames ];
+          };
+        }
+        {
+          profile = {
             name = "samsung-1080p-side-by-side";
             # 1080p Samsung external.  Its EDID carries no real model or serial
             # ("SAMSUNG" / 0x00000001), so this criteria would also match any

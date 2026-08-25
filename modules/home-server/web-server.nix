@@ -93,6 +93,22 @@ in
               proxyWebsockets = true;
             };
           };
+          # Internal only, like the rest of alq.ae: the certificate comes from
+          # step-ca and the name resolves through blocky and the nebula host
+          # map, so nothing outside the LAN or the mesh can reach it.
+          #
+          # proxyWebsockets because search results stream over a websocket
+          # upgrade on /. Without it the page renders and the search box
+          # silently returns nothing. mkRP is not used for the same reason —
+          # it has no websocket support.
+          "hister.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:4433";
+              proxyWebsockets = true;
+            };
+          };
           "g.huma.id" = {
             inherit (tls) forceSSL;
             enableACME = true;

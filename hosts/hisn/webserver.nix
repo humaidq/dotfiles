@@ -25,6 +25,23 @@ let
     error_page 502 = /_error/502.html;
     error_page 504 = /_error/504.html;
   '';
+  # error-pages without proxy_intercept_errors, for the PoW-gated locations.
+  #
+  # Those locations carry `error_page 401 = /.groundwave/pow/challenge`, and
+  # proxy_intercept_errors is all-or-nothing: it routes every upstream status
+  # that has an error_page defined through that page. Turning it on there would
+  # mean an application's own 401 — a rejected login, say — is answered with
+  # the proof-of-work challenge instead of reaching the browser, which the
+  # frontend has no way to tell apart from being logged out.
+  #
+  # Dropping it costs nothing for the case that actually matters. nginx applies
+  # error_page to the 502 and 504 it generates itself regardless of this
+  # setting, and upstream-unreachable — service down, oreamnos down, a missing
+  # nebula rule — is precisely that case.
+  error-pages-no-intercept = ''
+    error_page 502 = /_error/502.html;
+    error_page 504 = /_error/504.html;
+  '';
   error-pages-loc = ''
     location = /_error/502.html {
       internal;
@@ -154,6 +171,7 @@ let
         proxyPass = applicationUpstream;
         extraConfig = ''
           ${proxyDefaults}
+          ${error-pages-no-intercept}
 
           proxy_set_header X-Groundwave-PoW-Proxy "";
           proxy_set_header X-Original-URI "";

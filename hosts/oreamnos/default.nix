@@ -108,6 +108,16 @@
           user = "debug-platform";
           mode = "0700";
         }
+        # The SQLite index of every page hister has seen, plus .secret_key,
+        # which every session cookie is signed with. Rebuilding the index
+        # means re-crawling the lot, and there is nothing to re-crawl from
+        # once the history is gone.
+        {
+          directory = "/var/lib/hister";
+          user = "hister";
+          group = "hister";
+          mode = "0750";
+        }
         {
           directory = "/var/lib/radicale";
           user = "radicale";
