@@ -38,6 +38,7 @@ in
   };
 
   config = lib.mkIf cfg.libreoffice.enable {
+    environment.systemPackages = [ pkgs.libreoffice-fresh ];
     home-manager.users."${vars.user}" =
       { lib, ... }:
       {

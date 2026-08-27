@@ -285,6 +285,7 @@
         # shared with the whole house and the cover name is never resolved.
         cdnQuota.enable = true;
       };
+      fullReboot.enable = true;
     };
 
     persist = {

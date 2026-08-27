@@ -53,7 +53,6 @@ in
         gimp
         pinta
         inkscape
-        libreoffice
         inputs.blueshot.packages.${pkgs.stdenv.hostPlatform.system}.blueshot
         # rpi-imager # broken
         prusa-slicer
