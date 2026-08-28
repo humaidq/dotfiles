@@ -1407,6 +1407,71 @@
 # Left alone pending identification: the relay-trap case says the cost of being
 # wrong here is the household's cameras.
 
+# --- 2026-08-28, third pass: a second 15-minute FULL-LAN capture -------------
+#
+# Same method as the second pass, later the same afternoon, and still a
+# throttling day. Two /32s, both of which the second pass did not see — which is
+# the useful thing about running the whole-LAN method twice: the gap between two
+# unfiltered windows is rotation, not sampling.
+#
+# 188.241.192.2 IS THE ONE THAT MATTERS. A handset probed :3112 at nine
+# endpoints across the whole window and this was the ONLY ONE THAT ANSWERED —
+# 1308-byte UDP out, 1308-byte UDP back, a fresh source port every ~2s. Seven of
+# the other eight were NETSTAR and 185.22.42, all already covered here or in
+# custom-ip-blocklist.txt; 185.22.42 returned ICMP unreachable, so the covered
+# entries were doing their job and this was the hole.
+#
+# Applying the discriminator the 42.115.54.143 note sets — CHECK THE AS OF A
+# PUNCH TARGET BEFORE TREATING IT AS AN ENDPOINT — this one passes where that
+# one failed. 188.241.192.0/24 is a whole dedicated allocation to Lunarnaut LLC,
+# a US hosting LIR, not a residential ISP, so it is infrastructure rather than a
+# callee's home line.
+#
+# A /32 AND NOT THE /24, deliberately, though the /24 is a single-tenant
+# allocation and the 185.22.42.0/24 precedent above is a /24. Two reasons. The
+# 2026-08-22 decision says new entries are /32s and this is a new entry. And the
+# origin AS is 395374, which announces ~30 other /24s scattered across
+# unrelated space — an IP-leasing operation, not an imo AS the way AS36131 is —
+# so nothing here justifies widening past the address actually observed.
+#
+# 43.130.103.134 is the ordinary kind: Tencent on 9443, zero bytes back, sitting
+# beside /32s this file already lists. Nothing new about it except that it had
+# not been seen before.
+188.241.192.2
+43.130.103.134
+#
+# NOT ADDED: 104.18.9.211, SNI edu.ousaqb.tech, five completed handshakes from a
+# pool handset while the name itself answered 0.0.0.0. That is the overwall
+# module routing around the sinkhole on a cached address, and it is real — but
+# the address is shared Cloudflare, so this is exactly the collateral case the
+# 47.79.127.84 note above was written for. The name stays sinkholed in
+# custom-blocklist.txt; the address is not a list entry at any prefix length.
+#
+# IDENTIFIED, and it closes the "left alone pending identification" above: the
+# 8820/6000 appliances are HIKVISION, from the OUI on their own frames, and the
+# protocol is Hik-Connect's P2P cloud. The block above says those devices emit no
+# DNS, no DHCP hostname and no mDNS — true, and it is why the earlier pass had
+# nothing to go on — but a device that emits nothing still carries a vendor OUI
+# in every frame it sends, and that is the cheapest identification available on
+# this network. Reach for it before writing "unidentified".
+#
+# 47.236.73.88 was handed over separately as suspected imo and is a THIRD thing
+# again, unrelated to both the cameras and to imo: it is one of ~20 A records for
+# app.chat.global.xiaomi.net, resolved by a pool handset for days, and the live
+# session is that handset on tcp/5222 carrying a keepalive. Xiaomi's push
+# service, on the same accepted-hole port as the 161.117.185.166 LBS entry above,
+# which is precisely why the port is not a discriminator and the DNS answer is.
+# Blocking it would break notifications on that handset and, at any prefix that
+# would catch it, the cameras with it.
+#
+# COVERAGE CHECK, since a full-LAN window is the right moment for one: all 27
+# prefixes AS36131 currently announces are covered by this file and
+# custom-ip-blocklist.txt between them. The AS36131 route objects that are NOT
+# covered — 103.208.252.0/22, 185.155.136.0/22, 63.141.60.0/24, 164.90.101.0/24,
+# 169.136.68/69/71/72/130/132.0/24, 202.63.47.0/24 and the two /48s — are all
+# unannounced, zero RIS peers seeing them. The header's rule of listing only
+# routed prefixes is intact and none of these is an omission to go and fix.
+
 
 # === imo 2026.07.1041, the hardcoded pool read off the dex, 2026-08-28 =======
 #

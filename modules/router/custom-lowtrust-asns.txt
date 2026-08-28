@@ -398,6 +398,39 @@
 # collateral question hardly arises; the reason to take it at all is that the
 # whole /23 is one small tenant's, so a hop within it is the likely next move.
 154317  # VyomCloud — 512, one /23, one collected node
+
+# --- AS14315, 2026-08-28, added on request; provenance is THIS REPO ----------
+#
+# 1GSERVERS, US budget VPS hosting — the same market as everything in the first
+# section, and the reason it qualifies at all.
+#
+# NO CAPTURE AND NO NETWATCH OBSERVATION BACK THIS. It was requested, not
+# collected, and `peer_obs` holds nothing in its space. Recorded plainly so a
+# later reader does not credit it to evidence it does not have — the Cogent
+# entry above sets the precedent for filing a requested AS honestly.
+#
+# What it does have is three addresses already dropped one at a time. The
+# undocumented `# custom` block in custom-ip-blocklist.txt holds four rows, and
+# three are 1GSERVERS: 206.168.190.255, and 136.175.9.11 and 136.175.8.145 —
+# the last two inside the SAME 136.175.8.0/22. That is the AS209181 argument
+# repeating: neighbours taken singly while the rest of the range sits open. The
+# fourth, 204.77.223.251, is AS53767 ICASTCENTER and unaffected by this entry.
+#
+# SIZE: 26,368 IPv4 over 59 CIDRs, plus six IPv6 ranges (2605:8340::/32 the
+# widest). Larger than any reseller-estate entry above, far short of Zenlayer
+# (656k) or Cogent (24M). Hosting rather than transit, so the objection filed
+# against those two does not apply here.
+#
+# NEAR MISS ON THE GUARD, worth recording because the next table refresh could
+# turn it into a real one: 1GSERVERS announces 45.59.104.0/24, and hisn — this
+# network's own huma.id and nebula lighthouse — is 45.59.120.67. Different /24s
+# in the same /16, so lowTrustNeverCover does not fire today. Verified against
+# all 61 rows at time of writing, no hit.
+#
+# The three /32s STAY in custom-ip-blocklist.txt. This entry covers pool
+# devices only; those rows cover every other device on the LAN, which it does
+# not touch. Same division as the Hetzner note there.
+14315   # 1GSERVERS — 26,368, requested; three /32s already taken piecemeal
 #
 # DELIBERATELY NOT HERE:
 #

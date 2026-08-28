@@ -3103,3 +3103,57 @@ kpgfrevlebuzgoazsdgamt1zg7j8bi4bg.akamaized.net
 # The bundled ad and analytics SDKs are left alone on the usual rule, since they
 # are shared with unrelated apps: supersonicads/ironbeast (ironSource), tenjin,
 # toponad, zopim, appota.cn, excelliance.cn, multiopen.cn, multispaces.net.
+
+# === M2Catalyst's SDK, and the app backend that checks in beside it ==========
+#
+# NOT FROM A PACKAGE. Both came out of the resolver log, and the pairing is what
+# identified them: the two names are queried within seconds of each other on
+# every launch, always in the same order — the app's own backend first, then the
+# SDK. Same two handsets, and no other device on either site asks for either
+# name. One app, one bundled SDK, and the resolver log alone is enough to see
+# the join. Neither zone was reachable through the usual route: they are a
+# telemetry stack rather than a branded app, so there is no package name to
+# start from.
+#
+# aci.m2catalyst.com NAMES ITSELF. Its index page is titled "App Com Interface",
+# which is what aci stands for — the SDK's command channel, an Express admin app
+# behind an ordinary Let's Encrypt cert.
+#
+# M2Catalyst sells telecom analytics gathered by an SDK that other publishers
+# embed in unrelated apps. Its own privacy policy is the source for what that
+# collects: device model and OS, a resettable per-app identifier, the Google
+# Advertising ID, carrier, mobile network information and device location.
+#
+# THE OTHER HALF IS ALREADY BLOCKED and that is the useful detail — ingest.
+# m2catalyst.com, the upload endpoint, is caught by denylists.general, so the
+# feeds know this operator and simply do not carry the command channel. Checking
+# the sibling names of anything the feeds already block is cheap and finds
+# exactly this kind of gap.
+#
+# Blocked as the whole zone rather than the one host. M2Catalyst also publishes
+# consumer network-info apps under it, and nothing on this network uses them.
+*.m2catalyst.com
+#
+# jksolapp.com is JKSOL INFOTECH's, a Surat app-development shop, and the
+# attribution is WHOIS rather than the name resembling the company. The sibling
+# zone jkapi.in carries "Registrant Organization: jksol infotech, Country: IN"
+# outright, and jksolapp.com, jkapi.in and jksync.com were all registered inside
+# one six-month window in 2024. The name alone would have been a guess; the
+# registrant field on the sibling is not.
+#
+# us1.jksolapp.com is CloudFront with a valid Amazon ACM cert — an ordinary
+# backend, NOT a tunnel, and worth stating because a hardcoded-looking host that
+# a handset polls every few minutes invites the opposite reading. It answers 401
+# on every path including /, so nothing about the endpoint itself characterises
+# it. What does is the estate: locationintelligence.jksync.com and
+# in-app-events.jkapi.in, the second of which denylists.general already blocks.
+# A location and in-app-event pipeline, with this the half still answering.
+#
+# WILDCARD RATHER THAN THE us1 HOST OBSERVED, because us2 already exists and
+# resolves — the shard number is not the unit, the zone is. No eu1, ap1 or in1.
+*.jksolapp.com
+#
+# NOT BLOCKED HERE: jksync.com, the same operator's location endpoint, which is
+# live and unblocked and was left out only because it was outside what was
+# asked for. It is the obvious next line if this pair does not quieten the
+# handsets down.

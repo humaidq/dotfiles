@@ -149,6 +149,54 @@ in
               }
             }
           }
+          // blocky's answer log, which is a FILE and not the journal.
+          //
+          // WHY THIS EXISTS AT ALL. blocky has exactly one queryLog, and on
+          // 2026-08-28 the routers' was pointed at a CSV file so the peers page
+          // could name an address with no PTR. The moment it stopped writing to
+          // stdout it stopped reaching the journal, and every DNS panel on the
+          // router dashboard — all of which select `|= "query resolved"` on the
+          // journal stream — went to zero within one 15m window. This block is
+          // what puts the data back in front of them.
+          //
+          // NO PARSING STAGE, deliberately, unlike the journal blocks above.
+          // Those add labels only because a dashboard variable cannot enumerate
+          // a field parsed at query time. Nothing here needs a picker: the file
+          // records no client, so there is no per-device dropdown to populate,
+          // and the columns that vary — the question and its answer — are
+          // exactly the high-cardinality ones that must not become labels.
+          //
+          // THE FORMAT IS TAB-SEPARATED AND ITS FIELD COUNT VARIES, which is
+          // worth knowing before writing a query against it. blocky does not
+          // escape tabs inside the quoted answer column, so a row with several
+          // answer records splits into more fields than one with a single A
+          // record — 11, 15, 19 and 27 all occur in one day's file. What is
+          // stable is the left-hand side: field 6 is always the question name,
+          // and the last two are always the question type and the instance. Any
+          // query here should anchor on those and never on a field counted from
+          // the middle.
+          //
+          // Inert on a host that has no such directory, the same way the nginx
+          // stage above is inert where nginx logs the combined format: the
+          // match produces no targets and nothing is read.
+          local.file_match "blocky_answers" {
+            path_targets = [{
+              __path__ = "/var/log/blocky-answers/*.log",
+              nodename = "${config.networking.hostName}",
+              source   = "blocky-answers",
+            }]
+          }
+
+          // nodename is set from the Nix hostname rather than parsed out of the
+          // line. The file's last column does carry the instance name, but the
+          // journal stream sets nodename from __journal__hostname and the
+          // dashboard's $network variable selects on it, so the two sources have
+          // to agree on where that label comes from or the picker splits in two.
+          loki.source.file "blocky_answers" {
+            targets    = local.file_match.blocky_answers.targets
+            forward_to = [loki.write.remote.receiver]
+          }
+
           loki.write "remote" {
             endpoint {
               url = "http://${cfg.serverHost}:3100/loki/api/v1/push"

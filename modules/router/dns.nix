@@ -372,6 +372,26 @@ in
       };
     };
 
+    # Alloy is the THIRD member of this group, after blocky which writes the
+    # file and router-web which reads it for the peers page.
+    #
+    # WHY IT NEEDS TO BE HERE. Pointing blocky's queryLog at a file took it out
+    # of the journal, and the journal is what Alloy was shipping to Loki — so
+    # every DNS panel on the router dashboard emptied out within one 15m window
+    # of the switch. modules/personal/o11y/client.nix now reads the directory
+    # directly, and this is the access that makes that possible: the directory
+    # is 0770 root:blocky-answers, and Alloy runs under DynamicUser with only
+    # systemd-journal, so a group is the only handle there is.
+    #
+    # Granted here rather than in the o11y module because the group is defined
+    # here and only exists on a host running this resolver. The o11y client is
+    # generic and must stay buildable on hosts that have never heard of blocky.
+    #
+    # Gated on Alloy actually being enabled: setting serviceConfig on a service
+    # that is off would otherwise bring the unit into existence.
+    systemd.services.alloy.serviceConfig.SupplementaryGroups =
+      lib.mkIf (cfg.queryLog.enable && config.services.alloy.enable) [ "blocky-answers" ];
+
     users.groups.blocky-answers = lib.mkIf cfg.queryLog.enable { };
 
   };
