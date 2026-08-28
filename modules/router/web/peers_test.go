@@ -1773,10 +1773,13 @@ func TestRealTemplateRendersLastSeenColumn(t *testing.T) {
 		t.Fatalf("execute peers.html: %v", err)
 	}
 	body := out.String()
+	// The data-label is part of the assertion, not noise around it: it is what
+	// the narrow layout prints where the column head used to be, so a cell that
+	// lost it would render as an unlabelled value on a phone.
 	for _, want := range []string{
-		`<td class="num">1s</td>`,
-		`<td class="num stale">2d 16h</td>`,
-		`<td class="num">&mdash;</td>`,
+		`<td role="cell" data-label="Last seen" class="num">1s</td>`,
+		`<td role="cell" data-label="Last seen" class="num stale">2d 16h</td>`,
+		`<td role="cell" data-label="Last seen" class="num">&mdash;</td>`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("rendered page is missing %s\n%s", want, body)

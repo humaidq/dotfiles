@@ -9,7 +9,7 @@ let
 
   converter = pkgs.writers.writePython3Bin "geoip-convert" { } (builtins.readFile ./geoip-convert.py);
 
-  stateDir = "/var/lib/geoip";
+  stateDir = cfg.geoip.stateDir;
 in
 {
   options.sifr.router.geoip = {
@@ -40,6 +40,21 @@ in
       type = lib.types.str;
       default = "";
       description = "MaxMind account ID, the username half of the download's basic auth.";
+    };
+
+    stateDir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/geoip";
+      readOnly = true;
+      description = ''
+        Where geoip-update writes country.tsv and asn.tsv.
+
+        Read-only and stated here because three modules have to agree on it and
+        two of them are not this one: web.nix names both files in router-web's
+        environment, and modules/persist keeps the directory across the boot
+        wipe. A path written out three times is a path that eventually differs
+        in one of them.
+      '';
     };
   };
 
@@ -156,28 +171,14 @@ in
       };
     };
 
-    # router-web reads either table if it is there and degrades to an empty
-    # column if it is not, so both can point at files the first timer run has
-    # yet to create.
-    #
-    # ROUTER_IP2ASN_FILE is overridden away from the checked-in table on
-    # purpose. Measured against 2895 addresses this network actually resolved,
-    # GeoLite2-ASN placed 10 that ip2asn did not — Bytedance, Amazon and
-    # Automattic ranges among them — against 2 the other way. The checked-in
-    # table stays in the repository regardless, because ip-blocklist.nix
-    # expands custom-lowtrust-asns.txt and custom-cdn-quota-asns.txt against it
-    # at BUILD time and a sandboxed Nix build cannot read a file a licence key
-    # fetches at runtime.
-    #
-    # That leaves two ASN maps on the router, which is only safe because they
-    # agree where it matters: both know all 42 AS numbers those two lists name,
-    # and the prefixes they expand to differ by about 2% of addresses. The 3.5%
-    # of lookups where they disagree outright are Etisalat's own prefixes —
-    # AS8966 against AS5384, an origin-versus-holder split — and neither list
-    # names either number.
-    systemd.services.router-web.environment = {
-      ROUTER_GEOIP_FILE = "${stateDir}/country.tsv";
-      ROUTER_IP2ASN_FILE = lib.mkForce "${stateDir}/asn.tsv";
-    };
+    # router-web's two table paths are set in web.nix, not here, and gated on
+    # this option being on. They used to be set from this file, and that was a
+    # bug worth recording: web.nix sets ROUTER_IP2ASN_FILE through
+    # serviceConfig.Environment, a list, while this file set it through
+    # services.router-web.environment, an attrset. Those are different options
+    # that do not merge — both reached the unit, as two Environment= lines, and
+    # systemd takes the last assignment, which was web.nix's. The mkForce here
+    # won the Nix merge it was in and then lost the one that decided the answer,
+    # silently, for as long as the file existed. One writer per variable.
   };
 }

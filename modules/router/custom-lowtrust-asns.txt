@@ -306,6 +306,98 @@
 24875   # NovoServe — 11,520, the operator's own network
 215224  # NovoServe Customers ASN — 9,984, holds 102.129.246.0/24
 209445  # NovoServe Denmark — 256, one /24
+
+# --- AS8849 Melbikomas, 2026-08-28: THE FIRST ENTRY HERE ADDED ON ONE ---------
+# --- OBSERVATION RATHER THAN AN ACCUMULATED POOL -----------------------------
+#
+# Every other line in this file cites a count of collected nodes, because each
+# was a consolidation: enough /32s had piled up in custom-throttle-list.txt that
+# the AS became the cheaper unit. THIS ONE HAS A COUNT OF ZERO. Nothing in the
+# throttle list, the IP blocklist or the imo list falls anywhere in AS8849. It
+# is a provider this network had never recorded before today.
+#
+# WHAT IT RESTS ON INSTEAD. A 30-second full-LAN capture at 14:00 on 2026-08-28:
+# 192.168.50.198 (aa:23:76:db:0c:3a, a pool device) sent 1,928 of its 1,948
+# frames to 146.19.196.200:59001 — 2.03 MB down and 62 kB up in 26 seconds,
+# 1,506 of those packets exactly 1,288 bytes, UDP and TCP to the same IP:port
+# at once, opaque from byte 0, one DNS query in the window (www.google.com, a
+# connectivity check) and no SNI anywhere. Resolution had moved inside it.
+#
+# THE PART THAT JUSTIFIES AN AS RATHER THAN A /32. The TCP side frames as
+# `0200 eff0` — a two-byte length then a two-byte magic — which is the identical
+# structure to the `0200 6263` recorded for 192.168.50.221 against a different
+# provider entirely. One client on two handsets, differing only in the magic,
+# already seen moving Leaseweb -> FranTech within a day of a /32 being written
+# for it. A /32 here would be outrun the same way; the AS at least covers the
+# hop within this provider.
+#
+# COLLATERAL: 13,824 addresses across 33 ranges, which puts it among the
+# SMALLEST entries in this file — an order of magnitude under Zenlayer, three
+# under Cogent. Melbikomas is pure budget hosting, the same category as M247,
+# AltusHost and NovoServe above, so the header's argument that mainstream app
+# backends do not live here applies unchanged. The build guard was checked
+# explicitly: none of the eight never-cover addresses falls inside any AS8849
+# range, so this cannot swallow the resolver, the STUN host or hisn.
+#
+# BE READY TO REVISIT IT. On this file's own standards a single observation is
+# thin, and it is recorded that way deliberately rather than dressed up with the
+# node count the other lines carry. If nothing further is ever seen in AS8849,
+# this is a candidate for removal rather than a precedent to cite.
+8849    # Melbikomas UAB — 13,824, one observed tunnel endpoint, no collected pool
+#
+# INCOMPLETE ON ITS OWN — SEE AS56630 BELOW. Melbikomas announces from two AS
+# numbers and this is the smaller one. Added first only because it was the one
+# the .198 capture happened to land in; it covers about a fifth of the estate.
+
+# --- AS56630 Melbikomas, the OTHER half, 2026-08-28 --------------------------
+#
+# THE SAME PROVIDER AS AS8849 ABOVE, AND FOUR TIMES LARGER: 55,808 addresses
+# over 72 ranges against 13,824 over 33. Adding AS8849 this morning looked like
+# it settled Melbikomas and did not — it covered roughly a fifth of what the
+# operator announces.
+#
+# HOW THE GAP WAS FOUND, because it is the transferable part. Not from traffic:
+# 213.183.53.76 is a node hardcoded in the com.rapidconn.android APK, and when
+# it was checked against this file it came back uncovered despite Melbikomas
+# already being here. An AS entry is only as good as the assumption that a
+# provider uses one AS number, and that assumption is worth testing by looking
+# the provider up by NAME in ip2asn-combined.tsv rather than by the number you
+# already have. Worth repeating for the other hosting entries in this file.
+#
+# Collateral is the usual budget-hosting bet, and at 55,808 it is still an order
+# of magnitude under Zenlayer and three under Cogent, both long-standing entries
+# here. The build guard was checked: none of the eight never-cover addresses
+# falls in any AS56630 range.
+#
+# 213.183.53.76 itself is a /32 in custom-ip-blocklist.txt rather than here,
+# because it is a Rapid VPN control-plane/node address and that file drops it
+# for the whole LAN. This entry is the pool-only net around it.
+56630   # Melbikomas UAB, second ASN — 55,808, holds 213.183.53.76
+
+# --- AS209181 and AS154317, 2026-08-28, from the RESOLVER not a capture -------
+#
+# Both came out of a fortnight of blocky's query log (14-28 Aug) rather than a
+# pcap, via the `IP:port` leak: a proxy client handed a literal endpoint
+# resolves it as a hostname, so the address and port land in the log together.
+# Seven such endpoints appeared; all seven are now /32s in
+# custom-throttle-list.txt, and these two ASes are where the uncovered ones sat.
+#
+# AS209181 — ZENEX5IVE, 11,520 addresses over 33 ranges, so mid-table here and
+# a shade under NovoServe. It is the best-attributed entry in this file: probed
+# three times, 191.96.158.50 returns an identical Let's Encrypt certificate
+# reading CN=fanzone.symlexvpn.com. The service names itself. Two collected
+# nodes, .50 and .51, adjacent in 191.96.158.0/24 — and .51 had been throttled
+# for weeks while .50 sat untouched one address away, which is the argument for
+# taking the AS rather than continuing to add neighbours one at a time.
+209181  # ZENEX5IVE / Symlex VPN — 11,520, named on its own certificate
+
+# AS154317 — VyomCloud, and at 512 addresses in a single /23 it is the SMALLEST
+# entry in this file bar NovoServe Denmark. One collected node,
+# 160.250.224.190:4439, silent on 443 across three probes in the way a
+# proxy-only node is. At this size the ASN is barely wider than the /32 and the
+# collateral question hardly arises; the reason to take it at all is that the
+# whole /23 is one small tenant's, so a hop within it is the likely next move.
+154317  # VyomCloud — 512, one /23, one collected node
 #
 # DELIBERATELY NOT HERE:
 #

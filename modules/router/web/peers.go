@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -17,7 +18,19 @@ import (
 const conntrackTimeout = 10 * time.Second
 
 type peerRow struct {
-	Addr     string
+	Addr string
+	// The peer's reverse DNS name, shown under the address. Empty either
+	// because nothing is cached yet or because the address resolved to no PTR
+	// at all; RDNSKnown is what separates those, and the template needs the
+	// distinction — the first is a cell the browser is asked to fill in, the
+	// second is settled and must not be asked about again.
+	RDNS      string
+	RDNSKnown bool
+	// The name most recently resolved to this address by the router's own
+	// resolver. Shown alongside RDNS rather than instead of it — they are
+	// different claims and the template labels them apart. Empty when the
+	// answer log is off or has not seen the address.
+	DNSName  string
 	ASN      uint32
 	Org      string
 	Country  string
@@ -213,6 +226,17 @@ type peersServer struct {
 	// tests that pass their own fixture expectations; the page then renders
 	// blank last-seen cells and is otherwise unchanged.
 	timeouts *timeoutTable
+	// Reverse DNS names for the peer addresses. The render path only ever
+	// reads this cache, never fills it — see rdns.go for why the resolver is
+	// kept off the render path entirely, and for the browser's half of it.
+	//
+	// Nil disables the feature the way a nil captures does: no names, no
+	// lookup route, and the template's fill-in script has nothing to ask.
+	rdns *rdnsCache
+	// The resolver's answer log, which names an address that has no PTR. Nil
+	// disables it: no second line under any address, and the page is what it
+	// was before. Read-only from here and never blocking — see answerlog.go.
+	answers *answerLog
 }
 
 func newPeersServer(lanNet netip.Prefix, tables *tableWatcher, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -226,6 +250,7 @@ func newPeersServer(lanNet netip.Prefix, tables *tableWatcher, tmpl, indexTmpl *
 		conntrack:  readConntrack,
 		runTool:    runTool,
 		timeouts:   newTimeoutTable(),
+		rdns:       newRDNSCache(),
 	}
 }
 
@@ -464,6 +489,79 @@ func (s *peersServer) priorityNow(raw []byte, readErr error, leases []lease) ([]
 	return rows, ""
 }
 
+// How many addresses one fill-in request may ask about, and how long the
+// server spends on them.
+//
+// The cap is a bound on work per request, not a limit the page runs into: the
+// script sends its addresses in batches of this size, so a device with three
+// hundred peers takes three requests rather than being truncated. The deadline
+// is generous because this request blocks nothing — the page is already on
+// screen and readable — but finite, because a nameserver that blackholes would
+// otherwise hold the connection open until the browser gave up.
+const (
+	rdnsBatchLimit   = 64
+	rdnsBatchTimeout = 8 * time.Second
+)
+
+// handleRDNS answers the reverse-DNS names for a batch of peer addresses.
+//
+// This is the one place a PTR lookup happens, and it is reached only from the
+// script at the bottom of peers.html, after the page has rendered. Anything it
+// resolves is cached, so the next render of this page serves the same names
+// from the template instead.
+func (s *peersServer) handleRDNS(w http.ResponseWriter, r *http.Request) {
+	if !sameOrigin(w, r) {
+		return
+	}
+	// The {device} check is applied for the same reason every other route
+	// applies it: it keeps these URLs from being pointed somewhere outside the
+	// LAN. It does not restrict which addresses may be asked about — those are
+	// the peers the page is already showing, and this listener is reachable
+	// only from the LAN and the mesh.
+	if _, ok := s.device(r); !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	seen := map[netip.Addr]bool{}
+	wanted := make([]netip.Addr, 0, rdnsBatchLimit)
+	for _, raw := range r.URL.Query()["addr"] {
+		addr, err := netip.ParseAddr(raw)
+		if err != nil {
+			// One unparseable address does not fail the batch. The rest are
+			// still names the operator asked for, and a 400 here would blank
+			// every other cell in the table.
+			continue
+		}
+		addr = addr.Unmap()
+		if seen[addr] {
+			continue
+		}
+		seen[addr] = true
+		if wanted = append(wanted, addr); len(wanted) >= rdnsBatchLimit {
+			break
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), rdnsBatchTimeout)
+	defer cancel()
+	found := s.rdns.resolveMany(ctx, wanted)
+
+	// Keyed by address, and an empty string means a resolved absence — the
+	// script uses that to stop asking about the address rather than rendering
+	// anything. An address missing from the object entirely is one that did
+	// not resolve in time, which the next page load will ask about again.
+	names := make(map[string]string, len(found))
+	for addr, name := range found {
+		names[addr.String()] = name
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	if err := json.NewEncoder(w).Encode(names); err != nil {
+		log.Printf("peers: rdns encode: %v", err)
+	}
+}
+
 // runTool invokes one of the router's shell tools and returns its combined
 // output. The output is surfaced on the page so a failed action is never
 // reported as a success.
@@ -520,6 +618,12 @@ func (s *peersServer) registerRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("GET /peers/{$}", s.handleIndex)
 	}
 	mux.HandleFunc("GET /peers/{device}", s.handlePage)
+	// The browser's half of the reverse-DNS column. Absent when the cache is
+	// nil, matching the template: a page that renders no fill-in script must
+	// not leave a route behind that nothing calls.
+	if s.rdns != nil {
+		mux.HandleFunc("GET /peers/{device}/rdns", s.handleRDNS)
+	}
 	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction(peerAction{
 		name: "throttle", tool: "tempthrottle", argv: addPeer, invalidate: true,
 	}))
@@ -752,6 +856,13 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 			row.Stale = peer.Idle >= staleAfter
 		}
 		row.Traffic = s.namer.describe(peer)
+		// Cache read only. A miss leaves RDNSKnown false, which is the
+		// template's cue to let the browser ask for this one — nothing here
+		// waits on a resolver.
+		row.RDNS, row.RDNSKnown = s.rdns.cached(peer.Addr)
+		// No lookup and no wait: the answer log is read by its own goroutine,
+		// so this is a map read like the two table lookups below it.
+		row.DNSName, _ = s.answers.Lookup(peer.Addr)
 		if info, found := s.tables.asnTable().Lookup(peer.Addr); found {
 			row.ASN, row.Org = info.Number, info.Org
 		}

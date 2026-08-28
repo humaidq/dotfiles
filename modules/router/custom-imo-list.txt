@@ -1259,3 +1259,247 @@
 # in the first window. Recorded because it is exactly the observation that used
 # to trigger a /24, and under the 2026-08-22 decision above it does not — two
 # /32s is the correct outcome, not an argument reopened.
+
+# === 2026-08-28: TWO CAPTURES, TWO LAYERS, AND A THROTTLING DAY ==============
+#
+# Read these two blocks together. 28 is an even day, so bingo's `alternate`
+# policy had this file THROTTLING rather than blocking for the whole of both
+# windows, and that is why the covered addresses below show live sessions
+# instead of dropped SYNs. Nothing here is evidence that a block failed.
+
+# --- 192.168.50.233, 11:16-11:23, six Tencent tunnel endpoints --------------
+#
+# A 26 MB imo video call to 213.55.122.39, and the tunnel layer walking the
+# 943/1943/2943/9443 pool underneath it for the whole seven minutes. 274 SYNs
+# across seven Tencent addresses, ZERO bytes returned on any of them — the port
+# rule in custom-port-blocklist.txt held exactly as it has in every round since
+# the fourth, and these are its drops.
+#
+# One of the seven, 43.166.247.66, was already covered by 43.166.224.0/19. The
+# six below were not. All AS132203, all matching the established shape: no DNS
+# answer named any of them, no TLS ClientHello on any of them.
+#
+# Per-address ports and window, from the capture:
+#
+#   43.130.68.237    943,1943,2943         t+1.0-37.4s
+#   43.166.149.163   943,1943,2943,9443    t+1.0-37.4s
+#   43.166.211.215   943,1943,2943,9443    t+50.0-131.3s
+#   43.166.153.205   943,1943,2943,9443    t+144.0-225.3s
+#   43.166.152.240   943,1943,2943,9443    t+238.0-319.2s
+#   170.106.164.230  943,1943,2943,9443    t+50.0-319.2s
+#
+# The staggering is the interesting part and it is new here: five of the six
+# occupy non-overlapping ~80s slots in sequence, with 170.106.164.230 running
+# across all of them. That is a pool walk with a fixed dwell time, not the
+# simultaneous three-tunnel pattern earlier rounds recorded — the app is trying
+# one endpoint at a time and moving on when it gets nothing.
+#
+# THREE OF THE SIX SIT IN /24s THIS FILE ALREADY HAS ENTRIES IN — 43.166.149
+# (four listed), 43.166.152 (five listed), 43.166.211 (three listed). Under the
+# 2026-08-22 decision that is NOT an argument for those /24s, and it is recorded
+# here for the same reason 47.79.236 was: so the observation is on the record
+# without reopening the question. Note also what it says about rotation speed in
+# Tencent space, which is slower than the Alibaba relay pool — the app is coming
+# back to /24s it used weeks ago rather than spreading clear of the list.
+43.130.68.237
+43.166.149.163
+43.166.152.240
+43.166.153.205
+43.166.211.215
+170.106.164.230
+
+# --- 192.168.50.246, 11:13-11:25, the LBS hole, occupied --------------------
+#
+# 161.117.185.166:5222, AND IT IS THE MOST DIRECTLY USEFUL ENTRY IN THIS BLOCK
+# because it sits in the hole custom-port-blocklist.txt documents and accepts:
+# "5223 and 5228 ... blocking either would break notifications for every phone
+# in the house. The LBS therefore stays reachable, and that is a known and
+# accepted hole." This is that hole being used, on 5222 rather than 5223/5228,
+# and an IP entry is the only lever this network has on it.
+#
+# WHY IT IS IMO, in a capture where nothing else on the wire says so:
+#
+#   * Same window, the device resolved socks.imolive2.com, socks.live.bigo.sg
+#     and fgw.imoim.app — all three answered 0.0.0.0 by the sinkhole, all three
+#     never connected to. The DNS layer worked and the app carried on.
+#   * Same window, 43.166.154.48:1943 (already in this file) took SYNs and got
+#     nothing back. The tunnel layer was being walked and was closed.
+#   * AS45102, the same Alibaba estate as every LBS address in this file, though
+#     161.117.144.0/20 is a prefix no previous round has touched.
+#   * The session predates the capture and carries a fixed 12-byte payload,
+#     c2fe0005000000000d2301c6, echoed BYTE-IDENTICAL in both directions, twice
+#     600s apart. Not XMPP despite the port — real 5222 is XML text — and no TLS
+#     ClientHello. A proprietary binary keepalive on a 10-minute timer, which is
+#     the signature this file has recorded for the LBS since round four.
+#
+# So the whole imo estate was sealed in that window except this one channel, and
+# this one channel was alive. That is the accepted hole doing exactly what the
+# port file predicted it would.
+161.117.185.166
+
+# NOT ADDED: 213.55.122.39, the far end of the 26 MB call in the first capture.
+#
+# AS24757 EthioNet, Ethio Telecom — a RESIDENTIAL subscriber line in Ethiopia,
+# not imo infrastructure. Identified as the human peer by the operator and the
+# wire agrees: three flows to it (TCP 37366, TCP 20159, UDP 31599) carrying the
+# entire call, no DNS naming it, and it appears in no other capture.
+#
+# Same call and same refusal as 42.115.54.143 (FPT Telecom, Vietnam) above:
+# adding it would drop one household's line and catch no relay. It is the fully
+# P2P case this file's header describes — "once an imo call has gone peer to
+# peer the packets never touch an address on this list" — and it is the reason
+# the six tunnel /32s above, correct as they are, did not and could not stop
+# this call.
+
+# --- 2026-08-28, second pass: a 15-minute FULL-LAN capture ------------------
+#
+# Different method from every block above, and it is worth recording because it
+# changes what a gap in this file means. The captures above were per-device, run
+# because a device was already suspected. This one was the whole of enp2s0 for
+# 15 minutes with no host filter — 428,207 packets, 417 MB, zero kernel drops —
+# so for once the absence of an address is close to evidence rather than a hole
+# in the sampling.
+#
+# Four more Tencent tunnel endpoints, none previously listed, all on the
+# 943/1943/2943/9443 family and all with ZERO bytes returned:
+#
+#   43.166.152.160   943, 1943, 2943, 9443   from the handset at .233
+#   43.166.161.65    943, 1943, 2943, 9443   from the handset at .233
+#   170.106.160.74   943, 1943, 2943, 9443   from the handset at .233
+#   43.166.211.21    1943, 9443              from the handset at .246
+#
+# Both handsets were independently confirmed imo in the per-device captures
+# earlier the same day, so no attribution is being carried by the port family
+# alone here.
+43.166.152.160
+43.166.161.65
+170.106.160.74
+43.166.211.21
+#
+# NOT ADDED: 47.79.127.84, AND IT IS THE MOST USEFUL LINE IN THIS BLOCK.
+#
+# It sits inside 47.79.0.0/16 — the hardcoded Alibaba relay pool this file has
+# chased across seventeen /24s — and it was contacted by a pool handset. On the
+# reasoning that produced most of the 47.79 rows above it would have gone
+# straight in. It presented a real TLS ClientHello with SNI api.bidnex.com.
+#
+# imo does not do that. Every imo flow this file has ever recorded is opaque
+# from byte 0 with no ClientHello, and that is stated in the header, in the port
+# file, and in four separate blocks above. A named TLS session in this range is
+# a different tenant on shared Alibaba cloud, which is precisely the collateral
+# the 2026-08-22 /32-only decision exists to avoid — here caught before the
+# entry was written rather than after.
+#
+# THE GENERAL LESSON, since this file's rows are provenance: prefix membership
+# is not attribution. Check for a ClientHello before adding anything in 47.79,
+# 47.245, 8.209 or 8.211 on the strength of the range alone.
+#
+# NOT ADDED EITHER: the 47.236 / 8.219 cluster on tcp/8820 + udp/6000, which was
+# handed over as suspected imo and is not. Two LAN devices run an identical
+# proprietary protocol there — a `c000`/`d000` two-byte magic on 8820 then
+# 1400-byte blobs carrying a length-prefixed ASCII path `/3700/12344`, and on
+# 6000 a single local socket heartbeating to TWO servers with byte-identical
+# payloads every ~24s, differing only in one header byte that indexes the peer.
+# That is server redundancy, not media, and the devices are statically addressed
+# appliances that emit no DNS, no DHCP hostname and no mDNS at all. One of them
+# was 87% of its own traffic and upload-skewed on the peers page, which is the
+# exact profile of the TikTok LIVE misattribution recorded in the memory notes.
+# Left alone pending identification: the relay-trap case says the cost of being
+# wrong here is the household's cameras.
+
+
+# === imo 2026.07.1041, the hardcoded pool read off the dex, 2026-08-28 =======
+#
+# DIFFERENT PROVENANCE FROM EVERY BLOCK ABOVE, and it matters for how these
+# should be maintained. Every earlier entry in this file came from watching a
+# handset: a capture shows whatever subset one session happened to dial. These
+# came out of com.imo.android.imoim 2026.07.1041 itself — 32 dex, 83 MiB, with
+# the version read from the binary manifest rather than trusted from the mirror
+# — so this is the pool as the app ships it, not a sample of it. The hostname
+# half of the same run is in custom-blocklist.txt.
+#
+# 173 dotted quads came out of the string table. 15 were junk the regex cannot
+# tell from an address and neither can a careless reader — X.509 OIDs
+# (1.3.6.1, 2.5.29.37, 5.5.7.3, 2.16.840.1, 4.1.311.10), version strings
+# (3.6.0.0, 6.5.0.0, 6.5.8.3, 6.13.0.300, and the DNIC-space 6.4.0.6, 7.4.2.0,
+# 7.4.2.7, 22.2.0.2), and 1.2.3.4. 8.8.8.8 is real and is imo's
+# NetworkDiagnosticTool probe set, where blocking is self-harm. 91 were already
+# covered here or in custom-ip-blocklist.txt, which is the useful negative
+# result: the NETSTAR, Zenlayer, AS36131 and Chinese-carrier layers of this
+# file are still accurate against a current build.
+#
+# WHY THESE ARE IN THIS FILE AND NOT custom-ip-blocklist.txt. That file drops;
+# this one applies imoPolicy. EC2 and GCE addresses are reassigned between
+# tenants, so a hardcoded address that is imo's today can be a stranger's
+# instance in three months — and a stale /32 in the blocklist would break that
+# stranger's service silently, with nothing on this network to notice. Under
+# imoPolicy the worst case of a stale row is a shaped instance rather than a
+# dead one, which is a mistake that can be recovered from.
+#
+# So: RE-DERIVE THESE FROM A FUTURE APK RATHER THAN ACCUMULATING THEM. Every
+# other block in this file is provenance worth keeping forever; this one has a
+# shelf life, and a later extraction should replace it rather than be appended
+# next to it.
+#
+# Collateral is per-address, not per-range — these are 49 /32s in general-
+# purpose cloud, and no prefix is being taken. That is what makes this cheap
+# where the /18 and /19 arguments above were not.
+
+# AWS AS16509, 43 addresses, split between eu-west-2 (London) and
+# eu-central-1 (Frankfurt). The largest single group in the build.
+3.10.111.108
+3.10.130.139
+3.10.243.60
+3.11.45.113
+3.11.160.56
+3.64.21.20
+3.65.157.110
+3.66.93.211
+3.75.158.191
+3.78.98.58
+3.123.252.207
+3.125.72.218
+13.41.161.110
+13.42.72.194
+13.43.57.201
+13.43.82.96
+18.130.109.24
+18.132.227.127
+18.133.23.249
+18.135.243.243
+18.153.122.244
+18.158.245.225
+18.159.217.92
+18.168.0.107
+18.168.173.6
+18.171.80.183
+18.184.30.145
+18.192.15.187
+18.194.216.218
+35.159.187.222
+35.176.105.107
+35.176.183.22
+35.176.237.162
+35.178.161.133
+51.24.29.158
+52.29.8.34
+52.29.85.171
+52.56.142.249
+52.56.222.70
+52.58.213.234
+54.93.105.37
+63.177.219.106
+63.178.104.107
+
+# Google Cloud AS396982, 5 addresses, all asia-south1 (Mumbai). A region no
+# capture on this network has ever seen imo use, which is the kind of thing only
+# reading the binary turns up.
+34.93.4.101
+34.93.74.242
+34.93.185.144
+35.200.129.160
+35.244.41.148
+
+# ChinaNet AS4134, one address, the same category as the Chinese carrier and IDC
+# rows already above.
+58.52.135.41

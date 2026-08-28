@@ -21,6 +21,7 @@ in
   imports = [
     ./bar.nix
     ./applications.nix
+    ../uwsm.nix
     ../wayland-services.nix
   ];
 
@@ -37,7 +38,12 @@ in
     services.greetd = {
       enable = true;
       settings.default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd sway";
+        # `uwsm start` rather than bare `sway`, so the compositor lands in
+        # wayland-wm@sway.service instead of the login session scope. See
+        # ../uwsm.nix for why that matters. greetd runs this through the user's
+        # login shell, so the quoting survives and the profile uwsm's
+        # environment preloader relies on has already been sourced.
+        command = "${pkgs.tuigreet}/bin/tuigreet --time --cmd '${lib.getExe pkgs.uwsm} start -F -- /run/current-system/sw/bin/sway'";
         user = "greeter";
       };
     };
@@ -138,7 +144,28 @@ in
 
       wayland.windowManager.sway = {
         enable = true;
+
+        # uwsm owns graphical-session.target now. home-manager's own
+        # integration would start a second sway-session.target bound to the
+        # same target and run its own dbus-update-activation-environment,
+        # racing uwsm's environment export for the same variables.
+        systemd.enable = false;
+
         config = {
+          # Mandatory with uwsm, not an optimisation: the compositor unit uses
+          # Type=notify, so without this it never signals readiness and systemd
+          # kills it on startup timeout. The variable list is what
+          # home-manager's systemd.variables was exporting, minus
+          # WAYLAND_DISPLAY and DISPLAY (uwsm always does those) and
+          # XDG_CURRENT_DESKTOP (uwsm sets it itself). SWAYSOCK is the one that
+          # would be missed loudest -- kanshi's profile `exec` blocks shell out
+          # to swaymsg, see hosts/anoa/default.nix.
+          startup = [
+            {
+              command = "${lib.getExe pkgs.uwsm} finalize SWAYSOCK XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE";
+            }
+          ];
+
           input = {
             "type:keyboard" = {
               xkb_layout = "us,ara,fi";
@@ -199,7 +226,16 @@ in
           terminal = "foot";
           # https://github.com/nix-community/home-manager/blob/master/modules/services/window-managers/i3-sway/sway.nix
           keybindings = lib.mkOptionDefault {
-            "${mod}+Shift+Return" = "exec foot";
+            # Every terminal window gets its own app-foot@*.scope. This is the
+            # binding that matters most for ../uwsm.nix's purpose: a runaway
+            # inside one terminal is now bounded by that window rather than by
+            # the session. Bare `exec` would leave it in the compositor's own
+            # unit, which is no better than the flat session scope it replaced.
+            #
+            # The doubled `exec` is sway's documented idiom -- sway runs the
+            # command under `sh -c`, and the inner exec replaces that shell so
+            # the scope's main PID is foot itself.
+            "${mod}+Shift+Return" = "exec exec ${lib.getExe pkgs.app2unit} -- ${lib.getExe pkgs.foot}";
             "${mod}+Shift+c" = "kill";
             "${mod}+Shift+r" = "reload";
             "${mod}+p" = "exec ${lib.getExe pkgs.fuzzel}";
@@ -216,7 +252,7 @@ in
             "XF86AudioMute" = "exec pamixer -t";
             "XF86AudioMicMute" = "exec pamixer --default-source -t";
             "XF86Sleep" = "exec systemctl suspend";
-            "XF86Display" = "exec ${lib.getExe pkgs.wdisplays}";
+            "XF86Display" = "exec exec ${lib.getExe pkgs.app2unit} -- ${lib.getExe pkgs.wdisplays}";
 
             "Print" = "exec ${screen}/bin/screen";
             "Control+Print" = "exec ${recorder}/bin/recorder";

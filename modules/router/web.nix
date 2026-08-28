@@ -137,7 +137,31 @@ in
           "ROUTER_DHCP_LEASES_FILE=${cfg.dhcp.leasesFile}"
           "ROUTER_LISTEN_LAN=${lib.head (lib.splitString "/" cfg.lanAddress)}:80"
           "ROUTER_LAN_CIDR=${cfg.lanAddress}"
-          "ROUTER_IP2ASN_FILE=${./ip2asn-combined.tsv}"
+          # The ASN table behind the peers page's number and organisation
+          # columns. GeoLite2's edition replaces the checked-in one when
+          # sifr.router.geoip is on: measured against 2895 addresses this
+          # network actually resolved, GeoLite2-ASN placed 10 that ip2asn did
+          # not — Bytedance, Amazon and Automattic ranges among them — against
+          # 2 the other way.
+          #
+          # The checked-in table stays in the repository regardless, because
+          # ip-blocklist.nix expands custom-lowtrust-asns.txt and
+          # custom-cdn-quota-asns.txt against it at BUILD time and a sandboxed
+          # Nix build cannot read a file a licence key fetches at runtime.
+          #
+          # That leaves two ASN maps on the router, which is only safe because
+          # they agree where it matters: both know all 42 AS numbers those two
+          # lists name, and the prefixes they expand to differ by about 2% of
+          # addresses. The 3.5% of lookups where they disagree outright are
+          # Etisalat's own prefixes — AS8966 against AS5384, an
+          # origin-versus-holder split — and neither list names either number.
+          #
+          # Chosen here rather than overridden from geoip.nix on purpose: a
+          # second Environment= line for the same variable is not an override,
+          # it is a shadow, and geoip.nix has the comment on how that went.
+          "ROUTER_IP2ASN_FILE=${
+            if cfg.geoip.enable then "${cfg.geoip.stateDir}/asn.tsv" else "${./ip2asn-combined.tsv}"
+          }"
           # Both feed the peers page's traffic column: which ports to flag, and
           # which conntrack mark means the qos chain recognised a call.
           "ROUTER_SUSPECT_PORTS=${lib.concatStringsSep "," suspectPorts}"
@@ -145,6 +169,16 @@ in
           "ROUTER_CAPTURE_DIR=%S/router-web/captures"
         ]
         ++ lib.optional (cfg.dhcp.hostsFile != null) "ROUTER_DHCP_HOSTS_FILE=${cfg.dhcp.hostsFile}"
+        # Where a peer actually is, as opposed to where its AS is registered.
+        # Unset means no country column at all rather than a fallback to the
+        # ASN registration, which is the wrong answer geo.go exists to replace.
+        # The table watcher picks the file up whenever it appears, so pointing
+        # at one the first timer run has yet to write is fine.
+        ++ lib.optional cfg.geoip.enable "ROUTER_GEOIP_FILE=${cfg.geoip.stateDir}/country.tsv"
+        # The resolver's answer log, which names an address that has no PTR.
+        # Unset means the peers page shows reverse names only, exactly as it
+        # did before this existed.
+        ++ lib.optional cfg.queryLog.enable "ROUTER_ANSWERLOG_DIR=${cfg.queryLog.dir}"
         # Presence of the file is what puts the access point section on the
         # status page. Unset means no probe socket, no goroutine and no
         # section — the same opt-in idiom as the uplink database below.
@@ -203,7 +237,11 @@ in
         # Harmless when the list carries no logins and the secret is world
         # readable anyway, and merges cleanly with the router-vpn group vpn.nix
         # adds the same way.
-        SupplementaryGroups = lib.optional (cfg.accessPoints.file != null) "router-ap";
+        # blocky-answers is the read side of the resolver's answer log, which
+        # names a peer that has no PTR — see sifr.router.queryLog in dns.nix.
+        SupplementaryGroups =
+          lib.optional (cfg.accessPoints.file != null) "router-ap"
+          ++ lib.optional cfg.queryLog.enable "blocky-answers";
       };
     };
 

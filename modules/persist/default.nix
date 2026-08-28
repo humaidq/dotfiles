@@ -13,6 +13,8 @@ let
   o11yServerEnabled = lib.attrByPath [ "sifr" "personal" "o11y" "server" "enable" ] false config;
   unifiEnabled = lib.attrByPath [ "services" "unifi-os-server" "enable" ] false config;
   fullRebootEnabled = lib.attrByPath [ "sifr" "router" "fullReboot" "enable" ] false config;
+  geoipEnabled = lib.attrByPath [ "sifr" "router" "geoip" "enable" ] false config;
+  geoipStateDir = lib.attrByPath [ "sifr" "router" "geoip" "stateDir" ] "/var/lib/geoip" config;
   extraDirs =
     lib.optionals desktopEnabled [
       "/var/lib/bluetooth"
@@ -40,6 +42,16 @@ let
     # done. That memory is a marker file, so it has to outlive the reboot.
     ++ lib.optionals fullRebootEnabled [
       "/var/lib/router-fullreboot"
+    ]
+    # The converted GeoLite2 tables. Refetching them is a licensed 50 MB
+    # download on a weekly timer, so a wiped root does not just cost the time —
+    # the timer's next elapse is the next weekly boundary after boot, which
+    # leaves the peers page with an empty country column for up to a week after
+    # every reboot. The table is not in the store and cannot be, because
+    # GeoLite2 is not redistributable and this repository is public, so
+    # surviving the wipe is the only way it is there at boot.
+    ++ lib.optionals geoipEnabled [
+      geoipStateDir
     ]
     ++ lib.optionals unifiEnabled [
       config.services.unifi-os-server.stateDir

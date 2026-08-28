@@ -59,3 +59,27 @@
 # Hadoopsky LLC, AS402267, inside Ace Data Centers space. Three nodes.
 144.225.91.0/24
 217.65.70.0/24
+
+# --- A SINGLE HOST, 2026-08-28, against this file's stated purpose -----------
+#
+# Everything above is a blanket prefix, and the header says that is what this
+# file is for. This entry is a /32, deliberately, and the reason is scope rather
+# than breadth: it needs to apply to the pool and not to the house, and this is
+# the only pool-scoped destination list there is. custom-ip-blocklist.txt would
+# have given the right narrowness with the wrong reach.
+#
+# 46.165.254.136 is AS28753, Leaseweb DE-FRA-10, TTL 56 on the wire. It is the
+# tunnel server in 192.168.50.221-20260828-1112.pcap — see the 60000 entry in
+# custom-lowtrust-ports.txt for the full read of that capture.
+#
+# THE ASN WAS CONSIDERED AND DECLINED. AS28753 in custom-lowtrust-asns.txt would
+# catch the server moving within Leaseweb, which is the obvious next thing for it
+# to do, but 46.165.192.0/18 alone is 16k addresses and the whole of Leaseweb DE
+# is heavier collateral than anything in that file bar Cogent. The operator's
+# call was the /32 for now, knowingly: this holds one address and nothing more.
+#
+# So expect it to be outrun. A second Leaseweb address appearing for a pool
+# device after this date is not a new finding, it is this one moving, and it is
+# the point at which the ASN trade is worth re-opening rather than adding a
+# third /32.
+46.165.254.136/32

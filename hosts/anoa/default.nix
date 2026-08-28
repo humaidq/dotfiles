@@ -282,6 +282,12 @@ in
   # before memory pressure stalls the whole machine. enableUserSlices is the key
   # bit: that's where the desktop apps live.
   #
+  # That "heaviest cgroup" only became a meaningful unit of blame once
+  # modules/desktop/uwsm.nix landed. Before it, greetd started sway directly, so
+  # the compositor and every descendant shared one flat session-N.scope: oomd
+  # had exactly one candidate worth picking and killing it dropped the desktop
+  # to the greeter. It did so on 2026-08-27 and again on 2026-08-28.
+  #
   # enableSystemSlice stays off deliberately. -.slice is monitored, and
   # systemd.resource-control(5) notes that a cgroup left at ManagedOOM*=auto is
   # still a kill *candidate* when an ancestor is set to kill, so nix-daemon and

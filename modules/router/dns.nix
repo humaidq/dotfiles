@@ -75,6 +75,54 @@ let
 in
 
 {
+  options.sifr.router.queryLog = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Have blocky record which addresses each name resolved to, so the peers
+        page can name a peer that has no PTR.
+
+        This is the only source that can name one. An in-ISP CDN cache — most
+        of what AS5384 answers with on this network — publishes no reverse
+        record and never will, and its AS is the ISP's, so the row can say
+        "Emirates Telecommunications Group" without saying whether it is
+        serving Instagram or YouTube. The name a device asked for immediately
+        before connecting is the missing half.
+
+        Deliberately NOT a query log in the usual sense: see the fields set
+        below. Nothing about who asked is written down.
+      '';
+    };
+
+    dir = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/log/blocky-answers";
+      readOnly = true;
+      description = ''
+        Where the log is written. Read-only and stated once because blocky
+        writes it and router-web reads it, from two different modules, and a
+        path spelled out in both is a path that eventually differs in one.
+
+        Not under blocky's LogsDirectory: DynamicUser puts that inside
+        /var/log/private, which is 0700 root, so a second DynamicUser service
+        cannot read it however the file itself is moded.
+      '';
+    };
+
+    retentionDays = lib.mkOption {
+      type = lib.types.int;
+      default = 2;
+      description = ''
+        How many days of files blocky keeps. Short on purpose: the peers page
+        only ever asks about addresses that are in the connection table now,
+        so anything older than the current session answers no question that is
+        being asked, and this is the one file on the router that names what the
+        house looked up.
+      '';
+    };
+  };
+
   config = lib.mkIf cfg.enable {
 
     # The reverse zone above is built from whole octets, so a prefix that ends
@@ -172,7 +220,12 @@ in
       # it dnsmasq logs a warning about the missing addn-hosts file on every
       # boot before the timer has first fired.
       "f ${v6NamesFile} 0644 root root -"
-    ];
+    ]
+    # 0770 because blocky creates a file per day in here and router-web reads
+    # them, and neither is the owner. Not world-readable: this names what the
+    # house resolved, and while it says nothing about who asked, that is not a
+    # reason to hand it to every account on the box.
+    ++ lib.optional cfg.queryLog.enable "d ${cfg.queryLog.dir} 0770 root blocky-answers -";
 
     systemd.services.dnsmasq-v6-names = {
       description = "Map IPv6 link-local addresses to DHCP names for dnsmasq";
@@ -265,6 +318,35 @@ in
           # after a lease changes. Honour the real TTLs here instead.
           caching.minTime = "0";
         }
+        // lib.optionalAttrs cfg.queryLog.enable {
+          # What the peers page reads to name an address with no PTR.
+          #
+          # fields is the whole reason this is acceptable to run. blocky's
+          # default logs clientIP and clientName alongside the question, which
+          # on this network is a per-person browsing history sitting on the
+          # router — the one artifact this repository is careful never to
+          # produce. Restricted to the two fields that answer the question the
+          # page asks, the file is a name-to-address map: it records that
+          # something on this LAN resolved a name, never which device did.
+          #
+          # csv rather than csv-client for the same reason: csv-client splits
+          # the output into one file per client, which reintroduces exactly the
+          # attribution the field list just removed.
+          queryLog = {
+            type = "csv";
+            target = cfg.queryLog.dir;
+            fields = [
+              "question"
+              "responseAnswer"
+            ];
+            logRetentionDays = cfg.queryLog.retentionDays;
+            # Rather than blocky's 30s default: the page is read live while
+            # watching a device, and a name that only appears half a minute
+            # after the connection it explains is a name that arrives after the
+            # question has been answered another way.
+            flushInterval = "5s";
+          };
+        }
         // {
           # Set outside the recursiveUpdate, which would merge the removed
           # entries straight back in.
@@ -279,7 +361,18 @@ in
     systemd.services.blocky = lib.mkIf config.services.blocky.enable {
       after = [ "dnsmasq.service" ];
       wants = [ "dnsmasq.service" ];
+      serviceConfig = lib.mkIf cfg.queryLog.enable {
+        # blocky is DynamicUser with ProtectSystem=strict, so it reaches this
+        # directory the same way router-web reaches the access-point secret: a
+        # group both services are in, since neither has a build-time uid to
+        # grant directly. ReadWritePaths is what makes it writable through
+        # ProtectSystem.
+        SupplementaryGroups = [ "blocky-answers" ];
+        ReadWritePaths = [ cfg.queryLog.dir ];
+      };
     };
+
+    users.groups.blocky-answers = lib.mkIf cfg.queryLog.enable { };
 
   };
 }

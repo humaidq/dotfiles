@@ -442,6 +442,155 @@ td.actions button {
   font-weight: 700;
 }
 
+/* ------------------------------------------------ wide tables on a phone */
+
+/* The peers table is the widest thing this UI has: ten columns ending in a
+   three-button group. On a phone it does not fit and no amount of tightening
+   will make it — .table-wrap's sideways scroll loses nothing, but reading one
+   row means dragging the table back and forth and then losing your place, and
+   the buttons that act on a peer sit off the right edge where they are found
+   last.
+
+   So below the breakpoint each row becomes a card: address as its heading,
+   every other column a labelled line under it, buttons at the bottom with room
+   to be tapped. The markup is unchanged and it is still a table on anything
+   wider — this is one media query, not a second template.
+
+   Applied by putting .table-cards on the table. The other tables in this UI
+   are narrow enough to survive as they are; any that stops being so wants this
+   class and a data-label on each cell, and nothing else.
+
+   60rem rather than a conventional phone breakpoint because the question is
+   what the table needs, not what a phone is: --measure above records that the
+   actions fell off the end at 64rem, and they are the column that must never
+   be behind the scroller. This covers every phone in both orientations and a
+   tablet held upright, and hands the table back at the width it starts fitting
+   at. A peer with a full-length IPv6 address still overruns --measure on a
+   desktop, which predates all of this and is a column-set problem rather than
+   a breakpoint one. */
+@media (max-width: 60rem) {
+  .table-cards,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: auto;
+  }
+
+  /* The heads are gone from the top of the table because each cell now carries
+     its own, from data-label. Hidden rather than removed from the markup: on a
+     wider screen it is the header row again. */
+  .table-cards thead {
+    display: none;
+  }
+
+  /* Capped rather than left to fill: at the top of this range a card is most
+     of a tablet wide, and a label in a 6.25rem gutter with its value stranded
+     forty characters away is worse to read than the table it replaced. */
+  .table-cards tr {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 0.7rem 0.85rem;
+    margin-bottom: 0.65rem;
+    max-width: 34rem;
+  }
+
+  /* The dominant-peer tint belongs to the card. It was on the cells, which no
+     longer tile the row, so it would have striped it instead. */
+  .table-cards tr.high,
+  .table-cards tr.high:hover {
+    background: #fdf3f2;
+  }
+
+  .table-cards tr.high td,
+  .table-cards tr:hover td {
+    background: none;
+  }
+
+  /* Label in the gutter, value in the flow. Absolute rather than a grid or
+     flex column because several of these cells hold more than one thing — the
+     byte count carries its up/down pair, the traffic cell a label and a run of
+     ports — and those must stack under the value, not become columns of their
+     own. */
+  .table-cards td {
+    position: relative;
+    border: 0;
+    padding: 0.22rem 0 0.22rem 6.75rem;
+    min-height: 1.35rem;
+    text-align: left;
+    white-space: normal;
+  }
+
+  /* The label sits in a fixed gutter so that every value in a card starts at
+     the same x and the column can be read straight down. Fixed width means a
+     label longer than it overflows into the value rather than pushing it, so
+     the data-label a cell carries is kept short enough to fit — see the note
+     on the Organisation cell in peers.html. nowrap keeps a two-word label
+     ("Last seen") on the one line the gutter is tall enough for. */
+  .table-cards td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    top: 0.3rem;
+    width: 6.25rem;
+    white-space: nowrap;
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+  }
+
+  /* Figures are right-aligned to be scanned down a column. There is no column
+     here, so the alignment that made them comparable now just pushes them away
+     from their own labels. */
+  .table-cards td.num {
+    text-align: left;
+  }
+
+  /* The address is the card's heading: full width, no label, and ruled off
+     from the fields it heads. */
+  .table-cards td.cell-key {
+    padding-left: 0;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+    font-family: var(--mono);
+    overflow-wrap: anywhere;
+  }
+
+  /* Buttons: full width of the card, wrapping rather than forcing it wider,
+     and tall enough to be a tap target rather than the 0.18rem-padded control
+     that suits a mouse in a dense table. */
+  .table-cards td.actions {
+    padding-left: 0;
+    margin-top: 0.55rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .table-cards td.cell-key::before,
+  .table-cards td.actions::before {
+    content: none;
+  }
+
+  .table-cards td.actions form {
+    display: inline-block;
+    margin: 0;
+  }
+
+  .table-cards td.actions form + form {
+    margin-left: 0;
+  }
+
+  .table-cards td.actions button {
+    padding: 0.45rem 0.9rem;
+  }
+}
+
 /* ----------------------------------------------------------- access points */
 
 /* One row per AP: lamp, name, word. No figures, by design — see aps.go for why
@@ -889,6 +1038,63 @@ code.port.suspect {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* The peer's reverse DNS name, under its address. Sized and coloured like
+   .dir so it reads as an annotation on the cell above rather than a second
+   value — it is a claim the peer makes about itself, not attribution.
+
+   Allowed to wrap, unlike .dir: hosting PTRs run long
+   (ec2-…​.eu-west-1.compute.amazonaws.com) and forcing those onto one line
+   would widen the first column enough to push the rest of the table into the
+   scroller on every view.
+
+   break-word and deliberately not anywhere, which is the stronger rule and the
+   wrong one here: anywhere lets a cell report a one-character minimum width,
+   and the auto table layout takes that as licence to squeeze the address
+   column to nothing. break-word still breaks a name too long for the column
+   while leaving the column's intrinsic width at its longest label. */
+.rdns,
+.qname {
+  display: block;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+  overflow-wrap: break-word;
+  /* The tag sits in a gutter and the name is indented past it, so a name too
+     long for the column wraps under itself rather than back under its own tag.
+     Hosting PTRs are long enough that this is the common case on a phone, not
+     an edge one.
+
+     Positioned rather than a negative text-indent, which is the other way to
+     hang an indent and pulls the generated tag out of the box along with the
+     first line — off the left edge of the card, where it was clipped. */
+  position: relative;
+  padding-left: 2.1rem;
+}
+
+/* The two names are different claims, so they are told apart by a tag rather
+   than left as two anonymous lines under an address. ptr is the operator's own
+   record; dns is a name this router resolved to the address, which is the only
+   handle on an in-ISP CDN cache and a weaker claim than a PTR.
+
+   The tag is generated rather than written into the markup so the name stays
+   the only selectable text in the cell — these get copied into a terminal. */
+.rdns::before,
+.qname::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--idle);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.rdns::before {
+  content: "ptr";
+}
+
+.qname::before {
+  content: "dns";
 }
 
 .devname {

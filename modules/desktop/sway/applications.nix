@@ -126,6 +126,14 @@ in
             main = {
               tabs = 4;
               terminal = "${lib.getExe pkgs.foot} -e";
+              # Launch every entry into its own scope under
+              # app-graphical.slice instead of inheriting the compositor's
+              # unit, so systemd-oomd can kill one app rather than the session
+              # (see ../uwsm.nix). fuzzel exports DESKTOP_ENTRY_ID and friends
+              # for exactly this hook, and app2unit reads them to name the
+              # unit after the entry -- so scopes come out as
+              # app-<entry-id>@<random>.scope and are legible in systemd-cgls.
+              "launch-prefix" = "${lib.getExe pkgs.app2unit} --";
               layer = "overlay";
               width = 40;
               "exit-on-keyboard-focus-loss" = "no";

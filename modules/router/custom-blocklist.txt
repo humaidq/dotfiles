@@ -1297,7 +1297,11 @@ chato.go.link
 *.kottakkal.in
 *.kottakkalayurveda.ae
 *.kshomeopathy.com
-*.kundaliniloungecom
+# Was `*.kundaliniloungecom` — a missing dot, so it matched nothing at all from
+# whenever it was added until 2026-08-28. Found by a sanity check for wildcards
+# with fewer than two dots, which is worth re-running over this file: an entry
+# like this looks present in every review and blocks nothing.
+*.kundalinilounge.com
 *.kundaliniyogabali.com
 *.kundaliniyogaclub.com
 *.kundaliniyogahub.com
@@ -2751,3 +2755,351 @@ mask-h2.icloud.com
 # skill warns about: the name came from a TLS ClientHello on the wire and from
 # the resolver's own query log, not from a string table.
 *.nsoccclite.xyz
+
+# --- homenetproxy.xyz, 2026-08-28 -------------------------------------------
+#
+# The name says what it is. Queried by two pool handsets on 2026-08-28 —
+# 10:24:31 and 11:27:35 — for A and AAAA both, and NOT blocked: the resolver
+# answered NOERROR with 104.21.22.78 / 172.67.203.117 and
+# 2606:4700:3036::6815:164e / ::ac43:cb75.
+#
+# BOTH QUERYING DEVICES ARE ALREADY IN THE LOW-TRUST POOL. They were identified
+# from the resolver log's link-local client_ip via `ip -6 neigh` on bingo, which
+# is the step worth remembering: blocky logs a client as fe80:: when the handset
+# asks over v6, and the pool is keyed on MAC, so the two look unrelated until
+# the neighbour table joins them.
+#
+# NAME-ONLY, and an address entry would be wrong for the usual reason: both A
+# records are shared Cloudflare edge, so a /32 would take unrelated tenants with
+# it. Same call as *.nsoccclite.xyz above and the ousaqb.tech case before it.
+#
+# EXPECT IT TO BE PARTIAL, on the same evidence as those two. No connection to
+# either address appeared in conntrack, so nothing was caught mid-session here —
+# but a client that has already been handed an address does not need the name
+# again, and this network has now twice watched a proxy client carry traffic
+# over a CDN edge that its own A records never named.
+#
+# Both forms because the apex is what was actually queried and it resolves,
+# unlike nsoccclite above whose apex did not. Not the `.xyz`-is-a-GLSL-swizzle
+# false positive the skill warns about: this came from the resolver's own query
+# log, not a string table.
+homenetproxy.xyz
+*.homenetproxy.xyz
+
+
+# === imo 2026.07.1041, static extraction, 2026-08-28 =========================
+#
+# From the APK, not a capture: com.imo.android.imoim 2026.07.1041, version read
+# out of the binary manifest rather than trusted from the mirror. 32 dex,
+# 83 MiB of bytecode. The IP half of this run is in custom-imo-list.txt.
+#
+# EVERY HOSTNAME BELOW IS EXACT AND DELIBERATELY NOT A WILDCARD, except the one
+# noted as such. They are per-tenant names on shared providers — Azure Front
+# Door, Azure App Service, Google Cloud Run, CloudFront — where the zone belongs
+# to the cloud and only the leftmost label belongs to imo. Wildcarding any of
+# these zones would take every other tenant on that provider with it.
+#
+# NOTE ON THE DEX LENGTH PREFIX, because it silently corrupts entries. Strings
+# pulled from a dex carry a MUTF-8 length byte, which `strings` renders as a
+# character when it happens to be printable. Three of the names below first came
+# out as `8httpfra-...`, `&fdfra-...` and `'imodns-e3c5...`; 0x38 is 56, 0x26 is
+# 38 and 0x27 is 39, which are exactly the lengths of the corrected names. The
+# ones with no visible prefix simply had a non-printable length. An uncorrected
+# entry here would be a silent no-op — it would look present and block nothing.
+
+# --- imo's own HTTPDNS, mirrored across FIVE providers -----------------------
+#
+# This is the layer that had no coverage at all before today, and it is the one
+# imo built to survive exactly the block this file performs. Five providers for
+# one function is not uptime engineering.
+imodns.azureedge.net
+imodns.azurewebsites.net
+imodns-e3c5eqcfcfbrhsbx.a01.azurefd.net
+imodns-ojtao3tgvq-uc.a.run.app
+#
+# The fifth sits on Fastly under a throwaway zone rather than on a cloud's own
+# domain, so here the wildcard is correct and the exact host would be the wrong
+# call: musiclike.top has no legitimate tenant to protect, `imodns.fastly.` is
+# the only host seen under it, and the naming is the operator's own family.
+#
+# NOT the `.top`-is-a-CSS-property false positive the skill warns about. That
+# trap produces bare fragments like `img.style.top` out of bundled JS; this
+# arrived as a fully-qualified four-label host with an `imodns` leftmost label
+# matching the four entries above it.
+*.musiclike.top
+
+# --- Regional LBS fronts, fra / sgp / sjc on three providers -----------------
+#
+# The same three-region triad repeated on Azure Front Door, Azure App Service
+# and Cloud Run: Frankfurt, Singapore, San Jose. Blocking one provider's triad
+# leaves the other six reachable, which is why they go in as a set.
+fdfra-cja7fta8e6fwa7gm.a01.azurefd.net
+fdsgp-f2d2htgwcqgzeafa.a01.azurefd.net
+fdsjc-dkace7ebhadbfed5.a01.azurefd.net
+httpfra-euckg8cfaeaghuex.westeurope-01.azurewebsites.net
+httpsgp-g0csg2evfkerembt.westeurope-01.azurewebsites.net
+httpsjc-cpepfqa5agewe6ga.westeurope-01.azurewebsites.net
+lp2fra-vziiojft6q-ez.a.run.app
+lp2sgp-vziiojft6q-as.a.run.app
+lp2sjc-vziiojft6q-ez.a.run.app
+
+# --- The socks proxy --------------------------------------------------------
+#
+# Exact host, NOT *.duowan.com: that zone is YY's and carries unrelated
+# services. `mobsocks` under it is the mobile socks entry point, and it is the
+# same sg.bigo.overwall machinery — IProxyV2Config and IWebProxyConfig are both
+# present in this build's config interfaces.
+mobsocks.yy.duowan.com
+
+# --- Eighteen CloudFront distributions --------------------------------------
+#
+# READ THIS BEFORE CONCLUDING THEY WERE ALREADY HANDLED. All eighteen already
+# answer 0.0.0.0 on this network, and NONE of them was in this file — an
+# upstream denylist is catching them. So these rows change nothing today. They
+# are here because that coverage is somebody else's list and can disappear on
+# somebody else's update, silently, with no local signal that it went.
+#
+# Ownership was proved rather than assumed, per the rule that an ad SDK in the
+# same app also ships distributions. Each was resolved upstream from bingo and
+# probed with --resolve, because the local resolver's 0.0.0.0 answer otherwise
+# makes every probe look like a dead host. All eighteen answer `openresty` in
+# one of two variants — a 404 `Not Found` on openresty/1.25.3.2, or a 405
+# `{"msg":"invalid uri"}` — which is the banner already recorded for this
+# operator's edge.
+#
+# A NINETEENTH WAS FOUND AND DELIBERATELY LEFT OUT: d37tp9szxrigiu.cloudfront.net
+# answers a `{"response":{"type":"malformed_request"}}` envelope with no server
+# banner. Different owner, so it is not attributed and not blocked.
+d1d65riqum5ov.cloudfront.net
+d1d7mk5slijq0u.cloudfront.net
+d1k080mgg40341.cloudfront.net
+d1o2a1dvy4ydfc.cloudfront.net
+d1slfh9t7sjvlh.cloudfront.net
+d2oplsxlk1d0so.cloudfront.net
+d2wav5q10bfeht.cloudfront.net
+d2xplh6bc39kz7.cloudfront.net
+d31u03sr7ou25d.cloudfront.net
+d35h7ub5u34xbi.cloudfront.net
+d3a16m42psihkg.cloudfront.net
+d3goy0vsfptofy.cloudfront.net
+d3ivuap2ibxkc3.cloudfront.net
+d3obboq1me5ipu.cloudfront.net
+d3q500pql0crpy.cloudfront.net
+d87xtzssols3u.cloudfront.net
+dghwmknqfbc2v.cloudfront.net
+dhfhtyg1h2goz.cloudfront.net
+
+
+# === Kwai / Kuaishou (com.kwai.video 13.7.40.546202), 2026-08-28 =============
+#
+# Static extraction from the APK: 10 dex, 65 MiB of bytecode, 51 native libs,
+# version read from the binary manifest. 234 candidates, of which NOT ONE was
+# previously covered — this app was entirely unblocked on this network.
+#
+# ORDER MATTERS HERE AND IS THE REASON THIS BLOCK IS GROUPED THE WAY IT IS.
+# Kwai carries a runtime domain-configuration layer (com.kuaishou.aegon, a
+# Cronet fork with `Cronet|HttpDnsOnly` and `Cronet|Retry+HttpDns` modes, plus
+# ClientDomainConfig) fed by config-proxy.kwd.inkuai.com and a `-bak` sibling.
+# Blocking the brand zones while leaving that reachable is the Olamet mistake
+# written up in the skill: the brand block becomes the trigger for rotation
+# rather than the end of it. inkuai.com is therefore in this list, not deferred.
+
+# --- Rotation control plane and the two rotation pools ----------------------
+#
+# apidns/cdndns/config-proxy/config-proxy-bak all live under kwd.inkuai.com.
+*.inkuai.com
+#
+# Two PARALLEL pools of 18 single-letter hosts, on the identical alphabet
+# a b c d f g h j k m o p q v w x y z — no e, i, l, n, r, s, t or u. Two zones
+# with the same 18 members is a failover pair, so both go or neither does.
+*.kwai-link.com
+*.kwai-video.top
+
+# --- The main estate --------------------------------------------------------
+*.kwai.net
+*.kwai.com
+*.kuaishou.com
+*.gifshow.com
+*.yximgs.com
+*.kwimgs.com
+*.ksapisrv.com
+*.kwai-pro.com
+*.kwaipros.com
+*.kuaishouzt.com
+*.kwaizt.com
+*.kwaidc.com
+*.kwaitalk.com
+*.ztcommoninfo.net
+*.snackvideo.com
+
+# --- Three zones whose ownership was PROVED by certificate, not guessed ------
+#
+# These carry no Kwai or Kuaishou string in the name, and on the naming alone
+# they would have been left out as unattributed. The certs settle it:
+#
+#   etoote.com   a.etoote.com presents O=Beijing Kuaishou Technology Co.,Ltd.
+#                with CN=*.a.yximgs.com — the operator's own certificate on a
+#                zone that does not carry the operator's name. It also resolves
+#                to 103.107.217.26, which is one of the AS4808 addresses in this
+#                same build's string table. Two independent confirmations.
+#   ap4r.com     s15-ad.ap4r.com's SAN list includes *.ks-la.net, so the ad
+#                estate and the ks- zone are one cert and one owner.
+#   mythad.com   weakest of the three and recorded as such: the cert is a bare
+#                *.mythad.com with no organisation. It is included on the
+#                hostname kwaimd.mythad.com, an operator-chosen label, plus its
+#                presence in this dex. If something unrelated breaks, this is
+#                the first row to pull.
+*.etoote.com
+*.ap4r.com
+*.ks-la.net
+*.mythad.com
+
+# --- Shared providers: EXACT HOSTS, never the zone --------------------------
+#
+# Kwai ships EIGHT independent resolution-bypass paths, more than imo does.
+# Five are already caught by the existing httpdns regex above — httpdns.alicdn,
+# httpdns.bcelive, httpdns.c.cdnhwc2, httpdns.upyun and kuaishou.httpdns.pro
+# all match it, which is that regex earning its place. These three do not,
+# because none of them contains the string "httpdns":
+hdns.ksyun.com
+hdns.k-dyn.com
+doh.api.baishan.com
+#
+# A CDN control host, same rule — chinanetcenter.com is Wangsu's and shared.
+sdkoptedge.chinanetcenter.com
+#
+# Two Akamai hosts, both fetching /livelist. Exact hosts because akamaized.net
+# is shared by half the internet.
+#
+# THESE TWO ARE CORRECTED FOR THE DEX LENGTH PREFIX and the arithmetic is worth
+# keeping: both came out of `strings` with a leading "8". The full dex string
+# including its path is 56 characters, and 56 is 0x38, which is "8". Blocking
+# the uncorrected form would have sat in this file looking effective and
+# matching nothing.
+awibagimu4rlq1ntzmktrywxma0gcsqgs.akamaized.net
+kpgfrevlebuzgoazsdgamt1zg7j8bi4bg.akamaized.net
+
+# --- DELIBERATELY NOT BLOCKED, so it is not re-argued later ------------------
+#
+# adaether.com and gguezsatc.com are the only two left out of this group now —
+# see below. channelid.com WAS in this list and was moved out of it on the
+# operator's instruction; the entry and the reasoning are a few lines down.
+#
+# adaether.com and gguezsatc.com: bare wildcard certs with no organisation, and
+# adaether shares an Akamai edge address with kwaimd.mythad.com, which by this
+# repo's own CDN rule proves nothing. Unattributed, so not blocked.
+#
+# www.kwaimediaplayerbuilder.com and kwai.lite.video: kwai-prefixed but each
+# appears once with no supporting context, and both read as class-name-derived
+# placeholders rather than live hosts. Left out pending evidence.
+#
+# bankofindia.co.in and tcs.co.in are in this package and must NOT be blocked —
+# the payment/banking case the skill warns breaks the whole house.
+#
+# Also left alone: onelink.me (AppsFlyer, shared), and the zones of the shared
+# providers named above — alicdn.com, upyun.com, ksyun.com, bcelive.com,
+# cdnhwc2.com, baishan.com, akamaized.net, chinanetcenter.com.
+
+# --- channelid.com, blocked 2026-08-28 on the operator's instruction ---------
+#
+# RECORDED HONESTLY BECAUSE THE FILE SHOULD NOT IMPLY EVIDENCE IT DOES NOT HAVE.
+# ro.channelid.com resolves to 13.248.169.48, which this repo's own notes name
+# as an AWS PARKING address, and a parked zone is what the skill calls pure
+# noise in this file. So this entry is not expected to block anything real.
+#
+# It costs nothing, and there is a defensible reason to keep it beyond the
+# instruction: parked is a state, not a property. The zone is referenced by a
+# shipping Kwai build, so if the operator ever repoints it from the parking
+# address to live infrastructure, this row is already in place. That is the
+# opposite of the usual parked-domain case, where nothing in the house has any
+# reason to reference the name at all.
+#
+# The corollary in the earlier note still stands and is unaffected: 13.248.158.43
+# and 76.223.26.10 from the string table are parking addresses too, so they are
+# NOT Kwai backends and are not in custom-ip-blocklist.txt.
+*.channelid.com
+
+
+# === Rapid VPN (com.rapidconn.android) and its two hidden estates ============
+#                                                                  2026-08-28
+# Static extraction: 10 dex, 82 MiB of bytecode, 10 native libs. The app is a
+# repackaged com.github.shadowsocks client — libss-local.so, libtun2socks.so,
+# libredsocks.so, libpaping.so for node latency probing, plus five libs with
+# randomised names. The IP half of this run is in custom-ip-blocklist.txt.
+
+# --- The two brands, which are one operator ---------------------------------
+#
+# api.vpnrapid.net and api.vpnlight.mobi BOTH resolve to 101.47.13.164, which is
+# itself hardcoded in the dex. Two brands, separate certificates, one server.
+# The ad hosts under them are regionally targeted — adkz, adru, adpk, adgm,
+# adnga — and there is a cdn. and an api-per-region set as well.
+#
+# THESE TWO ZONES ARE ALREADY BEING QUERIED ON THIS NETWORK. The 14-28 Aug
+# resolver log shows 9e:23:66:14:23:ba reaching for ad./adkz./apiru./adpk. under
+# both. They were caught by an upstream list, never by this file.
+*.vpnrapid.net
+*.vpnlight.mobi
+
+# --- Estate one: the keyboard-walk cluster ----------------------------------
+#
+# Eight of these came off ONE certificate on 47.254.182.168 (Alibaba), reached
+# via se.lkjhgfdsc.com. Every name is a walk across a keyboard row, which is
+# what a throwaway zone generated in bulk looks like. One request mapped the
+# whole set — the certificate really is the best correlator available.
+*.lkjhgfdsc.com
+*.mnbvcxzas.com
+*.qazwsxedd.com
+*.qzwxpykla.com
+*.rfvtgbyhn.com
+*.rtyuiojkl.com
+*.vbnmhgfds.com
+*.zxcvbnmpo.com
+#
+# TWO MORE FROM THE APK THAT THE CERTIFICATE DOES NOT LIST, which is the useful
+# part: the estate is wider than any single probe shows. Both appear as tc.
+# hosts and both live on Alibaba 8.209.x — and tc.zxcvbnml.com answered from
+# 8.209.70.168 on one probe and 8.209.84.168 minutes later, so the ADDRESSES
+# ROTATE and the name is the only stable handle. That is why these two get no
+# /32 in custom-ip-blocklist.txt while the cert hosts do.
+*.zxcvbnml.com
+*.vbnmhjlp.com
+
+# --- Estate two: the ad-exchange cluster ------------------------------------
+#
+# Twelve names off ONE certificate on 18.159.176.161 (AWS eu-central-1), reached
+# via api.mossturbo.com. In the APK they carry adx., adxtk., da., tk., ssapi.,
+# img. and api-sec. hosts, which is ad-exchange shape rather than VPN transport.
+*.mosspf.com
+*.mosspf.cn
+*.mosspf.net
+*.mossturbo.com
+*.mossfast.com
+*.mossru.com
+*.catsonictp.com
+*.robin-flow.com
+*.parrot-flow.com
+*.flowru.com
+*.bktpcross.com
+*.meetdn.com
+#
+# TWO MORE ON A WEAKER BASIS, and the difference is recorded rather than
+# smoothed over. hookspf.com and rfvgcross.com are NOT on that certificate —
+# each presents its own single-zone cert on its own address (47.84.75.186 and
+# 8.222.245.143). They are included because they sit in the same APK carrying
+# the same adx./da./tk./api. host layout, and because the naming families line
+# up: mosspf/hookspf, bktpcross/rfvgcross. That is pattern plus co-location in
+# one package, not the certificate proof the twelve above have.
+*.hookspf.com
+*.rfvgcross.com
+
+# --- NOT BLOCKED and worth stating -------------------------------------------
+#
+# ssacdn.com and ssadscdn.cn appear in the APK with a full host layout
+# (akm./cncn./itcn./local./networksdk./scc.) and looked like a third estate.
+# They have NO A RECORD AT ALL — every host tested returned nothing. Dead or
+# never-deployed infrastructure, and unattributed either way, so there is
+# nothing to block and no basis to block it on.
+#
+# The bundled ad and analytics SDKs are left alone on the usual rule, since they
+# are shared with unrelated apps: supersonicads/ironbeast (ironSource), tenjin,
+# toponad, zopim, appota.cn, excelliance.cn, multiopen.cn, multispaces.net.

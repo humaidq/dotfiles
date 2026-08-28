@@ -58,18 +58,43 @@
 {{end}}
 {{if .Peers}}
 <div class="table-wrap">
-<table>
-<tr><th>Peer</th><th>AS</th><th>Organisation</th><th title="Where the network is, from MaxMind GeoLite2 — not where its operator is registered. The two differ for a CDN: an anycast prefix is registered to one country and answers from dozens.">Country</th><th class="num">Bytes</th><th class="num">Share</th><th class="num">Last seen</th><th>Traffic</th><th>Status</th><th>Actions</th></tr>
+<!-- table-cards: a real table on a wide screen, one card per row on a narrow
+     one. See the .table-cards block in style.css.
+
+     The explicit ARIA roles are load-bearing rather than decorative. The
+     narrow layout overrides `display` on every element here, and doing that to
+     a table element drops its implicit semantics in every current browser —
+     the roles are what keep this a table, with rows and cells, to a screen
+     reader on a phone. Each td carries the column head it loses in data-label,
+     which is what the card layout prints in its place. -->
+<table class="table-cards" role="table">
+<thead role="rowgroup">
+<tr role="row"><th role="columnheader">Peer</th><th role="columnheader">AS</th><th role="columnheader">Organisation</th><th role="columnheader" title="Where the network is, from MaxMind GeoLite2 — not where its operator is registered. The two differ for a CDN: an anycast prefix is registered to one country and answers from dozens.">Country</th><th role="columnheader" class="num">Bytes</th><th role="columnheader" class="num">Share</th><th role="columnheader" class="num">Last seen</th><th role="columnheader">Traffic</th><th role="columnheader">Status</th><th role="columnheader">Actions</th></tr>
+</thead>
+<tbody role="rowgroup">
 {{range .Peers}}
-<tr{{if .High}} class="high"{{end}}>
-<td>{{.Addr}}</td>
-<td>{{if .ASN}}AS{{.ASN}}{{else}}—{{end}}</td>
-<td>{{if .Org}}{{.Org}}{{else}}unknown{{end}}</td>
-<td>{{.Country}}</td>
-<td class="num">{{.Bytes}}<span class="dir">&uarr; {{.Up}} &nbsp;&darr; {{.Down}}</span></td>
-<td class="num">{{.SharePct}}%</td>
-<td class="num{{if .Stale}} stale{{end}}">{{if .LastSeen}}{{.LastSeen}}{{else}}&mdash;{{end}}</td>
-<td>
+<tr role="row"{{if .High}} class="high"{{end}}>
+<!-- Two different claims about the address, shown together and labelled
+     apart. ptr is what the address's own operator calls it. dns is a name
+     something on this LAN resolved to this address, which is the only way to
+     name an in-ISP CDN cache — those publish no PTR — but it is a weaker
+     claim: one cache address serves many names, so it is the likeliest
+     current answer rather than a fact. Merging them into one unlabelled line
+     would present the weaker one as the stronger. -->
+<td role="cell" class="cell-key"{{if not .RDNSKnown}} data-rdns="{{.Addr}}"{{end}}>{{.Addr}}{{if .RDNS}}<span class="rdns" title="Reverse DNS: the PTR record the address's operator publishes for it.">{{.RDNS}}</span>{{end}}{{if .DNSName}}<span class="qname" title="A name resolved to this address by this router's resolver. One address can serve many names, so this is the most recent, not the only one.">{{.DNSName}}</span>{{end}}</td>
+<td role="cell" data-label="AS">{{if .ASN}}AS{{.ASN}}{{else}}—{{end}}</td>
+<!-- "Org", where the column head above says "Organisation": the card layout
+     prints data-label in a fixed gutter, and the full word does not fit it —
+     it overflowed and ran into the value. The gutter is fixed on purpose, so
+     that every label in a card starts and ends at the same place and the
+     values line up in a column the eye can run down; a label that needs more
+     room than that gets shortened here rather than ragging the whole card. -->
+<td role="cell" data-label="Org">{{if .Org}}{{.Org}}{{else}}unknown{{end}}</td>
+<td role="cell" data-label="Country">{{.Country}}</td>
+<td role="cell" data-label="Bytes" class="num">{{.Bytes}}<span class="dir">&uarr; {{.Up}} &nbsp;&darr; {{.Down}}</span></td>
+<td role="cell" data-label="Share" class="num">{{.SharePct}}%</td>
+<td role="cell" data-label="Last seen" class="num{{if .Stale}} stale{{end}}">{{if .LastSeen}}{{.LastSeen}}{{else}}&mdash;{{end}}</td>
+<td role="cell" data-label="Traffic">
 {{- with .Traffic -}}
 {{if .Label}}<span class="label{{if .Call}} call{{end}}">{{.Label}}</span> {{end}}
 {{- range .Ports}}<code class="port{{if .Suspect}} suspect{{end}}">{{.Text}}</code> {{end}}
@@ -77,8 +102,8 @@
 {{- if and (not .Label) (not .Ports)}}—{{end}}
 {{- end -}}
 </td>
-<td>{{if .Shape}}<span class="shape {{.Shape}}">{{.Shape}}</span>{{else}}—{{end}}</td>
-<td class="actions">
+<td role="cell" data-label="Status">{{if .Shape}}<span class="shape {{.Shape}}">{{.Shape}}</span>{{else}}—{{end}}</td>
+<td role="cell" class="actions">
 <form method="post" action="/peers/{{$.Device}}/drop" style="display:inline">
 <input type="hidden" name="peer" value="{{.Addr}}">
 <button type="submit">drop</button>
@@ -94,11 +119,71 @@
 </td>
 </tr>
 {{end}}
+</tbody>
 </table>
 </div>
 {{else}}
 <p>No current peers.</p>
 {{end}}
 </main>
+<script>
+// Fills in the reverse-DNS names the server did not already have cached.
+//
+// Every name the server knew is already in the HTML above; this only asks
+// about the cells marked data-rdns, and what it learns is cached server-side,
+// so a reload of this page renders those names without running any of this.
+// The page is complete and usable before this runs — if it fails, is blocked,
+// or the browser has scripting off, the table is exactly as it was, minus some
+// names.
+(function () {
+  var pending = Array.prototype.slice.call(
+    document.querySelectorAll('td[data-rdns]'));
+  if (!pending.length || !window.fetch) return;
+
+  // Batched to match the server's per-request cap, so a device with hundreds
+  // of peers fills in progressively rather than being truncated at the first
+  // batch.
+  var BATCH = 64;
+
+  function fill(cells, names) {
+    cells.forEach(function (cell) {
+      var addr = cell.getAttribute('data-rdns');
+      if (!Object.prototype.hasOwnProperty.call(names, addr)) return;
+      // Resolved, so stop treating the cell as pending either way. An empty
+      // name is a real answer — the address has no PTR — and renders nothing.
+      cell.removeAttribute('data-rdns');
+      if (!names[addr]) return;
+      var span = document.createElement('span');
+      span.className = 'rdns';
+      // textContent, never innerHTML: a PTR is a string chosen by whoever
+      // holds the peer's reverse zone, which is to say by the peer.
+      span.textContent = names[addr];
+      cell.appendChild(span);
+    });
+  }
+
+  function run(cells) {
+    if (!cells.length) return;
+    var batch = cells.slice(0, BATCH);
+    var query = batch.map(function (cell) {
+      return 'addr=' + encodeURIComponent(cell.getAttribute('data-rdns'));
+    }).join('&');
+    fetch('/peers/{{.Device}}/rdns?' + query, { credentials: 'same-origin' })
+      .then(function (response) {
+        return response.ok ? response.json() : {};
+      })
+      .then(function (names) {
+        fill(batch, names);
+        run(cells.slice(BATCH));
+      })
+      .catch(function () {
+        // Nothing to report on the page: the addresses are all still there and
+        // the column was never load-bearing.
+      });
+  }
+
+  run(pending);
+})();
+</script>
 </body>
 </html>

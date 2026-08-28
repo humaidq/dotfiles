@@ -73,3 +73,47 @@
 # casting keeps working for pool devices. A pool device reaching 8008 on the
 # WAN is a different thing entirely.
 8008
+
+# --- 10505, added 2026-08-28 on request -------------------------------------
+#
+# NOT SEEN IN ANY CAPTURE IN THIS REPO, and nothing here records what was on it.
+# Added on the operator's say-so, so it stands on the same footing as 179 and
+# the 2026-08-14 six above: a port closed for the pool on the strength of what
+# the port is, not on a pcap showing a pool device carrying over it. If a
+# capture ever does, say so here — it changes the entry from a precaution into
+# a confirmed transport.
+#
+# 10505 is unassigned by IANA and sits in the ephemeral range, which cuts both
+# ways. It is the shape of port a tunnel picks precisely because nothing else
+# wants it, and no ordinary service listens there, so the collateral for a pool
+# device is as near nil as the entries above. But the same range is where a
+# client's own source ports come from — harmless here only because this set is
+# matched on `th dport` LAN->WAN, never on source port, so a pool device that
+# happens to draw 10505 as its local port is untouched.
+10505
+
+# --- 60000, added 2026-08-28 ------------------------------------------------
+#
+# THE FIRST ENTRY IN THIS FILE SINCE THE ORIGINAL FOUR THAT A CAPTURE ACTUALLY
+# SHOWS IN USE, which is worth stating plainly against the run of "inference,
+# not observation" notes above.
+#
+# 192.168.50.221-20260828-1112.pcap, 20 seconds off bingo: MAC 9e:23:66:14:23:ba
+# (galaxy a12, in the pool since 2026-08-13) talking to 46.165.254.136:60000 on
+# UDP and TCP at the same time, 41 kB down and 25 kB up. Opaque from byte 0
+# after a plaintext handshake of thirteen 2-byte `62 63` probes each way at
+# ~10 ms spacing; the same magic appears length-prefixed on the TCP side as
+# `0200 6263`. 1410-byte MTU-filling packets in both directions, so bulk
+# transfer rather than codec frames. One DNS query in the whole window
+# (www.google.com, a connectivity check) and no SNI anywhere — resolution had
+# moved inside the tunnel, which is what rules out the P2P-call reading.
+#
+# THE PORT ALONE IS NOT THE FIX and should not be recorded as one. The /32 is in
+# custom-lowtrust-subnets.txt and that is the entry doing the work; a tunnel that
+# chose 60000 will choose something else. This is here because a port a capture
+# caught carrying is worth closing whatever else is done about it.
+#
+# Collateral is nil for the same reason as 10505: unassigned by IANA, matched on
+# `th dport` LAN->WAN only, so a pool device drawing 60000 as its own source
+# port is untouched.
+60000
