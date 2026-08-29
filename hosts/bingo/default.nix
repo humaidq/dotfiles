@@ -252,12 +252,31 @@
           # cross-site question this list exists for.
         ];
       };
-      # Dropped outright on odd days of the month, shaped on even ones. Unlike
-      # bongo this site is not willing to refuse imo every day, and a permanent
-      # throttle does not hold either: once a call has gone peer to peer the
-      # packets never touch a listed address, so the shaped tier only ever bites
-      # call setup and the relayed leg.
-      imoPolicy = "alternate";
+      # Dropped outright, every day, as at bongo. Changed from "alternate"
+      # on 2026-08-29 on the operator's instruction.
+      #
+      # WHAT THIS REVERSES, stated plainly because the previous note argued the
+      # other way: this site used to drop imo on odd days of the month and shape
+      # it on even ones, on the grounds that it "is not willing to refuse imo
+      # every day". That willingness has changed; the technical half of the old
+      # note has not, and is still true — once a call has gone peer to peer the
+      # packets never touch a listed address, so neither tier reaches established
+      # call media, only setup and the relayed leg.
+      #
+      # The trigger was a whole-LAN capture that day showing a pool device
+      # working its way through imo's tunnel layer: attempts on all four of the
+      # ports in custom-port-blocklist.txt against roughly sixty Tencent
+      # addresses, all refused, while the session it could not open there ran
+      # instead over Alibaba high ports now listed in custom-imo-list.txt. The
+      # alternating policy means that on even days those same addresses are
+      # merely slow, which for a client that walks a node pool is not a
+      # meaningful obstacle — it is a day off every other day.
+      #
+      # Cost, and it is the same one the old note was protecting against: imo
+      # calling from this site is now expected to fail rather than be poor, on
+      # every day rather than half of them. If that is reported as breakage it
+      # is this line, and reverting it to "alternate" is a one-word change.
+      imoPolicy = "block";
       dhcp = {
         rangeStart = "192.168.50.100";
         rangeEnd = "192.168.50.250";

@@ -1472,6 +1472,68 @@
 # unannounced, zero RIS peers seeing them. The header's rule of listing only
 # routed prefixes is intact and none of these is an omission to go and fix.
 
+# --- 2026-08-28, fourth pass: 30-minute FULL-LAN capture, 20:20-20:50 --------
+#
+# Another throttling day, so these were shaped rather than dropped and the
+# sessions ran to completion, which is what made the relay set readable.
+#
+# THE SOCKS RELAY PATH, ON A HANDSET WITH NO imo DNS WHATSOEVER. Five
+# simultaneous long-lived TCP flows, ~120 MB across the full thirty minutes, no
+# TLS on any of them, no SNI, and not one DNS answer in the window naming any
+# peer — the device's entire DNS was Google, Xiaomi and Facebook housekeeping.
+# Two of the five, 43.157.118.99 and 162.62.125.28, are ALREADY IN THIS FILE
+# from the 2026-08-22 session, which is what carries the attribution: the same
+# addresses, the same four-way split-leg shape (one download-heavy leg, three
+# upload-heavy), the same absence of a name. The three new ones are its
+# siblings in that pattern.
+#
+# Say plainly what this rests on, because the file's own rule is to attribute
+# from LBS queries rather than flow shape and that was not available here:
+# matching known-imo addresses plus the relay shape, not a name.
+162.62.125.233
+162.62.132.193
+49.51.171.181
+#
+# /32s and never the /16s. 162.62, 49.51 and 43.157 are shared Tencent Cloud —
+# the same reasoning recorded above for the 47.79 pool, and unchanged.
+
+# Tunnel-layer probes on 943/1943/2943/9443 that the port list dropped with
+# zero bytes returned, from three different handsets. Same category as every
+# earlier Tencent row; listed only because they were not already covered.
+43.130.124.31
+43.166.152.17
+
+# A UDP flow from a fourth handset, 7.3 MB, no SNI and no DNS naming it. Weaker
+# than the relay set above — one flow, one peer, no corroborating name — and
+# recorded as such rather than presented as equivalent.
+43.157.20.125
+#
+# NOT ADDED: 43.128.109.9, AND THIS IS THE MOST IMPORTANT LINE IN THE BLOCK.
+#
+# 118 MB in 21 minutes to Tencent Cloud on udp/14496, no DNS naming it, no SNI,
+# from a handset that was running imo in the same window. On the shape rules
+# this file uses it would have gone straight in as a relay.
+#
+# It is TikTok LIVE. Three things say so, none of which is the peer address:
+#
+#   * tshark decodes 133,907 of its packets as QUIC. imo is opaque from byte 0
+#     or TCP SOCKS; it does not speak QUIC.
+#   * The flow is 4:1 UPLOAD-skewed (93 MB up, 24 MB down). An imo call is
+#     roughly symmetric. Upload-skewed means the device is broadcasting.
+#   * webcast19-normal-iquic-alisg.tiktokv.com appears as SNI continuously from
+#     t+313 to t+493 and TikTok CDN names run to t+510. The flow starts at
+#     t+513. The nearest imo name is medialbs.imolive2.com at t+1061, 550s
+#     later.
+#
+# This is the second time this exact trap has been recorded — see the Zenlayer
+# note above, where six addresses were blocked as imo and turned out to be
+# TikTok LIVE, cutting a broadcast repeatedly. Direction and the device's own
+# SNI in the same window are the discriminators, and they cost nothing.
+#
+# Also not added: 43.131.19.172, live on the same handset afterwards on
+# udp/30304, unattributed and on the device that was doing TikTok. No evidence
+# either way, so no entry.
+
 
 # === imo 2026.07.1041, the hardcoded pool read off the dex, 2026-08-28 =======
 #
@@ -1568,3 +1630,58 @@
 # ChinaNet AS4134, one address, the same category as the Chinese carrier and IDC
 # rows already above.
 58.52.135.41
+
+# --- ALIBABA HIGH-PORT TRANSPORT, 2026-08-29 --------------------------------
+#
+# Found in a whole-LAN capture on bingo. One pool device spent the window doing
+# two things at once, and it is the combination rather than either half that
+# attributes these addresses.
+#
+# First, it attempted ports 943, 1943, 2943 and 9443 — this repo's documented
+# imo tunnel family, dropped by custom-port-blocklist.txt — against roughly
+# sixty distinct Tencent AS132203 addresses. Every one of those got a handful
+# of packets and nothing further, which is the port block working: the client
+# was walking a node pool looking for a way out and finding none. Alongside it
+# reached AS36131 space, imo's own single-tenant AS, already covered wholesale
+# by the prefix entries at the top of this file.
+#
+# Second, at the same time, these three Alibaba addresses carried the session
+# that the blocked ports did not. Opaque from the first byte, no TLS
+# ClientHello, no SNI, and — checked against the day's blocky answer log —
+# never returned as an answer to any name, so they are dialled from a hardcoded
+# pool exactly as the header describes. Non-standard high ports, one each:
+#
+#   47.254.51.249   port 22762   the largest of the three by a wide margin
+#   47.254.65.250   port 45185
+#   47.89.234.36    port  9693
+#
+# ATTRIBUTION IS INFERENCE, AND THE STANDING MATTERS. Nothing on the wire says
+# "imo" — that is the whole point of an opaque protocol on a hardcoded address.
+# What puts these here is that the same device was simultaneously failing over
+# imo's known port family and touching imo's own AS, and that AS45102 is one of
+# the three Alibaba prefixes the port blocklist's header already records imo
+# renting across eight apk-sim.sh runs. That is strong circumstantial
+# attribution and it is not proof. If a later capture shows a non-imo app on
+# these, say so here.
+#
+# THE PORTS ARE DELIBERATELY NOT ADDED to custom-port-blocklist.txt. 22762,
+# 45185 and 9693 are ephemeral-range choices with nothing behind them; the app
+# picked them because they were free and will pick three more when these stop
+# working. The address is the more durable handle of the two, and this file
+# already exists to hold exactly that.
+47.254.51.249
+47.254.65.250
+47.89.234.36
+
+# 8.209.67.150, AS45102 as well (Alibaba Singapore, delegated through APNIC).
+# Backup LBS rather than tunnel transport: it carried a steady low-rate session
+# on 5228 plus smaller ones on 443 and 5223, which is call setup and presence,
+# not media.
+#
+# THIS ONE IS THE CASE custom-port-blocklist.txt EXPLICITLY CANNOT REACH. That
+# file's header records leaving 5223 and 5228 open on purpose, because they are
+# Apple push and Google FCM and closing them would break notifications for every
+# phone in the house — and it calls that "a known and accepted hole". This is
+# that hole being used: an Alibaba host is not Google, but it is speaking on
+# Google's push port, so no port rule can separate them. An address entry can.
+8.209.67.150

@@ -117,3 +117,32 @@
 # `th dport` LAN->WAN only, so a pool device drawing 60000 as its own source
 # port is untouched.
 60000
+
+# --- 8388, added 2026-08-29 -------------------------------------------------
+#
+# SEEN IN A CAPTURE, like 60000 above and unlike most of this file. A whole-LAN
+# capture on bingo caught a pool device sending 87% of its bytes to a single
+# address on 8388, TCP and UDP on the same port at once. That pairing is the
+# identifying detail rather than the number: 8388 is the Shadowsocks default,
+# and Shadowsocks is the one common transport that runs its UDP relay on the
+# same port as its TCP stream. The address was never returned as an answer to
+# any name in the day's resolver log, so it is dialled from config.
+#
+# Traffic was strongly outbound — several times more up than down — which is
+# worth recording because it is the opposite of what a proxy used for browsing
+# looks like, and it is the shape that would justify a closer look if this
+# entry is ever reviewed.
+#
+# Collateral is nil on the same footing as 10505 and 60000: unassigned by IANA,
+# matched on `th dport` LAN->WAN only, so a pool device drawing 8388 as its own
+# source port is untouched.
+#
+# EXPECT THIS TO BE OUTRUN, AND FASTER THAN THE IMO PORTS. custom-port-
+# blocklist.txt can argue its four ports are durable because eight apk-sim.sh
+# runs never moved them — that app has the port compiled in. Shadowsocks does
+# not: the port is one line of server config, and 443 is the conventional place
+# to move it to, where no port rule can follow. The /32 in
+# custom-lowtrust-subnets.txt is the entry doing the real work here, exactly as
+# the 60000 note says of its own. This is worth closing anyway because a port a
+# capture caught carrying is cheap to close, not because it will hold.
+8388
