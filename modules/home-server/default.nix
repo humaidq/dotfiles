@@ -18,6 +18,7 @@ in
     ./media.nix
     ./misc.nix
     ./nix.nix
+    ./ntfy.nix
     ./unifi.nix
     ./vaultwarden.nix
     ./web-server.nix

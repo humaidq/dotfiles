@@ -103,6 +103,9 @@ in
         # service builds its PATH from this list alone, so being in
         # environment.systemPackages would not be enough.
         tcpdump
+        # journalctl, which answerlog.go follows to name a peer with no PTR.
+        # Same reason as tcpdump above: this list is the entire PATH.
+        systemd
       ];
 
       serviceConfig = {
@@ -175,10 +178,15 @@ in
         # The table watcher picks the file up whenever it appears, so pointing
         # at one the first timer run has yet to write is fine.
         ++ lib.optional cfg.geoip.enable "ROUTER_GEOIP_FILE=${cfg.geoip.stateDir}/country.tsv"
-        # The resolver's answer log, which names an address that has no PTR.
+        # The resolver's query log, which names an address that has no PTR.
         # Unset means the peers page shows reverse names only, exactly as it
         # did before this existed.
-        ++ lib.optional cfg.queryLog.enable "ROUTER_ANSWERLOG_DIR=${cfg.queryLog.dir}"
+        #
+        # A unit to follow rather than a directory to read since 2026-08-30:
+        # the log went back to the journal so the dashboard's DNS panels could
+        # have it too. See sifr.router.queryLog in dns.nix for why one log with
+        # two readers is the only arrangement that serves both.
+        ++ lib.optional cfg.queryLog.enable "ROUTER_ANSWERLOG_UNIT=${cfg.queryLog.unit}"
         # Presence of the file is what puts the access point section on the
         # status page. Unset means no probe socket, no goroutine and no
         # section — the same opt-in idiom as the uplink database below.
@@ -237,11 +245,15 @@ in
         # Harmless when the list carries no logins and the secret is world
         # readable anyway, and merges cleanly with the router-vpn group vpn.nix
         # adds the same way.
-        # blocky-answers is the read side of the resolver's answer log, which
+        # systemd-journal is the read side of the resolver's query log, which
         # names a peer that has no PTR — see sifr.router.queryLog in dns.nix.
+        # The whole journal, not just blocky's: journald has no per-unit
+        # access control, so following one unit costs the same group as
+        # following all of them. answerlog.go follows exactly one and parses
+        # two fields out of it.
         SupplementaryGroups =
           lib.optional (cfg.accessPoints.file != null) "router-ap"
-          ++ lib.optional cfg.queryLog.enable "blocky-answers";
+          ++ lib.optional cfg.queryLog.enable "systemd-journal";
       };
     };
 

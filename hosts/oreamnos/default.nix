@@ -37,6 +37,21 @@
     owner = "grafana"; # used also by zfs/smartd but those are root
     mode = "600";
   };
+  # ntfy's publish token for the `grafana` account, read back out of this path
+  # by the ntfy contact point in modules/personal/o11y/alerting/contactPoints.yaml
+  # with Grafana's $__file{} expander. It is declared here rather than beside
+  # the server's own secret in modules/home-server/ntfy.nix because it is the
+  # only one of the pair that has to be owned by grafana, and this is the host
+  # where sifr.home-server and sifr.personal.o11y.server are both on — a host
+  # with one and not the other has no user of that name to give it to.
+  #
+  # The token itself lives in secrets/home-server.yaml next to NTFY_AUTH_TOKENS,
+  # so the two halves are edited together and cannot drift apart.
+  sops.secrets."ntfy/grafana-token" = {
+    sopsFile = ../../secrets/home-server.yaml;
+    owner = "grafana";
+    mode = "600";
+  };
 
   # My configuration specific settings
   sifr = {
@@ -117,6 +132,17 @@
           user = "hister";
           group = "hister";
           mode = "0750";
+        }
+        # ntfy's message cache and its user database. The accounts are
+        # provisioned from a secret and come back on their own, but the cache
+        # is the 48h of published messages a phone that has been away asks for
+        # when it reconnects — wiped on a rollback, those alerts are never
+        # delivered and nothing says so.
+        {
+          directory = "/var/lib/ntfy-sh";
+          user = "ntfy-sh";
+          group = "ntfy-sh";
+          mode = "0700";
         }
         {
           directory = "/var/lib/radicale";

@@ -9,6 +9,50 @@ contactPoints:
             addresses: <me.alerts@huma.id>
             singleEmail: false
           disableResolveMessage: false
+        # A second integration on the same contact point rather than a contact
+        # point of its own, because a notification policy routes to exactly one
+        # contact point and everything already lands on this one — both the
+        # root policy in policies.yaml and the two rules that pin a receiver
+        # through notification_settings. Adding it here means push and mail
+        # both go out with no routing change and no rule edits. The name stays
+        # grafana-default-email, misleading as it now is: it is Grafana's own
+        # default and is referenced by name from three places, all of which
+        # would have to move in lockstep.
+        #
+        # type is webhook because Grafana 13 has no ntfy integration, and the
+        # formatting is done at the far end: ?template=grafana selects
+        # modules/home-server/ntfy-templates/grafana.yml, which renders the
+        # same title and message the email gets and sets the priority from
+        # whether the group is firing or resolved.
+        #
+        # The webhook notifier can emit a custom body instead — its `payload`
+        # option takes a Go template that overrides title and message — but
+        # that template has to produce valid JSON by hand, so every alert
+        # summary containing a quote or a newline becomes an escaping problem
+        # and a silent 400. Sending Grafana's own payload and letting ntfy
+        # parse it puts the escaping on the far side of a real JSON decoder.
+        #
+        # The credential is the token of ntfy's `grafana` account, which is
+        # write-only on `alerts` and can read nothing back. $__file{} is
+        # Grafana's own expander — contact point settings are parsed through
+        # the provisioning values package, so it is interpolated here exactly
+        # as it is for the SMTP password in server.nix. That keeps the token
+        # out of this file, which is in a public repository, and out of the
+        # world-readable store path this is provisioned from.
+        #
+        # maxAlerts caps how many alerts Grafana renders into one notification.
+        # It is not tidiness: ntfy's message-size-limit is 4K and it truncates
+        # past it, so a group of thirty firing instances would arrive cut off
+        # mid-sentence.
+        - uid: ntfyalerts
+          type: webhook
+          settings:
+            url: https://ntfy.alq.ae/alerts?template=grafana
+            httpMethod: POST
+            authorization_scheme: Bearer
+            authorization_credentials: $__file{/run/secrets/ntfy/grafana-token}
+            maxAlerts: "5"
+          disableResolveMessage: false
     # A contact form submission is not an incident, so it does not want the
     # generic alert layout with its Values/Labels/Silence furniture. This point
     # exists only to hang contact_form.subject/message off, keeping the shared

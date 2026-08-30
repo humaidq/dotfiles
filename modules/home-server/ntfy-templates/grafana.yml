@@ -1,0 +1,23 @@
+# Rendered by ntfy over the body of a Grafana webhook contact point, selected
+# with ?template=grafana on the publish URL.
+#
+# The formatting lives at this end rather than in Grafana because Grafana 13
+# has no ntfy integration and its webhook body is a fixed JSON shape that
+# cannot be templated on the sending side — a plain webhook POST would arrive
+# as one unreadable line of JSON on the phone.
+#
+# .title and .message are the two fields Grafana has already rendered from its
+# own notification template, so an alert reads here exactly as it does in the
+# email contact point and both stay in step when that template changes. The
+# rest of the payload (.alerts[], .commonLabels, .externalURL, .status) is
+# available if a richer layout is ever wanted; .status is used below.
+title: "{{.title}}"
+message: "{{.message}}"
+
+# Only title, message and priority are template fields — tags, click and the
+# rest have to be query parameters on the publish URL.
+#
+# 4 (high) rather than 5 so a firing alert vibrates and lights the screen
+# without overriding the phone's Do Not Disturb, and 2 (low) on the way back
+# down so the resolved notification lands silently.
+priority: '{{if eq .status "firing"}}4{{else}}2{{end}}'

@@ -430,6 +430,33 @@ let
           router-blocklists throttle4 throttle6
       '';
 
+  # The same generator once more, into sets of its own rather than into
+  # throttle4/6, and the separation is the point rather than tidiness.
+  #
+  # The generator opens with `flush set`, so two files writing one set would
+  # leave only whichever loaded last — the two sources must not share a pair.
+  # Beyond that, this list and custom-throttle-list.txt are different KINDS of
+  # thing and are maintained differently: that file is hand-curated, mostly
+  # broad CIDRs, and every entry was checked by hand. This one is machine
+  # generated from a public subscription, is ~1500 individual addresses, and is
+  # replaced wholesale by re-running fetch-v2ray-nodes.py. Keeping them apart
+  # means the regeneration cannot clobber curated work, and the rule counters
+  # in forward_throttle show which source is actually catching traffic.
+  #
+  # Same tc class as throttle4/6 all the same — see forward_throttle, which
+  # marks both 0x2. The tier is identical; the scope is not. throttle4/6
+  # applies to every device, these sets only to the low-trust pool, which is
+  # what makes a machine-generated list of this size defensible at all.
+  vpnIntelThrottleList =
+    pkgs.runCommand "nft-vpn-intel-throttle.nft"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+      }
+      ''
+        python3 ${localBlocklistGen} ${./custom-vpn-intel-throttle.txt} "$out" \
+          router-blocklists vpnintel4 vpnintel6
+      '';
+
   # Same generator again, third and fourth targets. See the note on
   # throttleList above: the file format and validation are identical and only
   # the set names differ, because what happens to a matching packet is decided
@@ -554,6 +581,31 @@ in
         }
 
         set throttle6 {
+          type ipv6_addr
+          flags interval
+        }
+
+        # Populated from custom-vpn-intel-throttle.txt by nft-blocklists-local.
+        # Marked 0x2 in forward_throttle like throttle4/6 — same tc class, same
+        # cap — but ONLY for low-trust pool devices, where throttle4/6 applies
+        # to the whole house. That difference is enforced by the rules, not by
+        # these declarations; see forward_throttle for how, and why it is scoped
+        # on the conntrack sentinel rather than on the pool MAC set.
+        #
+        # Its own pair rather than more elements in throttle4/6 for two reasons:
+        # the scope differs, so they cannot share a rule; and a wholesale
+        # regeneration of that file must not be able to disturb the hand-curated
+        # list. See the note on vpnIntelThrottleList above.
+        #
+        # v6 is declared and left empty: the source publishes a handful of IPv6
+        # endpoints and the generator drops them, but a set the ruleset
+        # references must exist, and the file may grow v6 entries later.
+        set vpnintel4 {
+          type ipv4_addr
+          flags interval
+        }
+
+        set vpnintel6 {
           type ipv6_addr
           flags interval
         }
@@ -834,6 +886,37 @@ in
           ip saddr @throttle4 counter meta mark set 0x2 comment "throttle download (IPv4)"
           ip6 daddr @throttle6 counter meta mark set 0x2 comment "throttle upload (IPv6)"
           ip6 saddr @throttle6 counter meta mark set 0x2 comment "throttle download (IPv6)"
+
+          # Published proxy nodes, POOL DEVICES ONLY — unlike the four rules
+          # above, which apply to the whole house. Same 0x2 tier and the same tc
+          # class; separate sets and separate rules only so the counters
+          # attribute traffic to the right source. See the vpnintel4 declaration.
+          #
+          # Scoped on the conntrack sentinel rather than on `ether saddr
+          # @lowtrust_macs`, and that is the load-bearing detail. A MAC match
+          # only ever sees the upload direction — on a WAN->LAN packet the
+          # source MAC is the upstream's, not the device's — so a MAC-scoped
+          # rule would shape the upload and leave the download running at line
+          # rate, which for a tunnel is most of what it carries. qos-mark stamps
+          # cfg.qos.lowTrustMark on the conversation from its first LAN->WAN
+          # packet, and a ct mark lives on the conntrack entry, so matching it
+          # catches both halves. That is the same trick, and the same reasoning,
+          # as the `ct mark ... return` rule at the end of the low-trust block
+          # in qos-mark.
+          #
+          # Ordering is guaranteed: qos-mark hooks forward at priority mangle
+          # (-150) in router-filter and this chain is priority 0, so the
+          # sentinel is always stamped before these rules are consulted.
+          #
+          # Gated on lowTrust.enable because nothing stamps the sentinel when
+          # the pool is off — the rules would then match nothing at all, which
+          # is a silent no-op rather than an error.
+          ${lib.optionalString cfg.lowTrust.enable ''
+            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @vpnintel4 counter meta mark set 0x2 comment "throttle upload (IPv4, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @vpnintel4 counter meta mark set 0x2 comment "throttle download (IPv4, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @vpnintel6 counter meta mark set 0x2 comment "throttle upload (IPv6, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @vpnintel6 counter meta mark set 0x2 comment "throttle download (IPv6, published node list, pool only)"
+          ''}
 
           # After the 0x2 rules deliberately. `meta mark set` overwrites, so an
           # address that somehow appears in both lists resolves to the imo
@@ -1243,6 +1326,7 @@ in
         nft -f ${localBlocklist}
         nft -f ${portBlocklist}
         nft -f ${throttleList}
+        nft -f ${vpnIntelThrottleList}
         ${lib.optionalString cfg.lowTrust.enable ''
           nft -f ${lowTrustPorts}
           nft -f ${lowTrustSubnets}

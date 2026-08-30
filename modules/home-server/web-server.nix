@@ -109,6 +109,49 @@ in
               proxyWebsockets = true;
             };
           };
+          # Internal only, like hister above and for the same reasons. Written
+          # out rather than going through mkRP because every subscriber holds a
+          # connection open — a websocket for the app, an SSE or JSON stream
+          # for the web app and the CLI — and mkRP has neither websocket
+          # support nor any way to raise the timeout that would cut them.
+          "ntfy.alq.ae" = {
+            enableACME = true;
+            inherit (tls) forceSSL;
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:2586";
+              proxyWebsockets = true;
+              extraConfig = ''
+                # Repeated from appendHttpConfig rather than inherited, for the
+                # reason spelled out at unifi.alq.ae below: proxyWebsockets
+                # puts Upgrade and Connection in this location, and nginx only
+                # inherits proxy_set_header from an outer level when the
+                # current level sets none of its own. Connection is left out on
+                # purpose — here it carries the upgrade value.
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For "";
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Host $host;
+
+                # ntfy sends a keepalive down an idle subscription every 45s,
+                # so three minutes clears the gap comfortably. The 60s default
+                # from appendHttpConfig does not: it drops every subscriber a
+                # minute after they connect, which the app papers over by
+                # reconnecting and which the web app shows as nothing at all.
+                proxy_read_timeout 3m;
+
+                # Without this nginx accumulates the stream in its own buffers
+                # and hands notifications over in batches instead of as they
+                # are published, which is the whole point of the service.
+                proxy_buffering off;
+
+                # Above ntfy's own 15M per-file attachment limit, so an
+                # oversized upload is refused by ntfy with an error the client
+                # can read rather than by nginx with a bare 413.
+                client_max_body_size 20M;
+              '';
+            };
+          };
           "g.huma.id" = {
             inherit (tls) forceSSL;
             enableACME = true;

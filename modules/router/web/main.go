@@ -617,16 +617,16 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 	// the page which IPv6 addresses belong to the device whose page it is, so
 	// without it every device is IPv4-only again.
 	peers.neighbours = newNeighbourCache(readNeighbours(getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0")))
-	// Opt-in on the directory, like captures: unset means the peers page shows
+	// Opt-in on the unit, like captures: unset means the peers page shows
 	// reverse names only and reads no log at all. Primed once before serving so
-	// the first page render already has whatever blocky has written today,
-	// rather than waiting out an interval with the column blank.
-	if answers := newAnswerLog(strings.TrimSpace(os.Getenv("ROUTER_ANSWERLOG_DIR"))); answers != nil {
-		answers.refresh()
+	// the first page render already has the names blocky resolved recently,
+	// rather than waiting for live traffic with the column blank.
+	if answers := newAnswerLog(strings.TrimSpace(os.Getenv("ROUTER_ANSWERLOG_UNIT"))); answers != nil {
+		answers.backfill()
 		peers.answers = answers
-		go answers.watch(answerLogInterval)
-		log.Printf("naming peers without a PTR from the resolver answer log in %s",
-			os.Getenv("ROUTER_ANSWERLOG_DIR"))
+		go answers.follow()
+		log.Printf("naming peers without a PTR from the %s query log",
+			os.Getenv("ROUTER_ANSWERLOG_UNIT"))
 	}
 	// Captures are opt-in on the directory: a router without one keeps every
 	// route and every pixel it had before this feature.

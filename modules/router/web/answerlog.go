@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
-	"io"
 	"log"
 	"net/netip"
-	"os"
-	"path/filepath"
+	"os/exec"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,12 +28,22 @@ import (
 // sifr.router.queryLog in dns.nix) and this file reads it back as an
 // address-to-name map.
 //
-// What this is NOT: the log is written with blocky's `fields` restricted to
-// the question and the answer, so it records that something here resolved a
-// name and never which device did. This reader could not attribute a lookup to
-// a device if it wanted to, and it must stay that way — the peers page already
-// shows which device is talking to which address, and that is a narrower claim
-// than a browsing history.
+// THE SOURCE IS THE JOURNAL, and it was a set of csv files for two days in
+// August 2026. The file was preferable for this reader — it held nothing but
+// questions and answers, because blocky's `fields` was restricted to those two
+// — but blocky has exactly one query log, and restricting it starved the
+// twenty-one DNS panels on the router dashboard, which are built on the client
+// and the block reason a restricted list removes. The log went back to the
+// journal so both readers could have it.
+//
+// WHAT THAT MEANS FOR THIS FILE. The line now has client_ip and client_names
+// sitting directly beside the question, and this reader does not look at them.
+// That is a deliberate property and not an oversight to tidy up later:
+// parseAnswerLine takes question_name and answer and nothing else, so no
+// lookup reaching this map can be attributed to a device. The peers page
+// already shows which device is talking to which address, and that is a
+// narrower claim than a browsing history. Anyone tempted to widen the parse
+// should note there is no caller that wants the extra fields.
 //
 // The name is a weaker claim than a PTR and the page says so rather than
 // merging them: a PTR is what the address's operator calls it, while this is
@@ -42,17 +52,25 @@ import (
 // name resolved to it is a good guess at the current flow rather than a fact
 // about it.
 
-// How often the directory is re-read, and how much is kept.
 const (
-	answerLogInterval = 15 * time.Second
+	// How much of the journal is read before following it. The map only ever
+	// answers about addresses in the connection table right now, so this needs
+	// to cover the current session and not the day: a busy evening resolves a
+	// few thousand names an hour, which this comfortably spans.
+	answerLogBackfill = 10000
 	// Entries held before the oldest are dropped. A CDN-heavy network resolves
 	// a few thousand distinct names a day; this is sized to hold a day of them
 	// without the map being able to grow without bound.
 	answerLogMaxEntries = 16384
-	// A cap on how much is read from one file in one pass, so a log that grew
-	// unexpectedly cannot stall a refresh. Reading resumes from the offset on
-	// the next pass, so nothing is skipped — it just catches up.
-	answerLogMaxRead = 32 << 20
+	// How long to wait before restarting journalctl after it exits. It should
+	// not exit, so this is a backstop against a tight respawn loop rather than
+	// an expected path.
+	answerLogRetryDelay = 5 * time.Second
+	// Lines carrying a long CNAME chain run to a few hundred bytes; a name
+	// server answering with an unusually large record set could run longer,
+	// and the scanner's 64KiB default would end the stream rather than skip
+	// the line.
+	answerLogMaxLine = 1 << 20
 )
 
 type answerEntry struct {
@@ -66,33 +84,29 @@ type answerEntry struct {
 // switched off gets: the peers page shows reverse names only, exactly as it
 // did before this existed.
 type answerLog struct {
-	dir string
+	unit string
 
 	mu      sync.Mutex
 	entries map[netip.Addr]answerEntry
-	// Where reading stopped in each file last pass, so a refresh reads only
-	// what was appended. blocky writes one file per day and appends to it, so
-	// without this every refresh would re-read the whole day.
-	offsets map[string]int64
 	now     func() time.Time
 }
 
-func newAnswerLog(dir string) *answerLog {
-	if strings.TrimSpace(dir) == "" {
+func newAnswerLog(unit string) *answerLog {
+	unit = strings.TrimSpace(unit)
+	if unit == "" {
 		return nil
 	}
 	return &answerLog{
-		dir:     dir,
+		unit:    unit,
 		entries: map[netip.Addr]answerEntry{},
-		offsets: map[string]int64{},
 		now:     time.Now,
 	}
 }
 
 // Lookup returns the name most recently resolved to addr.
 //
-// Never blocks on anything but the mutex: the file reading happens in the
-// refresh goroutine, so this is a map read on the page render path.
+// Never blocks on anything but the mutex: the journal reading happens in the
+// follow goroutine, so this is a map read on the page render path.
 func (a *answerLog) Lookup(addr netip.Addr) (string, bool) {
 	if a == nil {
 		return "", false
@@ -106,126 +120,78 @@ func (a *answerLog) Lookup(addr netip.Addr) (string, bool) {
 	return entry.name, true
 }
 
-// watch refreshes on an interval until the process exits.
-func (a *answerLog) watch(interval time.Duration) {
+// backfill reads the recent journal once and returns, so the first page render
+// already has names rather than waiting for the follower to see live traffic.
+func (a *answerLog) backfill() {
 	if a == nil {
 		return
 	}
-	for range time.Tick(interval) {
-		a.refresh()
-	}
+	a.read(false)
 }
 
-// refresh reads whatever has been appended since the last pass.
+// follow streams the journal until the process exits.
 //
-// A missing or unreadable directory is not an error worth logging every
-// interval: the log is opt-in, blocky may not have written the first file yet,
-// and the page degrades to reverse names only.
-func (a *answerLog) refresh() {
+// Re-reads the same backfill window each time it restarts. That is deliberate
+// duplicate work: the alternative is to follow from the end and lose whatever
+// resolved during the gap, and rewriting a map entry with the value it already
+// holds costs nothing worth saving.
+func (a *answerLog) follow() {
 	if a == nil {
 		return
 	}
-	names, err := filepath.Glob(filepath.Join(a.dir, "*.log"))
+	for {
+		a.read(true)
+		time.Sleep(answerLogRetryDelay)
+	}
+}
+
+func (a *answerLog) read(follow bool) {
+	args := []string{
+		"--unit", a.unit,
+		// Just the message. The syslog prefix journalctl would otherwise add
+		// carries a second timestamp and the unit name, neither of which this
+		// parses, and both of which contain characters the field scanner would
+		// have to be taught to ignore.
+		"--output", "cat",
+		"--no-pager",
+		"--lines", strconv.Itoa(answerLogBackfill),
+	}
+	if follow {
+		args = append(args, "--follow")
+	}
+	cmd := exec.Command("journalctl", args...)
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
+		log.Printf("answer log: journalctl pipe: %v", err)
 		return
 	}
-	// Oldest first, so that when two files hold the same address the newer
-	// file's name is the one left in the map.
-	sort.Strings(names)
-	for _, name := range names {
-		if err := a.readFile(name); err != nil && !os.IsNotExist(err) {
-			log.Printf("answer log: %s: %v", filepath.Base(name), err)
-		}
+	if err := cmd.Start(); err != nil {
+		log.Printf("answer log: start journalctl: %v", err)
+		return
 	}
-	a.forgetRotated(names)
+	scanner := bufio.NewScanner(stdout)
+	scanner.Buffer(make([]byte, 0, 64<<10), answerLogMaxLine)
+	for scanner.Scan() {
+		a.record(scanner.Text())
+	}
+	// A scan error ends the stream; the follow loop restarts it. Not logged
+	// when following, because the ordinary way this returns is the unit being
+	// restarted under us, which is not a fault.
+	if err := scanner.Err(); err != nil && !follow {
+		log.Printf("answer log: read journal: %v", err)
+	}
+	_ = cmd.Wait()
 }
 
-// forgetRotated drops offsets for files that have aged out of the directory,
-// so the map does not accumulate one entry per day the router stays up.
-func (a *answerLog) forgetRotated(present []string) {
-	live := make(map[string]bool, len(present))
-	for _, name := range present {
-		live[name] = true
+func (a *answerLog) record(line string) {
+	name, addrs := parseAnswerLine(line)
+	if name == "" {
+		return
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	for name := range a.offsets {
-		if !live[name] {
-			delete(a.offsets, name)
-		}
-	}
-}
-
-func (a *answerLog) readFile(path string) error {
-	handle, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer handle.Close()
-
-	info, err := handle.Stat()
-	if err != nil {
-		return err
-	}
-
-	a.mu.Lock()
-	offset := a.offsets[path]
-	a.mu.Unlock()
-
-	// Shorter than where reading stopped means the file was replaced or
-	// truncated under us. Start again from the beginning rather than seeking
-	// past the end, which would silently read nothing for the life of the
-	// process.
-	if info.Size() < offset {
-		offset = 0
-	}
-	if info.Size() == offset {
-		return nil
-	}
-	if _, err := handle.Seek(offset, io.SeekStart); err != nil {
-		return err
-	}
-
-	limit := min(info.Size()-offset, answerLogMaxRead)
-	reader := bufio.NewReader(io.LimitReader(handle, limit))
-
-	// Only whole lines are consumed, and the offset advances only over them.
-	// blocky flushes on an interval and can leave the last line half written;
-	// counting that as read would lose the record entirely, because the rest of
-	// it arrives after the point reading would resume from. A bufio.Scanner
-	// cannot express this — it hands back a truncated final line indistinguish-
-	// ably from a complete one — which is why this reads delimiter by
-	// delimiter instead.
-	read := int64(0)
-	found := map[netip.Addr]string{}
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			// io.EOF here means a trailing partial line, which is left
-			// uncounted for the next pass. Any other error ends this file and
-			// leaves the offset where the complete lines ended.
-			break
-		}
-		read += int64(len(line))
-		name, addrs := parseAnswerLine(strings.TrimRight(line, "\r\n"))
-		if name == "" {
-			continue
-		}
-		for _, addr := range addrs {
-			found[addr] = name
-		}
-	}
-
-	a.store(path, offset+read, found)
-	return nil
-}
-
-func (a *answerLog) store(path string, offset int64, found map[netip.Addr]string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.offsets[path] = offset
 	now := a.now()
-	for addr, name := range found {
+	for _, addr := range addrs {
 		a.entries[addr] = answerEntry{name: name, at: now}
 	}
 	if len(a.entries) > answerLogMaxEntries {
@@ -236,8 +202,8 @@ func (a *answerLog) store(path string, offset int64, found map[netip.Addr]string
 // evictLocked drops the oldest quarter of the map.
 //
 // A quarter rather than one entry: eviction walks the whole map, and doing
-// that per insert once the cap is reached would turn every refresh into a scan
-// per line. Dropping a batch amortises it.
+// that per insert once the cap is reached would turn every line into a scan.
+// Dropping a batch amortises it.
 func (a *answerLog) evictLocked() {
 	type aged struct {
 		addr netip.Addr
@@ -253,17 +219,23 @@ func (a *answerLog) evictLocked() {
 	}
 }
 
-// parseAnswerLine pulls the question and its addresses out of one CSV row.
+// Where a key starts. blocky's console query log is logfmt-shaped but not
+// logfmt: it writes answer=CNAME (x), A (y) and response_reason=BLOCKED
+// (general), values holding spaces, commas and parentheses that no logfmt
+// parser accepts. Splitting on whitespace therefore truncates exactly the
+// field this file exists to read, which is why values are delimited by where
+// the next key begins rather than by the next space.
+var answerLogKey = regexp.MustCompile(`(?:^|\s)([a-z_][a-z0-9_]*)=`)
+
+// parseAnswerLine pulls the question and its addresses out of one journal line.
 //
-// blocky's csv writer emits tab-separated columns; the two that matter are the
-// question name and the rendered answer set:
+//	[2026-08-30 05:59:43]  INFO queryLog: query resolved answer=A (74.125.250.129)
+//	client_ip=192.168.50.12 client_names=phone instance=bingo
+//	question_name=stun.l.google.com. question_type=A response_code=NOERROR
+//	response_reason=RESOLVED (upstream) response_type=RESOLVED
 //
-//	2026-08-28 12:33:03 <TAB> 0.0.0.0 <TAB> none <TAB> 0 <TAB> <TAB>
-//	stun.l.google.com. <TAB> A (74.125.250.129) <TAB> ... <TAB> A <TAB> bingo
-//
-// The 0.0.0.0 and none in the client columns are not placeholders this code
-// should ever learn to fill in — they are blocky blanking the fields the
-// config deliberately does not log.
+// client_ip and client_names are read past deliberately — see the note at the
+// top of this file. Only question_name and answer are taken.
 //
 // Answers arrive as a comma-separated list of "TYPE (value)", and a CNAME
 // chain puts the intermediate names in there alongside the addresses. Only A
@@ -271,16 +243,21 @@ func (a *answerLog) evictLocked() {
 // because a name that resolves to four CDN addresses is equally the name of
 // all four.
 func parseAnswerLine(line string) (string, []netip.Addr) {
-	fields := strings.Split(line, "\t")
-	if len(fields) < 7 {
+	// Anchored on the marker rather than parsed from the start of the line, so
+	// that blocky's other log lines — list_cache imports, upstream errors —
+	// cannot contribute a stray key=value pair.
+	_, rest, found := strings.Cut(line, "query resolved")
+	if !found {
 		return "", nil
 	}
-	name := strings.TrimSuffix(strings.TrimSpace(fields[5]), ".")
+	fields := parseAnswerFields(rest)
+
+	name := strings.TrimSuffix(strings.TrimSpace(fields["question_name"]), ".")
 	if name == "" {
 		return "", nil
 	}
 	var addrs []netip.Addr
-	for record := range strings.SplitSeq(fields[6], ",") {
+	for record := range strings.SplitSeq(fields["answer"], ",") {
 		record = strings.TrimSpace(record)
 		open := strings.IndexByte(record, '(')
 		if open < 0 || !strings.HasSuffix(record, ")") {
@@ -308,4 +285,22 @@ func parseAnswerLine(line string) (string, []netip.Addr) {
 		return "", nil
 	}
 	return name, addrs
+}
+
+// parseAnswerFields splits a run of key=value pairs whose values may contain
+// spaces, taking each value to run until the next key begins.
+func parseAnswerFields(s string) map[string]string {
+	keys := answerLogKey.FindAllStringSubmatchIndex(s, -1)
+	fields := make(map[string]string, len(keys))
+	for i, key := range keys {
+		// key[2]:key[3] is the name; the '=' sits immediately after it.
+		end := len(s)
+		if i+1 < len(keys) {
+			// The next match starts at the whitespace before that key, which
+			// is where this value ends.
+			end = keys[i+1][0]
+		}
+		fields[s[key[2]:key[3]]] = strings.TrimSpace(s[key[3]+1 : end])
+	}
+	return fields
 }

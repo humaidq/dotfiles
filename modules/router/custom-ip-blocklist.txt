@@ -1700,6 +1700,23 @@
 # ASNs on the low-trust list, so for pool devices these two rows add nothing.
 # They are here for every other device on the LAN, the same division recorded
 # for the NovoServe and Hetzner rows elsewhere in these files.
+#
+# 198.199.101.152 IS ALSO HARDCODED IN VPN Proxy Master, 2026-08-30 — a
+# different app (free.vpn.unblock.proxy.vpn.master.pro), a different operator
+# (Innovative Connecting, whose stack is co.allconnected.lib.*, against Rapid
+# VPN's repackaged shadowsocks client). Two unrelated VPN products shipping the
+# same DigitalOcean /32 makes this address shared infrastructure rather than
+# either one's node, which is a stronger reason to keep the row than the
+# original single-app finding was.
+#
+# WHAT IT DOES IS NOT ESTABLISHED, and an earlier reading here was wrong. In
+# the VPN Proxy Master dex it sits between 172.19.0.2 and 2001:4860:4860::8888,
+# which looks like a resolver array and is not evidence of one: the dex string
+# table is sorted, so that adjacency is alphabetical order and nothing else.
+# Probed from bongo on 2026-08-30 it answered nothing — 443 and 853 both
+# closed, no ICMP, no certificate across three attempts — so the DoH check that
+# would settle it cannot run. Treat it as an unreachable hardcoded endpoint of
+# unknown role, not as a confirmed resolver.
 
 # --- NOT BLOCKED: 18.244.0.188, investigated on request ----------------------
 #
@@ -10160,3 +10177,268 @@
 217.160.155.62
 217.160.155.196
 217.160.207.139
+
+# --- 7 new addresses, fetch-psiphon-servers.py, 2026-08-30 -----------------
+#
+# Signature verified against the pinned key, 499 entries returned. 492 were
+# already covered by this file — as exact addresses or inside a CIDR already in
+# it — leaving 7 new. Checked before adding: none collides with the never-cover
+# guard list, none is private or reserved, none is IPv6, no duplicates within
+# the batch, and none is contained by any prefix in this file, in
+# custom-throttle-list.txt or in custom-vpn-intel-throttle.txt.
+#
+# THE ROTATION CLAIM ABOVE DOES NOT HOLD AS A RATE, and that is the thing worth
+# recording from this run. The 2026-08-29 section directly above concluded from
+# two consecutive fetches that "the estate turns over almost completely between
+# fetches" — 405 new of 435, then 465 new of 499, both ~93%. A third fetch one
+# day later returns 7 new of 499, under 1.5%. So the estate is NOT continuously
+# churning; it moved twice in two days and then sat still. A snapshot taken here
+# may have a long life or a very short one, and there is no way to tell which
+# from the fetch itself. Re-run on a schedule and read the --new count; do not
+# assume a block from last week is already worthless.
+#
+# WHAT THESE SEVEN ARE. Six are in 108.165.21.0/24, AS214623 ON2644819-NET
+# (2644819 Ontario Inc), joining 23 addresses from that /24 already in this
+# file — 29 now. The seventh is in 165.245.204.0/22, AS14061 DigitalOcean.
+# Neither is a CDN or shared-edge network, so the address identifies the node.
+#
+# Declared ports, from each node's own signed record:
+#   108.165.21.3     22,53,443
+#   108.165.21.52    22,53,443
+#   108.165.21.143   22,53,443
+#   108.165.21.159   22,53,443
+#   108.165.21.217   22,443,554
+#   108.165.21.221   22,443,554
+#   165.245.204.157  22,53,639
+# Same shape as the batches above: 22 is already closed for pool devices, 53 is
+# already dropped house-wide, and 443 is what actually leaves them reachable.
+#
+# DESK CHECKS RUN, and what they do and do not establish. No PTR on any of the
+# seven. No TLS handshake completes on 443 for any of them, on two attempts
+# each with named SNI — no certificate is offered at all, which is consistent
+# with OSSH/obfuscated transport rather than TLS and rules out the fronting
+# signature. A DoH query to each returned no body and no status, so none is a
+# resolver in the sense that would send it elsewhere in this file. None was
+# probed for liveness; provenance here is the signed list, not a capture.
+#
+# WHY THIS FILE WHEN ALL SEVEN ARE ALREADY COVERED. 108.165.21.0/24 is in
+# custom-lowtrust-subnets.txt and AS14061 is in custom-lowtrust-asns.txt, so
+# every one of these is already shaped for POOL devices. Both of those are
+# pool-only and keyed on MAC, which these clients randomise. These rows are
+# LAN-wide, and that difference is the whole of what the entry buys — the same
+# argument the 2026-08-28 move was made on.
+#
+# A /24 FOR 108.165.21.0 WAS CONSIDERED AND NOT TAKEN. 29 of its 256 addresses
+# are known nodes, which is dense, and the prefix is the operator's whole ARIN
+# allocation. But a LAN-wide drop of the /24 would take the other 227 addresses
+# of a tenant network with it, unchecked, and this file's default is a /32. The
+# pool already has the /24 via custom-lowtrust-subnets.txt, where the narrower
+# scope makes that trade affordable. Revisit if the count keeps climbing.
+108.165.21.3
+108.165.21.52
+108.165.21.143
+108.165.21.159
+108.165.21.217
+108.165.21.221
+165.245.204.157
+
+# --- VPN Master / Snap Master VPN nodes, Zenlayer AS62610, 2026-08-30 -------
+#
+# Five nodes handed over by the operator during a session on
+# free.vpn.unblock.proxy.vpnmaster, plus one found by sweeping for the
+# certificate the first two share. Dropped rather than shaped, consistent with
+# the 2026-08-28 decision recorded above for this same estate.
+#
+# ALL SIX ARE AS62610 (ZEN-DPS, Zenlayer), which is NOT the Zenlayer ASN this
+# repo already knows. custom-lowtrust-asns.txt carries AS21859, and the
+# 2026-08-13 Snap Master nodes at 107.151.182.x are in that one. AS62610 is in
+# no list at all, so none of these had any coverage before this entry — not
+# even pool-only. Worth knowing that Zenlayer announces this estate from at
+# least two ASNs; a check against 21859 alone reads as covered when it is not.
+#
+# TWO DISTINCT NODE IMAGES, and the split is clean enough to be a fingerprint:
+#
+#   FAMILY A — 162.128.0.0/16, Zenlayer SG. OpenSSH 8.9p1 on 22, tcp/119
+#   REFUSED, and 80/443/8080/1194 open but silent (server waits for the client
+#   to speak first). 1194 is OpenVPN's registered port.
+#
+#   FAMILY B — 107.151.216-217.x. EVERY port silent including 22, which does
+#   NOT serve ssh, and 1194 refused. Carries 8080 + 443 + 119 — the exact
+#   transport triple the 2026-08-13 note decrypted out of the package's
+#   server_offline.ser (shadowsocks rc4-md5 on 8080, chacha20-ietf on 443,
+#   OpenVPN on tcp/119). That triple is why these are attributed to this estate
+#   and not merely to "a VPN".
+#
+# THE CERTIFICATE IS THE STRONGEST EVIDENCE HERE. Family A serves, for every
+# SNI tried (www.wikipedia.org, github.com, swdist.apple.com), a certificate
+# with NO subject, NO issuer, serial 01, SAN "IP Address:127.0.0.1" marked
+# critical, and validity Jan 10 1923 -> Nov 22 2122. It exists only to complete
+# a handshake for a client that already knows the address; nobody reaches it by
+# name. That is a stronger version of the self-signed/nonexistent-CN signature
+# the throttle skill documents, since there is not even a name to look up.
+#
+# 162.128.69.8 and 162.128.85.144 serve it with the SAME SHA-256 FINGERPRINT,
+# 35:E9:C2:D2:EE:CA:73:BF:B8:0C:1F:6D:4C:08:6D:97:79:9E:B4:07:04:24:52:99:
+# 61:05:8C:D3:48:95:F7:D6 — byte-identical, same private key. Two hosts
+# generating self-signed certs independently cannot collide on a notBefore to
+# the second, so this is one deployment image, not a pass-through to a shared
+# upstream (there is no upstream to relay to). It is also a usable handle for
+# finding the rest of the fleet.
+#
+# 162.128.69.54 CAME FROM THAT HANDLE, not from the operator. Sweeping 121
+# addresses across 162.128.69.0/24 and 162.128.85.0/24 for the fingerprint
+# returned exactly three matches: the two supplied, and this one. Its port
+# profile and OpenSSH banner match Family A exactly. Flagged as a derived find
+# so a later reader does not treat it as independently reported.
+#
+# /32s AND NOT THE /24s, settled by that same sweep. Only 3 of 121 sampled
+# addresses are nodes (~2.5%), and the rest of both /24s answer with unrelated
+# certificates — these are shared Zenlayer tenant ranges, not the operator's
+# own block. 107.151.192.0/18 is registered to VpsQuan L.L.C. and is shared for
+# the same reason. Taking any of these ranges would drop other people's tenants.
+#
+# NONE IS A RESOLVER: DoH on 443 with the cloudflare-dns.com SNI returned no
+# response at all, 3/3 attempts on each of the five. So the drop-vs-shape rule
+# that sends resolvers here does not apply; these are here on the 2026-08-28
+# estate decision instead.
+#
+# EVIDENCE IS A DESK CHECK, NOT A CAPTURE. Nothing on this LAN has been
+# observed talking to any of them. Provenance is: operator-supplied addresses
+# (four), a certificate sweep (one), and the port/cert fingerprinting above.
+# Probed from a workstation rather than the router, which is sound only because
+# none of the six was in any list beforehand and so none was being shaped.
+#
+# One tooling note worth keeping: a bash /dev/tcp banner grab returns EMPTY for
+# every host, including a known-good control, so it cannot be used to conclude
+# "silent". Python sockets get the banners. Separately, Python's ssl module
+# refuses this certificate mid-handshake and reports the host as offering no
+# TLS at all — openssl and curl both read it fine. Both artefacts produced
+# confidently wrong readings in this session before being caught.
+#
+# Family A — 162.128.0.0/16, Zenlayer SG:
+162.128.69.8
+162.128.69.54
+162.128.85.144
+# Family B — 107.151.216-217.x, the 8080/443/119 transport triple:
+107.151.216.204
+107.151.217.60
+
+# --- Covert HTTP tunnel + more VPN Master nodes, 2026-08-30 (round 2) -------
+#
+# 185.182.187.135 IS THE STRONGEST FINDING IN THIS ROUND, and unlike everything
+# else added today it rests on CAPTURED TRAFFIC, not a desk check. It is in
+# ~/inbox/192.168.50.233-20260830-1355.pcap, a 363s capture off bingo.
+#
+# Contabo GmbH, AS51167, PTR vmi1485442.contaboserver.net — a rented VPS. What
+# the device sends it is cleartext HTTP on tcp/5330, 8121, 10607 and 58770:
+#
+#   GET /%74%e3%4f%65%64%50%99%8e%62%80%e8%f9%bd... HTTP/1.1
+#   Host: ae.awok.com:0
+#   User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0
+#
+# Every part of that is a lie except the destination. The URI path is
+# percent-encoded high-entropy binary — the tunnel payload, not a path. The
+# Host header names ae.awok.com, a REAL UAE e-commerce site that this traffic
+# never goes near, with an impossible ":0" port no browser emits. The
+# user-agent claims Firefox 34 on Windows 7, on a handset. The server answers
+# 200. This is payload smuggled through forged HTTP so that anything logging
+# Host headers records visits to a UAE shopping site.
+#
+# DO NOT BLOCK awok.com. It is the impersonated victim here, a legitimate
+# retailer, and it carries none of this traffic. The address is the only
+# correct target — this is the exact case the blocking skill describes where
+# the fronted name is never queried and so cannot be denied at the resolver.
+#
+# THE TWO ZENLAYER ADDRESSES ARE FAMILY B, matching 107.151.216.204 and
+# 107.151.217.60 in the entry above position for position: AS62610, tcp
+# 22/80/443/119/8080 all open and SILENT (22 does not serve ssh), 1194 refused,
+# no certificate offered on 443, and no DoH response in 3/3 attempts. Desk
+# check only — neither appears in either capture.
+#
+# 107.151.216.29 shares a /24 with the already-listed 107.151.216.204, and the
+# sampling in the entry above showed these Zenlayer /24s are shared tenant
+# space, so this stays a /32 for the same reason given there.
+#
+# Contabo AS51167 — covert HTTP tunnel, CAPTURE EVIDENCE:
+185.182.187.135
+# Zenlayer AS62610 — Family B, desk check only:
+23.251.51.156
+107.151.216.29
+
+# --- Family B node pool, from a probe sweep in a bingo capture, 2026-08-30 --
+#
+# Twenty-one more nodes of the same estate as the Family B entries above. These
+# were NOT handed over one at a time: they were read out of the client's own
+# node-selection traffic, which is a better source than either a desk check or
+# an operator-supplied address.
+#
+# HOW THEY WERE FOUND. ~/inbox/192.168.50.233-20260830-1355.pcap, a 363s
+# capture off bingo, contains 227 probe packets to tcp/7 (echo) and tcp/9999
+# spread across 33 distinct addresses. That is the client scoring candidate
+# nodes by RTT — the exact behaviour custom-throttle-list.txt's header
+# describes and the reason that file caps rather than drops. The device was
+# shopping, and the probe traffic names the whole shelf.
+#
+# WHAT CONFIRMS THEM. 23 of the 33 answer today, and all 23 present an
+# IDENTICAL port signature: 22, 80, 119, 443, 8080 and 9999 open, every one
+# SILENT (client speaks first), with tcp/22 NOT serving ssh. That is position
+# for position the Family B fingerprint of 107.151.216.204, 107.151.217.60,
+# 23.251.51.156 and 107.151.216.29 already in this file — 8080 + 443 + 119 is
+# the transport triple the 2026-08-13 work decrypted out of the package's
+# server_offline.ser. Two of the 23 are those already-listed addresses, which
+# is what ties the sweep to the estate rather than to "some VPN".
+#
+# 9999 IS NEW and appears on every one of the 23. It is not in the decrypted
+# config from 2023, so it is either a control/selection port added since or one
+# the offline blob never carried. Worth watching: a port every node in a fleet
+# opens is a better handle than 33 addresses, and unlike 22, 53 and 443 it has
+# no legitimate use here. Not turned into a port rule yet — that decision needs
+# a check that nothing else on this LAN uses 9999.
+#
+# THE 98.98.x FIVE ARE NOT ALIBABA CDN, and this needs saying because the
+# blocking skill's own text points the other way. 98.98.0.0/16 is ARIN-
+# registered to Zenlayer in full (NetName ZENLA-7, AS21859) — including
+# 98.98.238.183-190 and 98.98.251.23, which that skill describes as Alibaba
+# CDN and ByteDance Volcengine. Both readings are correct at different layers:
+# Zenlayer owns the addresses and the CDNs rent them as POP capacity, so the
+# skill's warning against taking a 98.98 RANGE still stands. It does not reach
+# these five /32s: a CDN POP does not open 119, 8080 and 9999 and sit silent on
+# all three. Judged on behaviour, not on the netblock.
+#
+# TEN OF THE 33 WERE DELIBERATELY LEFT OUT — seven M247 (146.70.20.136,
+# 146.70.23.39, 146.70.23.41, 146.70.46.197, 146.70.46.207, 146.70.46.216,
+# 169.40.154.62) and three Datacamp (169.150.201.83, 169.150.201.92,
+# 169.150.210.81). None answers on any probed port from here, so there is no
+# Family B evidence for them, and M247 space is heavily shared. They ARE in the
+# client's pool and are real candidates — re-probe from bongo before dismissing
+# them, since a silent result from a workstation is not the same as a dead
+# host. Recorded here so the omission is visible rather than looking like the
+# sweep only ever found 23.
+#
+# /32s throughout. DigitalOcean and Zenlayer are shared tenant space and the
+# nodes sit one per /24 across sixteen different /24s in AS14061 alone, so
+# there is no prefix handle here any more than there was for Psiphon.
+#
+# DigitalOcean AS14061 — 16:
+24.199.127.111
+137.184.38.175
+137.184.87.41
+138.197.114.35
+147.182.224.132
+157.245.204.111
+159.223.21.146
+161.35.181.84
+165.22.36.72
+165.232.168.132
+174.138.81.80
+188.166.182.166
+188.166.237.20
+206.189.56.88
+206.189.91.247
+209.38.128.57
+# Zenlayer AS21859 — 5, see the 98.98.x note above before touching the range:
+98.98.142.30
+98.98.142.177
+98.98.207.5
+98.98.207.215
+98.98.207.221

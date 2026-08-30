@@ -167,6 +167,41 @@ com.imo.android.imoim         imo. 25 dex / 82 MiB, and the only app inspected s
                               Note this takes imo the messenger down with imo
                               Live, since both share the transport.
 
+free.vpn.unblock.proxy.vpn.master.pro
+                              VPN Proxy Master — Safer Vpn, 2026-08-30. 6 dex,
+                              38 MiB. Operator is Innovative Connecting, named
+                              three ways: git.inconnecting.com (Go modules),
+                              inconnecting.zendesk.com (support) and
+                              com.inconnecting.oauth. Whole VPN stack is
+                              co.allconnected.lib.* — the same group's SDK, so
+                              it identifies the rest of the estate.
+                              A tunnel client rather than an app with a backend:
+                              libxray.so (33 MiB), OpenVPN, StrongSwan/IPsec,
+                              Shadowsocks and SSR, tun2socks, redsocks and
+                              WireGuard. acp_connect_config_us.json offers
+                              ipsec and issr.
+                              Most brand zones were already blocked upstream
+                              (vpnproxymaster.com, masterspn.com, acdtop.com,
+                              seven *.ssacdn.com hosts, flashputon.net,
+                              dikzzdev.duckdns.org). Added here: the operator
+                              zone *.inconnecting.com, plus *.hoolapp.com and
+                              *.ahsuhx.com on instruction with ownership NOT
+                              established — single-domain certs, no SAN overlap,
+                              no dex string tying either to the operator.
+                              THE BLOCK DOES NOT STOP THE TRANSPORT. No node
+                              list ships in the package; serverguard fetches one
+                              at runtime from a base URL assembled from
+                              BASE_URL_FORMAT, and libxray resolves over DoH.
+                              fetch-v2ray-nodes.py cannot cover it either — that
+                              reads a public subscription and this operator
+                              publishes none. 198.199.101.152 was already
+                              blocked from Rapid VPN's dex on 2026-08-28; the
+                              two apps sharing it is the notable part.
+                              Guard bug found and fixed in apk-domains.sh during
+                              this run: the manifest check could not match a
+                              package name of 32+ characters, and rejected this
+                              correct download as the wrong app.
+
 
 ## PARTIAL — package resisted extraction, hosts recovered another way
 

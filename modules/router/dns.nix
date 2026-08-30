@@ -80,45 +80,54 @@ in
       type = lib.types.bool;
       default = true;
       description = ''
-        Have blocky record which addresses each name resolved to, so the peers
-        page can name a peer that has no PTR.
+        Have blocky log every query it resolves to its stdout, and so to the
+        journal. Two things read it, and they are why the setting exists.
 
-        This is the only source that can name one. An in-ISP CDN cache — most
-        of what AS5384 answers with on this network — publishes no reverse
-        record and never will, and its AS is the ISP's, so the row can say
-        "Emirates Telecommunications Group" without saying whether it is
+        The peers page names a peer that has no PTR. An in-ISP CDN cache —
+        most of what AS5384 answers with on this network — publishes no
+        reverse record and never will, and its AS is the ISP's, so the row can
+        say "Emirates Telecommunications Group" without saying whether it is
         serving Instagram or YouTube. The name a device asked for immediately
-        before connecting is the missing half.
+        before connecting is the missing half, and this log is the only source
+        that has it.
 
-        Deliberately NOT a query log in the usual sense: see the fields set
-        below. Nothing about who asked is written down.
+        The router dashboard's DNS panels are the other reader, by way of
+        Alloy shipping the journal to Loki. All twenty-one of them select on
+        the "query resolved" line this produces.
+
+        WHY THE JOURNAL AND NOT A FILE, since it was a file between 2026-08-28
+        and 2026-08-30 and the change back is deliberate. blocky has exactly
+        one queryLog. Pointing it at a csv file to serve the peers page took
+        the line out of the journal, and every DNS panel emptied out within one
+        15m window; the file could not feed them back, because the field list
+        that made a file on the router acceptable — question and answer only —
+        is missing the client and the block reason those panels are built on.
+        One log with two readers is the only arrangement that serves both.
+
+        WHAT THAT COSTS, stated plainly rather than left implicit. The journal
+        line carries client_ip and client_names, so the router's journal holds
+        which device looked up what for as long as journald keeps it. That is
+        a per-device browsing history and it is the thing this repository is
+        otherwise careful not to produce. It is accepted here because the same
+        data already reaches Loki on oreamnos for the dashboard's own device
+        picker, so refusing it on the router bought privacy that was not
+        actually being kept — while costing every DNS panel.
+
+        The peers page reader is narrower than the log it reads: see
+        modules/router/web/answerlog.go, which parses the question and the
+        answer and never the client fields sitting next to them.
       '';
     };
 
-    dir = lib.mkOption {
+    unit = lib.mkOption {
       type = lib.types.str;
-      default = "/var/log/blocky-answers";
+      default = "blocky.service";
       readOnly = true;
       description = ''
-        Where the log is written. Read-only and stated once because blocky
-        writes it and router-web reads it, from two different modules, and a
-        path spelled out in both is a path that eventually differs in one.
-
-        Not under blocky's LogsDirectory: DynamicUser puts that inside
-        /var/log/private, which is 0700 root, so a second DynamicUser service
-        cannot read it however the file itself is moded.
-      '';
-    };
-
-    retentionDays = lib.mkOption {
-      type = lib.types.int;
-      default = 2;
-      description = ''
-        How many days of files blocky keeps. Short on purpose: the peers page
-        only ever asks about addresses that are in the connection table now,
-        so anything older than the current session answers no question that is
-        being asked, and this is the one file on the router that names what the
-        house looked up.
+        The unit whose journal carries the log. Read-only and stated once
+        because blocky writes it and router-web reads it, from two different
+        modules, and a name spelled out in both is a name that eventually
+        differs in one.
       '';
     };
   };
@@ -220,12 +229,7 @@ in
       # it dnsmasq logs a warning about the missing addn-hosts file on every
       # boot before the timer has first fired.
       "f ${v6NamesFile} 0644 root root -"
-    ]
-    # 0770 because blocky creates a file per day in here and router-web reads
-    # them, and neither is the owner. Not world-readable: this names what the
-    # house resolved, and while it says nothing about who asked, that is not a
-    # reason to hand it to every account on the box.
-    ++ lib.optional cfg.queryLog.enable "d ${cfg.queryLog.dir} 0770 root blocky-answers -";
+    ];
 
     systemd.services.dnsmasq-v6-names = {
       description = "Map IPv6 link-local addresses to DHCP names for dnsmasq";
@@ -319,33 +323,24 @@ in
           caching.minTime = "0";
         }
         // lib.optionalAttrs cfg.queryLog.enable {
-          # What the peers page reads to name an address with no PTR.
+          # The "query resolved" line, on stdout and so in the journal. Both
+          # readers are described on sifr.router.queryLog.enable above; the
+          # short version is that the peers page needs the answer and the
+          # dashboard needs the client and the block reason, and blocky has
+          # one query log to give.
           #
-          # fields is the whole reason this is acceptable to run. blocky's
-          # default logs clientIP and clientName alongside the question, which
-          # on this network is a per-person browsing history sitting on the
-          # router — the one artifact this repository is careful never to
-          # produce. Restricted to the two fields that answer the question the
-          # page asks, the file is a name-to-address map: it records that
-          # something on this LAN resolved a name, never which device did.
+          # console is blocky's default type and this is really a statement
+          # that it must stay the default. Naming it is the point: the obvious
+          # way to serve the peers page is to point target at a file, and doing
+          # that silently empties twenty-one dashboard panels because it moves
+          # the line rather than copying it.
           #
-          # csv rather than csv-client for the same reason: csv-client splits
-          # the output into one file per client, which reintroduces exactly the
-          # attribution the field list just removed.
-          queryLog = {
-            type = "csv";
-            target = cfg.queryLog.dir;
-            fields = [
-              "question"
-              "responseAnswer"
-            ];
-            logRetentionDays = cfg.queryLog.retentionDays;
-            # Rather than blocky's 30s default: the page is read live while
-            # watching a device, and a name that only appears half a minute
-            # after the connection it explains is a name that arrives after the
-            # question has been answered another way.
-            flushInterval = "5s";
-          };
+          # No fields list, also deliberately. Restricting it to question and
+          # responseAnswer is what a file on the router would need to be
+          # acceptable, and it is exactly what starves the panels: they are
+          # built on client_ip and response_reason, which a restricted list
+          # blanks to 0.0.0.0 and drops entirely.
+          queryLog.type = "console";
         }
         // {
           # Set outside the recursiveUpdate, which would merge the removed
@@ -361,38 +356,18 @@ in
     systemd.services.blocky = lib.mkIf config.services.blocky.enable {
       after = [ "dnsmasq.service" ];
       wants = [ "dnsmasq.service" ];
-      serviceConfig = lib.mkIf cfg.queryLog.enable {
-        # blocky is DynamicUser with ProtectSystem=strict, so it reaches this
-        # directory the same way router-web reaches the access-point secret: a
-        # group both services are in, since neither has a build-time uid to
-        # grant directly. ReadWritePaths is what makes it writable through
-        # ProtectSystem.
-        SupplementaryGroups = [ "blocky-answers" ];
-        ReadWritePaths = [ cfg.queryLog.dir ];
-      };
     };
 
-    # Alloy is the THIRD member of this group, after blocky which writes the
-    # file and router-web which reads it for the peers page.
+    # NOTHING GRANTS ACCESS TO THE QUERY LOG HERE ANY MORE, and the absence is
+    # worth a note because there used to be three grants at this point: a
+    # blocky-answers group, a ReadWritePaths for blocky, and a supplementary
+    # group for Alloy. All three existed to move a file between DynamicUser
+    # services that have no build-time uid to grant directly.
     #
-    # WHY IT NEEDS TO BE HERE. Pointing blocky's queryLog at a file took it out
-    # of the journal, and the journal is what Alloy was shipping to Loki — so
-    # every DNS panel on the router dashboard emptied out within one 15m window
-    # of the switch. modules/personal/o11y/client.nix now reads the directory
-    # directly, and this is the access that makes that possible: the directory
-    # is 0770 root:blocky-answers, and Alloy runs under DynamicUser with only
-    # systemd-journal, so a group is the only handle there is.
-    #
-    # Granted here rather than in the o11y module because the group is defined
-    # here and only exists on a host running this resolver. The o11y client is
-    # generic and must stay buildable on hosts that have never heard of blocky.
-    #
-    # Gated on Alloy actually being enabled: setting serviceConfig on a service
-    # that is off would otherwise bring the unit into existence.
-    systemd.services.alloy.serviceConfig.SupplementaryGroups =
-      lib.mkIf (cfg.queryLog.enable && config.services.alloy.enable) [ "blocky-answers" ];
-
-    users.groups.blocky-answers = lib.mkIf cfg.queryLog.enable { };
+    # The journal needs none of it. Alloy already reads it — that is its whole
+    # job on this host and it has systemd-journal for that reason — and
+    # router-web asks for the same group in web.nix. Both readers were already
+    # paying for journal access before this log went anywhere near a file.
 
   };
 }

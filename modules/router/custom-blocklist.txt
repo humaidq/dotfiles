@@ -21,6 +21,116 @@ d1mh1y7ij6zmqj.cloudfront.net
 die3wsrnlcoc1.cloudfront.net
 d2yxm1use2fttr.cloudfront.net
 attending0.com
+# VPN Master / Snap Master VPN (free.vpn.unblock.proxy.vpnmaster), 2026-08-30.
+# Play developer is SECUREGUARD GROUP PTE; the app is the SAME package the
+# 2026-08-13 Snap Master VPN work in custom-ip-blocklist.txt covered, rebranded.
+# Attribution is not inferred — the privacy policy at the first host below says
+# in its own words: VPN Master ("Snap Master VPN", "we," "us").
+#
+# THE PACKAGE ITSELF COULD NOT BE FETCHED, so unlike the 2026-08-13 entry these
+# names come from the Play listing and the operator's own policy page, NOT from
+# a dex. The listing is GEO-RESTRICTED: it returns 200 with gl=AE and 404 with
+# gl=US, which is why APKPure, APKMirror, apkmonk, apksos and apkcombo all have
+# no copy — their crawlers never saw it. A static extraction still owes this
+# app a pass; see the note in custom-ip-blocklist.txt for what that would add.
+#
+# *.allconnected.in IS THE IMPORTANT ONE. sdk.allconnected.in is the live
+# server-list endpoint the 2026-08-13 work identified as what the app calls
+# when it needs fresh nodes — the rotation service. Blocking the zone disables
+# that mechanism, which is worth more than any individual node address, and it
+# was completely uncovered until now.
+#
+# Its CURRENT ADDRESS IS DELIBERATELY NOT LISTED ANYWHERE. sdk.allconnected.in
+# resolves to 13.140.25.154, which serves a valid Let's Encrypt certificate for
+# nkj.ru, a Russian science magazine, and sits in AS203380 (DA International
+# Group, BG) rather than the AWS space the 13.x address suggests. That is
+# somebody else's host — a stale or repointed record — and adding it would be
+# the parked-domain mistake. Block the name, never that address.
+*.allconnected.in
+*.materialsofpro.com
+# secureguardpro.com, named in the same policy page, already answers 0.0.0.0
+# from an upstream list and needs no entry here. vpnproxymaster.com likewise.
+#
+# --- Turbo VPN runtime hosts, from a blokkapp.com report, 2026-08-30 --------
+#
+# SOURCE AND ITS LIMIT. These come from blokkapp.com's per-app host report for
+# free.vpn.unblock.proxy.turbovpn — a RUNTIME list with per-host hit counts,
+# supplied by the operator of this network from a browser (the endpoint returns
+# 403 to curl, so it cannot be refetched from a script here). It is evidence
+# that the app contacted these hosts, which is stronger than a dex string, but
+# it is somebody else's measurement and none of it was verified in a capture on
+# this LAN.
+#
+# THIS IS TURBO VPN, NOT THE vpnmaster PACKAGE the addresses above came from.
+# Same corporate family — innovativeconnecting.zendesk.com appears in the list
+# with 20 hits, which independently confirms the Innovative Connecting
+# attribution the 2026-08-13 note made from a certificate. Do not read these
+# names as VPN Master's; the same report for that package has not been pulled.
+#
+# MOST OF THE ESTATE WAS ALREADY COVERED. Checked against the live resolver,
+# these already answer 0.0.0.0: trovpn.com (the login/control plane, 33 hits),
+# entclass.tech, pckqac.tech, keysuccess.site, flashpush.net, soinluck.com,
+# sonicsads.com, supernetobjects.com, news-cdn.site, monetune.com. Only the
+# four below were live and uncovered.
+#
+# fastput.net — 43 hits across 104.fastput.net, 104-a.fastput.net and
+# lightcdn-androidturbo.fastput.net. That third label names the app outright,
+# which is what attributes the zone. The apex is NXDOMAIN; the subdomains are
+# live behind Cloudflare and cdn95.com.
+*.fastput.net
+# ajdustevent.com — a deliberate TYPOSQUAT of adjust, the analytics vendor
+# (adjustevent -> ajdustevent). The genuine *.adjust.com and *.adjust.io are
+# separate, appear in the report's own Blocked column, and are NOT touched
+# here. Live behind Cloudflare, HTTP 200, no parking redirect.
+*.ajdustevent.com
+# apkomega.com — pop-up.apkomega.com. Live behind Cloudflare, 403 to a bare
+# fetch, no parking signature. Named for what it does.
+*.apkomega.com
+#
+# TWO CLOUDFRONT DISTRIBUTIONS, BY EXACT HOSTNAME. d16yrvanjduwdq was queried
+# separately during this session before the report arrived, and could not be
+# attributed then — it appeared in neither of the day's captures. The report
+# settles it at 16 hits. Both distributions answer with the SAME origin
+# fingerprint, server: openresty/1.21.4.1 behind an HTTP 463, which is the
+# response-header correlation the skill recommends for exactly this case.
+#
+# The wildcard rule does NOT apply to these: cloudfront.net must never be
+# wildcarded, and a distribution ID belongs to one AWS account, so the exact
+# hostname is both necessary and sufficient.
+#
+# LESS CERTAIN THAN THE ZONES ABOVE, and recorded as such: this app bundles a
+# large amount of third-party ad SDK (Unity, Vungle, InMobi, Chartboost,
+# Liftoff, Smadex, Bidease, DisplayIO), and those vendors ship CloudFront
+# distributions too. The shared openresty origin argues these two are one
+# party's rather than two vendors', but nothing here proves that party is the
+# VPN operator rather than one ad partner. If an unrelated app loses images,
+# these two lines are the first thing to pull.
+d16yrvanjduwdq.cloudfront.net
+dcvj9yft6hl4h.cloudfront.net
+#
+# DELIBERATELY NOT BLOCKED from the same report:
+#   * The ad and analytics SDKs — Unity, Vungle, InMobi, Chartboost, Liftoff,
+#     Smadex, Bidease, DisplayIO, DoubleVerify, Adjust, Crashlytics, Firebase
+#     and the Google zones. Shared with unrelated apps; this is the standing
+#     triage rule and the report is full of them.
+#   * The *.rsc.cdn77.org numbered resources and the ad-host-backup-* S3 and
+#     Aliyun OSS buckets. Same shared-infrastructure reasoning, and the bucket
+#     names read as an ad failover path rather than the VPN control plane.
+#   * innovativeconnecting.zendesk.com. It is the operator's SUPPORT portal on
+#     shared Zendesk infrastructure. Its value here is attribution, not reach —
+#     blocking it stops a user filing a ticket and nothing else.
+#   * The Yandex hosts (yandex.com 37, yandex.ru 6, avatars.mds.yandex.net 8,
+#     startup.mobile.yandex.net 3). These are a bundled Yandex mobile SDK, and
+#     Yandex is a legitimate service used directly on this network — the
+#     2026-08-30 capture of 192.168.50.233 shows 7.6 MB of genuine video from
+#     strm-ams28.strm.yandex.net under a GlobalSign cert issued to YANDEX LLC.
+#     Blocking the zone to reach an embedded SDK would break real use.
+#
+# NOT ADDED, and checked rather than assumed: jumpjump.io and psiphon.ca also
+# appear on that Play page. Both belong to OTHER apps in the "similar apps"
+# carousel — JumpJumpVPN and Psiphon Inc. respectively — and neither is this
+# operator's. turbovpn.com appears too; Turbo VPN is the same corporate family
+# per the 2026-08-13 note, but it is not this package and is left alone here.
 
 # Improper TLDs
 *.bar
@@ -1131,6 +1241,109 @@ chato.go.link
 *.theuaelotteryresults.com
 *.uae-lotteryfinder.com
 *.uaelotteryresults.com
+#
+# --- 2026-08-29: the regulated UAE tier, which did not exist when the above
+# was written, plus three international gaps -------------------------------
+#
+# METHOD, because it is what keeps this section short: 73 gambling and casino
+# domains were resolved against this router, which already carries hagezi's
+# gambling list and StevenBlack's fakenews-gambling-porn. SIXTY-SIX answered
+# 0.0.0.0 without any help from this file — bet365, stake.com, bc.game,
+# roobet, rollbit, 1xbet, the lot. Only seven got through, and they are almost
+# all UAE-regional, which is the pattern worth remembering: the upstream lists
+# are excellent on the international brands and slow on anything local and new.
+# Adding names the subscribed lists already carry is noise; only the gaps
+# belong here.
+#
+# THE REGULATED TIER. The UAE licensed commercial gaming under the GCGRA after
+# the entries above were written, so these are lawful operators rather than the
+# offshore kind — which changes their legality and not their category, the same
+# reasoning applied to casinoplus.com.ph. play971 is the first GCGRA-licensed
+# online casino and sportsbook, with game/app/io being its satellite fronts;
+# live88 is the licensed live-dealer studio streaming into it; Wynn Al Marjan
+# Island is the licensed land-based resort.
+*.play971.ae
+*.play971.com
+*.play971.io
+*.play971app.com
+*.play971game.com
+*.live88.com
+*.wynnalmarjanisland.com
+#
+# UAE-facing affiliate and review fronts, which are the funnel rather than the
+# operator. wonderlanduae.com returned a Cloudflare interstitial so its content
+# is UNVERIFIED; it is listed on its search billing as a UAE betting guide.
+*.3garaat.com
+*.betfinal.ae
+*.emirplay.com
+*.wonderlanduae.com
+#
+# The three non-UAE gaps from the same sweep.
+*.pin-up.com
+*.tgcasino.io
+*.vipph.org
+#
+# --- The numbered-mirror evasion, which is the general lesson here ---------
+#
+# Six affiliate registration links were handed over, each carrying tracking
+# parameters (mid=, subid=, btag=), so these are what an affiliate network is
+# actively funnelling at this household rather than anything found by browsing.
+#
+# Resolving the BRAND APEX against this router next to the link's own domain
+# shows the whole trick in three lines:
+#
+#   slotspalace.com   BLOCKED   slotspalace-0808.com   open
+#   luckydreams.com   BLOCKED   luckydreams300.com     open
+#   kingmaker.com     BLOCKED   kingmaker-9364.com     open
+#
+# hagezi carries the brand; the operator registers the brand plus a number and
+# walks straight through. cleobetra-0101.com is the exception that proves it —
+# hagezi happened to have that one, which is why it was already answering
+# 0.0.0.0 when it was checked.
+#
+# So the entries below are STEM rules, not domain rules: catching one number is
+# worthless when the number is the variable. Collateral was measured, not
+# assumed — none of the 4030 distinct names this household actually resolved in
+# 48h matches any of these stems, and each stem is a coined casino brand rather
+# than an English word likely to appear in an unrelated domain.
+/(^|\.)slotspalace[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)luckydreams[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)cleobetra[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)tongobet[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+#
+# kingmaker is listed by number rather than by stem BECAUSE it is an ordinary
+# English word — a stem rule would take out any consultancy or agency using it.
+# The apex is already blocked upstream, so only the mirrors need naming here.
+*.kingmaker-9364.com
+#
+# Two more from the same batch, no numbering involved.
+*.luckycoin.com
+*.casinoslists.com
+#
+# NOT ADDED, and worth recording as a decision rather than an oversight: a
+# GENERIC rule for the shape, /[a-z]{4,}-[0-9]{3,4}\.[a-z]{2,}$/ . It would
+# catch every mirror in this batch and every future one, and it matched none of
+# the 4030 real names — but that sample is one household over two days, and the
+# shape is not inherently a casino's. office-365.com is the obvious casualty of
+# the no-dash variant, and product- and model-numbered domains are the same
+# hazard with the dash. The file's own rule elsewhere applies: no rule that
+# merely describes a shape leaves real domains alone. Revisit only with a much
+# larger corpus to measure against.
+#
+# casinoslists.com resets the connection from this network and from a fetcher
+# outside it, so its directory could not be walked. Little was lost: of 73
+# mainstream casino brands tested, 66 were already blocked upstream, so a
+# directory harvest would overwhelmingly re-add what is already covered. The
+# gaps are the numbered mirrors above, not the brands.
+
+# CHECKED AND DELIBERATELY NOT LISTED, each for a different reason:
+#   trix20.com    — a Dubai MARKETING AGENCY that happened to blog about
+#                   Play971. It surfaced in a gambling search and reads like a
+#                   casino domain in a list; it is not one. This is why every
+#                   candidate in this section was fetched before being added.
+#   play971.net   — a registrar parking page, not the operator.
+#   gcgra.gov.ae  — the regulator. Never block the regulator.
+#   next.io, squawka.com — igaming trade press and a football statistics site.
 
 # Pseudoscience & Blasphemy
 *.0800-horoscope.com
@@ -1425,6 +1638,236 @@ chato.go.link
 *.yogicwayoflife.com
 *.zodiacsign.com
 *.zodiacsigns-horoscope.com
+#
+# --- Homeopathy sweep, 2026-08-30 -----------------------------------------
+#
+# The alphabetical run above already carried about 25 homeopathy names. This
+# block is what a web sweep of the category turned up that it did not, kept
+# grouped by what each thing is rather than merged alphabetically, so a later
+# reader can see where it came from and what was deliberately left out.
+#
+# Every candidate was resolved against this router before being listed. That
+# check is the reason the block is worth having: the only two candidates
+# already answering 0.0.0.0 — boironusa.com and balsamhomeo.ae — are entries
+# in the alphabetical run ABOVE, i.e. this file's own work. NO upstream list
+# blocked a single homeopathy name. The category is entirely ours to cover.
+#
+# Each name was also fetched before being added, which killed four entries
+# outright; see the NOT ADDED note at the end of the block.
+#
+# Every entry was then re-checked from bongo, following redirects hop by hop
+# with the real upstream resolver (blocked names cannot be fetched from the
+# LAN, which is why the first pass could not do this). That second pass is
+# what found the four cross-domain redirects paired up below, and the two
+# dead entries in the run above whose live domains are now listed.
+
+# Manufacturers and pharmacies. Boiron is the largest in the world, the
+# Schwabe group (which owns DHU) second, and the Indian houses below are what
+# the UAE market is actually supplied from.
+*.boiron.com
+*.boiron.fr
+*.boiron.ca
+*.boiron-swiss.ch
+*.oscillo.com
+*.schwabeindia.com
+*.schwabeindia.in
+*.schwabepharma.com
+*.schwabepharma.ch
+*.schwabe-group.com
+*.schwabe.de
+*.dhu.de
+*.reckeweg.de
+*.reckeweg-india.com
+*.adelindia.com
+*.pekana.com
+*.sblglobal.com
+*.hylands.com
+*.hylands.ca
+*.heel.com
+*.nelsons.com
+*.nelsons.net
+*.ainsworths.com
+*.helios.co.uk
+*.freemans.scot
+*.freemans.uk.com
+*.similasan.com
+*.similasan.swiss
+*.similasanusa.com
+*.ollois.com
+*.homeocan.ca
+*.luyties.com
+*.baksons.in
+*.baksonshomoeopathy.com
+*.buybakson.com
+*.baksonhmc.com
+*.allenhomoeopathy.com
+*.rxhomeo.com
+*.bjain.com
+*.wheezal.com
+*.wheezalstore.com
+*.hapdco.com
+*.medisynth.com
+#
+# The whole Schwabe estate is blocked deliberately, and that is a DECISION
+# rather than an oversight: the group sells ordinary herbal OTC medicines
+# (Tebonin, Umckaloabo) next to its homeopathy arm, so these entries are a
+# wider net than the rest of the block, and they stay anyway. Do not quietly
+# trim them back later on the "it is not only homeopathy" argument — that
+# argument was made and rejected. schwabeindia.com/.in and dhu.de are
+# homeopathy-only in any case.
+#
+# NEVER block these two Schwabe name collisions, both checked here:
+#   schwabe.ch   — Schwabe Verlag, a Swiss academic PUBLISHER since 1488
+#   schwabe.com  — a US law firm
+# Neither has anything to do with the pharma group. Blocking by brand name
+# rather than by fetched identity is how this section acquires casualties.
+#
+# The second name in each pair is a redirect target found by fetching, not a
+# guess — nelsons.net serves nelsons.com, freemans.uk.com serves
+# freemans.scot, similasan.com serves similasan.swiss, wheezal.com serves
+# wheezalstore.com, and schwabepharma.com serves schwabe-group.com. Blocking
+# only the name you first find leaves the site reachable, so both halves are
+# listed. A `*.domain` wildcard already covers the www host, so a
+# `example.com → www.example.com` hop needs nothing extra; only a hop to a
+# DIFFERENT registered domain does.
+
+# Retail: remedy shops and kit sellers.
+*.elixirs.com
+*.a2zhomeopathy.com
+*.naturalhealthsupply.com
+*.pegasuskits.com
+*.bewellhomeo.com
+*.homeopathystore.com
+*.homeopathicremediesonline.com
+*.homeopathicusa.net
+*.drgarbers.com
+*.homeoayurved.com
+*.alchemianova.com
+*.woodlandnaturalremedies.com
+#
+# alchemianova.com sells "alchemical gem elixirs and noble gas waters" and
+# woodlandnaturalremedies.com is herbal rather than homeopathic — both came
+# out of a homeopathy directory and both belong in this section on the
+# section's own terms, but neither is homeopathy, so they are named here
+# rather than left to look like a mistake.
+
+# Reference sites, portals and repertory software — the layer someone
+# actually reads, as opposed to the shops.
+*.homeoint.org
+*.homeopathy.network
+*.homeopathybooks.in
+*.homeopilot.com
+*.similia.io
+*.homeopathysoftwares.com
+*.homeopathyworld.com
+*.modernhomoeopathy.com
+*.modernhomoeo.com
+*.globuli.de
+*.homoeopathie-online.info
+*.narayana-verlag.com
+*.narayana-publishers.com
+*.radaropus.com
+*.radaropus.us
+*.completedynamics.com
+*.hompath.com
+*.synergyhomeopathic.com
+
+# Professional bodies, registers, certification and schools.
+*.lmhi.org
+*.homeopathy-uk.org
+*.homeopathyoz.org
+*.homeopathywa.org.au
+*.aroh.com.au
+*.homoeopathie.at
+*.dzvhae.de
+*.homeopathy.ca
+*.hmac.ca
+*.homeopathycanada.com
+*.achena.org
+*.homeopathcertification.org
+*.homeopathyschool.com
+*.academyofhomeopathyeducation.com
+*.nyhomeopathy.com
+*.bihint.com
+*.chehomeopathy.com
+#
+# homeopathy-uk.org is the other half of *.homeopathyuk.org in the run above.
+# The first pass here called the existing entry a dead typo; that was WRONG,
+# and the correction is the reason this file re-checks from bongo. BOTH names
+# are registered by the charity and BOTH serve "Home | Homeopathy UK" — the
+# hyphenated one simply never got added. A name that a blocked LAN cannot
+# fetch looks identical to a name that does not exist; only the upstream
+# resolver tells them apart.
+
+# Clinics and paid online consultation, including the UAE-facing ones that
+# *.homeopathy.ae and *.dubaihomeopathy.ae above do not reach.
+*.drbatras.com
+*.lifeforce.in
+*.welcomecure.com
+*.homoeocare.co.in
+*.positivehomeopathy.com
+*.advancehomeopathy.ae
+*.dubaihomeoclinic.com
+*.drnevrekars.ae
+#
+# drbatras.com is the group behind the already-listed *.drbatras.ae, and
+# lifeforce.in belongs to the same doctor as the already-listed
+# *.askdrshah.com. Both slipped through because only one domain of each pair
+# was ever added.
+
+# Live domains behind entries in the run above that resolve to NOTHING. Both
+# originals were checked against the real upstream resolver, not just this
+# router, so this is a dead registration and not a blocked one:
+#   *.aurumproject.org  is NXDOMAIN; the Australian homeopathy research
+#                       charity is at aurumproject.org.au
+#   *.kshomeopathy.com  is NXDOMAIN; the clinic is at kshomeopathy.in
+# The dead originals are left in place — they cost nothing and cover a
+# comeback — but on their own they were blocking air.
+*.aurumproject.org.au
+*.kshomeopathy.in
+
+# Veterinary homeopathy, which is where the nosode-instead-of-vaccine claims
+# live. Adjacent to the *.stopmandatoryvaccination.com entry above.
+*.theavh.org
+*.iavh.org
+*.homeovet.net
+*.dogsnaturallymagazine.com
+#
+# dogsnaturallymagazine.com is a natural-pet magazine rather than a homeopathy
+# site; it is here for its homeoprophylaxis and anti-vaccination content, not
+# for the category.
+
+# CHECKED AND DELIBERATELY NOT LISTED:
+#   similima.com          — was the well-known homeopathy education portal and
+#                           is now a FLAT RENTAL SITE in Kerala. Blocking it
+#                           would block a letting agency. Every "known" domain
+#                           in this category needs re-fetching, not recalling.
+#   hominf.org            — expired, serving a NameBright parking page.
+#   homeocan.com          — parked on an AWS parking address (13.248.169.48);
+#                           homeocan.ca is the live site and is listed above.
+#   pets4homeopathy.com   — parked, 76.223.54.146, the other AWS parking IP.
+#   standardhomeopathic.com, heelusa.com — resolve but serve nothing usable
+#                           from the LAN OR from bongo: heelusa.com returns an
+#                           empty body and standardhomeopathic.com answers 403
+#                           from 208.91.197.27, a parking address. Content
+#                           never verified, so not added; their live brands
+#                           (hylands.com, heel.com) cover the product anyway.
+#   balsamhomeo.ae        — the Sharjah homeopathy centre. Already answering
+#                           0.0.0.0 because *.balsamhomeo.ae is in the run
+#                           above, NOT because an upstream list has it.
+#   lifepharmacy.com, myaster.com, binsina.ae, chspharmacy.ae,
+#   shefaapharmacy.ae, noon.com — UAE pharmacies that happen to carry a
+#                           homeopathy aisle. Blocking a pharmacy to block one
+#                           aisle takes out real prescriptions with it.
+#   nmc.ae, canadiancmc.com, wellth.ae, stepsclinic.ae, honuae.com,
+#   alsherouqmed.ae, rayhanhealth.com — hospital and multi-speciality groups
+#                           with a homeopathy department. Same reasoning: the
+#                           entries above are homeopathy-only practices.
+#
+# Two entries could not be fetched directly and rest on search-engine copy of
+# their own pages instead: boiron-swiss.ch and positivehomeopathy.com. Both
+# resolve and both are unambiguously the operator's; recorded so the weaker
+# evidence is not mistaken for the same standard as the rest.
 
 # MDM
 *.checkpoint.com.edgekey.net
@@ -1875,9 +2318,9 @@ chato.go.link
 # The patterns are safe to anchor on the registrable label because none of
 # jili, jlmmm or fortureslot appears in a legitimate domain — checked against a
 # large corpus of real-world hostnames before adding, with no false positives.
-/(^|\.)[a-z0-9-]*jili[a-z0-9-]*\.[a-z]{2,}$/
-/(^|\.)[a-z0-9-]*jlmmm[a-z0-9-]*\.[a-z]{2,}$/
-/(^|\.)fortureslot[0-9]*\.[a-z]{2,}$/
+/(^|\.)[a-z0-9-]*jili[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)[a-z0-9-]*jlmmm[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)fortureslot[0-9]*\.[a-z]{2,}(\.[a-z]{2,})?$/
 
 # One *.domain entry per registrable domain. The wildcard form does match the
 # apex — checked against the live resolver, where heibao.bet, southasiabp.online
@@ -1948,7 +2391,7 @@ jlmmm-6f65f.firebaseapp.com
 # next to the label pulls in wja520.cc, tja510.com and raja567casino.com, which
 # are unrelated. Restricted to letters, the only matches in Tranco's top 1M are
 # ja5gaming.com, ja5game.com and aceja5.com — all this operator's.
-/(^|\.)[a-z]*ja5[a-z]*\.[a-z]{2,}$/
+/(^|\.)[a-z]*ja5[a-z]*\.[a-z]{2,}(\.[a-z]{2,})?$/
 
 # The "wbslot" platform, one shell company per front domain. Each front carries
 # its own certificate, which is what makes them look like separate operators
@@ -2003,7 +2446,7 @@ jlmmm-6f65f.firebaseapp.com
 *.bw-games-customer.com
 *.velkigames365.cc
 *.liveamuse247.net
-/(^|\.)rjg[0-9]{3}\.[a-z]{2,}$/
+/(^|\.)rjg[0-9]{3}\.[a-z]{2,}(\.[a-z]{2,})?$/
 
 # Single-operator zones with no sibling brands on the certificate.
 *.ybgaming777.net
@@ -2054,7 +2497,7 @@ jlmmm-6f65f.firebaseapp.com
 
 # ggslot rotates the TLD and keeps the label, in the same way jili does, so
 # match the label. Not a word that occurs in a legitimate domain.
-/(^|\.)ggslot[a-z0-9-]*\.[a-z]{2,}$/
+/(^|\.)ggslot[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
 
 # ---------------------------------------------------------------------------
 # A second pass over the resolver's history, scored rather than eyeballed.
@@ -2308,9 +2751,9 @@ jlmmm-6f65f.firebaseapp.com
 # string. Matched on the family stem where the operator has already shown it
 # increments — sss77a through sss77f plus sss77app on 3mhg*, and three TLDs of
 # plus222 on 3rqt* — so the next member is covered before it is minted.
-/(^|\.)sss77[a-z0-9]*\.[a-z]{2,}$/
-/(^|\.)plus222\.[a-z]{2,}$/
-/(^|\.)jljl9[a-z0-9]*\.[a-z]{2,}$/
+/(^|\.)sss77[a-z0-9]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)plus222\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)jljl9[a-z0-9]*\.[a-z]{2,}(\.[a-z]{2,})?$/
 
 # Keyboard-mash front ends on 3rkq*/3rks*. Listed rather than matched: the
 # labels are deliberate noise with no stem to anchor on, and any pattern loose
@@ -2322,10 +2765,281 @@ jlmmm-6f65f.firebaseapp.com
 *.jhoolhohlhoolgo.com
 *.li1iuliy090-o0of-010ioo.com
 
+# --- 2026-08-28: the current rotation, and what the entries above missed -----
+#
+# A fresh walk of the EdgeOne CNAME chain across eight weeks of query history,
+# same method as the block above. Everything here was resolving; one handset
+# reached this estate on 36 of the 58 days the resolver log retains, most
+# recently the morning this was written.
+#
+# WHAT THE EXISTING ENTRIES GOT RIGHT, because it is the reason to keep using
+# them: of the 28 registrable domains this sweep turned up, NINE already
+# answered 0.0.0.0 — every jlmmm* front to the regex, phzzzwave/phzzz1 and
+# ossphs/phapply to their own lines, xn--gzraaa and xn--k7yv36alscmtf to the
+# punycode pair, and the 1hkw9c4z/a5r8x3jd/u0f5h8rd/v2m6q7be group to the
+# eight-character list. The rotation is being tracked; it is not being outrun.
+
+# TWO NEW BRAND STEMS, matched rather than listed. Both have already shown the
+# operator incrementing and prefixing — 44jl.com, 044jl.com and apple44jl.com;
+# gggph.com, gggph1.com and applegggph.com — which is the same justification
+# the sss77/plus222/jljl9 rules above carry. The `apple` prefix is deliberate
+# cover, not a typosquat of Apple: the sites are titled "Maglaro ng mga online
+# slot game sa Pilipinas | 44JL", the same Tagalog slots front end as the rest.
+#
+# Safe to anchor on the label for the same reason jili and jlmmm are: neither
+# string occurs in any legitimate domain in this network's history.
+/(^|\.)[a-z0-9-]*44jl[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+/(^|\.)[a-z0-9-]*gggph[a-z0-9-]*\.[a-z]{2,}(\.[a-z]{2,})?$/
+
+# SIX-character random labels, and the shape is the finding. The group above
+# documents eight alphanumerics as the mint; these are six, on the SAME 3o9*
+# EdgeOne account (3o9d80nxf6m3, 3o9l9esjrb3y, 3o9hgvpkdpec on eo.dnse4) that
+# minted the eight-character batch. So the account did not move, the label
+# length did — and a future sweep should walk the CNAME chain rather than
+# search for a known label length, which would have missed all seven of these.
+#
+# Listed, not matched, for the reason the eight-character note gives: no rule
+# that describes six alphanumerics leaves real domains alone.
+*.xk9qzv.com
+*.r8mqlv.com
+*.qv3zmn.com
+*.p7xztm.com
+*.n3vkqm.com
+*.m7tqxp.com
+*.kz3xqn.com
+
+# Punycode on two further accounts, 3sxq* on eo.dnse5 and direct-to-Cloudflare.
+# The labels decode to Chinese SEO spam — 小孙女r即可111v and near-identical
+# variants — which is the same estate wearing a different disguise, not a
+# separate operator.
+*.xn--r111v-l97h22ax63a7ie82b.com
+*.xn--dsvr111v-t99m53by98aslfurc.com
+*.xn--rv-g95cksr4tk3cnqb.com
+
+# Asset host. citrixfront.com is NOT Citrix — the name is cover, and it serves
+# the static layer for the front ends below. A feed already carries the apex,
+# which is exactly why this needs a wildcard: oss.citrixfront.com answered live
+# while citrixfront.com answered 0.0.0.0. An apex-only feed entry is not a
+# block, and this is worth remembering the next time a name looks covered.
+*.citrixfront.com
+
+# --- Second operator on the same handset: XKING.VIP and 3U3U.COM ------------
+#
+# Different shape from everything above and probably a different operator:
+# Cloudflare rather than EdgeOne, so there is no CNAME chain to tie them
+# together and no origin address worth taking. What ties them is the landing
+# page — the DGA-ish fronts all render one of two brands, and kgvw0w1a.com
+# 301-redirects to zgbvp05877.com, which is how the pair was found.
+#
+# The brand domains themselves are listed alongside the fronts. xking.vip is
+# already covered elsewhere and jlmmm.com by the regex; both are named here
+# anyway so the estate reads as one group rather than three-quarters of one.
+*.3u3u.com
+*.xking.vip
+*.kgvw0w1a.com
+*.zgbvp05877.com
+*.zgo1p5evy27l.com
+*.tulta81464.com
+#
+# NXDOMAIN today, listed because this operator recycles: a UUID as a
+# registrable label, which is not a shape anything legitimate produces.
+*.d8e519fc-1292-404e-a80f-b2032e06e557.com
+#
+# Four more of the same, found a different way and worth recording as such:
+# not from a domain sweep but from an ENTRY-POINT analysis — reading the
+# resolver stream for what the handset queried in the seconds before each
+# session. These appeared as the immediately preceding name, i.e. they are the
+# fronts that hand off to the ones above, and no sweep by domain shape would
+# have grouped them with this estate.
+#
+# Two more brands again: ph1.vip and nnph.vip, both already covered at the
+# apex, which is exactly why the fronts matter — the brand domain is not what
+# the handset resolves. lxcb6091.com and n01p9yzx.com are NXDOMAIN at the apex
+# with live subdomains, the same add-to-the-zone shape as netshunt.com above.
+*.lxcb6091.com
+*.h1wr4lmx.com
+*.fjiqn72442.com
+*.n01p9yzx.com
+
 # Single-domain accounts in the same estate, one EdgeOne id each.
 *.dsfewj81ca.com
 *.phvvv1.com
 *.win96c.cc
+
+# --- 2026-08-29: the jh* mirror batch, which landed AFTER the sweep above ----
+#
+# Four names the entries above do not match, found by running blocky's own
+# matching rules — exact, *.wildcard and /regex/ — over every name the resolver
+# answered in the last 48h and keeping what resolved and matched nothing. Of
+# 2634 resolved names these four were the only estate-shaped survivors, which
+# is the check worth repeating after any future sweep: the estate is not found
+# by looking for it again, it is found by asking what got through.
+#
+# A MIRROR LIST, not four visits. All four are queried inside the same second,
+# three times over the two days — 08-28 20:59:19, 08-28 21:00:03 and 08-29
+# 19:23:03 — so the handset is walking a list of fronts and taking whichever
+# answers. Blocking a subset of a mirror list accomplishes nothing, which is
+# why all four go in together even though gojho/jhmodo were never the ones the
+# session settled on.
+#
+# 3p39* on eo.dnse5 is a FOURTH EdgeOne account, after the 3o9*, 3sxq* and
+# 3tj3*/3tiz* ids the blocks above document. jhovia and opjho sit on it;
+# gojho and jhmodo answer straight from Cloudflare, the same split the
+# punycode trio shows, so account id alone does not enumerate this estate.
+#
+# New, not missed: zero hits for all four across 29 days of the blocky journal
+# stream in Loki, which has coverage over that whole span. They first appeared
+# 2026-08-28 20:59, hours after the entries above were written.
+*.jhovia.com
+*.opjho.com
+*.gojho.com
+*.jhmodo.com
+#
+# All four serve a BYTE-IDENTICAL page — md5 9fd3ec66, 2797 bytes, titled
+# "JILIHOT Casino | Super Ace - Tongits Go - Live Casino & Slots" — as does
+# jilihot.club, which the jili regex at the top of this file already catches.
+# So jh* expands to JILIHOT and the brand was never unknown; only its current
+# mirrors were. Fetched over --resolve against 8.8.8.8 so the router's own
+# answer could not colour the result.
+
+# --- The layer behind the fronts, found by reading the bundles -------------
+#
+# Every front above is a Vue shell whose assets are same-origin, so a domain
+# sweep cannot see the backend. Reading /js/index*.js does: all five JILIHOT
+# mirrors carry the same two absolute URLs,
+#
+#   imgUrl:       https://images.b298100.com:42666
+#   startGameUrl: https://www2.854819.com:42666
+#
+# which is the shared sign-in and game-launch tier. www2.854819.com already
+# answers 0.0.0.0 to the six-or-more-digits rule, and THAT is why a front that
+# still resolves renders a broken page — the shell loads, the game layer does
+# not. Reading the breakage as a partial block rather than a dead site is what
+# pointed at this tier.
+#
+# b298100.com is NXDOMAIN today. Listed anyway, on the same recycling argument
+# the UUID entry above carries: it is a live config value in a page being
+# served right now, so the zone coming back is a question of when.
+*.b298100.com
+
+# PH1 and NNPH mirror sets, from the same bundle read. Both brands are already
+# blocked at the apex (ph1.vip, nnph.vip), which again is the point: the apex
+# is not what the handset loads. Each of these returns the full 40 KB casino
+# page under the brand title, with a per-domain affiliate id — the md5s differ
+# while the byte count does not.
+#
+# The cs pair are the support desks (title "Online Consultant") and the dl.top
+# pair are the iOS sideload hosts, apex NXDOMAIN with live subdomains, the same
+# add-to-the-zone shape as lxcb6091.com above. Support and download go with the
+# casino: leaving them reachable leaves a working install path.
+*.nnph2cv.com
+*.nnph3rk.com
+*.nnph63l.com
+*.nnphdpx.com
+*.nnphcs.com
+*.nnphdl.top
+*.ph1hk.com
+*.ph1jj.com
+*.ph1ss.com
+*.ph1tu.com
+*.ph1cs.com
+*.ph1dl.top
+#
+# --- From a web search rather than the resolver, and checked the same way ---
+#
+# Seven names were handed over from an outside search. FIVE needed nothing:
+# jilihot.com, jilihot.app, jilihot.co, jili22.com and 50jiliph.com all already
+# answer 0.0.0.0 to the jili regex at the top of this file. Worth recording as
+# a pass, not a gap — www.jilihot.com serves the same md5 9fd3ec66 page as the
+# jh* mirrors above, so the regex written months ago is still catching this
+# operator's newest brand front without amendment.
+#
+# The two below are the remainder, and the evidence for each is NOT equal:
+#
+#   casinoplus.com.ph — no TLS response from here at all, so the content is
+#   unverified. Listed on the name, which is not ambiguous, and on the house
+#   rule that gambling is blocked whether or not the operator is licensed;
+#   Casino Plus is a PAGCOR licensee, which changes its legality and not its
+#   category.
+#
+#   winmy9.com — Cloudflare interstitial ("Just a moment..."), so the content
+#   is likewise UNVERIFIED. Its certificate is a single-name Cloudflare cert
+#   with no sibling SANs, and its Cloudflare address is shared anycast, so
+#   nothing here ties it to the estate above beyond the shape of the name.
+#   Listed because it was reported as gambling, but it is the weakest-evidence
+#   entry in this section and the first to revisit if something breaks.
+*.casinoplus.com.ph
+*.winmy9.com
+
+# --- 2026-08-29: one platform behind every brand, and a regex gap -----------
+#
+# THE FINDING THAT MATTERS. Reading /res/js/app.*.js on one front per brand
+# shows all of them pointing at the SAME two absolute URLs:
+#
+#   brand 27520 JILIHOT   \
+#   brand 28630 JLMMM      |  imgUrl:       https://images.b298100.com:42666
+#   brand 29147 44JL       |  startGameUrl: https://www2.854819.com:42666
+#   brand 29149 GGGPH      |
+#   brand 26522 PLUS222   /
+#
+# So JILIHOT, JLMMM, 44JL, GGGPH and PLUS222 are not five operators sharing a
+# template, they are five skins with one sign-in and game tier, each carrying a
+# numeric brand id in the same 26000-29000 block. Every shell also loads the
+# same /res/aboutMerchant.js and /res/encrypt.js.
+#
+# The practical consequence is that the CHOKE POINT is already blocked:
+# www2.854819.com matches the six-or-more-digits rule, so every front in this
+# file has had a dead game layer all along, whatever its own domain did. New
+# fronts are cheap for the operator and cost us one line; the backend is the
+# expensive thing for them to move. If a future sweep has to prioritise, walk
+# app.*.js for a changed startGameUrl before chasing another front.
+
+# TLD ANCHOR WIDENED, above, on all eleven /regex/ rules in this file. Every
+# one ended \.[a-z]{2,}$ , which cannot match a two-label suffix, so
+# jilihot.net.ph and jlmmm.com.ph both sailed through rules written precisely
+# to catch them. .com.ph and .net.ph are the natural suffixes for a Philippine
+# casino, which makes this the most likely bypass in the file rather than a
+# theoretical one. Now \.[a-z]{2,}(\.[a-z]{2,})?$ on all eleven.
+
+# 222000.top — a live 44JL front (identical 1265-byte page), and note HOW it
+# was found: 44JL's own shell carries
+#   if (["222000.top"].includes(getCleanDomain())) window.stop();
+# a kill-switch naming a domain of theirs. The operator's own source listed it;
+# no sweep of ours did, and it was resolving. Worth re-reading these shells for
+# the same pattern whenever the bundle changes.
+*.222000.top
+
+# PH222, brand 28635 — same shell template, same /res/ layout, same brand-id
+# block. plus222 is already matched at line 2312; this is the sibling.
+*.2ph222.com
+
+# Brand doorway pages: heavy SEO marketing sites, NOT the SPA shells above, so
+# the evidence is the brand and the funnel rather than shared infrastructure.
+# Listed explicitly and not by an xking/ph1 stem regex, because "xking" would
+# also match boxking/foxking and "ph1" is far too short to anchor on.
+*.jilihot.net.ph
+*.jlmmm.com.ph
+*.jlmmph.com
+*.ph1.mobi
+*.ph1.com.ph
+*.xking-ph.com
+*.www-xking.com
+*.xkingph.net
+*.xkingonline.com
+*.x-king-ph.com
+*.xkinglegit.com
+#
+# NOT listed: vipph.org and the VIPPH family. It is a Philippine casino brand
+# and it would fit the house policy, but nothing ties it to this estate — no
+# shared backend, no shared shell, and it has never appeared in the resolver
+# log. Blocking on category alone is a decision for the blocklists this file
+# layers on top of, not for a section documenting one operator.
+
+# DELIBERATELY ABSENT, because both are shared SaaS and wildcarding them would
+# break unrelated sites: cdn.livechatinc.com (the JILIHOT shell embeds LiveChat
+# licence 15939834 — the licence is the operator fingerprint, the CDN is not)
+# and 168chat.com. embed.help-168.com is NXDOMAIN and specific enough to list
+# if it ever returns.
 
 # Firebase and AWS front ends. Exact hostnames only — firebaseapp.com and
 # on.aws are shared infrastructure and must never be wildcarded, the same rule
@@ -3153,7 +3867,144 @@ kpgfrevlebuzgoazsdgamt1zg7j8bi4bg.akamaized.net
 # resolves — the shard number is not the unit, the zone is. No eu1, ap1 or in1.
 *.jksolapp.com
 #
-# NOT BLOCKED HERE: jksync.com, the same operator's location endpoint, which is
-# live and unblocked and was left out only because it was outside what was
-# asked for. It is the obvious next line if this pair does not quieten the
-# handsets down.
+# jksync.com is the third zone of the same estate and the most explicit about
+# what it does: the only host of it seen on this network is
+# locationintelligence.jksync.com. Registered 2024-11, inside the same
+# six-month window as the other two, and it presents a wildcard *.jksync.com
+# ACM cert — so the operator provisions subdomains freely and the zone, not the
+# host, is again the unit.
+#
+# Queried by the same two handsets and no other device on the site, same as the
+# other two zones, so this is an observed entry rather than an inference from
+# the registrant — the WHOIS sibling relationship is what identified the
+# operator, not what justifies the block.
+*.jksync.com
+
+# === Tracking and fingerprinting resolving on bongo, 2026-08-28 ==============
+#
+# From a sweep of fourteen days of bongo's query history: 1.34M queries, 58,419
+# names that were NOT blocked, reduced to 2,651 registrable domains and triaged
+# against the noise list in the blocking-apps-by-domain skill. These are the
+# ones no feed carries and that do nothing but profile the user.
+#
+# The consent-management layer found in the same sweep is deliberately NOT here
+# — usercentrics, onetrust, cookiebot, ketch, cookieyes, trustarc, clym,
+# privacy-mgmt, bigidcmp, cookie-script, userway, pactsafe. Blocking a CMP
+# usually means the banner never resolves and the page stays behind it, so the
+# user is worse off than with the tracking. Same for the Shopify app ecosystem
+# (smile.io, judge.me, reviews.io, stamped.io, vitals.app, elfsight and a dozen
+# more), which breaks product pages and checkout on shops in ordinary use here.
+
+# NOT BLOCKED: demdex.net, Adobe Audience Manager, which was the largest
+# tracker this sweep found by device spread and was briefly listed here.
+#
+# Removed on the rule that an upstream ALLOWLIST entry is evidence of breakage.
+# dpm.demdex.net — the ID-sync endpoint and the busiest name of the group in
+# the query history — is carried in anudeepND's optional-list.txt, which
+# blocky-common.nix wires in as an allowlist, and allowlists beat denylists
+# unconditionally. So the entry could never have been more than partial: the
+# rest of the zone answered 0.0.0.0 while the one name that mattered resolved.
+#
+# A curated allowlist carries a name because blocking it breaks pages. Taking
+# the rest of the zone while the exempted host keeps working buys nothing and
+# risks the breakage the allowlist exists to prevent, so the whole entry goes
+# rather than half of it staying. Checked against both anudeepND lists: demdex
+# is the ONLY zone in this section that appears in either.
+
+# Behavioural and location profiling SDKs, all mobile.
+*.incognia.com
+*.appice.io
+*.useinsider.com
+*.webengage.com
+*.webengage.co
+*.evergage.com
+*.personaclick.com
+*.searchatlas.com
+
+# Piano's analytics backend. pas.economist.com CNAMEs into hsttrckr.com, so the
+# paywall's telemetry is what this reaches, not the articles.
+*.hsttrckr.com
+
+# DEVICE FINGERPRINTING, AND READ THIS BEFORE ASSUMING IT IS FREE. These four
+# are sold as fraud and bot detection, which means the sites that embed them
+# are banks, card checkouts and airline bookings — ThreatMetrix and InAuth
+# especially are bank-side risk engines, and this network resolved them from a
+# workstation, two handsets and an iPad.
+#
+# The failure mode is NOT a missing widget. A risk engine that cannot reach its
+# backend commonly fails closed: a declined card, a login that will not
+# complete, a booking that errors at the last step — and nothing on screen will
+# mention DNS. That is the "blocking payment infrastructure" mistake in the
+# skill, entered here deliberately rather than by accident.
+#
+# Kept because they are still pure fingerprinting and were blocked on request
+# with the trade-off stated. If a card starts failing, THESE FOUR LINES ARE THE
+# FIRST THING TO PULL — before suspecting the bank, the card or the router.
+*.online-metrix.net
+*.inauth.com
+*.sift.com
+*.px-cloud.net
+
+# === VPN Proxy Master (free.vpn.unblock.proxy.vpn.master.pro) ================
+#                                                                  2026-08-30
+# Static extraction: 6 dex, 38 MiB of bytecode. Not an app with a backend so
+# much as a multi-protocol tunnel client — libxray.so (33 MiB), libopenvpn.so,
+# libstrongswan.so/libcharon.so/libipsec.so, libss-local.so and libssr-client.so
+# for Shadowsocks/SSR, libtun2socks*.so, libredsocks.so, and WireGuard by way of
+# golang.zx2c4.com. assets/acp_connect_config_us.json names the protocols it
+# actually offers: ipsec and issr.
+#
+# THE OPERATOR IS INNOVATIVE CONNECTING, and three independent strings say so:
+# the Go modules are at git.inconnecting.com, support runs on
+# inconnecting.zendesk.com, and the OAuth package is com.inconnecting.oauth.
+# The whole VPN stack sits under co.allconnected.lib.* — AllConnected is the
+# same group's SDK, so anything else carrying it is the same estate.
+#
+# MOST OF THE BRAND ESTATE WAS ALREADY BLOCKED by upstream lists before this
+# run: vpnproxymaster.com, masterspn.com, acdtop.com, the seven-host
+# *.ssacdn.com cluster, flashputon.net and dikzzdev.duckdns.org all answered
+# 0.0.0.0 on bongo already. Nothing was added for those. What follows is only
+# what was still resolving.
+
+# --- Operator zone, established ---------------------------------------------
+#
+# inconnecting.com is the operator's own domain by the three strings above.
+# git.inconnecting.com is its Go module host and resolves separately to
+# 8.218.143.72 (Alibaba); the wildcard covers both.
+*.inconnecting.com
+
+# --- Two zones added on instruction, ownership NOT established --------------
+#
+# Recorded honestly because the difference matters to whoever reads this next.
+# Both appear in the package and both were still resolving, but neither could
+# be tied to the operator: the certificates are single-domain (hoolapp.com
+# carries an Amazon-issued *.hoolapp.com, ahsuhx.com a Let's Encrypt cert for
+# itself), so there is no SAN overlap with the operator estate, and no string
+# in the dex links either to Innovative Connecting. They may equally be ad-SDK
+# infrastructure, which the package carries a great deal of.
+#
+# apps.hoolapp.com serves a 200 from AmazonS3; ahsuhx.com answers nginx 502.
+# Blocked at the operator's direction with that caveat stated. If something
+# unrelated breaks, these two lines are the first to pull.
+*.hoolapp.com
+*.ahsuhx.com
+
+# --- WHY THIS SECTION WILL NOT STOP THE APP ---------------------------------
+#
+# Worth stating plainly rather than discovering later. There is NO node list in
+# the package: the only addresses in 38 MiB of dex are public resolvers
+# (1.1.1.1, 8.8.8.8, 8.8.4.4) plus 198.199.101.152, and no server list appears
+# in assets. The nodes are fetched at runtime by co/allconnected/lib/serverguard
+# from a base URL assembled at runtime — BASE_URL_FORMAT and
+# BASE_URL_NO_SUB_DOMAIN_FORMAT, never a literal host — and libxray resolves
+# through DoH (*dns.DoHNameServer, dohURL, getDohServers). So the transport is
+# reached by address, over a name this file never sees.
+#
+# That puts it in the same class as the public-subscription nodes that
+# custom-vpn-intel-throttle.txt shapes, EXCEPT that its list is private and
+# signed, so fetch-v2ray-nodes.py cannot cover it — that script reads a public
+# unauthenticated subscription, and this operator publishes none.
+#
+# 198.199.101.152 IS ALREADY BLOCKED in custom-ip-blocklist.txt, added
+# 2026-08-28 from Rapid VPN's dex. Two unrelated VPN apps hardcoding the same
+# DigitalOcean address is the useful finding here; see the note there.

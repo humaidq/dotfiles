@@ -61,10 +61,23 @@ find "$tree" -maxdepth 1 -name '*.apk' -print0 |
 # Package names live in the binary manifest as UTF-16, hence -e l.
 # Collected once: piping into `grep -q` would SIGPIPE the producer, and under
 # `set -o pipefail` that reads as "not found" for every app, not just wrong ones.
+#
+# -o RATHER THAN -x, because binary XML stores each string with a length
+# prefix and `strings` glues it onto the front of the token. Under 32
+# characters that prefix byte is a control character, which `strings` treats as
+# a terminator, so the name lands on a line of its own and -x matched — which
+# is why this held for every app tried before. At 32 or more it is printable
+# ASCII and comes through attached: free.vpn.unblock.proxy.vpn.master.pro is 37
+# characters and appears as `%free.vpn.…`, which -x can never match. The guard
+# then reports the mirror served the wrong app, naming the <queries> entries it
+# did find, and the download is discarded even though it was correct.
+#
+# {1,7} rather than {1,4} for the same class of reason: that package has seven
+# labels, and the old bound stopped at five.
 manifest_pkgs="$(
 	find "$tree" -name 'AndroidManifest.xml' -print0 |
 		xargs -0 -r strings -a -e l -n 4 2>/dev/null |
-		grep -xE '[a-z][a-z0-9_]*(\.[a-z0-9_]+){1,4}' |
+		grep -oE '[a-z][a-z0-9_]*(\.[a-z0-9_]+){1,7}' |
 		grep -vE '^(android|androidx|kotlin|java|javax|com\.google|com\.android)' |
 		sort -u || true
 )"

@@ -6,10 +6,33 @@
 # is what makes "remove" safe — a button press can never silently undo a device
 # that was deliberately put in the permanent list.
 #
-# "Temporary" means until the next rebuild reloads the ruleset, or until `del`.
-# Unlike tempblock, which keeps its own table and therefore survives rebuilds,
-# this writes to a set declared by networking.nftables.tables, so a rebuild
-# genuinely does clear it.
+# "Temporary" means until `del`, a reboot, or a rebuild that actually reloads
+# the ruleset — which is NOT every rebuild. This comment used to claim that a
+# rebuild "genuinely does clear it", and on 2026-08-28 a MAC added here was
+# still in lowtrust_macs_temp on both tables after a `nixos-rebuild switch` had
+# completed on that host.
+#
+# WHY, because the reasoning it replaces was not silly. The set really is
+# declared by networking.nftables.tables rather than created by hand the way
+# tempblock's table is. But that declaration renders into the single
+# nftables.service, systemd restarts a unit only when its definition changes,
+# and the sets inside it are filled by separate services — nft-lowtrust-macs
+# .service from the sops secret, nft-blocklists-local.service from the
+# generated files. So a rebuild that changes only an ASN list or the MAC secret
+# restarts those helpers and leaves nftables.service alone, and every
+# runtime-added element with it. On the host above, nftables.service had last
+# started two days before the deploy.
+#
+# The gap from tempblock is therefore narrower than it looks: that table always
+# survives, this set usually does. Check `list` rather than assuming, the same
+# advice tempblock.bash gives after the same correction.
+#
+# ONE TRAP THIS CREATES. If a MAC is added here and later written into the sops
+# secret, `del` refuses it as a permanent member and the leftover temporary
+# element cannot be removed with this tool at all. Harmless while both agree —
+# but if the MAC is then dropped from the secret, the stale element keeps the
+# device pooled and the removal looks like it silently failed. Clear it with a
+# reboot, or `nft delete element` on both tables by hand.
 #
 # Accepts a device IP as well as a MAC, because the peers page is per-device-IP
 # and the pool is keyed on MAC. Resolution is via the neighbour table.
@@ -54,8 +77,10 @@ usage() {
 		  lowtrust list           show temporary and permanent membership
 		  lowtrust status         rule counters for the pool policy
 
-		Temporary membership is cleared by the next rebuild. Permanent members
-		live in a sops secret and cannot be changed from here.
+		Temporary membership lasts until `del` or a reboot. A rebuild clears
+		it only if it reloads the ruleset, which most do not — run `list`
+		rather than assuming. Permanent members live in a sops secret and
+		cannot be changed from here.
 	USAGE
 	exit "${1:-0}"
 }
