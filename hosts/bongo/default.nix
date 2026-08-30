@@ -208,10 +208,28 @@
       enable = true;
       meshAddress = "10.10.0.16"; # bongo
       localDomain = "v6.alq.ae";
+      # oreamnos by its LAN address only. It also holds 10.10.0.12 on the mesh,
+      # and naming both here made every one of these a two-address answer that
+      # clients round-robin over — so roughly half of all connections to the
+      # home server went to an address the client cannot reach. Nothing bridges
+      # the LAN into nebula: the only masquerade into sifr0 is from wg0, so a
+      # packet from 10.20.0.0/16 to 10.10.0.12 is routed to the tun device and
+      # dropped there for carrying a source outside the overlay. Verified by
+      # pinging 10.10.0.12 from 10.20.0.1 on the router itself — 100% loss.
+      #
+      # The mesh address is not needed by anything that asks this resolver.
+      # Mesh members get the home server's domains from networking.hosts (see
+      # modules/personal/networking/nebula.nix), which resolves ahead of DNS,
+      # and wg0 clients reach 10.20.0.250 over the LAN like any other client.
+      #
+      # g.huma.id is deliberately absent and must stay absent. It has a public
+      # vhost on hisn (hosts/hisn/webserver.nix) that proxies to the same
+      # service, so with no override here the name resolves upstream and takes
+      # the public path from every client — which is the intended behaviour for
+      # it, unlike alq.ae and cache.huma.id, which are meant to stay on the LAN.
       customDNSMappings = {
-        "alq.ae" = "10.10.0.12,10.20.0.250";
-        "cache.huma.id" = "10.10.0.12,10.20.0.250";
-        "g.huma.id" = "10.10.0.12,10.20.0.250";
+        "alq.ae" = "10.20.0.250";
+        "cache.huma.id" = "10.20.0.250";
       };
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
       # The only view of the physical line anything here has. The anchors
