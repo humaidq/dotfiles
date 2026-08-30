@@ -23,7 +23,7 @@ func TestShapeIndexClassifies(t *testing.T) {
 	})
 
 	cases := []struct{ addr, want string }{
-		{"203.0.113.10", shapeThrottled},
+		{"203.0.113.10", shapeGrace},
 		{"203.0.113.20", shapeIMO},
 		{"203.0.113.30", shapeBlocked},
 		// The imo estate on a blocking day: dropped, so it must not read as
@@ -32,8 +32,8 @@ func TestShapeIndexClassifies(t *testing.T) {
 		{"198.51.100.7", shapeBlocked},          // inside the blocked prefix
 		{"198.51.101.7", shapeNone},             // just outside it
 		{"203.0.113.99", shapeNone},             // in no set
-		{"2001:db8::1", shapeThrottled},         // v6 exact
-		{"::ffff:203.0.113.10", shapeThrottled}, // v4-mapped must resolve to the v4 entry
+		{"2001:db8::1", shapeGrace},             // v6 exact
+		{"::ffff:203.0.113.10", shapeGrace},     // v4-mapped must resolve to the v4 entry
 	}
 	for _, tc := range cases {
 		t.Run(tc.addr, func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestShapeIndexNilAndMalformed(t *testing.T) {
 	index := parseShapingSets(map[string][]byte{
 		"throttle4": setDoc(`"not-an-address",{"prefix":{"addr":"bad","len":24}},{"unknown":1},"203.0.113.10"`),
 	})
-	if got := index.classify(netip.MustParseAddr("203.0.113.10")); got != shapeThrottled {
+	if got := index.classify(netip.MustParseAddr("203.0.113.10")); got != shapeGrace {
 		t.Fatalf("a good element beside malformed ones was lost: %q", got)
 	}
 }
@@ -93,7 +93,7 @@ func TestShapeCacheReadsOncePerTTL(t *testing.T) {
 	if first != second {
 		t.Fatal("second call rebuilt the index instead of using the cache")
 	}
-	want := len(shapingSets) + len(quotaPairSets)
+	want := len(shapingSets) + len(quotaPairSets) + len(throttlePairSets)
 	if calls != want {
 		t.Fatalf("read %d times, want one pass over %d sets", calls, want)
 	}
@@ -110,7 +110,7 @@ func TestShapeCacheSurvivesUnreadableSets(t *testing.T) {
 		},
 	}
 	index := cache.get(context.Background())
-	if got := index.classify(netip.MustParseAddr("203.0.113.10")); got != shapeThrottled {
+	if got := index.classify(netip.MustParseAddr("203.0.113.10")); got != shapeGrace {
 		t.Fatalf("a readable set was lost because others failed: %q", got)
 	}
 }
@@ -203,8 +203,8 @@ func TestShapeCacheSurvivesAbsentTempblockTable(t *testing.T) {
 			return nil, errors.New("No such file or directory")
 		},
 	}
-	if got := cache.get(context.Background()).classify(netip.MustParseAddr("203.0.113.10")); got != shapeThrottled {
-		t.Fatalf("classify = %q, want %q", got, shapeThrottled)
+	if got := cache.get(context.Background()).classify(netip.MustParseAddr("203.0.113.10")); got != shapeGrace {
+		t.Fatalf("classify = %q, want %q", got, shapeGrace)
 	}
 }
 

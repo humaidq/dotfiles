@@ -395,8 +395,60 @@ func TestPeersPageShowsShapingStatus(t *testing.T) {
 	}
 	rec := httptest.NewRecorder()
 	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
-	if !strings.Contains(rec.Body.String(), "throttled") {
-		t.Fatalf("already-throttled peer not marked in the page: %q", rec.Body.String())
+	// Grace, not throttled: set membership alone means the tier is armed for
+	// this peer, and the pair has not spent its allowance. See shapeGrace.
+	if !strings.Contains(rec.Body.String(), shapeGrace) {
+		t.Fatalf("listed peer not marked in the page: %q", rec.Body.String())
+	}
+}
+
+// The other half of that distinction: once forward_throttle has written the
+// pair into throttle_active4, the same peer must read as actually throttled.
+// This is also the only path by which the provider-ASN tier becomes visible on
+// the page, so a regression here silently hides that whole tier.
+func TestPeersPageUpgradesGraceToThrottledForAnActivePair(t *testing.T) {
+	server := testPeersServer(t)
+	server.shapes = &shapeCache{
+		ttl: time.Hour,
+		read: func(_ context.Context, set string) ([]byte, error) {
+			switch set {
+			case "throttle4":
+				return setDoc(`"203.0.113.10"`), nil
+			case "throttle_active4":
+				return pairDoc(`{"concat":["192.168.0.10","203.0.113.10"]}`), nil
+			}
+			return nil, errors.New("absent")
+		},
+	}
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	body := rec.Body.String()
+	if !strings.Contains(body, shapeThrottled) {
+		t.Fatalf("a pair over its grace allowance did not read as throttled: %q", body)
+	}
+}
+
+// A peer shaped for one device is not shaped for another, so the upgrade must
+// not leak across devices the way a peer-only lookup would.
+func TestPeersPageKeepsGraceForADifferentDevice(t *testing.T) {
+	server := testPeersServer(t)
+	server.shapes = &shapeCache{
+		ttl: time.Hour,
+		read: func(_ context.Context, set string) ([]byte, error) {
+			switch set {
+			case "throttle4":
+				return setDoc(`"203.0.113.10"`), nil
+			case "throttle_active4":
+				return pairDoc(`{"concat":["192.168.0.99","203.0.113.10"]}`), nil
+			}
+			return nil, errors.New("absent")
+		},
+	}
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	body := rec.Body.String()
+	if !strings.Contains(body, shapeGrace) {
+		t.Fatalf("another device's active pair changed this device's status: %q", body)
 	}
 }
 

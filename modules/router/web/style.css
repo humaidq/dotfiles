@@ -1116,6 +1116,15 @@ code.port.suspect {
   color: #4a100c;
 }
 
+/* Muted against .throttled on purpose, and the pair reads as one scale: this
+   peer is in scope for the throttle but the pair talking to it has not spent
+   its grace allowance, so nothing is being held back yet. A full-strength chip
+   here would say the shaping is biting when it is not. */
+.throttle-grace {
+  background: #f2ded9;
+  color: #7a3b33;
+}
+
 .imo {
   background: #f0c66a;
   color: #4a3505;

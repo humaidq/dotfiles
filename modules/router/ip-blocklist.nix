@@ -704,6 +704,53 @@ in
           size 65536
         }
 
+        # Which device-and-peer pairs are ACTUALLY being shaped right now, as
+        # opposed to throttle_grace4/6 above, which says only that a pair has a
+        # budget open. Exactly the distinction cdn_throttled4/6 draws for the
+        # CDN quota, and it exists here for the same reason: with a grace
+        # allowance in front of the tier, "this peer is in the throttle list"
+        # and "this peer's traffic is being held back" stopped being the same
+        # statement, and the peers page could only see the first.
+        #
+        # Written only by the statements that sit AFTER the `quota over`
+        # expression in forward_throttle. nft stops evaluating a rule at the
+        # first expression that does not match, so these adds are reached on
+        # exactly the packets that get the throttle mark — which is what makes
+        # membership mean "over grace" rather than "in scope".
+        #
+        # WORTH MORE THAN THE GRACE DISTINCTION IT WAS ADDED FOR: the provider
+        # tier writes here too, and that tier was previously invisible to the
+        # page. lowtrust_asn4/6 expand to roughly fifteen thousand ranges, far
+        # too much to read per render, so a pool device shaped by a provider
+        # entry showed no status at all. One small pair set now covers every
+        # source of the 0x2 mark.
+        #
+        # The device is always the first element and the peer the second, as in
+        # cdn_throttled4/6, despite saddr and daddr swapping roles between the
+        # upload and download rules.
+        #
+        # The timeout is a display window and not a shaping one: 5 minutes is
+        # long enough for a badge to stay lit across a gap in a bursty flow and
+        # short enough that a lit badge means something current. The grace
+        # quota is unaffected by it either way.
+        #
+        # Bounded by size, and an add against a full set fails without stopping
+        # the rule — the packet still reaches the counter and the mark. A
+        # saturated set costs visibility, never shaping.
+        set throttle_active4 {
+          type ipv4_addr . ipv4_addr
+          flags dynamic, timeout
+          timeout 5m
+          size 4096
+        }
+
+        set throttle_active6 {
+          type ipv6_addr . ipv6_addr
+          flags dynamic, timeout
+          timeout 5m
+          size 4096
+        }
+
         # Populated from custom-vpn-intel-throttle.txt by nft-blocklists-local.
         # Marked 0x2 in forward_throttle like throttle4/6 — same tc class, same
         # cap — but ONLY for low-trust pool devices, where throttle4/6 applies
@@ -1049,10 +1096,10 @@ in
           # with a zero counter now means "seen, and still inside its grace"
           # rather than "never seen". `nft list set inet router-blocklists
           # throttle_grace4` is where to look for the difference.
-          ip daddr @throttle4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4)"
-          ip saddr @throttle4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4)"
-          ip6 daddr @throttle6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6)"
-          ip6 saddr @throttle6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6)"
+          ip daddr @throttle4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } add @throttle_active4 { ip saddr . ip daddr } counter meta mark set 0x2 comment "throttle upload (IPv4)"
+          ip saddr @throttle4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } add @throttle_active4 { ip daddr . ip saddr } counter meta mark set 0x2 comment "throttle download (IPv4)"
+          ip6 daddr @throttle6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } add @throttle_active6 { ip6 saddr . ip6 daddr } counter meta mark set 0x2 comment "throttle upload (IPv6)"
+          ip6 saddr @throttle6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } add @throttle_active6 { ip6 daddr . ip6 saddr } counter meta mark set 0x2 comment "throttle download (IPv6)"
 
           # Published proxy nodes, POOL DEVICES ONLY — unlike the four rules
           # above, which apply to the whole house. Same 0x2 tier and the same tc
@@ -1079,10 +1126,10 @@ in
           # the pool is off — the rules would then match nothing at all, which
           # is a silent no-op rather than an error.
           ${lib.optionalString cfg.lowTrust.enable ''
-            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @vpnintel4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4, published node list, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @vpnintel4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4, published node list, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @vpnintel6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6, published node list, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @vpnintel6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @vpnintel4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } add @throttle_active4 { ip saddr . ip daddr } counter meta mark set 0x2 comment "throttle upload (IPv4, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @vpnintel4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } add @throttle_active4 { ip daddr . ip saddr } counter meta mark set 0x2 comment "throttle download (IPv4, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @vpnintel6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } add @throttle_active6 { ip6 saddr . ip6 daddr } counter meta mark set 0x2 comment "throttle upload (IPv6, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @vpnintel6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } add @throttle_active6 { ip6 daddr . ip6 saddr } counter meta mark set 0x2 comment "throttle download (IPv6, published node list, pool only)"
 
             # THE PROVIDER ASNs, WHICH USED TO BE A DROP IN lowtrust_policy AND
             # ARE NOW SHAPED HERE. The move is deliberate and it is the biggest
@@ -1145,10 +1192,10 @@ in
             # media to 100 kbit after 2 MB would break a call just as
             # thoroughly as dropping it, so "never blocked" has to mean "never
             # marked" here.
-            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @lowtrust_asn4 ip daddr != @lowtrust_allow4 ip daddr != @lowtrust_allow_dyn4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4, low-trust provider, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @lowtrust_asn4 ip saddr != @lowtrust_allow4 ip saddr != @lowtrust_allow_dyn4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4, low-trust provider, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @lowtrust_asn6 ip6 daddr != @lowtrust_allow6 ip6 daddr != @lowtrust_allow_dyn6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6, low-trust provider, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @lowtrust_asn6 ip6 saddr != @lowtrust_allow6 ip6 saddr != @lowtrust_allow_dyn6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @lowtrust_asn4 ip daddr != @lowtrust_allow4 ip daddr != @lowtrust_allow_dyn4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } add @throttle_active4 { ip saddr . ip daddr } counter meta mark set 0x2 comment "throttle upload (IPv4, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @lowtrust_asn4 ip saddr != @lowtrust_allow4 ip saddr != @lowtrust_allow_dyn4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } add @throttle_active4 { ip daddr . ip saddr } counter meta mark set 0x2 comment "throttle download (IPv4, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @lowtrust_asn6 ip6 daddr != @lowtrust_allow6 ip6 daddr != @lowtrust_allow_dyn6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } add @throttle_active6 { ip6 saddr . ip6 daddr } counter meta mark set 0x2 comment "throttle upload (IPv6, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @lowtrust_asn6 ip6 saddr != @lowtrust_allow6 ip6 saddr != @lowtrust_allow_dyn6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } add @throttle_active6 { ip6 daddr . ip6 saddr } counter meta mark set 0x2 comment "throttle download (IPv6, low-trust provider, pool only)"
           ''}
 
           # After the 0x2 rules deliberately. `meta mark set` overwrites, so an

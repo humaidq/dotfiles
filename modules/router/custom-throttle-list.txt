@@ -301,6 +301,7 @@
 166.0.8.173
 168.222.32.39
 168.222.32.95
+168.222.32.97
 178.92.20.39
 178.92.20.41
 # UAB Bacloud AS61272, LT — PTRs are all 7673-*.bacloud.info, one customer:
@@ -832,3 +833,25 @@
 104.233.9.219
 # AS9318 SKB-AS SK Broadband Co Ltd (KR) — 1:
 82.40.48.13
+
+# --- 168.222.32.0/24 swept for the estate certificate, 2026-08-30 -----------
+#
+# 168.222.32.97 was handed over as a live tunnel endpoint, making it the sixth
+# address collected from this one /24. That density was worth a sweep rather
+# than another single row, so all 254 addresses were probed for the estate's
+# certificate: 13 serve it, listed together here.
+#
+# STILL /32s AND NOT THE /24. Thirteen of 254 is 5%, so the other 95% is other
+# tenants — the same finding, at a slightly higher hit rate, that the
+# certificate sweep in custom-ip-blocklist.txt recorded for the 162.128 /24s.
+#
+# Six were already listed above from the captures and the operator's lists
+# (.39, .40, .81, .89, .95, .97); the seven below came from the sweep alone and
+# have not been seen carrying on this network.
+168.222.32.41
+168.222.32.82
+168.222.32.90
+168.222.32.91
+168.222.32.96
+168.222.32.191
+168.222.32.221

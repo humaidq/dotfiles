@@ -18,7 +18,12 @@ const (
 	shapeIMO  = "imo"
 	// Hyphenated, not spaced: the template uses this string as both the badge
 	// label and a CSS class, and a space would silently become two classes.
-	shapeQuota     = "cdn-quota"
+	shapeQuota = "cdn-quota"
+	// In a throttle set, but this device-and-peer pair has not yet spent the
+	// grace allowance sifr.router.throttle.graceBytes gives it, so its packets
+	// are NOT being marked yet. Membership of the set is the whole basis for
+	// this one — it is what can be known from the peer alone.
+	shapeGrace     = "throttle-grace"
 	shapeThrottled = "throttled"
 	shapeBlocked   = "blocked"
 )
@@ -31,7 +36,13 @@ var shapingSets = []struct {
 	class string
 }{
 	{"imo4", shapeIMO}, {"imo6", shapeIMO},
-	{"throttle4", shapeThrottled}, {"throttle6", shapeThrottled},
+	// Reported as grace rather than throttled since the tier gained an
+	// allowance. Membership means the NEXT pair to talk to this peer gets
+	// graceBytes at line rate first, which is not the same claim as "this
+	// peer's traffic is being held back", and the page said the second one
+	// while the first was true. A pair that HAS spent its allowance is
+	// upgraded to shapeThrottled by classifyPair.
+	{"throttle4", shapeGrace}, {"throttle6", shapeGrace},
 	// The imo estate on a day it is being dropped rather than shaped. Reported
 	// as blocked, not as the imo tier: on those days that is exactly what
 	// happens to its packets, and only one of the two pairs is ever populated.
@@ -46,14 +57,28 @@ var shapingSets = []struct {
 // broader statement about what is happening to it. Both end in the same tc
 // class; the ordering only decides which word the page uses when a peer is
 // somehow in scope for both.
+// shapeGrace ranks below the CDN quota: a peer merely in scope for a future
+// throttle is a weaker statement than a budget a device has already spent.
 var shapeRank = map[string]int{
-	shapeNone: 0, shapeIMO: 1, shapeQuota: 2, shapeThrottled: 3, shapeBlocked: 4,
+	shapeNone: 0, shapeIMO: 1, shapeGrace: 2, shapeQuota: 3, shapeThrottled: 4, shapeBlocked: 5,
 }
 
 // The pair sets the CDN volume quota writes when it actually shapes a packet.
 // Unlike everything in shapingSets these are keyed on device AND peer, so they
 // cannot be answered by classify() and get their own lookup — see classifyPair.
 var quotaPairSets = []string{"cdn_throttled4", "cdn_throttled6"}
+
+// The pair sets forward_throttle writes once a pair is over its grace
+// allowance and its packets are actually being marked into the shaped class.
+//
+// THIS IS THE ONLY PLACE THE PROVIDER TIER BECOMES VISIBLE, which is a bigger
+// gain than the grace distinction it was added for. lowtrust_asn4/6 hold about
+// fifteen thousand ranges expanded from custom-lowtrust-asns.txt — far too much
+// to read and index on every page render — so a peer shaped by that tier
+// carried no badge at all and read as untouched. These sets are written by the
+// same rules regardless of which tier matched, so one small lookup now covers
+// the address lists, the published node list and the providers alike.
+var throttlePairSets = []string{"throttle_active4", "throttle_active6"}
 
 // tempblock keeps its rules in a table of its own rather than in the sets
 // above, so the sweep over shapingSets cannot see it and a peer blocked from
@@ -134,9 +159,16 @@ func (i *shapeIndex) addTempblockRules(raw []byte) {
 type shapeIndex struct {
 	exact    map[netip.Addr]string
 	prefixes []shapePrefix
-	// Device-and-peer pairs the CDN quota is currently shaping. Exact keys
-	// only: these sets hold addresses the quota rules observed, never prefixes.
-	pairs map[addrPair]struct{}
+	// Device-and-peer pairs currently being shaped, mapped to which mechanism
+	// is doing it — the CDN volume quota, or the throttle tier once a pair is
+	// past its grace allowance. Exact keys only: these sets hold addresses the
+	// rules observed, never prefixes.
+	//
+	// A class rather than a presence flag because a pair can be in both, and
+	// the page shows the more severe. It is the same rank comparison used for
+	// the address sets, applied here so the answer does not depend on which
+	// set the reader happened to load first.
+	pairs map[addrPair]string
 }
 
 type shapePrefix struct {
@@ -171,10 +203,7 @@ func (i *shapeIndex) classifyPair(device, peer netip.Addr) string {
 	if i == nil {
 		return shapeNone
 	}
-	if _, ok := i.pairs[addrPair{device.Unmap(), peer.Unmap()}]; ok {
-		return shapeQuota
-	}
-	return shapeNone
+	return i.pairs[addrPair{device.Unmap(), peer.Unmap()}]
 }
 
 // addPairs folds one `nft -j list set` document for a concatenated set into the
@@ -182,7 +211,7 @@ func (i *shapeIndex) classifyPair(device, peer netip.Addr) string {
 // "expires": N}} — the elem wrapper is what a set with a timeout emits, and the
 // bare {"concat": [...]} form is accepted too so the parser does not depend on
 // the set keeping its timeout.
-func (i *shapeIndex) addPairs(raw []byte) {
+func (i *shapeIndex) addPairs(raw []byte, class string) {
 	var doc struct {
 		Nftables []struct {
 			Set *struct {
@@ -228,7 +257,10 @@ func (i *shapeIndex) addPairs(raw []byte) {
 			if err != nil {
 				continue
 			}
-			i.pairs[addrPair{device.Unmap(), peer.Unmap()}] = struct{}{}
+			key := addrPair{device.Unmap(), peer.Unmap()}
+			if shapeRank[class] > shapeRank[i.pairs[key]] {
+				i.pairs[key] = class
+			}
 		}
 	}
 }
@@ -299,11 +331,16 @@ func itoa(n int) string {
 func parseShapingSets(docs map[string][]byte) *shapeIndex {
 	index := &shapeIndex{
 		exact: map[netip.Addr]string{},
-		pairs: map[addrPair]struct{}{},
+		pairs: map[addrPair]string{},
 	}
 	for _, name := range quotaPairSets {
 		if raw, ok := docs[name]; ok {
-			index.addPairs(raw)
+			index.addPairs(raw, shapeQuota)
+		}
+	}
+	for _, name := range throttlePairSets {
+		if raw, ok := docs[name]; ok {
+			index.addPairs(raw, shapeThrottled)
 		}
 	}
 	for _, set := range shapingSets {
@@ -386,13 +423,15 @@ func (c *shapeCache) get(ctx context.Context) *shapeIndex {
 		return c.index
 	}
 	docs := map[string][]byte{}
-	names := make([]string, 0, len(shapingSets)+len(quotaPairSets))
+	names := make([]string, 0, len(shapingSets)+len(quotaPairSets)+len(throttlePairSets))
 	for _, set := range shapingSets {
 		names = append(names, set.name)
 	}
 	// Absent whenever the CDN quota is off, which is the same "less to say"
 	// case as the imo sets below rather than a failure.
 	names = append(names, quotaPairSets...)
+	// Absent on a router with the low-trust pool off, for the same reason.
+	names = append(names, throttlePairSets...)
 	for _, name := range names {
 		raw, err := c.read(ctx, name)
 		if err != nil {
