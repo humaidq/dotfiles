@@ -209,3 +209,121 @@
 2a02:4540:e080::/48
 2a02:4540:e0c0::/42
 #
+
+# === VPN Master / Snap Master estate — 66 transport nodes, 2026-08-30 ========
+#
+# SAME ESTATE AS THE SIX /32s IN custom-ip-blocklist.txt DATED TODAY, and these
+# are in the OTHER file on purpose. That entry took six addresses on a desk
+# check with nothing observed talking to them. These are transport nodes that
+# carry traffic on this network, and the split rule sends transport here: a
+# clean failure tells the client to pick another node, and this estate has at
+# least sixty-six of them to pick from. The Rapid VPN note in the blocklist
+# already anticipated this case in writing — "if any address below is later
+# shown to carry actual tunnel traffic, it belongs there instead".
+#
+# THE CERTIFICATE IS THE ATTRIBUTION, and it is not circumstantial. All 66
+# serve the same no-subject, no-issuer, serial 01 certificate, validity
+# Jan 10 1923 -> Nov 22 2122, SHA-256
+# 35:E9:C2:D2:EE:CA:73:BF:B8:0C:1F:6D:4C:08:6D:97:79:9E:B4:07:04:24:52:99:
+# 61:05:8C:D3:48:95:F7:D6 — byte-identical to the two operator-supplied nodes
+# already in the blocklist, so one image and one private key across ten ASNs
+# and eleven countries. Hosts also run sshd on 22 (OpenSSH 8.2p1 / 8.9p1 /
+# 9.6p1) and are otherwise silent, waiting for a client that already knows the
+# address. None answers DoH on 443 and none opens 853, so none is a resolver
+# and the drop-resolvers rule does not apply.
+#
+# TWO KINDS OF EVIDENCE HERE, and a later reader should not mix them:
+#   - three addresses were observed carrying tunnel traffic on this network,
+#     as opaque UDP (random from byte 0 — no WireGuard type byte, no DTLS
+#     record header, no STUN cookie) on ephemeral high ports, with no lookup
+#     anywhere in the resolver log that explains the address;
+#   - the remaining sixty-three came from a client-side node sweep, a few KiB
+#     each, and were then confirmed by the certificate above. They are what the
+#     client fails over to, which is the reason to take them before it does.
+#
+# PORT BLOCKING DOES NOT WORK ON THIS ESTATE. The sweep is udp/7311 and
+# udp/1162, but the sessions that carry data use ephemeral high ports chosen
+# per node, so a port entry catches discovery and nothing else.
+#
+# /32s ONLY. These ranges are shared tenant space — the certificate sweep
+# recorded in the blocklist found roughly 2.5% of sampled neighbours to be
+# nodes, and the rest answer with unrelated certificates. A /24 here takes
+# other people's tenants.
+#
+# ASN LABELS DISAGREE BETWEEN SOURCES, worth knowing before anyone reaches for
+# an ASN-level rule: ip2asn-combined.tsv reads 82.40.48.0 as SK Broadband,
+# 31.99.202.0 as CDNINFRA and 23.27.112.0 as ADCIL, while a live lookup calls
+# all three Zenlayer AS21859. The bundled table is stale for recently
+# transferred ranges. The certificate, not the ASN, is what these rows rest on.
+#
+# Zenlayer AS62610 (the 162.128.0.0/16 estate, SG):
+162.128.68.58
+162.128.68.62
+162.128.70.182
+162.128.72.153
+162.128.72.219
+162.128.73.80
+162.128.84.43
+162.128.85.191
+162.128.86.52
+162.128.86.103
+162.128.86.175
+# Zenlayer AS21859 per live lookup (tsv disagrees on several, see above):
+2.27.161.92
+2.27.161.118
+23.27.112.65
+23.27.112.67
+23.27.112.77
+31.99.202.165
+31.99.202.189
+31.99.202.216
+40.27.35.5
+40.183.227.12
+40.183.227.81
+40.183.227.86
+40.183.227.130
+40.183.227.150
+40.183.227.178
+66.93.169.145
+82.40.48.2
+82.40.48.3
+82.40.48.17
+82.40.48.61
+82.40.48.66
+82.40.48.68
+91.124.15.183
+91.124.15.208
+91.124.15.237
+166.0.8.115
+166.0.8.145
+166.0.8.159
+166.0.8.165
+166.0.8.173
+168.222.32.39
+168.222.32.95
+178.92.20.39
+178.92.20.41
+# UAB Bacloud AS61272, LT — PTRs are all 7673-*.bacloud.info, one customer:
+85.206.171.115
+85.206.171.117
+85.206.172.231
+88.119.160.5
+88.119.161.25
+88.119.161.205
+185.25.50.114
+213.252.244.88
+213.252.244.146
+213.252.244.155
+213.252.246.111
+213.252.247.249
+# GTHost AS63023 / GlobalTelehost AS62563 — clients.gthost.com PTRs:
+66.163.113.73
+66.163.123.24
+134.195.197.239
+167.88.61.21
+169.197.143.91
+208.69.78.107
+216.106.184.91
+# Contabo AS40021:
+209.126.8.92
+209.126.11.7
