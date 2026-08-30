@@ -289,6 +289,37 @@
       qos.lowPriorityPorts = [
         6881
         51413
+        # Push notification channels, added 2026-08-30. Bulk rather than
+        # blocked — custom-port-blocklist.txt states in as many words that
+        # blocking either of the first two would break notifications for every
+        # phone in the house, and that stays true; this only decides what gives
+        # way when the link is already full.
+        #
+        # Cheap to deprioritise because push is a keepalive plus a few hundred
+        # bytes: it cannot use the bandwidth it would be yielding, and cs1 costs
+        # it nothing until something else actually wants the link. What it buys
+        # is that a call or a page load is not queued behind a fleet of idle
+        # push sockets during congestion.
+        #
+        # THE COST, stated because it is real: under sustained saturation a
+        # notification can arrive late, and on this network that includes
+        # WhatsApp and Signal message alerts, which ride FCM. Late, not lost —
+        # cs1 is CAKE's Bulk tin, not a drop.
+        #
+        # 5223 (Apple push, XMPP-over-TLS) and 5228 (Google FCM) are the two
+        # seen carrying in the 2026-08-30 captures. 5229 and 5230 are FCM's
+        # documented alternates and were NOT seen — they are here on inference,
+        # because FCM moves to them when 5228 is unavailable and deprioritising
+        # only 5228 would be escaped by exactly that fallback.
+        #
+        # Applies to non-pool devices only, and not by omission: qos-mark
+        # returns on the low-trust conntrack sentinel before it reaches the
+        # priority rules, so a pool device's push is already unprioritised
+        # best-effort and is untouched by this.
+        5223
+        5228
+        5229
+        5230
       ];
       qos.highPriorityPorts = [
         53
