@@ -485,6 +485,74 @@ let
           router-blocklists imo_block4 imo_block6
       '';
 
+  # Parses blocky's query log into "family address" pairs for the suffixes in
+  # custom-lowtrust-allow-domains.txt. Its own file rather than an inline script
+  # because it is quoted twice otherwise — once by Nix and once by the shell —
+  # and the character classes below are exactly the kind of thing that does not
+  # survive that.
+  #
+  # Reads the domain file first (the NR == FNR idiom) and the log on stdin.
+  allowDomainsAwk = pkgs.writeText "lowtrust-allow-domains.awk" ''
+    NR == FNR {
+      line = $0
+      sub(/#.*/, "", line)
+      gsub(/[[:space:]]/, "", line)
+      if (line != "") dom[tolower(line)] = 1
+      next
+    }
+
+    {
+      # question_name= is 14 characters. The name is terminated by a space and
+      # carries a trailing dot, both of which have to come off before the
+      # suffix comparison.
+      p = index($0, "question_name=")
+      if (p == 0) next
+      rest = substr($0, p + 14)
+      q = index(rest, " ")
+      name = (q > 0) ? substr(rest, 1, q - 1) : rest
+      sub(/\.$/, "", name)
+      name = tolower(name)
+
+      # Exact match or a dot-anchored suffix. The length guard and the leading
+      # dot together are what stop "notbotim.me" matching "botim.me" — a plain
+      # index() or a bare suffix test would let an attacker register exactly
+      # that and buy themselves a carve-out.
+      ok = 0
+      for (d in dom) {
+        if (name == d) { ok = 1; break }
+        if (length(name) > length(d) && substr(name, length(name) - length(d)) == "." d) { ok = 1; break }
+      }
+      if (!ok) next
+
+      # The answer field runs from "answer=" up to " client_ip=" and holds a
+      # comma-separated list like: CNAME (x.), A (1.2.3.4), A (5.6.7.8).
+      # Bounded on both ends rather than read to end-of-line because several
+      # later fields can themselves contain parentheses.
+      a = index($0, "answer=")
+      if (a == 0) next
+      c = index($0, " client_ip=")
+      if (c == 0 || c < a) next
+      seg = substr($0, a + 7, c - (a + 7))
+
+      n = split(seg, parts, ", ")
+      for (i = 1; i <= n; i++) {
+        if (substr(parts[i], 1, 3) == "A (") {
+          addr = substr(parts[i], 4, length(parts[i]) - 4)
+          # Whole-token validation, not a character search. The STUN resolver's
+          # 2026-08-14 failure is the precedent: dig's error text reached nft as
+          # a set element because the v6 branch tested for one character.
+          if (addr ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ && addr != "0.0.0.0") print "4 " addr
+        } else if (substr(parts[i], 1, 6) == "AAAA (") {
+          addr = substr(parts[i], 7, length(parts[i]) - 7)
+          if (addr ~ /^[0-9A-Fa-f:]+$/ && addr != "::") print "6 " addr
+        }
+      }
+      # Unbuffered, because the whole point of following the log is that the
+      # address is in the set before the app finishes its TLS handshake.
+      fflush()
+    }
+  '';
+
   # The two states imo-policy.service switches between, each a single file that
   # fills one pair of sets and empties the other. One file rather than two `nft`
   # calls because `nft -f` is one transaction: the estate is never in both pairs
@@ -781,6 +849,42 @@ in
           set lowtrust_stun6 {
             type ipv6_addr
           }
+
+          # Addresses carved out of the PROVIDER tier because a name in
+          # custom-lowtrust-allow-domains.txt resolved to them. Populated by
+          # nft-lowtrust-allow-domains, which watches the resolver rather than
+          # asking it — see that file for why a fixed name list cannot work for
+          # the estate this exists to protect.
+          #
+          # `flags timeout` with a default of 24h, and NO `flags interval`:
+          # these are single addresses out of DNS answers, not ranges. The
+          # timeout is what makes this self-cleaning — an address Botim stops
+          # using ages out on its own, so a rotating estate never accumulates,
+          # and nothing has to decide when an entry has gone stale.
+          #
+          # 24h rather than something shorter because the cost of a stale entry
+          # and the cost of a missing one are wildly asymmetric. A stale entry
+          # leaves one address of a mainstream provider un-shaped for a pool
+          # device, which is the same hole custom-lowtrust-allow-subnets.txt
+          # accepts 1,024 at a time. A missing entry drops a live call.
+          #
+          # Sized for the whole pool: the estate presented roughly a dozen
+          # addresses per device per day in the captures this was built from, so
+          # 8192 is two orders of magnitude of headroom. An add against a full
+          # set fails and is logged by the service; it does not fail closed.
+          set lowtrust_allow_dyn4 {
+            type ipv4_addr
+            flags timeout
+            timeout 24h
+            size 8192
+          }
+
+          set lowtrust_allow_dyn6 {
+            type ipv6_addr
+            flags timeout
+            timeout 24h
+            size 8192
+          }
         ''}
 
         ${lib.optionalString (cfg.lowTrust.enable && cfg.lowTrust.cdnQuota.enable) ''
@@ -1035,10 +1139,16 @@ in
             # between daddr and saddr with the direction: on the download rule
             # the provider address is the SOURCE, and guarding on daddr there
             # would test the LAN device against a WAN allow-list and never fire.
-            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @lowtrust_asn4 ip daddr != @lowtrust_allow4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4, low-trust provider, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @lowtrust_asn4 ip saddr != @lowtrust_allow4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4, low-trust provider, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @lowtrust_asn6 ip6 daddr != @lowtrust_allow6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6, low-trust provider, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @lowtrust_asn6 ip6 saddr != @lowtrust_allow6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6, low-trust provider, pool only)"
+            # BOTH HALVES OF THE CARVE-OUT ARE GUARDED AGAINST, not just the
+            # build-time one. Botim is the reason this tier is shaped rather
+            # than dropped and the reason the resolver feed exists; shaping its
+            # media to 100 kbit after 2 MB would break a call just as
+            # thoroughly as dropping it, so "never blocked" has to mean "never
+            # marked" here.
+            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @lowtrust_asn4 ip daddr != @lowtrust_allow4 ip daddr != @lowtrust_allow_dyn4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @lowtrust_asn4 ip saddr != @lowtrust_allow4 ip saddr != @lowtrust_allow_dyn4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @lowtrust_asn6 ip6 daddr != @lowtrust_allow6 ip6 daddr != @lowtrust_allow_dyn6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @lowtrust_asn6 ip6 saddr != @lowtrust_allow6 ip6 saddr != @lowtrust_allow_dyn6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6, low-trust provider, pool only)"
           ''}
 
           # After the 0x2 rules deliberately. `meta mark set` overwrites, so an
@@ -1317,6 +1427,20 @@ in
             # quietly stopped matching looks identical to one nobody needed.
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_allow4 counter return comment "low-trust provider carve-out (IPv4)"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_allow6 counter return comment "low-trust provider carve-out (IPv6)"
+
+            # The resolver-fed half of the same carve-out, on the same footing
+            # and immediately after so the two read as one decision. Kept as a
+            # separate rule and a separate set because the writers differ — the
+            # file above is generated at build time, this pair is written by
+            # nft-lowtrust-allow-domains at runtime — and this file's standing
+            # rule is one writer per set.
+            #
+            # Counted for the same reason its neighbour is: a zero here means
+            # the resolver feed has stopped and nobody would otherwise notice,
+            # because a carve-out that has quietly stopped matching looks
+            # exactly like one nothing needed.
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_allow_dyn4 counter return comment "low-trust provider carve-out, resolver-fed (IPv4)"
+            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_allow_dyn6 counter return comment "low-trust provider carve-out, resolver-fed (IPv6)"
 
             # WHOLE HOSTING NETWORKS USED TO BE DROPPED HERE. They are now
             # shaped in forward_throttle instead, with the same grace allowance
@@ -1853,6 +1977,211 @@ in
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnBootSec = "5m";
+        OnUnitActiveSec = "1h";
+        Persistent = true;
+      };
+    };
+
+    # WATCHES THE RESOLVER INSTEAD OF ASKING IT, which is the one structural
+    # difference from nft-lowtrust-stun above and the reason this exists as a
+    # second unit rather than another list that one reads.
+    #
+    # A TIMER CANNOT WORK HERE and that is worth stating before the design.
+    # Botim names its media servers per session — vs-dxb-<hex>.discover.botim.io
+    # — so there is no name to put in a file and no moment before the call to
+    # resolve it. The app looks the name up and connects immediately, so
+    # anything that polls, at any interval, drops the front of the call. The
+    # only place the address is known early enough is the answer this router
+    # itself just gave, which is why this follows the query log.
+    #
+    # THE COST IS A LONG-RUNNING PROCESS in a module that is otherwise all
+    # oneshots, and it is bounded deliberately: journalctl --follow into awk
+    # into a read loop, no network, no parsing of anything but our own
+    # resolver's output, and Restart=always so a crash costs seconds. The
+    # reconciler below is what makes the crash survivable rather than silent.
+    systemd.services.nft-lowtrust-allow-domains = lib.mkIf cfg.lowTrust.enable {
+      description = "Carve resolved allow-list domains out of the low-trust provider tier";
+      after = [
+        "nftables.service"
+        "blocky.service"
+      ];
+      wants = [ "blocky.service" ];
+      partOf = [ "nftables.service" ];
+      wantedBy = [
+        "multi-user.target"
+        "nft-blocklists-local.service"
+      ];
+
+      # Restart=always and not on-failure: journalctl --follow exits 0 when the
+      # journal is rotated out from under it, and a clean exit here is just as
+      # much a stopped feed as a crash. No start limit, because unlike the STUN
+      # resolver there is no permanent-failure case to protect against — an
+      # empty log is normal and simply produces no output.
+      startLimitIntervalSec = 0;
+
+      serviceConfig = {
+        Type = "simple";
+        Restart = "always";
+        RestartSec = 5;
+        StateDirectory = "nft-lowtrust-allow";
+      };
+
+      path = with pkgs; [
+        nftables
+        systemd
+        gawk
+        coreutils
+      ];
+
+      script = ''
+        set -uo pipefail
+
+        state="$STATE_DIRECTORY/seen"
+        touch "$state"
+
+        # -n 0 starts at the tail: this unit is about what happens next, and the
+        # backlog is the reconciler's job. -o cat drops the syslog prefix so awk
+        # sees blocky's own line and nothing else.
+        journalctl -u blocky --follow -n 0 --no-pager -o cat 2>/dev/null \
+          | awk -f ${allowDomainsAwk} ${./custom-lowtrust-allow-domains.txt} - \
+          | while read -r fam addr; do
+              case "$fam" in
+                4) setname=lowtrust_allow_dyn4 ;;
+                6) setname=lowtrust_allow_dyn6 ;;
+                *) continue ;;
+              esac
+
+              # A re-add of an element already in the set fails with EEXIST, and
+              # that is both expected and fine: these names are re-resolved
+              # constantly, so most lines here are addresses already carved out.
+              # The failure is swallowed rather than avoided with a
+              # delete-then-add, which would take the address OUT of the set for
+              # the microsecond between the two calls — on an address currently
+              # carrying a call.
+              #
+              # What that costs is timeout refresh: an element keeps the 24h it
+              # was first given rather than being extended. Harmless, because
+              # expiry only matters for an address that has stopped being
+              # resolved, and one still in use is re-added the moment its 24h
+              # is up.
+              if ! nft add element inet router-blocklists "$setname" "{ $addr timeout 24h }" 2>/dev/null; then
+                :
+              fi
+              printf '%s %s %s\n' "$(date +%s)" "$fam" "$addr" >> "$state"
+            done
+      '';
+    };
+
+    # PUTS THE SETS BACK, and it exists because the follower above cannot.
+    #
+    # Two ways the sets empty without anything being wrong: a ruleset reload
+    # recreates the table with empty sets, and the follower reads only what
+    # arrives after it starts, so a restart of either leaves every address
+    # already in use uncarved until its name happens to be resolved again. On a
+    # call in progress that is a drop.
+    #
+    # So the state file is the durable record and this replays it. Same
+    # flush-and-add-in-one-transaction rule the STUN resolver sets out, and the
+    # same refusal to flush on an unreadable state file — an empty set here is
+    # a broken call, not a stale carve-out.
+    systemd.services.nft-lowtrust-allow-restore = lib.mkIf cfg.lowTrust.enable {
+      description = "Restore and prune the resolver-fed low-trust carve-out";
+      after = [
+        "nftables.service"
+        "nft-blocklists-local.service"
+      ];
+      partOf = [ "nftables.service" ];
+      wantedBy = [
+        "multi-user.target"
+        "nft-blocklists-local.service"
+      ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = false;
+        StateDirectory = "nft-lowtrust-allow";
+      };
+
+      path = with pkgs; [
+        nftables
+        systemd
+        gnugrep
+        gawk
+        coreutils
+      ];
+
+      script = ''
+        set -uo pipefail
+
+        state="$STATE_DIRECTORY/seen"
+
+        # No state file is not the same as an empty one. Nothing has been
+        # recorded yet on a first run, and flushing on that basis would be
+        # correct; but an unreadable file after a disk problem must not empty a
+        # working carve-out, and the two are indistinguishable from here. Keep
+        # what the kernel has and say so.
+        if [ ! -f "$state" ]; then
+          echo "nft-lowtrust-allow-restore: no state file yet, leaving the sets as they are" >&2
+          exit 0
+        fi
+
+        cutoff=$(( $(date +%s) - 86400 ))
+
+        # Prune and de-duplicate in one pass, newest occurrence winning. The
+        # follower appends a line per resolution, so this file is mostly
+        # repeats — without the de-dup a busy day would replay tens of
+        # thousands of identical elements into one nft transaction.
+        pruned="$STATE_DIRECTORY/seen.pruned"
+        awk -v cutoff="$cutoff" '
+          $1 + 0 >= cutoff && ($2 == "4" || $2 == "6") { last[$2 " " $3] = $1 }
+          END { for (k in last) { split(k, f, " "); print last[k], f[1], f[2] } }
+        ' "$state" > "$pruned"
+        mv "$pruned" "$state"
+
+        v4=$(awk '$2 == "4" { printf "%s, ", $3 }' "$state")
+        v6=$(awk '$2 == "6" { printf "%s, ", $3 }' "$state")
+
+        # A family with nothing recorded in 24h is flushed, and that is correct
+        # rather than a fail-open in reverse: it means no name in
+        # custom-lowtrust-allow-domains.txt resolved to that family all day, so
+        # there is nothing to protect and a stale entry would be a hole in the
+        # provider tier for no benefit. This is the opposite call from the STUN
+        # resolver's, because there an empty set means a device gets a free pass
+        # and here it means one address of a mainstream provider is shaped
+        # again.
+        if [ -n "$v4" ]; then
+          printf 'flush set inet router-blocklists lowtrust_allow_dyn4\nadd element inet router-blocklists lowtrust_allow_dyn4 { %s }\n' "''${v4%, }" | nft -f -
+        else
+          nft flush set inet router-blocklists lowtrust_allow_dyn4 || true
+        fi
+        if [ -n "$v6" ]; then
+          printf 'flush set inet router-blocklists lowtrust_allow_dyn6\nadd element inet router-blocklists lowtrust_allow_dyn6 { %s }\n' "''${v6%, }" | nft -f -
+        else
+          nft flush set inet router-blocklists lowtrust_allow_dyn6 || true
+        fi
+
+        # THE FEED'S OWN HEALTH CHECK, and the reason it is here rather than in
+        # the follower: the follower cannot tell "nobody is using Botim" from
+        # "query logging is switched off", because both look like silence.
+        #
+        # This can. blocky logs every query, so an hour with NO query lines at
+        # all means the log this whole mechanism reads has stopped — the
+        # dependency custom-lowtrust-allow-domains.txt warns about, which would
+        # otherwise break Botim on every pool device with nothing to point at.
+        # Warn rather than fail: the carve-out still holds on what is already
+        # recorded, and a failed unit here would be the second confusing signal
+        # rather than the first useful one.
+        if [ "$(journalctl -u blocky --since "-1h" --no-pager 2>/dev/null | grep -c "question_name=")" = "0" ]; then
+          echo "nft-lowtrust-allow-restore: no blocky query-log lines in the last hour — the resolver feed this carve-out depends on may be off" >&2
+        fi
+      '';
+    };
+
+    systemd.timers.nft-lowtrust-allow-restore = lib.mkIf cfg.lowTrust.enable {
+      description = "Prune the resolver-fed low-trust carve-out";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "2m";
         OnUnitActiveSec = "1h";
         Persistent = true;
       };

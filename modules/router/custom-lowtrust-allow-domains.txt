@@ -1,0 +1,68 @@
+# Domain suffixes whose RESOLVED ADDRESSES the low-trust provider tier must not
+# touch. One suffix per line, `#` comments.
+#
+# This is the third attempt at the same problem and the first one that can
+# actually keep up, so the two it replaces are worth stating:
+#
+#   * custom-lowtrust-asns.txt blocks whole hosting providers for pool devices,
+#     and the apps this house must keep working rent from those same providers.
+#   * custom-lowtrust-allow-subnets.txt carves fixed ranges back out. It works
+#     only where the estate sits still. Botim's does not.
+#
+# WHY A NAME LIST AND NOT MORE /24s. Botim was found on 2026-08-30 to be broken
+# for pool devices across THREE separate provider ranges at once — Zenlayer
+# AS21859 (control plane) and DigitalOcean AS14061 (web CDN) were dropping, on
+# top of the Dubai media range carved into the subnets file the same day. Each
+# would have needed its own hand-written entry, and the next rotation would have
+# needed another.
+#
+# WHY NOT A FIXED LIST OF NAMES, the way custom-lowtrust-stun-hosts.txt works.
+# Botim's media servers are named per session: vs-dxb-fd907c98.discover.botim.io
+# and vs-dxb-fc2ce5ec.discover.botim.io were two seen in one evening, and the
+# hex is not enumerable. A resolver timer over fixed names cannot learn them.
+# The relay names rotate on a smaller alphabet but rotate all the same —
+# allot04, allot05, allot08, allot09, allot10, allot12 and socket06, socket08
+# were all seen from one handset in 48 hours.
+#
+# SO THE SUFFIX IS THE HANDLE AND THE RESOLVER IS THE SOURCE. Every one of those
+# names is resolved through blocky on this router before the app connects, so
+# nft-lowtrust-allow-domains watches the query log and carves out whatever the
+# answer was. Rotation is handled by construction rather than by maintenance.
+#
+# THE DEPENDENCY THIS CREATES, stated plainly because it is invisible: blocky's
+# query logging IS the mechanism. Turn it off and this file silently stops
+# feeding the set, and Botim breaks again on pool devices with nothing to
+# indicate why. See the service for the guard against that.
+#
+# SCOPE IS THE PROVIDER TIER ONLY. A match here overrides custom-lowtrust-
+# asns.txt and nothing else, the same narrow scope custom-lowtrust-allow-
+# subnets.txt sets out for itself: the port rules, the hand-written subnet
+# blocks, custom-ip-blocklist.txt and the throttle list are all untouched. An
+# address that is genuinely a tunnel node stays dropped even if some name here
+# resolved to it.
+#
+# HOW TO ADD: only for an app this house must keep working, and only where the
+# app resolves its endpoints by name through this router. Check the second part
+# before adding — an app that dials hardcoded addresses gets nothing from an
+# entry here, and needs a subnet carve-out instead.
+
+# --- Botim, added 2026-08-30 -------------------------------------------------
+#
+# Botim is never blocked and never shaped. That is a standing rule for this
+# network, and every suffix below was seen carrying for it in the 48 hours to
+# 2026-08-30.
+#
+# The three brand domains. botim.me carries the control plane and the web CDN
+# (officialaccount., sp., cdn-web-et., cdn-web-glb., cdn-web-sg.), botim.money
+# the wallet (loyalty., cmspp.), and botim.io the media discovery layer whose
+# vs-dxb-* names are the ones no fixed list could hold.
+botim.me
+botim.money
+botim.io
+#
+# The two relay estates, which are Botim's and carry its calls despite having
+# nothing in the name to say so. They have no PTR and, per the repo's own
+# notes, do not resolve from every vantage point — which is exactly why they
+# were once mistaken for a tunnel. They are not.
+smnvc.com
+mncsv.com
