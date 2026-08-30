@@ -154,6 +154,42 @@ in
         default = "100kbit";
         description = "Rate cap applied to throttled addresses, each direction. The whole of the throttle: no added latency, jitter or loss.";
       };
+
+      # The same argument as the paragraph above, carried one step further.
+      #
+      # A rate cap is invisible to a LATENCY probe, which is what the note above
+      # says. It is NOT invisible to a THROUGHPUT probe, and the 2026-08-30
+      # captures show this client running one: it opens every candidate node it
+      # has been given, pushes a few KiB through each, ranks them, and selects.
+      # A node capped from its first byte comes last in that ranking every time,
+      # so the cap was still advertising which nodes had been touched — just via
+      # a different measurement than the latency and loss that were removed on
+      # 2026-08-13.
+      #
+      # A grace allowance closes that. Every device-and-peer pair gets this many
+      # bytes at full speed before the cap engages, which is orders of magnitude
+      # more than any probe and a rounding error against a tunnel session. The
+      # node therefore measures FASTER than an untouched one during selection —
+      # it is being probed at line rate — gets picked, and only then crawls. The
+      # client has no signal to act on until it has already committed.
+      #
+      # 2 MB rather than something smaller because the probe traffic seen was a
+      # few KiB per node and the reply payloads a few hundred bytes; anything in
+      # that region risks catching a real selection round. Rather than something
+      # larger because the allowance is per pair and the fleet is in the
+      # hundreds, so it is also the per-node cost of letting the client shop.
+      graceBytes = lib.mkOption {
+        type = lib.types.str;
+        default = "2 mbytes";
+        description = ''
+          Bytes each device-and-peer pair may move at full speed before the
+          throttle tier engages, counted across both directions together.
+
+          An nftables quota expression, so the units are nft's own ("2 mbytes",
+          "512 kbytes"). Applies to every source of the 0x2 mark — the throttle
+          list, the published node list and the low-trust provider ASNs alike.
+        '';
+      };
     };
     # What the addresses in custom-imo-list.txt get. The two sites want
     # different answers, hence a per-host option rather than a constant: one

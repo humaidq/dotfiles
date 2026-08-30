@@ -59,3 +59,41 @@
 167.71.213.0/24
 167.71.218.0/24
 167.71.222.0/24
+
+# --- Botim media, Zenlayer AS21859, added 2026-08-30 ------------------------
+#
+# A SECOND BOTIM ESTATE ON A SECOND PROVIDER, and it was being dropped for pool
+# devices the entire time the four /24s above were thought to have fixed this.
+# Verified live before writing: `nft get element inet router-blocklists
+# lowtrust_asn4 { 193.118.56.250 }` returns the element, and the matching query
+# against lowtrust_allow4 does not. A pool device placing a Botim call had its
+# media dropped; a non-pool device on the same LAN was unaffected, which is why
+# the estate looked healthy from the peers page.
+#
+# THE HANDLE IS THE NAME, NOT A CERTIFICATE, so this entry cannot follow the
+# cert-probe procedure in the header above and says so rather than leaving a
+# gap. These are UDP media servers — traffic was seen on udp/11463 and
+# udp/13605 — and they answer nothing on 443 across three attempts. What is
+# solid is forward DNS: vs-dxb-fd907c98.discover.botim.io resolves to
+# 193.118.56.250 and vs-dxb-fc2ce5ec.discover.botim.io to 193.118.56.182. There
+# is no PTR on either, so the peers page's name column is the only place this
+# estate announces itself. "dxb" is Dubai, which is what a media server for this
+# house should be.
+#
+# THE /24 AND NOT THE ANNOUNCEMENT, and the difference matters more here than it
+# did for DigitalOcean. AS21859 announces 193.118.32.0 - 193.118.58.255 as one
+# block, and 193.118.38.0/24 inside it is in custom-ip-blocklist.txt as part of
+# the imo/BIGO estate. Widening this entry toward the announcement would reopen
+# imo, which is deliberately closed on both sites. The neighbouring /24s are not
+# Botim either: 193.118.57.182 serves CN=*.zga.zenlayer.net, i.e. Zenlayer's own
+# infrastructure. So .56 is carved and nothing else is.
+#
+# ONLY TWO ADDRESSES ARE CONFIRMED, against twelve for the DigitalOcean entry,
+# so the /24 rests on the rotation argument that entry makes rather than on a
+# sample. If a Botim call ever fails on a pool device again, the peers page's
+# name column is where the next vs-* address will show, and it may well be in a
+# /24 this does not cover.
+#
+# Botim is never blocked and never shaped — that is a standing rule for this
+# network, not a judgement made here.
+193.118.56.0/24

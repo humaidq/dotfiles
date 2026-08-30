@@ -585,6 +585,57 @@ in
           flags interval
         }
 
+        # The grace allowance in front of the 0x2 mark. One element per
+        # DEVICE-AND-PEER pair, holding a quota that has to be exhausted before
+        # the throttle engages — see sifr.router.throttle.graceBytes for why the
+        # tier needs one at all.
+        #
+        # KEYED ON THE PAIR, NOT THE DEVICE, and that is the whole design. A
+        # per-device budget would be spent by whichever node the client happened
+        # to try first, so every node after it would be capped from its first
+        # byte and the client would see exactly the ranking difference this is
+        # meant to hide. Per pair, each node in the fleet measures fast during
+        # selection, and there is no comparison to draw between them.
+        #
+        # The cost of that choice is stated plainly: a client with N candidates
+        # can move N x graceBytes at full speed by rotating rather than
+        # persisting. That is the price of the deception, it is bounded, and the
+        # answer to it is a shorter list of candidates, not a smaller quota.
+        #
+        # The device is written first in both directions by the rules, despite
+        # saddr and daddr swapping roles between upload and download, so one
+        # pair is one budget covering both ways. Same convention as
+        # cdn_throttled4/6 above, and for the same reason.
+        #
+        # `update` refreshes an element's timer, so a pair that keeps carrying
+        # never ages out and stays throttled indefinitely — the timeout only
+        # reaps pairs that have gone quiet, which then get a fresh allowance if
+        # they come back. An hour is long enough that a paused video or a
+        # backgrounded app does not buy a second helping, and short enough that
+        # the set does not fill with yesterday's peers.
+        #
+        # FAILS OPEN AND THIS IS THE ONE THING TO WATCH. If the set is full the
+        # update cannot create the element, the expression cannot evaluate, and
+        # nft stops the rule there — so the packet is NOT marked and the traffic
+        # is not throttled. 65536 elements against a pool of tens of devices is
+        # room for hundreds of peers apiece, but the failure mode is silence
+        # rather than error, so `nft list set inet router-blocklists
+        # throttle_grace4 | wc -l` is the thing to check if the tier ever seems
+        # to have stopped biting.
+        set throttle_grace4 {
+          type ipv4_addr . ipv4_addr
+          flags dynamic, timeout
+          timeout 1h
+          size 65536
+        }
+
+        set throttle_grace6 {
+          type ipv6_addr . ipv6_addr
+          flags dynamic, timeout
+          timeout 1h
+          size 65536
+        }
+
         # Populated from custom-vpn-intel-throttle.txt by nft-blocklists-local.
         # Marked 0x2 in forward_throttle like throttle4/6 — same tc class, same
         # cap — but ONLY for low-trust pool devices, where throttle4/6 applies
@@ -882,10 +933,22 @@ in
         chain forward_throttle {
           type filter hook forward priority 0; policy accept;
 
-          ip daddr @throttle4 counter meta mark set 0x2 comment "throttle upload (IPv4)"
-          ip saddr @throttle4 counter meta mark set 0x2 comment "throttle download (IPv4)"
-          ip6 daddr @throttle6 counter meta mark set 0x2 comment "throttle upload (IPv6)"
-          ip6 saddr @throttle6 counter meta mark set 0x2 comment "throttle download (IPv6)"
+          # EVERY 0x2 RULE IN THIS CHAIN IS GATED ON THE GRACE QUOTA, and the
+          # reading of `update ... quota over` is what makes that work: nft
+          # evaluates the expression as a match, so the rule proceeds to the
+          # counter and the mark ONLY once the pair has spent its allowance.
+          # Under the allowance the update still runs — the bytes are counted —
+          # the match fails, and the packet leaves unmarked and unshaped.
+          #
+          # The counters therefore mean something narrower than they used to.
+          # They count throttled packets, not matched ones, so a listed address
+          # with a zero counter now means "seen, and still inside its grace"
+          # rather than "never seen". `nft list set inet router-blocklists
+          # throttle_grace4` is where to look for the difference.
+          ip daddr @throttle4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4)"
+          ip saddr @throttle4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4)"
+          ip6 daddr @throttle6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6)"
+          ip6 saddr @throttle6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6)"
 
           # Published proxy nodes, POOL DEVICES ONLY — unlike the four rules
           # above, which apply to the whole house. Same 0x2 tier and the same tc
@@ -912,10 +975,70 @@ in
           # the pool is off — the rules would then match nothing at all, which
           # is a silent no-op rather than an error.
           ${lib.optionalString cfg.lowTrust.enable ''
-            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @vpnintel4 counter meta mark set 0x2 comment "throttle upload (IPv4, published node list, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @vpnintel4 counter meta mark set 0x2 comment "throttle download (IPv4, published node list, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @vpnintel6 counter meta mark set 0x2 comment "throttle upload (IPv6, published node list, pool only)"
-            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @vpnintel6 counter meta mark set 0x2 comment "throttle download (IPv6, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @vpnintel4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @vpnintel4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @vpnintel6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6, published node list, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @vpnintel6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6, published node list, pool only)"
+
+            # THE PROVIDER ASNs, WHICH USED TO BE A DROP IN lowtrust_policy AND
+            # ARE NOW SHAPED HERE. The move is deliberate and it is the biggest
+            # behavioural change in this file, so it is argued rather than
+            # slipped in.
+            #
+            # The drop was the strongest thing available and it had the same
+            # flaw the latency and loss tiers had: it is a clean failure, and a
+            # clean failure is a SIGNAL. A client that finds a whole provider
+            # unreachable learns it in one round trip and moves to the next
+            # provider on its list, which is precisely the behaviour observed on
+            # 2026-08-30 — 349 of the 497 candidates that client probed were
+            # already covered by the ASN entries here, and it simply carried on
+            # into AS62610, which was not.
+            #
+            # Shaping with a grace allowance gives it nothing to learn from. The
+            # provider stays reachable, its nodes measure fast while being
+            # probed, and the crawl only arrives after selection. The same
+            # argument sifr.router.throttle.graceBytes makes for the address
+            # lists, applied to the tier that had been the exception.
+            #
+            # THE COLLATERAL CASE IMPROVES AND THAT IS THE SECOND REASON. These
+            # are ordinary hosting companies with ordinary customers, and this
+            # file's own header calls the small tail of legitimately self-hosted
+            # services "the accepted price". It is no longer paid in full: a
+            # pool device reaching something real on DigitalOcean or Contabo now
+            # gets it, at 2 MB of full speed and slowly after that, instead of a
+            # connection that fails outright.
+            #
+            # WHAT IS GIVEN UP is that a determined client can move
+            # graceBytes per node across a provider's whole range rather than
+            # being stopped at its edge. That is the same bounded cost the
+            # grace set's own note describes, and it is why the address lists
+            # and the port rules are still worth keeping — this tier was never
+            # the only thing holding.
+            #
+            # Direction handling changes with the tier. The old rules were
+            # `iifname lan0 oifname ppp`, which is upload only — correct for a
+            # drop, since killing one direction kills the flow. A mark has to
+            # catch both halves or the download runs at line rate, so these are
+            # scoped on the conntrack sentinel exactly like the vpnintel rules
+            # above, for the identical reason.
+            # THE CARVE-OUT IS RESTATED HERE AND MUST NOT BE DROPPED. In
+            # lowtrust_policy the exemption for custom-lowtrust-allow-subnets.txt
+            # is a `return` placed ahead of the provider drops, so moving those
+            # drops into this chain moves them out from behind it. Botim's relay
+            # subnets are in that file precisely because they sit inside a listed
+            # provider, and the repo's standing rule is that Botim is never
+            # touched — so the exemption is re-expressed inline as a negative
+            # match rather than left behind in a chain these rules no longer
+            # pass through.
+            #
+            # Written on the same address the set match uses, which flips
+            # between daddr and saddr with the direction: on the download rule
+            # the provider address is the SOURCE, and guarding on daddr there
+            # would test the LAN device against a WAN allow-list and never fire.
+            ct mark ${toString cfg.qos.lowTrustMark} ip daddr @lowtrust_asn4 ip daddr != @lowtrust_allow4 update @throttle_grace4 { ip saddr . ip daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv4, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip saddr @lowtrust_asn4 ip saddr != @lowtrust_allow4 update @throttle_grace4 { ip daddr . ip saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv4, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 daddr @lowtrust_asn6 ip6 daddr != @lowtrust_allow6 update @throttle_grace6 { ip6 saddr . ip6 daddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle upload (IPv6, low-trust provider, pool only)"
+            ct mark ${toString cfg.qos.lowTrustMark} ip6 saddr @lowtrust_asn6 ip6 saddr != @lowtrust_allow6 update @throttle_grace6 { ip6 daddr . ip6 saddr quota over ${cfg.throttle.graceBytes} } counter meta mark set 0x2 comment "throttle download (IPv6, low-trust provider, pool only)"
           ''}
 
           # After the 0x2 rules deliberately. `meta mark set` overwrites, so an
@@ -1195,15 +1318,27 @@ in
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_allow4 counter return comment "low-trust provider carve-out (IPv4)"
             iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_allow6 counter return comment "low-trust provider carve-out (IPv6)"
 
-            # Whole hosting networks. Its own log prefix rather than sharing
-            # nft-block-lowtrust with the rules above: this pair is the one
-            # likeliest to break something legitimate on a pool device, and when
-            # that happens the question is "was it the provider block" — which a
-            # shared prefix cannot answer.
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_asn4 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust-asn " comment "sample low-trust provider drops"
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip daddr @lowtrust_asn4 counter drop comment "low-trust provider drop (IPv4)"
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_asn6 limit rate 60/minute burst 20 packets log prefix "nft-block-lowtrust-asn " comment "sample low-trust provider drops (IPv6)"
-            iifname "${cfg.lan0}" oifname "${cfg.ppp}" ip6 daddr @lowtrust_asn6 counter drop comment "low-trust provider drop (IPv6)"
+            # WHOLE HOSTING NETWORKS USED TO BE DROPPED HERE. They are now
+            # shaped in forward_throttle instead, with the same grace allowance
+            # as the address lists — the argument for the change is written out
+            # in full at those rules, and the short version is that a clean
+            # failure told the client which providers had been touched and it
+            # went shopping in the one that had not.
+            #
+            # Nothing replaces them in this chain. That is not an oversight: a
+            # drop belongs here, where the chain is scoped LAN->WAN and killing
+            # the upload kills the flow, but a MARK has to catch the download
+            # too and this chain cannot see it. The rules had to move, not just
+            # change their verdict.
+            #
+            # The log prefix nft-block-lowtrust-asn retires with them, so a
+            # dashboard or query still looking for it will go quiet rather than
+            # error. The provider tier is now visible as tc class counters and
+            # as the throttle_grace4 set, not as log lines.
+            #
+            # The lowtrust_allow4/6 carve-out immediately above stays where it
+            # is — it still guards every rule below — and is restated inline in
+            # the new rules, which no longer sit behind it.
 
             # Generic public STUN servers only, and only on the STUN ports — see
             # custom-lowtrust-stun-hosts.txt for why signature matching and

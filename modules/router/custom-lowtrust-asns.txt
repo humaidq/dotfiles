@@ -484,3 +484,58 @@
 # that was always doing the work — but the factual claim underneath it has
 # gone, so per-/32 rows in the throttle list are the whole of the answer for
 # AWS and will have to keep up on their own.
+
+# --- The VPN Master / Snap Master estate, ten ASNs, 2026-08-30 --------------
+#
+# ADDED BECAUSE THE /32s WERE VISIBLY LOSING. Three 10-minute captures show two
+# pool devices probe 497 distinct candidate addresses and then select from them,
+# refreshing the pool from a control channel on tcp/20028 across eight AWS and
+# GCP regions. 502 of those candidates are now in custom-throttle-list.txt, and
+# a fresh node outside all of them (162.128.87.183) was handed out the same
+# evening. That is the pattern this file's own header describes, playing out
+# again.
+#
+# AS62610 IS THE ONE THAT MATTERS AND THE REASON THE REST WERE MISSED. Both
+# carrying sessions in those captures ran on it, and it was in no list at all —
+# while 349 of the 497 candidates were ALREADY pool-covered by Linode, Scaleway,
+# Zenlayer AS21859 and OVH above. The client did not pick AS62610 by chance; it
+# went where the shaping was not. Zenlayer announces this estate from at least
+# two ASNs and only one of them was listed, which is the specific gap to
+# remember: checking AS21859 alone reads as covered when it is not.
+#
+# EVERY ONE OF THE TEN IS CONFIRMED BY CERTIFICATE, not inferred from hosting a
+# node. A sample of 48 candidates spread across all of them runs the same three
+# OpenSSH builds and serves the same no-subject, no-issuer,
+# Jan 10 1923 -> Nov 22 2122 certificate, SHA-256 35:E9:C2:D2:...:F7:D6 — one
+# image and one private key. Zero misses in the sample.
+#
+# COLLATERAL, stated honestly: these ten cover roughly 891,000 addresses, and
+# they are budget and mid-tier hosting with real other tenants — Contabo and
+# Clouvider especially sell to ordinary customers. A pool device loses anything
+# self-hosted there. That is the same accepted price the header sets out for the
+# six general clouds, and it stays defensible only because this file is
+# pool-only.
+#
+# THREE DELIBERATELY NOT TAKEN, recorded so they are not rediscovered as new.
+# All three hold confirmed nodes and are covered by /32s in the throttle list
+# instead:
+#   AS3257  GTT — a transit backbone. Its address space is other people's
+#           traffic by definition.
+#   AS9318  SK Broadband — a Korean residential ISP, the subscriber-base case
+#           this file's closing note says an ASN list can never cover properly.
+#   AS834   IPXO — an address-lease broker, so its ranges belong to whoever is
+#           renting this month and say nothing about who is on them.
+# Worth knowing that ip2asn-combined.tsv puts the estate's 82.40.48.0,
+# 66.93.169.0 and 23.27.112.0 ranges in the first two of those, while a live
+# lookup calls all three Zenlayer AS21859. Where the table is stale, neither
+# ASN entry reaches the range and the /32 is the only thing that bites.
+62610   # Zenlayer ZEN-DPS — 28 candidates observed, and both carrying sessions
+61272   # UAB Bacloud — 15, PTRs all 7673-*.bacloud.info, one customer
+401152  # ADCIL — 12
+213650  # CDNINFRA — 8, and the smallest range here at 515 addresses
+63023   # GTHost — 5
+20326   # TeraSwitch — 5
+62240   # Clouvider — 3
+62563   # GlobalTelehost — 2
+40021   # Contabo — 2
+34989   # ServeTheWorld — 2
