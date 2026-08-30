@@ -146,3 +146,35 @@
 # the 60000 note says of its own. This is worth closing anyway because a port a
 # capture caught carrying is cheap to close, not because it will hold.
 8388
+
+# --- 20028, added 2026-08-30 on request -------------------------------------
+#
+# SEEN CARRYING, like 60000 and 8388 and unlike most of this file. Three
+# 10-minute captures show two pool devices each holding EIGHT SIMULTANEOUS
+# tcp/20028 sessions, to the same eight addresses, open for the entire capture
+# window and beating steadily the whole time. Both devices talk to the same
+# eight — that is what marks it as the estate's coordination channel rather
+# than anything either device chose for itself.
+#
+# THIS IS THE CONTROL PLANE, NOT A TRANSPORT, which is why it is worth closing
+# even though it moves no real volume. The tunnel nodes themselves are reached
+# on a rotating matrix of UDP ports; 20028 is how the client learns which nodes
+# exist. It probed 497 distinct candidate addresses in those ten minutes, and
+# every /32 in custom-throttle-list.txt is a node that list handed it. A server
+# whose job is to hand out more nodes is the same argument the Rapid VPN note in
+# custom-ip-blocklist.txt makes for dropping a list server.
+#
+# The eight endpoints are GCP and AWS tenant addresses, which is why they are
+# NOT in the address files: a /32 there is someone else's instance next week,
+# and the port is the stable half of this pair.
+#
+# SIBLINGS SEEN AND DELIBERATELY NOT ADDED: udp/20026 (two peers), tcp/20003
+# and tcp/20031 (four peers each). Same numeric neighbourhood, same kind of
+# host, almost certainly the same control plane — but only 20028 was authorised
+# and only 20028 was seen carrying on both devices. If this entry works and the
+# client shifts one along, they are the first place to look.
+#
+# Collateral is nil on the same footing as 10505, 60000 and 8388: unassigned by
+# IANA, matched on `th dport` LAN->WAN only, so a pool device drawing 20028 as
+# its own source port is untouched.
+20028
