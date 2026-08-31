@@ -36,7 +36,7 @@
           UserKnownHostsFile = "/dev/null";
         };
         "ghafajump" = {
-          HostName = "192.168.1.227";
+          HostName = "10.20.0.173";
           IdentityFile = "/home/humaid/.ssh/id_ed25519_ghaf";
           StrictHostKeyChecking = "no";
           UserKnownHostsFile = "/dev/null";

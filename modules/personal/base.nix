@@ -23,6 +23,7 @@ in
     ./o11y
     ./receipt.nix
     ./research.nix
+    ./sdr-noise.nix
     ./security-research.nix
     ./university.nix
     ./work.nix

@@ -63,6 +63,9 @@
         server.enable = true;
         client.enable = true;
       };
+      # This is the host nginx already proxies sdr.alq.ae from, so it is the one
+      # that can reach the receiver on the LAN without leaving the building.
+      sdrNoise.enable = true;
       net = {
         sifr0 = true;
         node-crt = config.sops.secrets."nebula/crt".path;

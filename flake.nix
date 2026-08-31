@@ -208,6 +208,7 @@
             o11y = import ./modules/personal/o11y;
             receipt = import ./modules/personal/receipt.nix;
             research = import ./modules/personal/research.nix;
+            sdrNoise = import ./modules/personal/sdr-noise.nix;
             securityResearch = import ./modules/personal/security-research.nix;
             university = import ./modules/personal/university.nix;
             work = import ./modules/personal/work.nix;

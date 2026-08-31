@@ -136,7 +136,24 @@ let
     proxy_set_header X-Original-Method $groundwave_pow_original_method;
   '';
   groundwavePowLocations =
-    applicationUpstream:
+    {
+      applicationUpstream,
+      # nginx directives for the gated "/" location, replacing the http-level
+      # proxy defaults it would otherwise repeat. Parameterised rather than
+      # shared because proxy_set_header at location level replaces the
+      # inherited set wholesale instead of extending it, so a vhost that needs
+      # one header different has to restate all of them, and because a second
+      # Host or a second proxy_http_version in the same location is a config
+      # error rather than a last-one-wins override.
+      applicationProxyConfig ? proxyDefaults,
+      # Passing a WebSocket through the gate needs this rather than the
+      # directives spelled out in applicationProxyConfig: the nixpkgs module
+      # emits the Upgrade/Connection pair *before* extraConfig, so anything
+      # here that also sets Connection or proxy_http_version either overwrites
+      # the upgrade or refuses to start. Leave both out of
+      # applicationProxyConfig and set this instead.
+      proxyWebsockets ? false,
+    }:
     let
       internalGroundwaveLocation = path: {
         proxyPass = "${upstream}${path}";
@@ -168,9 +185,10 @@ let
         '';
       };
       "/" = {
+        inherit proxyWebsockets;
         proxyPass = applicationUpstream;
         extraConfig = ''
-          ${proxyDefaults}
+          ${applicationProxyConfig}
           ${error-pages-no-intercept}
 
           proxy_set_header X-Groundwave-PoW-Proxy "";
@@ -589,7 +607,7 @@ in
             ${error-pages-loc}
           '';
 
-          locations = groundwavePowLocations "http://10.10.0.12:4231";
+          locations = groundwavePowLocations { applicationUpstream = "http://10.10.0.12:4231"; };
         };
 
         # Same PoW treatment as admin.fleeti.ae, and for the same reason: the
@@ -604,8 +622,26 @@ in
             ${error-pages-loc}
           '';
 
-          locations = groundwavePowLocations "http://10.10.0.12:4233";
+          locations = groundwavePowLocations { applicationUpstream = "http://10.10.0.12:4233"; };
         };
+        # Same PoW gate again, over a WebSocket application this time. The
+        # receiver has no login of its own worth the name and every listener
+        # costs it one of twelve channels, so a crawler that opens the page is
+        # not a wasted request but a denied seat; the gate turns that into work
+        # nobody automates for free.
+        #
+        # The audio, waterfall and extension sockets all live under "/" and are
+        # opened by the page after it has already solved a challenge, so they
+        # ride the cookie the browser is holding — same-origin WebSocket
+        # handshakes carry cookies, and the handshake is a GET, which is the
+        # only method the check answers 401 to. auth_request runs on the
+        # handshake, before the upgrade, and does not sit in the socket's path
+        # afterwards.
+        #
+        # Non-browser clients (kiwirecorder and friends) cannot solve the
+        # challenge and lose access. The hourly noise sweep is not one of them:
+        # sifr.personal.sdrNoise talks to the receiver's LAN address from
+        # oreamnos and never resolves this name.
         "sdr.huma.id" = {
           enableACME = true;
           forceSSL = true;
@@ -613,23 +649,21 @@ in
             ${error-pages-loc}
           '';
 
-          locations = {
-            "/" = {
-              proxyPass = "http://10.10.0.12";
-              recommendedProxySettings = false;
-              proxyWebsockets = true;
-
-              extraConfig = ''
-                ${error-pages}
-
-                proxy_set_header Host sdr.alq.ae;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For "";
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_set_header X-Forwarded-Host $host;
-                proxy_set_header X-Forwarded-Server $hostname;
-              '';
-            };
+          locations = groundwavePowLocations {
+            applicationUpstream = "http://10.10.0.12";
+            proxyWebsockets = true;
+            # Host is rewritten because the far end of the mesh hop is
+            # oreamnos's nginx, which selects the receiver by server_name.
+            # No Connection or proxy_http_version here on purpose -- see
+            # proxyWebsockets above.
+            applicationProxyConfig = ''
+              proxy_set_header Host sdr.alq.ae;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For "";
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_set_header X-Forwarded-Host $host;
+              proxy_set_header X-Forwarded-Server $hostname;
+            '';
           };
         };
 
