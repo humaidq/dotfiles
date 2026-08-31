@@ -42,9 +42,56 @@ has_net_admin() {
 
 if has_net_admin; then
 	ct() { command conntrack "$@"; }
+	nft() { command nft "$@"; }
 else
 	ct() { sudo -n /run/current-system/sw/bin/conntrack "$@"; }
+	nft() { sudo -n /run/current-system/sw/bin/nft "$@"; }
 fi
+
+# ip6 addresses are the ones with a colon, same test tempblock uses.
+fam_of() {
+	case "$1" in
+	*:*) echo "ipv6" ;;
+	*) echo "ipv4" ;;
+	esac
+}
+
+# Every LAN address the device holding <addr> also holds, <addr> included.
+#
+# WHY THIS IS NEEDED AT ALL. A device has one DHCP lease and one or more SLAAC
+# addresses, and conntrack filters match an address, not a machine. `killconn
+# from <v4>` therefore swept exactly the IPv4 half of a dual-stack device and
+# silently left every IPv6 flow running — the peers page's "drop all
+# connections" button reporting success over a device that had not stopped
+# talking. The page itself has always known better: render() folds a device's
+# addresses together by MAC before it counts conversations, so the button was
+# the only place the two views disagreed.
+#
+# Resolved here rather than passed in by router-web so that the CLI and the
+# button behave identically, and so peers.go keeps handing this tool a single
+# address exactly as it does today.
+#
+# Falls back to the address as given when the neighbour table has no MAC for
+# it — a device that is merely asleep should still get the old behaviour
+# rather than an error.
+siblings() {
+	local mac
+	mac="$(ip neigh show 2>/dev/null | awk -v a="$1" '
+		$1 == a { for (i = 1; i <= NF; i++) if ($i == "lladdr") { print $(i + 1); exit } }')"
+	if [ -z "$mac" ]; then
+		printf '%s\n' "$1"
+		return 0
+	fi
+	{
+		printf '%s\n' "$1"
+		ip neigh show 2>/dev/null | awk -v m="$mac" '
+			{
+				lladdr = ""
+				for (i = 1; i <= NF; i++) if ($i == "lladdr") lladdr = $(i + 1)
+				if (lladdr == m) print $1
+			}'
+	} | awk '!seen[$0]++'
+}
 
 # Same validation as tempblock: catch a typo with a friendly message rather
 # than conntrack's.
@@ -118,6 +165,105 @@ delete() {
 	die "conntrack -D failed: ${output:-exit status $status}"
 }
 
+# --- resetting TCP before deleting the state entry --------------------------
+#
+# WHY THIS EXISTS. Deleting a conntrack entry tells neither endpoint anything.
+# For UDP that is the whole story — there is no session to end, and the next
+# packet simply builds a fresh entry. For TCP it is not: both sockets are still
+# open, the next segment re-creates the state entry, and the conversation
+# carries on across a "kill" that changed nothing anyone could observe. A flow
+# was watched doing exactly that — same four-tuple, same client source port,
+# no SYN and no handshake, traffic continuing straight through the deletion.
+# "The app may reconnect at once" in the usage text quietly assumed a teardown
+# that was never actually sent.
+#
+# So: reset what can be reset, and fall back to deletion for everything else.
+# A RST reaches both sockets, so the app finds the connection genuinely gone
+# and redials — which is what every caller of this tool wanted in the first
+# place, and what the peers page's two buttons say they do.
+#
+# THIS IS NOT A BLOCK, and the design is what keeps it from becoming one:
+#
+#   * The match is the exact four-tuple of a flow that is open RIGHT NOW.
+#     A redial draws a fresh source port, so nothing about the new connection
+#     can match — the reset cannot outlive the conversation it ended.
+#   * Elements carry a timeout and expire on their own. If this script is
+#     killed between arming and returning, the ruleset heals itself. That is
+#     deliberate: tempblock's header records 99 ad-hoc rules found still in
+#     force long after they were meant to be gone, and a tool that runs from a
+#     web button must not be able to add to that pile.
+#   * SYN is excluded, so the redial's handshake is never what gets reset even
+#     inside the timeout window.
+#
+# BOTH ORIENTATIONS ARE ARMED, so the reset reaches the peer as well as the
+# client. In a forward hook the RST goes back toward the source of whatever
+# packet matched, carrying the other end's address, so it takes one element per
+# direction to close both sockets. The peer-bound half is the weaker of the two
+# — behind a CDN it dies at the edge rather than reaching the origin holding
+# the real socket — but a half-closed conversation is exactly the state this
+# tool exists to avoid leaving behind.
+#
+# The chain sits at priority -30, ahead of tempblock's -20, so that
+# `tempblock add` (which calls this) still gets a clean teardown instead of
+# having its own drop rule swallow the packet the reset needed to match.
+readonly RST_TABLE="router_killrst"
+
+# Arm the reset for every TCP flow matching a conntrack filter. Takes the same
+# -s/-d arguments as delete() so the two always cover the same set of flows.
+#
+# Best effort by design: a router whose ruleset predates this table, or any
+# other reason nft refuses, must still get the deletion below. The old
+# behaviour is the floor this sits on, never a thing it can take away.
+armed=0
+reset_flows() {
+	local out elements fam set_name
+	armed=0
+
+	# -p tcp because a RST is the only teardown being offered here; UDP and
+	# everything else fall through to delete() untouched.
+	out="$(ct -L -p tcp "$@" 2>/dev/null)" || true
+	[ -n "$out" ] || return 0
+
+	for fam in ipv4 ipv6; do
+		case "$fam" in
+		ipv4) set_name="killrst4" ;;
+		ipv6) set_name="killrst6" ;;
+		esac
+
+		# The FIRST src/dst/sport/dport on a line is the original tuple, which
+		# for an ordinary LAN-initiated flow is exactly what the forward hook
+		# sees: post-DNAT and pre-SNAT, so the client's own address, not the
+		# router's public one. The reply tuple is deliberately NOT read — it
+		# carries the WAN address and would never match a forwarded packet.
+		# The reverse direction is built by swapping the original instead.
+		elements="$(printf '%s\n' "$out" | awk -v want="$fam" '
+			{
+				src = ""; dst = ""; sport = ""; dport = ""
+				for (i = 1; i <= NF; i++) {
+					if (src   == "" && $i ~ /^src=/)   { sub(/^src=/,   "", $i); src   = $i }
+					else if (dst   == "" && $i ~ /^dst=/)   { sub(/^dst=/,   "", $i); dst   = $i }
+					else if (sport == "" && $i ~ /^sport=/) { sub(/^sport=/, "", $i); sport = $i }
+					else if (dport == "" && $i ~ /^dport=/) { sub(/^dport=/, "", $i); dport = $i }
+				}
+				if (src == "" || dst == "" || sport == "" || dport == "") next
+				# A colon in the address is the only family test needed, and it
+				# avoids depending on conntrack -L printing a family column.
+				is6 = (index(src, ":") > 0)
+				if ((want == "ipv6") != is6) next
+				printf "%s . %s . %s . %s, %s . %s . %s . %s, ", \
+					src, sport, dst, dport, dst, dport, src, sport
+			}')"
+		elements="${elements%, }"
+		[ -n "$elements" ] || continue
+
+		if nft add element inet "$RST_TABLE" "$set_name" "{ $elements }" 2>/dev/null; then
+			armed=1
+		else
+			echo "killconn: could not arm reset (${set_name}); deleting state only" >&2
+		fi
+	done
+}
+
 usage() {
 	cat >&2 <<'USAGE'
 killconn — tear down live connections, without blocking anything
@@ -126,8 +272,10 @@ killconn — tear down live connections, without blocking anything
   killconn <peer> from <lan-ip>        kill only that device's flows with <peer>
   killconn from <lan-ip>               kill every flow that device has
 
-Changes no firewall state, so the app may reconnect at once. To stop it coming
-back, use `tempblock add <peer>` — which calls this itself.
+TCP flows are reset at both ends; anything else has its state entry deleted.
+Either way the address stays reachable and the app is free to reconnect at
+once — to stop it coming back, use `tempblock add <peer>`, which calls this
+itself. A device address covers every address that device holds, both families.
 USAGE
 	exit "${1:-0}"
 }
@@ -176,29 +324,68 @@ fi
 # Believed harmless on these routers today because neither runs a port
 # forward, but that is a fact about current configuration, not something this
 # tool enforces or checks.
-if [ -z "$peer" ]; then
-	delete -s "$from"
-	a="$deleted"
-	delete -d "$from"
-	b="$deleted"
-	scope="everything from $from"
-elif [ -n "$from" ]; then
-	delete -s "$from" -d "$peer"
-	a="$deleted"
-	delete -s "$peer" -d "$from"
-	b="$deleted"
-	scope="$peer from $from"
+total=0
+any_armed=0
+
+# One conntrack filter, reset then deleted.
+#
+# Reset first and delete second, never the other way round: once the state
+# entry is gone the flow's four-tuple has to be read from somewhere, and
+# conntrack is the only place it was ever written down.
+#
+# `if` rather than `[ x ] && y` for the armed check — as the last statement of
+# a function a failed test becomes the return status, and under `set -e` that
+# ends the script on the ordinary "nothing was armed" path.
+sweep() {
+	reset_flows "$@"
+	if [ "$armed" -eq 1 ]; then
+		any_armed=1
+	fi
+	delete "$@"
+	total=$((total + deleted))
+}
+
+# EVERY FILTER PAIRS LIKE WITH LIKE. conntrack refuses a call whose -s and -d
+# are different families outright — "mismatched address family", which is what
+# the peers page returned for any conversation over IPv6, because the peer came
+# from the row and the device came from the URL and nothing checked that the
+# two agreed. Selecting the device address in the peer's family fixes that
+# case and the dual-stack sweep below at the same time.
+if [ -n "$from" ]; then
+	mapfile -t addrs < <(siblings "$from")
 else
-	delete -d "$peer"
-	a="$deleted"
-	delete -s "$peer"
-	b="$deleted"
-	scope="$peer"
+	addrs=()
 fi
 
-total=$((a + b))
+if [ -z "$peer" ]; then
+	scope="everything from $from"
+	for addr in "${addrs[@]}"; do
+		sweep -s "$addr"
+		sweep -d "$addr"
+	done
+elif [ -n "$from" ]; then
+	scope="$peer from $from"
+	peer_fam="$(fam_of "$peer")"
+	matched=0
+	for addr in "${addrs[@]}"; do
+		[ "$(fam_of "$addr")" = "$peer_fam" ] || continue
+		matched=1
+		sweep -s "$addr" -d "$peer"
+		sweep -s "$peer" -d "$addr"
+	done
+	if [ "$matched" -eq 0 ]; then
+		die "$from holds no $peer_fam address, so it cannot have flows with $peer"
+	fi
+else
+	scope="$peer"
+	sweep -d "$peer"
+	sweep -s "$peer"
+fi
+
 if [ "$total" -eq 0 ]; then
 	echo "no live flows: $scope"
+elif [ "$any_armed" -eq 1 ]; then
+	echo "killed $total flow(s): $scope (TCP reset)"
 else
 	echo "killed $total flow(s): $scope"
 fi
