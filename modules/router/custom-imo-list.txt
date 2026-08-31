@@ -1685,3 +1685,58 @@
 # that hole being used: an Alibaba host is not Google, but it is speaking on
 # Google's push port, so no port rule can separate them. An address entry can.
 8.209.67.150
+
+# --- TENCENT, TWO PREFIXES NOT SEEN BEFORE, 2026-08-31 -----------------------
+#
+# Both are AS132203, registered ACEVILLEPTELTD-SG — Tencent's overseas cloud,
+# the same estate the 43.130.x and 43.166.x entries above came from. What is
+# new is the prefixes: 43.128.64.0/18 and 43.134.128.0/18, neither of which any
+# earlier run put an endpoint in. Read that as the pool being wider than the
+# two /18s this file had been extending into, not as a re-homing.
+#
+# Neither address has a PTR and neither answers TLS on 443. Neither has ever
+# been returned as an answer to any name — checked against the blocky answer
+# logs and the resolver journal, not just the day's — so both are dialled from
+# a hardcoded pool, as the header describes.
+#
+# ATTRIBUTION. A pool device carried these while every imo name it asked for
+# was sinkholed in the same window: fgw.imoim.app, http-dns.imoim.net,
+# medialbs.imolive2.com, conf.letsmessagenow.com and bstream-ws.muosepicel.com.
+# That is the DNS layer working and the overwall module stepping around it,
+# which is what this file is for.
+#
+# It is the app and not the device. Ordinary app backends stayed visible
+# alongside — FCM on 5228, Meta and CDN flows with their own SNI — so nothing
+# here is a device tunnel, and an entry being judged by whether the handset
+# "still works" will be judged wrong. Same caveat as the split-tunnel note in
+# custom-lowtrust-subnets.txt.
+#
+#   43.128.117.206  udp/14584   carried the media, and is the stronger of the
+#                               two. Long-lived and opaque from the first byte.
+#                               Strongly one-way outbound in one session and
+#                               nearer symmetric in a later one, which is a
+#                               broadcast and then a call — both things the app
+#                               does, and neither is a proxy carrying browsing,
+#                               which would lean the other way.
+#
+#   43.134.142.173  udp/31297   the two-port shape, udp plus a tcp port dialled
+#                   tcp/22656   beside it, that this file records elsewhere.
+#                               WEAKER: no reply bytes were ever observed, so
+#                               it goes in on the pattern and on the company it
+#                               keeps, not on media anyone watched it carry. If
+#                               a later run finds something else on it, say so
+#                               here.
+#
+# 43.134.142.173 was briefly in remote_block4 on 2026-08-30, from a fetched
+# feed rather than from this repo, and had rotated back out by the next day.
+# That is the argument for a hand-written entry: the feed had it right and did
+# not keep it.
+#
+# /32s AND NOT THE /18s. Tencent cloud space is multi-tenant, so a /18 here is
+# indiscriminate; and the 2026-08-22 decision recorded above says new entries
+# are /32s. THE PORTS ARE DELIBERATELY NOT ADDED to custom-port-blocklist.txt,
+# for the same reason as the Alibaba block above — 14584, 31297 and 22656 are
+# ephemeral-range picks with nothing behind them, and the app will choose three
+# more when these stop working.
+43.128.117.206
+43.134.142.173
