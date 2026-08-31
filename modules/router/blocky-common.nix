@@ -1,53 +1,97 @@
 {
+  # THE ISP'S OWN RESOLVERS, and the reason is CDN steering rather than speed
+  # for its own sake. Measured from bongo on 2026-08-31 over 6,266 domains taken
+  # from this router's own query log.
+  #
+  # Cloudflare sends no EDNS Client Subnet, by policy and on every one of its
+  # addresses — 1.1.1.1 measured identically to 1.1.1.3, so this is not the
+  # family filter. Meta and TikTok steer on ECS specifically, so without it
+  # their authoritatives cannot see the client network and never return the FNA
+  # cache sitting inside Etisalat. The cost was large and paid on every new
+  # connection: Meta/TikTok IPv4 connect 76-92 ms via Cloudflare against 6-12 ms
+  # here, and IPv6 reachability of 2/14 against 14/14 — the rest being SYNs into
+  # a blackhole with no ICMP, which a client can only resolve by timing out.
+  # That is what "some apps are slow, then recover, then a different one
+  # degrades" was: a different edge on every lookup.
+  #
+  # These also win on plain latency, but only once the measurement is done
+  # properly. Aggregated over all 6,266 names every resolver looks identical
+  # (p50 110-127 ms) because 68% of logged names are NXDOMAIN. Split out the
+  # ~2,000 that actually resolve — the only ones anything waits on — and it is
+  # p50 4 ms / 89% under 30 ms here, against 13 ms / 74% for cf-family and
+  # 37 ms / 41% for Google. Google was the worst of the four; its nearby anycast
+  # frontend says nothing about its recursion, which is Google's own documented
+  # warning.
+  #
+  # Dubai first because this line is in Dubai (the PTRs are dxbcns and auhcns
+  # .ecompany.ae, one resolver per emirate); `strict` tries them in order, so
+  # Abu Dhabi is the failover.
+  #
+  # WHAT THIS GIVES UP, all three deliberate:
+  #   * DoT. Both have 853 closed, so this is plaintext 53 to the ISP. Only the
+  #     router speaks it — LAN clients are still forced onto blocky, and
+  #     LAN->WAN 53/853 stays dropped in modules/router/default.nix.
+  #   * DNSSEC validation. Neither sets the ad flag. They do NOT strip it,
+  #     though — RRSIG, DNSKEY and DS all come back intact, so a validator
+  #     downstream could still verify; blocky is not one.
+  #   * Cloudflare's family filter. The denylists below (oisd nsfw, StevenBlack,
+  #     ut1) were always doing most of that work and are unaffected.
+  #
+  # Checked and not a problem: no ad or tracker filtering of their own
+  # (doubleclick, googleadservices, scorecardresearch and friends all resolve
+  # normally), no NXDOMAIN hijacking, and 6 disagreements with Google across
+  # 6,266 domains, all transient. Re-measure before trusting any of this; see
+  # the resolver-steering notes for how the small-sample versions misled.
   upstreams = {
     strategy = "strict";
     groups = {
       default = [
-        "tcp-tls:family.cloudflare-dns.com"
-        # Etisalat
-        #"213.42.20.20"
-        #"195.229.241.222"
+        "213.42.20.20" # dxbcns.ecompany.ae
+        "195.229.241.222" # auhcns.ecompany.ae
       ];
     };
   };
+  # Plain IPs need no bootstrap to be reached, but blocky also resolves the
+  # denylist download URLs through this, and the system resolver on a router is
+  # blocky itself. Pointed at the same two so list refreshes do not depend on
+  # blocky already being up.
   bootstrapDns = [
-    {
-      upstream = "tcp-tls:family.cloudflare-dns.com";
-      ips = [
-        "1.1.1.3"
-        "1.0.0.3"
-      ];
-    }
+    { upstream = "213.42.20.20"; }
+    { upstream = "195.229.241.222"; }
   ];
-  # archive.today and its mirrors are all one service, and the default upstream
-  # refuses to resolve any of them: 1.1.1.3 answers 0.0.0.0, and so does
-  # 1.1.1.2, so this is Cloudflare's classification rather than the family
-  # filter specifically. The names are already in custom-whitelist.txt and
-  # blocky is not blocking them — it reports response_type=RESOLVED and passes
-  # the upstream's 0.0.0.0 straight through — so no blocklist change can fix
-  # it. Send just these zones to a resolver that answers them instead.
+  # The archive.today mirrors used to be routed to Quad9 here, because
+  # Cloudflare answered 0.0.0.0 for all seven of them (its own classification —
+  # 1.1.1.2 did it too, so not the family filter) and no blocklist change could
+  # fix an upstream sinkhole. That mapping is gone because the upstream above no
+  # longer needs it: verified 2026-08-31 that both Etisalat resolvers return the
+  # real 185.14.97.131 for all seven of .today .fo .is .li .md .ph .vn.
   #
-  # Quad9 rather than 1.1.1.1, which returns an empty answer for these: the
-  # archive.today operator has long declined to serve Cloudflare's resolvers.
-  # Bootstrapping is fine, as the existing bootstrap entry resolves
-  # dns.quad9.net.
-  conditional = {
-    mapping =
-      let
-        unfiltered = "tcp-tls:dns.quad9.net";
-      in
-      {
-        "archive.today" = unfiltered;
-        "archive.fo" = unfiltered;
-        "archive.is" = unfiltered;
-        "archive.li" = unfiltered;
-        "archive.md" = unfiltered;
-        "archive.ph" = unfiltered;
-        "archive.vn" = unfiltered;
-      };
-  };
+  # Removing it also drops the last upstream that was a hostname rather than an
+  # address, which is what lets bootstrapDns above be two plain IPs.
+  #
+  # The names stay in custom-whitelist.txt; that is unrelated and still needed.
   caching = {
-    minTime = "6h";
+    # Honour real TTLs; do not hold anything past what its zone said. There are
+    # two independent reasons and both apply to every host that imports this.
+    #
+    # The DHCP one, which is why this was already forced to 0 in dns.nix before
+    # it moved here: blocky's cache sits in front of its conditional resolver,
+    # so a 6h floor pinned DHCP hostname-to-address mappings for 6h after a
+    # lease changed.
+    #
+    # The steering one, which is new and is the reason not to raise it again.
+    # The upstreams above are chosen because they return the in-country CDN
+    # cache, and they do that by asking the authoritative on our behalf every
+    # time the record expires — those answers carry 30-60s TTLs precisely so
+    # the CDN can move clients. A 6h floor would pin the whole LAN to one edge
+    # for 6h and re-create, locally, the stale-steering problem the upstream
+    # change just fixed.
+    #
+    # Cheap now in a way it was not before: the p50 lookup against these
+    # resolvers is 4 ms with 89% under 30 ms, so re-resolving on real TTLs
+    # costs far less than it did against a 13-37 ms upstream, and prefetching
+    # below keeps hot names warm regardless.
+    minTime = "0";
     maxTime = "24h";
     prefetchExpires = "24h";
     prefetching = true;

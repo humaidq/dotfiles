@@ -321,7 +321,6 @@ in
         map $server_name $limit_conn_key {
           default $binary_remote_addr;
           cache.huma.id "";
-          dns.huma.id "";
           sdr.huma.id "";
         }
 
@@ -522,9 +521,8 @@ in
         # certificates to reason about when one of them stops renewing.
         #
         # The name stays `lighthouse.huma.id` even though the host is now
-        # `hisn`. It is a published name that dns.huma.id redirects to below,
-        # and renaming it is a DNS record, a certificate and a redirect — all
-        # unrelated to moving the machine.
+        # `hisn`. It is a published name, and renaming it is a DNS record and a
+        # certificate — both unrelated to moving the machine.
         #
         # No add_header block: with none set here the server inherits the
         # http-level security-headers, which is what is wanted for a page with
@@ -535,31 +533,17 @@ in
           root = ./lighthouse-page;
         };
 
-        "dns.huma.id" = {
-          enableACME = true;
-          forceSSL = true;
-          extraConfig = ''
-            ${error-pages-loc}
-          '';
-          locations = {
-            "/dns-query" = {
-              proxyPass = "http://127.0.0.1:3333";
-              extraConfig = ''
-                proxy_intercept_errors off;
-                proxy_request_buffering off;
-                proxy_buffering off;
-                proxy_set_header Host $host;
-                proxy_set_header X-Forwarded-For "";
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_http_version 1.1;
-                proxy_set_header Connection "";
-              '';
-            };
-            "/" = {
-              return = "301 https://lighthouse.huma.id";
-            };
-          };
-        };
+        # dns.huma.id was here and is deliberately gone. It published this
+        # host's blocky as DoT on 853 and as DoH under /dns-query, for use off
+        # the LAN. Both are removed: an ISP resolver is the upstream the
+        # routers now use (see modules/router/blocky-common.nix) and it answers
+        # only its own subscribers, so a resolver on a VPS in another network
+        # could not share their configuration even if it were kept.
+        #
+        # Nothing replaces it. Off-LAN resolution is the router over the mesh
+        # (10.10.0.16), which is what lighthouse-page has always pointed at.
+        # The `dns.huma.id` DNS record still exists in the huma.id zone and is
+        # now unserved — delete it there if it should stop resolving.
 
         # Proxies to a service on anoa, not oreamnos — the only vhost here that
         # does. anoa is a laptop, so this name is up only when that machine is

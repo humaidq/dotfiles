@@ -206,9 +206,19 @@ in
 
         no-hosts = true;
 
+        # option:ntp-server is option 42. The router itself, because ntp.nix
+        # makes chrony serve the LAN: a client that takes this stops reaching
+        # for pool.ntp.org over the PPPoE link, which is both a round trip
+        # shorter and one fewer thing that breaks while the uplink is down.
+        #
+        # routerAddress rather than a separate option, unlike dns-server: the
+        # server being advertised is this box, so a second address to point it
+        # somewhere else would only ever disagree with the chrony `allow` that
+        # makes it work.
         dhcp-option = [
           "option:router,${cfg.dhcp.routerAddress}"
           "option:dns-server,${cfg.dhcp.dnsServer}"
+          "option:ntp-server,${cfg.dhcp.routerAddress}"
         ];
       }
       // lib.optionalAttrs (cfg.dhcp.hostsFile != null) {
@@ -317,10 +327,10 @@ in
             ];
           };
 
-          # blocky's cache sits in front of its conditional resolver, so the
-          # shared 6h minTime would pin DHCP hostname to address mappings for 6h
-          # after a lease changes. Honour the real TTLs here instead.
-          caching.minTime = "0";
+          # minTime was forced to 0 here and now lives in blocky-common.nix
+          # instead, which is router-only since hisn's resolver was removed.
+          # See the note there: the DHCP-lease reason that put it here is
+          # unchanged, and CDN steering is a second reason not to raise it.
         }
         // lib.optionalAttrs cfg.queryLog.enable {
           # The "query resolved" line, on stdout and so in the journal. Both

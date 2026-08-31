@@ -36,7 +36,6 @@
     (import ./disk.nix)
     (import ./hardware.nix)
     (import ./webserver.nix)
-    (import ./blocky.nix)
     (import ./metrics.nix)
   ];
   networking.hostName = "hisn";

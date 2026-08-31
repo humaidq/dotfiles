@@ -15,6 +15,7 @@ in
     ./qos-metrics.nix
     ./fullreboot.nix
     ./host-metrics.nix
+    ./ntp.nix
     ./ont.nix
     ./pppd.nix
     ./client-mode.nix
@@ -738,7 +739,7 @@ in
           allowedUDPPorts = [
             53 # DNS UDP
             67 # DHCPv4 server
-            123 # NTP
+            123 # NTP, served by chrony — see ntp.nix
           ];
         };
 

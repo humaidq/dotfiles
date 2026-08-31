@@ -1,10 +1,10 @@
 # What this host is for is traffic it forwards or answers, and none of that is
 # visible in node_exporter: a saturated CPU and a busy NIC look the same
 # whether they come from one vhost being crawled or from every service working
-# normally. This file adds the three views that distinguish them — nginx's own
-# counters, a structured access log, and blocky's query counters — and leaves
-# the nebula side to modules/personal/networking/nebula.nix, which serves the
-# whole mesh rather than this host.
+# normally. This file adds the two views that distinguish them — nginx's own
+# counters and a structured access log — and leaves the nebula side to
+# modules/personal/networking/nebula.nix, which serves the whole mesh rather
+# than this host.
 #
 # Everything here binds to loopback and is scraped by the Alloy client already
 # running on this host. Nothing new is exposed to the WAN.
@@ -97,10 +97,6 @@ in
   # own SystemMaxUse cap is what bounds disk use here, not this limit.
   systemd.services.nginx.serviceConfig.LogRateLimitIntervalSec = 0;
 
-  # blocky already has prometheus.enable set in blocky-common.nix, shared with
-  # the routers, but nothing has ever scraped it. Its http port is loopback
-  # from the outside — nginx proxies only /dns-query on dns.huma.id — so
-  # /metrics is reachable locally and nowhere else.
   sifr.personal.o11y.client.extraConfig = ''
     prometheus.scrape "nginx" {
       targets = [{
@@ -111,34 +107,5 @@ in
       forward_to      = [prometheus.remote_write.default.receiver]
     }
 
-    prometheus.scrape "blocky" {
-      targets = [{
-        __address__ = "127.0.0.1:${toString config.services.blocky.settings.ports.http}",
-        instance    = "${config.networking.hostName}",
-      }]
-      scrape_interval = "30s"
-      forward_to      = [prometheus.relabel.blocky.receiver]
-    }
-
-    // blocky_query_total is labelled with the client address, which on a
-    // router is a DHCP pool and here is the open internet: dns.huma.id answers
-    // DoH for anyone, so every resolver that ever asks would become a
-    // permanent series. Only that one metric carries the label, and dropping
-    // it costs the per-record-type breakdown and nothing else — response
-    // counts, blocked and cached shares and latency all come from
-    // blocky_request_duration_seconds, which is labelled by response_type
-    // alone.
-    //
-    // labeldrop is not an option in its place: collapsing the clients would
-    // make several series identical and Prometheus rejects the duplicate
-    // samples rather than summing them.
-    prometheus.relabel "blocky" {
-      forward_to = [prometheus.remote_write.default.receiver]
-      rule {
-        source_labels = ["__name__"]
-        regex         = "blocky_query_total"
-        action        = "drop"
-      }
-    }
   '';
 }
