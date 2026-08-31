@@ -624,8 +624,17 @@ func (s *peersServer) registerRoutes(mux *http.ServeMux) {
 	if s.rdns != nil {
 		mux.HandleFunc("GET /peers/{device}/rdns", s.handleRDNS)
 	}
+	// Scoped like drop below, but for a different reason: the address goes into
+	// the throttle set for everyone, and only the WAIT before it bites is
+	// waived, and only for the device whose page the button was on. Without
+	// that the row keeps moving bytes at full speed until the pair has spent
+	// graceBytes, which on a conversation already megabytes deep reads as the
+	// button having done nothing. See seed_spent_grace in tempthrottle.bash.
 	mux.HandleFunc("POST /peers/{device}/throttle", s.handleAction(peerAction{
-		name: "throttle", tool: "tempthrottle", argv: addPeer, invalidate: true,
+		name: "throttle", tool: "tempthrottle", invalidate: true,
+		argv: func(peer, device netip.Addr) []string {
+			return []string{"add", peer.String(), "for", device.String()}
+		},
 	}))
 	mux.HandleFunc("POST /peers/{device}/block", s.handleAction(peerAction{
 		name: "block", tool: "tempblock", argv: addPeer, invalidate: true,

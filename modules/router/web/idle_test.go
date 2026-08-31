@@ -28,6 +28,7 @@ func fakeTimeouts(values map[string]string, reads *int) *timeoutTable {
 
 const (
 	tcpEstablished = "nf_conntrack_tcp_timeout_established"
+	tcpRetrans     = "nf_conntrack_tcp_timeout_max_retrans"
 	udpPlain       = "nf_conntrack_udp_timeout"
 	udpStream      = "nf_conntrack_udp_timeout_stream"
 )
@@ -137,7 +138,9 @@ func TestSysctlValuesAndMissesAreBothCached(t *testing.T) {
 		table.idle(hit)
 		table.idle(miss)
 	}
-	if reads != 2 {
+	// Three names, not two: an established entry also asks after the
+	// retransmission clock, and that miss has to be cached like any other.
+	if reads != 3 {
 		t.Fatalf("read the sysctls %d times, want one per distinct name", reads)
 	}
 }
@@ -342,4 +345,74 @@ func lanAddrs(prefix string) addrSet {
 		set.add(addr)
 	}
 	return set
+}
+
+// The reading this whole inference exists for.
+//
+// A TCP flow the router is shaping retransmits, which moves the kernel onto
+// nf_conntrack_tcp_timeout_max_retrans. Measured on bingo against a peer moving
+// bytes at that moment: the entry sat at 299 seconds and never counted down,
+// and the page reported it last seen 4d 23h ago.
+func TestEstablishedOnTheRetransClockIsNotFiveDaysIdle(t *testing.T) {
+	table := fakeTimeouts(map[string]string{
+		tcpEstablished: "432000",
+		tcpRetrans:     "300",
+	}, nil)
+	got, ok := table.idle(flow{
+		Proto: "tcp", State: "ESTABLISHED", Timeout: 299, HaveTimeout: true,
+		Assured: true,
+	})
+	if !ok {
+		t.Fatal("a live throttled flow got no idle time")
+	}
+	if want := time.Second; got != want {
+		t.Fatalf("idle = %s, want %s", got, want)
+	}
+}
+
+// The bound that keeps the inference honest: a countdown cannot exceed the
+// clock it is on, so anything above the retransmission maximum is provably on
+// the established clock and must still read as genuinely old.
+func TestATimeoutAboveTheRetransMaximumStaysOnTheLongClock(t *testing.T) {
+	table := fakeTimeouts(map[string]string{
+		tcpEstablished: "432000",
+		tcpRetrans:     "300",
+	}, nil)
+	got, ok := table.idle(flow{
+		Proto: "tcp", State: "ESTABLISHED", Timeout: 431700, HaveTimeout: true,
+		Assured: true,
+	})
+	if !ok || got != 300*time.Second {
+		t.Fatalf("idle = %s, ok = %v; want 5m0s and ok", got, ok)
+	}
+}
+
+// The unacknowledged clamp is decidable from the line, so it wins outright:
+// an unassured entry is on the 300s clock whatever its countdown says, and the
+// inference must not talk it back onto a different one.
+func TestTheUnackClampStillWinsOverTheInference(t *testing.T) {
+	table := fakeTimeouts(map[string]string{
+		tcpEstablished: "432000",
+		tcpUnack:       "300",
+		tcpRetrans:     "300",
+	}, nil)
+	got, ok := table.idle(flow{
+		Proto: "tcp", State: "ESTABLISHED", Timeout: 240, HaveTimeout: true,
+	})
+	if !ok || got != 60*time.Second {
+		t.Fatalf("idle = %s, ok = %v; want 1m0s and ok", got, ok)
+	}
+}
+
+// A kernel that does not publish the tunable leaves the previous behaviour
+// exactly as it was, rather than blanking the column.
+func TestAKernelWithoutTheRetransTunableIsUnchanged(t *testing.T) {
+	table := fakeTimeouts(map[string]string{tcpEstablished: "432000"}, nil)
+	got, ok := table.idle(flow{
+		Proto: "tcp", State: "ESTABLISHED", Timeout: 299, HaveTimeout: true,
+		Assured: true,
+	})
+	if !ok || got != 431701*time.Second {
+		t.Fatalf("idle = %s, ok = %v; want 431701s and ok", got, ok)
+	}
 }

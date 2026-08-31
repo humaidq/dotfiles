@@ -149,8 +149,12 @@ func TestActionThrottlesPeer(t *testing.T) {
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want 303", rec.Code)
 	}
-	if gotName != "tempthrottle" || len(gotArgs) != 2 || gotArgs[0] != "add" || gotArgs[1] != "203.0.113.10" {
-		t.Fatalf("ran %s %v, want tempthrottle add 203.0.113.10", gotName, gotArgs)
+	// The device travels with the peer so the pair's grace allowance can be
+	// spent up front — without it the row keeps moving graceBytes at full speed
+	// after the button is pressed, which reads as the button having failed.
+	want := []string{"add", "203.0.113.10", "for", "192.168.0.10"}
+	if gotName != "tempthrottle" || !slices.Equal(gotArgs, want) {
+		t.Fatalf("ran %s %v, want tempthrottle %v", gotName, gotArgs, want)
 	}
 }
 

@@ -135,6 +135,51 @@ func timeoutCap(f flow) (string, bool) {
 	return "", false
 }
 
+// The clock the kernel moves an established TCP entry onto once it has seen
+// nf_conntrack_tcp_max_retrans retransmissions, or a zero window from either
+// end. 300s by default against the established clock's 432000.
+//
+// Unlike timeoutCap this cannot be decided from the dump. conntrack prints
+// neither the retransmission counter nor the last window, so an entry sitting
+// at 299 seconds is either one second into the short clock or four days and
+// twenty-three hours into the long one, and the line looks identical both ways.
+// inferRetransClock resolves that ambiguity — see there for which way, and why.
+const retransTimeoutSysctl = "nf_conntrack_tcp_timeout_max_retrans"
+
+// inferRetransClock decides whether an established TCP entry is counting down
+// from the retransmission clock rather than from the established one.
+//
+// THIS MATTERS MOST ON EXACTLY THE FLOWS THIS ROUTER SHAPES. The throttled
+// class is a rate cap, so a throttled TCP flow retransmits and advertises a
+// zero window as a matter of course, which is what puts it on the 300-second
+// clock in the first place. Read against the established maximum, a peer moving
+// bytes right now reported "4d 23h" on the peers page — the exact opposite of
+// the answer, on the traffic most worth watching.
+//
+// The rule is a bound, not a guess: a countdown can never exceed the clock it
+// is on, so a remaining timeout ABOVE the retransmission maximum proves the
+// entry is on the established clock and is left alone. Below it, the two are
+// indistinguishable and the short clock is assumed. That is wrong only for an
+// entry genuinely idle for within 300 seconds of the full five days — a window
+// covering 0.07% of an established entry's life — and being wrong there costs
+// an under-report of at most five minutes, against the five-day over-report it
+// replaces.
+func (t *timeoutTable) inferRetransClock(f flow, max uint64) (uint64, bool) {
+	if f.Proto != "tcp" || f.State != "ESTABLISHED" {
+		return max, true
+	}
+	limit, ok := t.lookup(retransTimeoutSysctl)
+	if !ok {
+		// A kernel that does not publish it is one this inference knows nothing
+		// about; the established maximum stands, as it did before.
+		return max, true
+	}
+	if limit < max && f.Timeout <= limit {
+		return limit, true
+	}
+	return max, true
+}
+
 // maxTimeout returns the countdown a fresh entry for this flow starts from.
 func (t *timeoutTable) maxTimeout(f flow) (uint64, bool) {
 	name, ok := timeoutSysctl(f)
@@ -156,7 +201,10 @@ func (t *timeoutTable) maxTimeout(f flow) (uint64, bool) {
 			max = limit
 		}
 	}
-	return max, true
+	// After the clamp, not before: the unacknowledged clamp is decidable from
+	// the line and this one is not, so an entry the clamp already explains must
+	// not be second-guessed by an inference.
+	return t.inferRetransClock(f, max)
 }
 
 // idle returns how long ago the flow last carried a packet.

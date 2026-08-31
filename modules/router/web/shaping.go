@@ -80,6 +80,22 @@ var quotaPairSets = []string{"cdn_throttled4", "cdn_throttled6"}
 // the address lists, the published node list and the providers alike.
 var throttlePairSets = []string{"throttle_active4", "throttle_active6"}
 
+// The grace sets themselves, read for the pairs whose quota is SPENT.
+//
+// throttle_active4/6 above is written on the packet path and carries a
+// five-minute timeout, which the set's own note calls a display window. That
+// window is too short for a bursty conversation: a throttled flow that goes
+// quiet for five minutes drops out, and the page falls back to the peer-level
+// answer and says "throttle-grace" — which reads as "not throttled yet" about a
+// pair that has spent its entire allowance and will be marked on its very next
+// packet. Observed on a peer that had moved ten megabytes.
+//
+// The grace element outlives that by an hour and carries the quota itself, so a
+// spent quota is the durable form of the same fact and is reported as
+// throttled. A pair still inside its allowance is left to the peer-level
+// answer, which already says grace.
+var gracePairSets = []string{"throttle_grace4", "throttle_grace6"}
+
 // tempblock keeps its rules in a table of its own rather than in the sets
 // above, so the sweep over shapingSets cannot see it and a peer blocked from
 // the page's own button showed no status at all.
@@ -265,6 +281,99 @@ func (i *shapeIndex) addPairs(raw []byte, class string) {
 	}
 }
 
+// quotaBytes converts one of nft's quota figures to bytes. The second result is
+// false for a unit this code has not been taught, which the caller treats as
+// "cannot compare" rather than as zero — guessing at a unit is how a pair with
+// a two-gigabyte allowance would read as exhausted.
+func quotaBytes(value uint64, unit string) (uint64, bool) {
+	switch unit {
+	case "", "bytes":
+		return value, true
+	case "kbytes":
+		return value << 10, true
+	case "mbytes":
+		return value << 20, true
+	case "gbytes":
+		return value << 30, true
+	}
+	return 0, false
+}
+
+// addSpentGrace folds one `nft -j list set` document for a grace set into the
+// pair index, recording only the pairs that have used their whole allowance.
+//
+// Elements carry a quota alongside the concatenated key:
+//
+//	{"elem": {"val": {"concat": [device, peer]},
+//	          "quota": {"val": 2, "val_unit": "mbytes", "used": 152,
+//	                    "used_unit": "bytes", "inv": true}}}
+//
+// "inv" is nft's spelling of `over` and is not consulted: these sets are
+// declared by this router's own ruleset, so the comparison direction is known,
+// and the arithmetic below is the thing that decides.
+func (i *shapeIndex) addSpentGrace(raw []byte) {
+	var doc struct {
+		Nftables []struct {
+			Set *struct {
+				Elem []json.RawMessage `json:"elem"`
+			} `json:"set"`
+		} `json:"nftables"`
+	}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return
+	}
+	for _, obj := range doc.Nftables {
+		if obj.Set == nil {
+			continue
+		}
+		for _, elem := range obj.Set.Elem {
+			var wrapper struct {
+				Elem *struct {
+					Val struct {
+						Concat []string `json:"concat"`
+					} `json:"val"`
+					Quota *struct {
+						Val      uint64 `json:"val"`
+						ValUnit  string `json:"val_unit"`
+						Used     uint64 `json:"used"`
+						UsedUnit string `json:"used_unit"`
+					} `json:"quota"`
+				} `json:"elem"`
+			}
+			if err := json.Unmarshal(elem, &wrapper); err != nil {
+				continue
+			}
+			if wrapper.Elem == nil || wrapper.Elem.Quota == nil {
+				continue
+			}
+			concat := wrapper.Elem.Val.Concat
+			if len(concat) != 2 {
+				continue
+			}
+			allowance, ok := quotaBytes(wrapper.Elem.Quota.Val, wrapper.Elem.Quota.ValUnit)
+			if !ok {
+				continue
+			}
+			used, ok := quotaBytes(wrapper.Elem.Quota.Used, wrapper.Elem.Quota.UsedUnit)
+			if !ok || used < allowance {
+				continue
+			}
+			device, err := netip.ParseAddr(concat[0])
+			if err != nil {
+				continue
+			}
+			peer, err := netip.ParseAddr(concat[1])
+			if err != nil {
+				continue
+			}
+			key := addrPair{device.Unmap(), peer.Unmap()}
+			if shapeRank[shapeThrottled] > shapeRank[i.pairs[key]] {
+				i.pairs[key] = shapeThrottled
+			}
+		}
+	}
+}
+
 func (i *shapeIndex) add(class string, elems []json.RawMessage) {
 	for _, raw := range elems {
 		var addr string
@@ -341,6 +450,11 @@ func parseShapingSets(docs map[string][]byte) *shapeIndex {
 	for _, name := range throttlePairSets {
 		if raw, ok := docs[name]; ok {
 			index.addPairs(raw, shapeThrottled)
+		}
+	}
+	for _, name := range gracePairSets {
+		if raw, ok := docs[name]; ok {
+			index.addSpentGrace(raw)
 		}
 	}
 	for _, set := range shapingSets {
@@ -423,7 +537,7 @@ func (c *shapeCache) get(ctx context.Context) *shapeIndex {
 		return c.index
 	}
 	docs := map[string][]byte{}
-	names := make([]string, 0, len(shapingSets)+len(quotaPairSets)+len(throttlePairSets))
+	names := make([]string, 0, len(shapingSets)+len(quotaPairSets)+len(throttlePairSets)+len(gracePairSets))
 	for _, set := range shapingSets {
 		names = append(names, set.name)
 	}
@@ -432,6 +546,10 @@ func (c *shapeCache) get(ctx context.Context) *shapeIndex {
 	names = append(names, quotaPairSets...)
 	// Absent on a router with the low-trust pool off, for the same reason.
 	names = append(names, throttlePairSets...)
+	// Bounded by their declared size of 65536 pairs, and in practice a few
+	// hundred: these hold only the pairs that have carried traffic within the
+	// last hour, not an address list.
+	names = append(names, gracePairSets...)
 	for _, name := range names {
 		raw, err := c.read(ctx, name)
 		if err != nil {
