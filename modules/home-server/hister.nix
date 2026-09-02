@@ -1,8 +1,6 @@
 {
   config,
   lib,
-  pkgs,
-  inputs,
   ...
 }:
 
@@ -10,16 +8,11 @@ let
   cfg = config.sifr.home-server;
 in
 {
-  # 26.05 ships neither the hister package nor its module, so the module file
-  # is taken straight out of the unstable input. Only that one file comes
-  # along: it evaluates against our stable lib and pkgs, which is why the
-  # package has to be named explicitly below — the module's own
-  # `lib.mkPackageOption pkgs "hister"` default would resolve against a stable
-  # package set that has no `hister` in it.
-  imports = [
-    "${inputs.nixpkgs-unstable}/nixos/modules/services/web-apps/hister.nix"
-  ];
-
+  # The module and the package both landed in 26.05, so this used to import
+  # nixos/modules/services/web-apps/hister.nix straight out of the unstable
+  # input and pin `package = pkgs.unstable.hister`. Both are gone now: the
+  # stable module is declared for us and would collide with a second copy of
+  # the same file, and `package` can fall back to its mkPackageOption default.
   config = lib.mkIf cfg.enable {
     # A single shared access token, injected as HISTER__APP__ACCESS_TOKEN
     # rather than written into settings, because everything under `settings`
@@ -38,7 +31,6 @@ in
 
     services.hister = {
       enable = true;
-      package = pkgs.unstable.hister;
       environmentFile = config.sops.secrets."hister/env".path;
 
       # dataDir is deliberately left at its default so the unit gets a plain

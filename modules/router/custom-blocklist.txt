@@ -3056,6 +3056,200 @@ m6-211026f8a25b42c08fc190458268b30e.ecs.us-east-2.on.aws
 md-eecad2978f7a43f5b7838c919258e6de.ecs.us-east-2.on.aws
 v5-b75ccb2b73c54aa4a5098ab7f8533696.ecs.us-east-2.on.aws
 
+# --- 2026-09-02: brand 29149 GGGPH, the next front rotation ------------------
+#
+# Found in bongo's query log rather than by a sweep: one handset probes a batch
+# of mirror domains on app launch and keeps whichever answers. Three bursts in
+# three days, with no overlap between the batches —
+#
+#   08-30 14:42  www.apple44jl.com -> images.483939992.com
+#   09-01 21:45  jilihot-lucky-hot-aaa.me, gojho, jhovia, opjho, jhmodo
+#   09-02 09:54  fourteen names in five seconds, the ten below plus two that
+#                the existing rules already caught and two non-operator hosts
+#
+# The 09-01 batch was already dead — every name in it answers 0.0.0.0 — and
+# that is what drove the 09-02 rotation. A fresh batch is routine here, not a
+# new operator.
+#
+# ALL TEN SERVE ONE PAGE, and not merely one template: byte-identical, md5
+# 2f081c9b5facf42190a394e26792a8f4, 1266 bytes, titled "Maglaro ng mga online
+# slot game sa Pilipinas | GGGPH", carrying var brand="29149_2026-08-27". 29149
+# is the GGGPH brand id the 2026-08-29 section above already documents, so this
+# is the same estate rather than a lookalike. Five front on Cloudflare and five
+# on Tencent EdgeOne (3tj4* under eo.dnse3.com, successor to the 3tj3*/3tiz*
+# ids noted above); the split is a hosting choice and both halves serve the
+# same bytes from the same /res/js/app.260e07b.js.
+#
+# CERTIFICATES CORRELATE NOTHING HERE. Each is a single-domain DV wildcard from
+# Google Trust Services or Let's Encrypt with no sibling SANs, and the CDN
+# addresses are shared anycast on both sides. The content hash is the entire
+# evidence, which is why it was checked on a front from each half.
+#
+# The choke point still holds: app.260e07b.js on both halves points at the same
+# https://images.b298100.com:42666 and https://www2.854819.com:42666 as every
+# brand above, and both are already blocked. These ten had a dead game tier
+# from the day they were registered; the lines below close the shell too.
+*.6rgs0593.com
+*.t387mz4f.com
+*.f44p8nl7.com
+*.es586gx5.com
+*.ssbbl1sct.com
+*.dndiqgqg.com
+*.88bb5sho.com
+*.x8s7sur7.com
+*.o1msf7xam.com
+*.d6436slh13.com
+#
+# Not listed from that batch: images.1813698.com and www.gggph1.com, both
+# already answering 0.0.0.0 — the first through the six-or-more-digits rule,
+# the second through the gggph stem. Adding them would be duplication, and the
+# rules catching a rotation unattended is exactly what they are for.
+
+# aquuuacasino — a separate app rather than a GGGPH front, seen in the same
+# session nine minutes before the 09-01 batch (ac. and live., alongside
+# 6e941.playfabapi.com). The evidence is the brand's own, not shared infra:
+#
+#   www.aquuuacasino.com  -> aquuuacasino.zendesk.com, an operator-run help
+#                            centre, which no CDN tenant acquires by accident
+#   live.aquuuacasino.com -> its own Express origin, whose 404 leaks the app
+#                            path /var/www/aquaWeb/app.js — "aqua", the brand
+#   ac.aquuuacasino.com   -> Azure Blob behind Tencent EdgeOne, x-ms-request-id
+#                            and eo-log-uuid on the one response
+#
+# The name is unambiguous, and the house rule in this file is that gambling is
+# blocked whether or not the operator is licensed.
+*.aquuuacasino.com
+
+# 4ones.com — circumstantial, but less so than it first looked, and the way it
+# firmed up is reusable. Asking an Azure Blob endpoint for a container listing
+# it will not serve returns an InvalidUri error that ECHOES THE REAL BACKING
+# ACCOUNT in a <UriPath> element, straight through the EdgeOne front:
+#
+#   curl "https://<host>/\$root?restype=container&comp=list"
+#
+#   ac.aquuuacasino.com     -> zwu2saaqcunityresource01.blob.core.windows.net
+#   epoch-config.4ones.com  -> zkcsaplfepoch01.blob.core.windows.net
+#
+# Two different accounts, so this is not the same bucket — but one naming
+# scheme, z<region><sa><app><purpose><NN>, with "aqc" reading as the
+# aquuuacasino brand and "plf" as a platform tier. That is the same
+# brand-front / shared-platform split as JILIHOT and www2.854819.com above,
+# which is the shape this operator builds in.
+#
+# Still short of proof: "4ones" names nothing, the apex does not resolve, and
+# www.4ones.com sits on Azure Front Door anycast. What makes the risk
+# acceptable is that no client on this network has queried it in the five weeks
+# the journal covers. Weakest entry in the section; first to revisit if an app
+# breaks.
+*.4ones.com
+
+# --- source sweep of the new fronts, 2026-09-02 ------------------------------
+#
+# Pulled all six bundles the shell loads — /res/js/vendor.1.*.js, /res/encrypt.js
+# and the four under /m/ that the mobile redirect reaches, which the desktop
+# path never touches. Beyond the two :42666 backends already blocked, that
+# yielded exactly three third-party groups and one operator domain.
+#
+# c4191.com — the operator's own support address, support@c4191.com, hardcoded
+# into the maintenance and geo-block interstitials inside app.c9f53b30.js. It is
+# NXDOMAIN today, listed anyway on the same recycling argument as b298100.com
+# above: a support domain in a shipped bundle is one they intend to answer.
+*.c4191.com
+#
+# Help/chat tier. Multi-tenant SaaS — every call is /projects/<id>/ or
+# /v1/projects/<id>/, so this is somebody's product with many customers and a
+# wildcard is a blunt instrument. The 2026-08-29 note above declined it for
+# that reason; listing it now is a deliberate reversal, on the evidence that
+# nothing on this network has resolved any of the three in the five weeks the
+# journal covers, so the collateral is measured rather than assumed. Two of the
+# three are NXDOMAIN already; 168chat.com answers on AWS.
+*.168chat.com
+*.168livechat.com
+*.help-168.com
+#
+# aquuuacasino's help centre, which is a Zendesk tenant rather than a host of
+# their own. Exact hostname only — wildcarding zendesk.com would take out a
+# support desk used by an enormous number of unrelated companies, and the
+# tenant label is already specific to one operator.
+aquuuacasino.zendesk.com
+#
+# NOT listed, checked and rejected:
+#
+#   api.imotech.video, s.oksp.in, static.roibest.com — the three ad and
+#   affiliate pixels the bundles inject as <script> tags. All three already
+#   answer 0.0.0.0 from the upstream lists, so an entry here is duplication.
+#   Note imotech.video is an ad network and has nothing to do with imo the
+#   messenger, whose hosts live in custom-imo-list.txt.
+#
+#   tc-gaming.com — one bare match with no recoverable context, resolving to
+#   192.0.78.20, which is Automattic. A WordPress.com address is shared hosting
+#   and proves nothing.
+#
+#   usergm.games, mgs.live, lottery.game, ist.games — all four are JavaScript
+#   property paths, not hosts: nl.usergm.games, i.a.lottery.game,
+#   this.GameList.games. The .top and .in TLDs collide with CSS and with
+#   ordinary identifiers the same way, which is why every candidate from a
+#   bare-hostname grep has to be read back to its context before it is listed.
+
+# --- 2026-09-02: affiliate SEO farms, and the 7XM funnel behind them ---------
+#
+# phgreatofficial.com and manilacasinohub.com were handed over directly rather
+# than found in the log; neither has ever been resolved by a client here. Both
+# are WordPress affiliate sites — RankMath, PHP 8.3, one on Plesk and one on
+# Hostinger — and both declare themselves in their own <title>: "PHGreat
+# Official - Expert iGaming Tips, Guides, and Reviews" and "Home -
+# manilacasinohub.com". Category alone would be enough under this file's rule
+# that gambling is blocked licensed or not, but there is a funnel to show too.
+#
+# THE FARM IS BIG. phgreatofficial.com's three post sitemaps enumerate hundreds
+# of brand review pages — 100jl, 333jili, 588jl, 616jili, 6363ph, 65jl, 68ok,
+# 777pub, 7788eg, 1xbet and on — one page per casino brand, which is the whole
+# SEO doorway business. Sampling across the farm shows every page funnelling to
+# the same two destinations regardless of which brand it reviews.
+*.phgreatofficial.com
+*.manilacasinohub.com
+#
+# The farm's Blogspot mirror, exact host only. blogspot.com is Google's and
+# hosts millions of unrelated blogs, so it must never be wildcarded — the
+# subdomain is the operator's and is specific enough on its own.
+phgreatblog.blogspot.com
+
+# 7XM — the destination both farms feed, and the reason this section is worth
+# more than two lines. The funnel hosts look random but are not:
+#
+#   manilacasinohub.com    -> n8ufo.7xmph2.com/register.html
+#   phgreatofficial.com    -> tsdjo.7xm31c2.com  (every sampled post)
+#   older posts            -> www.7xm444.com     (NXDOMAIN now)
+#
+# tsdjo.7xm31c2.com serves the brand plainly: "7XM.COM - Best Legit Online
+# Slots Casinos in the Philippines." So these are 7xm<random> fronts on
+# Cloudflare, rotated the same way the GGGPH batch above rotates, and the
+# rotation is already outrunning the lists — 7xmph2.com answers 0.0.0.0 from
+# an upstream list while 7xm31c2.com, 7xm444.com, 7xm.io and the brand's own
+# 7xm.com all resolved live. Naming them one by one loses to the next batch.
+#
+# A stem rule instead, but NOT a bare "7xm" stem, and the reason is worth
+# keeping. Checking that assumption rather than asserting it turned up
+# 7xmedia.com, which is a live and entirely unrelated business redirecting to
+# 7x.media — a plain /(^|\.)7xm[a-z0-9-]*/ would have taken it out, along with
+# 7xmarket.com, 7xmobile.com and 7xmail.com. This file has refused a stem this
+# short before (ph1, above) for exactly that reason.
+#
+# What separates the two sets cleanly is a digit: every 7XM front carries one
+# in the label (7xm31c2, 7xm444, 7xmph2) or is the bare brand (7xm.com,
+# 7xm.io), while every collision is 7xm + an English word. So the label must be
+# either bare or contain at least one digit. Verified against both sets; same
+# widened two-label TLD anchor as the other stem rules here.
+/(^|\.)7xm([a-z0-9-]*[0-9][a-z0-9-]*)?\.[a-z]{2,}(\.[a-z]{2,})?$/
+#
+# NOT listed: mapagbigay.com, one reference from one sampled post and NXDOMAIN
+# today, so nothing was verifiable. Note it if it comes back.
+
+# DELIBERATELY ABSENT from this sweep: 168chat.com, api.168livechat.com and
+# embed.help-168.com, all three named in the new fronts' vendor bundle. That is
+# the same shared support SaaS the 2026-08-29 note above declined to wildcard,
+# and seeing it again does not change the reason.
+
 # ---------------------------------------------------------------------------
 # VPN and resolver-bypass endpoints found in the query history. The pattern
 # across all of them is the same: the brand domain is caught and the API host

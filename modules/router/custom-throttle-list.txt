@@ -848,6 +848,14 @@
 # Six were already listed above from the captures and the operator's lists
 # (.39, .40, .81, .89, .95, .97); the seven below came from the sweep alone and
 # have not been seen carrying on this network.
+#
+# UPDATE 2026-09-02: .191 HAS NOW BEEN SEEN CARRYING, which retires that caveat
+# for one of the seven and is the first evidence that sweeping this /24 on the
+# certificate found live infrastructure rather than idle hosts. A 10-minute
+# capture of one handset had it move 1.1 MB, and the handshakes named three
+# domains through the one endpoint — vrpmme.com, ne.nexula.io, ba.batuno.com —
+# so it is fronting rather than serving anything of its own. The other six
+# remain unobserved.
 168.222.32.41
 168.222.32.82
 168.222.32.90
@@ -855,3 +863,314 @@
 168.222.32.96
 168.222.32.191
 168.222.32.221
+
+# --- 2026-09-01: a bare-IP-CN certificate, on two unrelated networks ---------
+#
+# Two TLS-on-443 proxy endpoints that share a certificate signature not
+# previously recorded in this file. Both serve, for EVERY SNI offered
+# (including www.wikipedia.org and github.com, names neither could front):
+#
+#   subject = CN=<an IP address that is not the host's own>
+#   issuer  = C=US, O=Let's Encrypt, CN=E6
+#   SAN     = DNS:<that same IP literal>
+#
+# THE CERTIFICATES ARE FORGED, and the SAN is what proves it rather than the
+# absurd-validity test this file usually leans on — the dates here are an
+# unremarkable 35 days. Let's Encrypt's IP-address profile issues an IP SAN and
+# validates control of that address; an IP literal sitting in a DNS SAN is not
+# a form LE emits. The named addresses settle it:
+#
+#   177.177.83.5     CN=215.179.170.230   AS749, US Department of Defense
+#   85.189.100.216   CN=49.109.96.74      AS9605, NTT DOCOMO mobile, JP
+#
+# Neither operator issued a certificate to a proxy in ProWave or Kaopu space.
+# The issuer string is pasted on; the chain does not verify, no intermediate is
+# presented, and the CN is arbitrary because no client ever reaches these by
+# name — it is camouflage to complete a handshake for someone who already has
+# the address. Serials and validity windows differ between the two, so this is
+# one toolchain deployed twice, NOT a pass-through to a shared upstream.
+#
+# Both: no PTR that means anything, tcp/22 open, DoH 404 with an empty body and
+# 853 closed, so neither is a resolver and neither belongs in the blocklist.
+#
+# THE SIGNATURE IS WORTH SWEEPING FOR. "CN is an IP literal that is not this
+# host, in a DNS SAN, issued by Let's Encrypt" is cheap to probe and hard to
+# produce innocently — the same argument the 168.222.32.0/24 sweep above makes
+# for the estate certificate.
+#
+#   177.177.83.5    AS218869 ProWave Groups LLC (RIPE, AE), 177.177.83.0/24.
+#                   RPKI also carries a ROA for this /24 to AS204244 HGTN-AS,
+#                   whose RIPE org is a private individual. FROM A CAPTURE:
+#                   5-minute full-LAN capture on bingo, 2026-08-31. One handset
+#                   sent 100% of its traffic here — 4.7 MB over 22 concurrent
+#                   long-lived TCP sessions, TLS application-data records, its
+#                   only other peer in the window being the router itself. Zero
+#                   SYNs in five minutes (every session predates the capture)
+#                   and the device resolved exactly one name all window,
+#                   www.google.com, the Android connectivity check. All of its
+#                   name resolution was inside the tunnel.
+#
+#   85.189.100.216  AS138915 Kaopu Cloud HK Limited, netname KaopuCloud-DE.
+#                   PTR is loginet.managedbroadband.co.uk, stale naming from
+#                   before the /24 moved to Kaopu — not evidence of a broadband
+#                   line, and not a CDN. HANDED OVER AS AN ADDRESS, WITH NO
+#                   CAPTURE ON THIS NETWORK: nothing here has watched it carry
+#                   anything. It goes in on the desk check alone, which is the
+#                   certificate above plus the hosting. Say so if a later run
+#                   finds it live.
+177.177.83.5
+85.189.100.216
+
+# --- 2026-09-01: the same handset, walking the Kaopu /24 --------------------
+#
+# Second 5-minute full-LAN capture on bingo, 08:26-08:31 UTC, one day after the
+# block above and with none of it deployed yet. The handset that was carrying
+# 100% of its traffic through 177.177.83.5 had moved, and the move is the
+# useful part: it is now spread across FOUR addresses, three of them in
+# 85.189.100.0/24.
+#
+#   85.189.100.132   24.3 MB   the session that carried the traffic
+#   85.189.100.216   394 kB    ALREADY LISTED ABOVE, on the desk check alone.
+#                              This is it seen live on this network, which the
+#                              entry above asked a later run to record.
+#   85.189.100.9     5.7 kB
+#   177.177.83.5     4.4 kB    yesterday's endpoint, still touched
+#
+# 24.8 MB total, 97% of it on .132. The device also queried exactly two names
+# all window — www.google.com and www.safe-in-cloud.com — so once again nothing
+# in DNS names any of these four.
+#
+# THE CAMOUFLAGE NAME VARIES WITHIN ONE ESTATE, which refines the signature
+# written above. .132 and .9 both serve:
+#
+#   subject = CN=bilibili.com
+#   issuer  = C=US, O=Let's Encrypt, CN=E6
+#
+# where .216 serves CN=49.109.96.74. Same forged-issuer toolchain, a real
+# Chinese video site's name instead of a bare IP, and these hosts hold that key
+# no more than they hold DOCOMO's. So the discriminator to sweep on is NOT
+# "CN is an IP literal" as the block above put it — it is "the Let's Encrypt E6
+# issuer string over a subject the host cannot own, served to every SNI".
+#
+# NO /24 SWEEP WAS RUN, so the two entries below are only what this capture
+# actually saw carrying. Three occupied addresses inside one /24 in five
+# minutes is a higher density than the 168.222.32 case further up, and if a
+# later round wants the sweep, the probe is one curl per address for the
+# subject line. STILL /32s AND NOT THE /24: Kaopu Cloud is multi-tenant
+# hosting, and nothing here has established what the other 251 addresses are.
+#
+# Also from this capture, and NOT a reason to add anything: the same handset
+# fired SYNs at 8.8.8.8 on both tcp/80 and tcp/443 and got ZERO bytes back on
+# either. That is the DoH escape being refused by rules already in place, and
+# it is recorded because it is the layer working, not a gap.
+85.189.100.9
+85.189.100.132
+
+# --- 2026-09-02: two handed-over addresses, both Zenlayer -------------------
+#
+# Supplied by the operator rather than found in a capture, so there is no flow
+# evidence to quote and none is implied: the provenance is the instruction. What
+# the router could add is where they live, and that turned out to be worth
+# writing down, because they are one operator announced from two AS numbers.
+#
+#   66.93.57.29    live lookup: AS62610 Zenlayer ZEN-DPS
+#                  PTR dsl093-057-029.blt1.dsl.speakeasy.net
+#   46.203.46.39   live lookup: AS21859 Zenlayer Inc (ZEN-ECN)
+#                  no PTR — NXDOMAIN
+#
+# THE SPEAKEASY PTR IS STALE, NOT A CONTRADICTION. 66.93.0.0/16 is legacy
+# Speakeasy DSL space and the reverse zone still says so address by address,
+# while the /24 itself is announced by Zenlayer. Repurposed legacy allocations
+# keep their old reverse records for years. Read the routing, not the name —
+# nothing about this address is a residential DSL line, and a note reading
+# "US DSL subscriber" would have been wrong in a way that is hard to undo later.
+#
+# 66.93.57.29 IS CURRENTLY SHAPED BY NOTHING AT ALL, and the reason is the exact
+# trap the AS62610 note in custom-lowtrust-asns.txt warns about. Both Zenlayer
+# ASNs are in that file — 21859 since 2026-08-14, 62610 since 2026-08-30 — but
+# it is expanded at build time from the CHECKED-IN ip2asn-combined.tsv, not from
+# the router's live table, and the two disagree here:
+#
+#   live /var/lib/geoip/asn.tsv : 66.93.57.0/24 -> AS62610  (listed, pool-drop)
+#   ip2asn-combined.tsv         : 66.93.57.0/24 -> AS3257 GTT
+#
+# AS3257 is one of the three that file deliberately does NOT take, because a
+# transit backbone's space is other people's traffic. So the low-trust entry
+# never reaches this address, not even for a pool device. That closing paragraph
+# named 66.93.169.0 as an instance of the same staleness; 66.93.57.0 is another,
+# and its conclusion holds — "where the table is stale, neither ASN entry reaches
+# the range and the /32 is the only thing that bites". This is that /32.
+#
+# 46.203.46.39 is the ordinary case by comparison: the checked-in table does
+# place it in AS21859, so a pool device already drops it. What this entry adds
+# there is LAN-WIDE coverage, which the pool-only ASN list cannot give.
+#
+# STILL /32s, NOT THE /24 AND NOT THE ASN. This file is LAN-wide, and the
+# Zenlayer note in custom-lowtrust-asns.txt spends twenty lines on why that
+# estate is not safe to widen — TikTok LIVE and other ordinary services ride it
+# on opaque high ports with no DNS to tell them apart, and one earlier sweep
+# there had to be reversed. An ASN-wide row here would reach every device in the
+# house on that argument alone. Two addresses were given; two are shaped.
+66.93.57.29
+46.203.46.39
+
+# --- 2026-09-02: A NODE LIST, CAUGHT BEING SCORED ---------------------------
+#
+# The 88 addresses below came from one handset in a 10-minute capture on bingo,
+# and they were not found by watching a tunnel carry — they were found by
+# watching a client SHOP. In a window with no call and only 2.4 MB of traffic
+# total, the device touched 153 remote addresses on tcp/443, each for a nearly
+# identical ~9.5 kB in ~90 packets. Uniform, tiny, simultaneous: that is a
+# client walking a candidate list and scoring it, which is exactly the RTT/loss
+# selection this file's header describes designing around.
+#
+# WHAT MAKES IT THE ESTATE AND NOT 153 STRANGERS: 64 of the 153 were ALREADY in
+# this file or custom-ip-blocklist.txt. The remaining 89 sit in the same /24s as
+# the ones already listed, and their ASNs are this file's existing section
+# headings almost line for line — Online SAS, Linode, ZEN, Clouvider, CDNINFRA,
+# GTT, OVH, IST-AS, ADCIL, SK Broadband, IPXO, SERVETHEWORLD. A 42% hit rate
+# against a list built from captures is not a coincidence; the other 58% is the
+# part of the same list this network had not seen yet.
+#
+# THE PROBE THAT DECIDES, and it is cheaper than a certificate: ALL 87 of the
+# silent ones ACCEPT tcp/443 AND THEN COMPLETE NO TLS HANDSHAKE. Three attempts
+# each, from the router. A real web server always finishes a handshake — it has
+# a default cert and an error page to serve. A host that takes the connection
+# and then says nothing is waiting for a client that already holds the key, and
+# that is the trojan/VLESS/REALITY pattern this file's other notes describe from
+# the certificate side.
+#
+# CRITICALLY, THE SILENCE IS NOT OURS. Every one of the 87 was checked against
+# the live local_block4, remote_block4 and imo_block4 sets: zero hits. The
+# router was not dropping them, so the silence is the hosts' own behaviour. This
+# check exists because the same sweep run from a LAN client returned "no
+# handshake" for 1.1.1.1 as well — the probe has to run from the router, and it
+# has to have a control, or every address on earth reads as a tunnel node.
+#
+# ONE ADDRESS ANSWERED AND NAMED ITSELF: 35.205.250.171 serves CN=xvpn.io,
+# OU=PositiveSSL, from Google Cloud tenant space (AS396982). X-VPN is a
+# commercial VPN. It is included below, and it is the single strongest piece of
+# evidence here — one member of a scored node list identifying as a VPN makes
+# the list's purpose explicit.
+#
+# EXCLUDED DELIBERATELY: 142.250.187.86, which was in the sweep and is NOT
+# below. It answered with Google's standard no-SNI response — OU="No SNI
+# provided - please fix your client", CN=invalid2.invalid — and 142.250.0.0/15
+# is Google. It is in the band because a probe sweep sprays whatever the client
+# has cached, not because it is a node. Recorded so nobody re-adds it from the
+# same capture: a uniform byte count is NOT on its own a reason to list an
+# address, and this is the address that proves it.
+#
+# BEWARE THE ASN NAME on the Linode group: AS63949 reads "AKAMAI-LINODE-AP
+# Akamai Connected Cloud", which is Linode tenant space and NOT the Akamai edge
+# this file's other notes warn against blocking. A later reader skimming for
+# "Akamai" will get the wrong answer. Judge it as rented instances, which is
+# what it is.
+#
+# Eleven have no current record in the repo's ip2asn-combined.tsv, which is
+# stale rather than telling — each one has between 2 and 12 siblings already
+# listed in its own /24. They are grouped last.
+# AS12876 Online SAS — 24:
+51.15.45.102
+51.15.78.253
+51.15.81.139
+51.15.85.165
+51.15.105.86
+51.15.133.73
+51.15.196.1
+51.15.202.94
+51.15.231.45
+51.15.231.254
+51.15.243.112
+51.158.74.119
+51.158.170.128
+151.115.41.1
+163.172.9.152
+163.172.128.164
+163.172.191.204
+195.154.151.155
+195.154.151.226
+195.154.157.170
+212.47.227.108
+212.47.229.114
+212.47.250.133
+212.47.253.11
+# no current ASN record (stale offline table; siblings already listed in each /24) — 11:
+2.27.161.77
+2.27.161.99
+2.27.161.104
+2.27.161.134
+2.27.161.147
+40.27.35.44
+40.183.227.140
+91.124.15.200
+166.0.8.76
+166.0.8.88
+166.0.8.122
+# AS63949 AKAMAI-LINODE-AP Akamai Connected Cloud — 10:
+23.92.18.71
+66.228.56.125
+139.162.8.62
+139.162.187.54
+172.105.4.239
+172.105.64.247
+172.236.195.25
+172.236.203.103
+172.236.205.222
+172.238.101.66
+# AS62610 ZEN-DPS — 8:
+23.251.59.170
+23.251.59.201
+23.251.60.70
+23.251.60.250
+162.128.69.209
+162.128.73.61
+162.128.84.190
+162.128.87.221
+# AS21859 ZEN-ECN — 7:
+46.203.46.69
+46.203.46.248
+82.27.197.134
+143.14.125.6
+143.14.125.208
+143.14.125.252
+162.128.44.68
+# AS62240 CLOUVIDER Clouvider - Global ASN — 5:
+77.247.126.153
+77.247.126.156
+185.164.138.16
+185.164.138.66
+185.245.80.137
+# AS213650 CDNINFRA-AS — 4:
+31.99.202.115
+31.99.202.197
+31.99.202.211
+31.99.202.215
+# AS3257 GTT-BACKBONE GTT — 4:
+66.93.169.68
+66.93.169.111
+66.93.169.137
+66.93.169.152
+# AS16276 OVH — 3:
+141.227.165.65
+141.227.165.186
+145.239.88.90
+# AS61272 IST-AS — 3:
+88.119.160.29
+185.25.50.147
+213.252.247.10
+# AS401152 ADCIL-ASN-01 — 2:
+23.27.112.22
+23.27.112.41
+# AS63023 AS-GLOBALTELEHOST — 2:
+38.91.101.227
+216.106.180.53
+# AS9318 SKB-AS SK Broadband Co Ltd — 2:
+82.40.48.28
+82.40.48.34
+# AS34989 SERVETHEWORLD-AS — 1:
+85.137.228.143
+# AS396982 GOOGLE-CLOUD-PLATFORM — 1:
+35.205.250.171
+# AS834 IPXO — 1:
+207.180.52.118

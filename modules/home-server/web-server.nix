@@ -200,11 +200,48 @@ in
               };
             };
           };
+          # The receiver enforces a per-IP 24-hour listening budget of its own
+          # (ip_limit_mins, 60 at the time of writing), so it has to be told
+          # who the client actually is. Two things were stopping that:
+          #
+          #   * proxyWebsockets emits its own proxy_set_header pair inside this
+          #     location, and a location-level proxy_set_header replaces the
+          #     inherited set wholesale instead of extending it. So the
+          #     X-Real-IP that proxyHeaders sets at http level never reached
+          #     the receiver, and every listener arriving by this name was
+          #     charged to nginx's own LAN address. That one bucket is most of
+          #     the way through its 60 minutes before anyone opens a browser,
+          #     because sifr.personal.sdrNoise sweeps for ~100s every hour from
+          #     the same address -- so LAN listeners were being cut off after a
+          #     minute of a budget they had not spent.
+          #
+          #   * Restating X-Real-IP as $remote_addr alone would then break the
+          #     public route, where hisn has already put the real client in the
+          #     header and $remote_addr is only the mesh hop. realip settles
+          #     both cases: for a request from hisn $remote_addr becomes the
+          #     address it forwarded, and for anyone else it stays their own
+          #     and their X-Real-IP is ignored -- so a LAN client cannot spoof
+          #     itself a fresh budget either. X-Forwarded-For is blanked for
+          #     that same reason: the receiver honours it as readily as
+          #     X-Real-IP, and without this a client's own header is passed
+          #     straight through.
+          #
+          # Host is deliberately left alone. Nothing here sets it, so it stays
+          # nginx's default $proxy_host, which is what the receiver has always
+          # been sent.
           "sdr.alq.ae" = {
             enableACME = true;
+            extraConfig = ''
+              set_real_ip_from 10.10.0.20;
+              real_ip_header X-Real-IP;
+            '';
             locations."/" = {
               proxyPass = "http://10.20.0.164:8073";
               proxyWebsockets = true;
+              extraConfig = ''
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For "";
+              '';
             };
           };
           "webdav.alq.ae" = {

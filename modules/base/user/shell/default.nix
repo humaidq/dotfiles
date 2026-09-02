@@ -174,11 +174,15 @@ in
             function ghafa-rebuild() {
               nixos-rebuild --flake .#lenovo-x1-carbon-gen11-debug --target-host root@ghafa --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa reboot
             }
+            # The -from-x86_64 attrs cross-compile: the derivations are
+            # x86_64-linux emitting aarch64 binaries, so they run natively on an
+            # x86_64 builder. The plain aarch64 attrs would run under binfmt
+            # emulation instead, which no amount of builder horsepower fixes.
             function ghafa-orin-rebuild() {
-              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
+              nixos-rebuild --flake .#nvidia-jetson-orin-agx-debug-from-x86_64 --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
             }
             function ghafa-humanoid-rebuild() {
-              nixos-rebuild --flake .#delivery-orin-agx-lab --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
+              nixos-rebuild --flake .#delivery-orin-agx-lab-from-x86_64 --target-host root@ghafa-orin --fast boot --log-format internal-json -v --show-trace |& nom --json  && ssh root@ghafa-orin reboot
             }
 
             function ntp() {

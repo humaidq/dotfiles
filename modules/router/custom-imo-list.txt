@@ -1740,3 +1740,143 @@
 # more when these stop working.
 43.128.117.206
 43.134.142.173
+
+# === 2026-08-31: A FULL-LAN CAPTURE, AND NOTHING TO ADD =====================
+#
+# Recorded because a round that adds no address is still evidence, and the
+# gaps this one did NOT find are worth as much as the entries above.
+#
+# 5-minute full-LAN capture on bingo, 18:10-18:15 UTC. One handset was plainly
+# on an imo call: ~16.5 MB, 99% of it to a single peer over three simultaneous
+# long-lived TCP flows on arbitrary high ports (11676, 12554, 9213), payload
+# opaque from byte 0 with no TLS record header, and a flat ~1.5 MB per 30s for
+# the whole window — 14.6 MB up against 2.1 MB down, the one-way video shape.
+# No DNS answer named the peer.
+#
+# ATTRIBUTION CAME FROM THE CONTROL PLANE, NOT THE MEDIA FLOW, which is the
+# method this file's earlier rounds settled on. In the same window the device
+# touched 47.245.168.10 and 47.245.168.157 on 443/5223/5228, and 169.136.169.6
+# on 2950 and 169.136.80.11 on 950. Nothing else on the wire said "imo".
+#
+# ALL FOUR WERE ALREADY COVERED, and it took a containment check rather than a
+# grep to establish that — three of the four are inside prefixes that a plain
+# search for the address does not surface:
+#
+#   47.245.168.10     covered by 47.245.160.0/19        (this file)
+#   47.245.168.157    listed here as a /32, and by the /19 above
+#   169.136.80.11     covered by 169.136.80.0/23        (custom-ip-blocklist)
+#   169.136.169.6     covered by 169.136.168.0/21       (custom-ip-blocklist)
+#
+# So the estate held on the address layer, and the call still connected on a
+# path none of it reaches. That is the header's point restated: once the media
+# has gone peer to peer, no entry in this file is on the path.
+#
+# NOT ADDED: 213.55.122.61, the media peer. AS24757 Ethio Telecom — the SECOND
+# address in 213.55.122.0/24 to appear in this role, after 213.55.122.39 in the
+# 2026-08-28 round above, which was refused for being a residential subscriber
+# line in Ethiopia rather than imo infrastructure. That refusal stands and is
+# not reopened here; the sighting is recorded so the pattern is on the file.
+#
+# What the second instance adds: the far end of these calls keeps landing in
+# one Ethio Telecom /24, which is what a carrier's subscriber pool looks like
+# from outside, NOT what a relay pool looks like. Two addresses 22 apart in a
+# residential /24, each carrying exactly one call and appearing in no other
+# capture, argues against the /24 being imo's — and so argues against ever
+# taking the range. Blocking either drops one household's line and catches no
+# relay.
+#
+# Also from this capture, and NOT an imo matter: a second handset was running
+# a TLS proxy carrying 100% of its traffic. That went to custom-throttle-list
+# as 177.177.83.5, with the certificate signature written up there.
+
+# === 2026-09-02: ONE CALL, THREE MEDIA PATHS, TEN MINUTES ===================
+#
+# A 10-minute capture filtered to one handset's MAC, 05:37-05:47 UTC, on a day
+# `imo-policy-today` reported as `block`. 78.7 MB of device traffic, 70.3 MB of
+# it — 89% — imo. The value of this round is not the addresses; it is watching
+# the app change media path twice mid-call while the whole estate was dropping.
+#
+#   09:37-09:39  213.55.122.59    16.3 MB  TCP 19168, TCP 8633, UDP 30664
+#   09:40-09:45  47.79.4.21       25.2 MB  TCP 16641   DOWNLOAD side
+#                47.79.98.74      23.0 MB  TCP 14593   UPLOAD side
+#   09:46-       102.251.14.5      6.5 MB  UDP 18068, still running at cut-off
+#
+# THE ALIBABA PAIR IS ONE RELAY PER DIRECTION, running simultaneously, and that
+# is the split-relay TCP shape the 2026-08-22 round recorded (download-heavy and
+# upload-heavy flows to different addresses at once). Both opaque from byte 0,
+# no TLS ClientHello, no rDNS, and no DNS answer anywhere named either.
+#
+# ATTRIBUTION, in a window with zero imo DNS: the device connected to
+# 104.18.8.211 with SNI edu.ousaqb.tech — the overwall module, on the SAME
+# Cloudflare address the 2026-08-05 round recorded, still routing around its own
+# sinkhole. Its actual DNS that window was Facebook, Google, Temu and YouTube.
+# Not one imo name in ten minutes, which is the end state earlier rounds
+# predicted: the name layer is fully bypassed and cannot flag a call any more.
+#
+# THE BLOCK LAYER WAS WORKING THE WHOLE TIME, and this is the useful negative.
+# imo_block4 stood at 180,903 packets / 22.3 MB dropped, and the kernel log for
+# THIS device showed the control plane being refused throughout — 47.245.168.10,
+# 47.245.169.209, 47.245.167.194, 47.91.67.150, the http-dns 143.14.159.228 and
+# PageBites 83.229.96.x. The estate held. The call routed around it anyway,
+# three different ways. Nothing here is evidence that a block failed.
+#
+# The three /32s below are the relay pool, added under the 2026-08-22 decision:
+# /32s and NOT 47.79.0.0/16, which is shared Alibaba cloud. 47.79.233.88 moved
+# only 1.2 MB and goes in on the company it keeps — same pool, same minute, same
+# opaque shape — rather than on volume.
+47.79.4.21
+47.79.98.74
+47.79.233.88
+
+# NOT ADDED: 102.251.14.5, AS37457 Telkom SA, which took the call over as the
+# third path and was still carrying when the capture stopped. 6.5 MB of
+# symmetric UDP in a single minute.
+#
+# Symmetric is the reason for the refusal rather than the reason for an entry.
+# A relay carrying one leg is lopsided the way the Alibaba pair above is; an
+# even exchange looks like the far end of a video call, and this file has twice
+# refused a carrier address in that role — 213.55.122.39 and 213.55.122.61, both
+# Ethio Telecom. South African carrier space is also where earlier rounds saw
+# genuine imo relays (Vodacom SA), so this one is genuinely ambiguous and the
+# refusal is the cautious read, not a confident one. A second appearance on a
+# different call would settle it and should change the decision.
+#
+# NOT ADDED: 213.55.122.59, the Ethio Telecom leg — the THIRD address in
+# 213.55.122.0/24 to appear in this role, after .39 and .61. Same refusal, now
+# on stronger ground: three addresses scattered through one residential /24,
+# each on a different day and a different call, is a subscriber pool and not
+# imo's. That the range keeps recurring is an argument against ever taking it.
+#
+# NOT ADDED: 104.18.8.211, shared Cloudflare. The overwall SNI above is the
+# attribution, not a target; a /32 there carries broad collateral, and this is
+# the DNS-layer bypass documented on 2026-08-05 rather than a gap in this file.
+
+# --- 2026-09-02, second look: the pool rotated, and the entries were not on ---
+#
+# Conntrack on bingo caught a call that had just ended — three flows still in
+# TIME_WAIT on 92-second timers — carrying the same split-relay shape recorded
+# the day before, one relay per direction running together:
+#
+#   47.79.238.208:21505   12.3 MB up / 1.1 MB down    upload side
+#   47.79.4.118:12671      0.7 MB up / 8.7 MB down    download side
+#   47.79.233.88:33815     228 kB / 434 kB, UDP       third leg
+#
+# 47.79.4.118 is in the same /24 as 47.79.4.21 from the previous round and is a
+# different host; the pool moves within /24s it has already used, which is the
+# rotation speed the 2026-08-28 note describes for Tencent space and now for
+# Alibaba too.
+#
+# READ THE THIRD LINE CAREFULLY BEFORE CONCLUDING ANYTHING. 47.79.233.88 was
+# added to this file in the round above, and it still carried a leg of this
+# call — but `nft get element inet router-blocklists imo_block4` says it, and
+# both its siblings, are NOT in the live set. bingo's running generation
+# predates the edit. THE ENTRIES HAD NEVER BEEN DEPLOYED, so this is not a
+# block being outrun and must not be recorded as one. An entry in this file is
+# inert until the host is rebuilt, and that gap is wide enough to invent a
+# failure that did not happen.
+#
+# The two new relays go in on the same basis as the round above: same pool,
+# same simultaneous split-direction shape, no DNS naming either, /32s and not
+# 47.79.0.0/16.
+47.79.4.118
+47.79.238.208
