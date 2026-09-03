@@ -1174,3 +1174,79 @@
 35.205.250.171
 # AS834 IPXO — 1:
 207.180.52.118
+
+# --- 2026-09-02: the bare-IP-CN signature, third instance, new issuer --------
+#
+# 103.23.109.2, handed over as an address with no capture on this network.
+# AS152611 Beidou LTD, TW; the inetnum is PNI-NET, Pittqiao Network Information
+# Co., Taipei. No PTR. tcp/22 and tcp/80 open, 853 closed, DoH 404 with an empty
+# body — a rented instance and not a resolver, so it belongs here rather than in
+# custom-ip-blocklist.txt.
+#
+# It carries the same forged certificate as the 2026-09-01 pair above, served to
+# every SNI offered including www.wikipedia.org and github.com:
+#
+#   subject = CN=50.235.0.234
+#   SAN     = DNS:50.235.0.234      <- an IP literal in a DNS SAN, the tell
+#   issuer  = C=US, O=Google Trust Services, CN=WE1
+#   valid   = Aug 28 - Oct 2 2026, 35 days
+#
+# 50.235.0.234 is Comcast (AS7922, 50.128.0.0/9). A host in Taipei does not hold
+# a certificate for a Comcast cable address, and no CA issues an IP literal as a
+# DNS SAN — the IP-address profile uses an IP SAN and validates control of it.
+#
+# THE ISSUER STRING IS NOT A CONSTANT, and that corrects the note above. The
+# 2026-09-01 entries copied "Let's Encrypt E6"; this one copies "Google Trust
+# Services WE1". Same 35-day window, same bare-IP CN in a DNS SAN, same
+# every-SNI behaviour. So a sweep must key on the SHAPE — a subject the host
+# cannot own, in a DNS SAN, on a short window, returned for every name — and
+# never on one issuer's name, which is just text the operator picks.
+103.23.109.2
+
+# 2026-09-03 — 16.5.11.6, the same operator as 103.23.109.2 above, and the first
+# of these found from a capture on this network rather than handed over as a
+# bare address.
+#
+# CAPTURE EVIDENCE. The client had exactly one peer for the whole window — every
+# IP packet went to this address, on tcp/443, with no second destination of any
+# kind. Around eight connections to it, established before the capture opened,
+# held idle, then bursting together; a browser multiplexes one origin over one
+# HTTP/2 connection and does not hold eight. The single handshake in the window
+# offered NO SNI (JA4 t13i…, extension 0 absent) while also offering ECH, which
+# real Chrome cannot do to a bare IP — ECH configs come from DNS for a name, so
+# that pairing is a utls Chrome mimic dialling a hardcoded address. No name was
+# involved anywhere in the flow, which is why nothing at the resolver layer can
+# reach this and the address is the only layer that bites.
+#
+# DESK CHECK. No PTR. Registry says HPE legacy 16.5.0.0/16, re-registered to
+# IPXO and leased to Internet Utilities NA LLC — but the BGP prefix is a /24
+# carved out of it and announced by AS150758 BEIDOU-GATE, Beidou LTD., TW. The
+# entry above is AS152611, also Beidou LTD., TW: SAME OPERATOR, DIFFERENT AS
+# NUMBER, so a sweep must key on the operator name and the certificate shape,
+# never on one ASN. tcp/22 and tcp/80 open, 853 closed, DoH 404 with an empty
+# body — a rented instance and not a resolver, so it belongs here and not in
+# custom-ip-blocklist.txt. Empty 404 on both 80 and 443 with no Server header.
+#
+# Same forged certificate shape as the entry above, one day offset:
+#
+#   subject = CN=143.1.10.190
+#   SAN     = DNS:143.1.10.190     <- IP literal in a DNS SAN, the tell again
+#   issuer  = C=US, O=Google Trust Services, CN=WE1
+#   valid   = Aug 27 - Oct 1 2026, 35 days
+#
+# 143.1.10.190 is Procter and Gamble (143.1.0.0/16). A host in leased HPE space
+# does not hold a certificate for a P&G address. Returned for every SNI offered,
+# including github.com, and identical with no SNI at all.
+#
+# CURL FAILS HERE WHERE OPENSSL SUCCEEDS, which is the reverse of the divergence
+# the header warns about. curl completes no handshake with a named SNI at all —
+# three attempts each on www.wikipedia.org and github.com, at 1.3 and forced to
+# 1.2 — while `openssl s_client -servername github.com -tls1_2` returns the
+# certificate above three times out of three. Reading curl alone would file this
+# as "refuses named SNI", which is wrong and would have missed the every-SNI
+# behaviour that ties it to the entry above. Probe with both before describing.
+#
+# Added as a /32, matching the entry above. The /24 is announced solely by the
+# operator's own AS, so taking the whole prefix would carry near-zero collateral
+# if this address is rotated away from.
+16.5.11.6
