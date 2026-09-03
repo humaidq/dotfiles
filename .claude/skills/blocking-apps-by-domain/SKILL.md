@@ -1,9 +1,19 @@
 ---
 name: blocking-apps-by-domain
-description: Use when blocking an app, game, or website on the home network, adding entries to modules/router/custom-blocklist.txt, or when something that was supposedly blocked still works
+description: Use when blocking an app, game, or website on the home network, adding entries to the router's DNS blocklist, or when something that was supposedly blocked still works
 ---
 
 # Blocking apps by domain
+
+> **These files moved on 2026-09-03.** `custom-blocklist.txt` and its siblings
+> are sops secrets in `secrets/router/`, not plaintext in `modules/router/`.
+> `grep` over the repo finds nothing and reads as "not listed", which is
+> backwards. Use `.claude/skills/editing-sops-lists/lists.sh` — `$L grep
+> <domain>`, `$L edit blocklist` — and see that skill before editing. Filenames
+> below are unchanged; only the location is.
+>
+> A blocklist edit no longer needs a rebuild to take effect, but it does need
+> `systemctl restart blocky` on the router.
 
 ## Overview
 

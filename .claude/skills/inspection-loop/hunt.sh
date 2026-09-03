@@ -40,8 +40,22 @@ esac
 here=$(dirname "$0")
 SOCK=/tmp/claude-1000/$site.sock
 REPO=$(git -C "$here" rev-parse --show-toplevel)
-LIST=$REPO/modules/router/custom-throttle-list.txt
 LOG=${LOG:-/tmp/claude-1000/hunt-$site.log}
+
+# The throttle list is a sops secret since 2026-09-03. Decrypt once into a
+# working copy the membership test can grep, and re-encrypt after every append
+# rather than at the end — a hunt runs for many cycles and gets interrupted,
+# and losing the addresses it already took is worse than the re-encrypt cost.
+LIST_ENC=$REPO/secrets/router/custom-throttle-list.txt
+LIST=$(mktemp); chmod go-rwx "$LIST"
+trap 'rm -f "$LIST"' EXIT
+sops -d "$LIST_ENC" > "$LIST" || { echo "cannot decrypt $LIST_ENC" >&2; exit 1; }
+
+list_add() {
+  printf '%s\n' "$1" >>"$LIST"
+  cp "$LIST" "$LIST_ENC"
+  sops --encrypt --in-place "$LIST_ENC"
+}
 
 KEEP='GOOGLE|AKAMAI|FASTLY|CLOUDFLARE|FACEBOOK|META |AMAZON|MICROSOFT|APPLE|NETFLIX|SAMSUNG|ALIBABA|ALICLOUD|TENCENT|BYTEDANCE|BYTED|BYTEPLUS|TIKTOK|PAGODA|VOLCENGINE|CDN77|LIMELIGHT|EDGECAST|ZENLAYER|ZENLA|EMIRNET|ETISALAT|EITC|MOBILE|TELECOM|VODA|ZAIN|STC|BANGLALINK|GRAMEEN|AIRTEL'
 HOSTING='DIGITALOCEAN|DO-13|OVH|HETZNER|CLOUD-FSN|CLOUD-HEL|CLOUD-NBG|IONOS|NGCS|LINODE|VULTR|CONTABO|ALTUSHOST|AH-|MELBIKOMAS|LEASEWEB|SCALEWAY|IPXO|PRIVATE CUSTOMER|CH-AH-NET|CONSTANT'
@@ -73,7 +87,7 @@ for cycle in $(seq 1 "$cycles"); do
     fi
 
     ssh -n -S "$SOCK" "$sshhost" "tempthrottle add $peer" >>"$LOG" 2>&1
-    grep -qE "^${peer//./\\.}([[:space:]]|#|$)" "$LIST" || printf '%s\n' "$peer" >>"$LIST"
+    grep -qE "^${peer//./\\.}([[:space:]]|#|$)" "$LIST" || list_add "$peer"
     echo "cycle $cycle THROTTLE $client -> $peer port $port share=$share ${kbit}kbit/s  $net" >>"$LOG"
     unset "streak[$key]"
   done <<<"$out"

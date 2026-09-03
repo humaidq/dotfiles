@@ -1,9 +1,16 @@
 ---
 name: throttling-an-ip
-description: Use when someone hands over IP addresses to throttle or block on the router, when adding entries to modules/router/custom-throttle-list.txt or custom-ip-blocklist.txt, or when deciding which of those two files an address belongs in
+description: Use when someone hands over IP addresses to throttle or block on the router, when adding entries to the throttle list or the IP blocklist, or when deciding which of those two files an address belongs in
 ---
 
 # Throttling an IP
+
+> **These files moved on 2026-09-03.** They are sops secrets in
+> `secrets/router/`, not plaintext in `modules/router/`. `grep` over the repo
+> finds nothing and reads as "not listed", which is backwards. Use
+> `.claude/skills/editing-sops-lists/lists.sh` — `$L grep <addr>`, `$L edit
+> throttle`, `$L checkout` for bulk work — and see that skill before editing.
+> Every filename below still names a real file; only its location changed.
 
 ## Overview
 

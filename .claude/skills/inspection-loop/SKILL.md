@@ -5,6 +5,11 @@ description: Use when a device is tunnelling through rotating endpoints and sing
 
 # Inspection loop
 
+> **The lists moved on 2026-09-03** to sops secrets in `secrets/router/`.
+> `hunt.sh` handles that itself (it decrypts a working copy and re-encrypts
+> after each append). For anything by hand, use
+> `.claude/skills/editing-sops-lists/lists.sh`. Filenames below are unchanged.
+
 ## Overview
 
 Some tunnel clients carry a node pool. Drop the address they are using and they

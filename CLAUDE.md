@@ -57,6 +57,7 @@ Modules can take `{ self, inputs, vars, ... }`. `vars.user` is the primary usern
 
 - Host-specific secrets: `secrets/<host>.yaml`, readable by that host plus admin hosts (`oreamnos`, `anoa`, `serow`).
 - Shared secrets: `secrets/all.yaml` and `secrets/home-server.yaml`.
+- Router filter lists: `secrets/router/*.txt`, sops **binary** format (plain text in, plain text out), readable by both routers plus admin hosts. Declared in `modules/router/lists.nix` and consumed as `cfg.lists.<name>` — never as `${./file.txt}`, which would put them back in the public store. Use `.claude/skills/editing-sops-lists/lists.sh` to read, grep or edit them; a plain `grep` over the repo finds only ciphertext.
 - When adding a new host that needs secrets, add its age public key to `.sops.yaml` and `sops updatekeys` each affected file.
 
 ### Binary cache
