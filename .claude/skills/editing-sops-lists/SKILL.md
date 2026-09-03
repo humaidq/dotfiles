@@ -58,6 +58,26 @@ applies a list change:
 restart for you when the decrypted content changed. Editing a list on the
 router without a rebuild does not, hence the table.
 
+## Entry form in the two domain lists
+
+`custom-blocklist.txt` and `custom-whitelist.txt` are read by blocky, and the
+rule there is one line, wildcard, always:
+
+```
+*.example.com          # covers example.com AND every name under it, any depth
+*.shop.tiktok.com      # covers shop.tiktok.com and below; tiktok.com untouched
+```
+
+Do **not** write `example.com` and `*.example.com` as a pair — the wildcard
+already covers the apex. Do **not** write a bare `example.com` on its own
+either: it blocks that exact name and nothing beneath it, so adding one label
+walks around it. Both facts were measured against the live resolver on
+2026-09-03; the evidence table lives in the `blocking-apps-by-domain` skill
+under **blocky specifics**, and the same note heads `custom-blocklist.txt`.
+
+Regex entries (`/^(?:a|b)\.example\.com$/`) are a third form and match exactly
+what they say — leave them alone when normalising.
+
 ## Bulk work — regenerating a list from a script
 
 `fetch-v2ray-nodes.py` and `fetch-psiphon-servers.py` want real files on disk

@@ -72,10 +72,23 @@ block wildcards.** Never block from a web search alone.
    the domain is malicious, not a reason to skip it. Keep `NXDOMAIN` entries if
    they are clearly the operator's; these outfits rotate.
 
-5. **Add wildcards** to `modules/router/custom-blocklist.txt`, grouped under a
-   comment naming the package. `*.example.com` blocks the apex *and* every
-   subdomain (blocky normalises it to a trie prefix), so one line per registered
-   domain is enough.
+5. **Add wildcards** to `custom-blocklist.txt`, grouped under a comment naming
+   the package. The file is a sops secret in `secrets/router/` — edit it with
+   `.claude/skills/editing-sops-lists/lists.sh edit blocklist`, not by path.
+
+   **ALWAYS WRITE `*.X`, AND WRITE IT ONLY ONCE.** `*.example.com` blocks
+   `example.com` itself *and* every name beneath it at any depth, so one line
+   per registered domain is enough. Writing the `example.com` / `*.example.com`
+   pair is pure duplication; 47 such lines were removed on 2026-09-03.
+
+   The same holds at any depth, so use the wildcard for subdomains too:
+   `*.shop.tiktok.com` covers `shop.tiktok.com` and everything under it, and
+   leaves `tiktok.com` and its other children alone.
+
+   **A bare entry blocks ONLY that exact name** — it does *not* cover
+   subdomains, which makes it a bypass waiting to happen: add one label and the
+   block is gone. That is why the wildcard is the default and not merely the
+   tidier form. See the verification table under **blocky specifics** below.
 
 6. **Rebuild and confirm:** `sudo nixos-rebuild switch --flake .#bongo` on
    bongo, then re-run `check-domains.sh` over the added names, plus a few hosts
@@ -270,6 +283,31 @@ mismatched cert is usually just a parked host — `inlandcha.com` presents
 `td.01bite.net`.
 
 ## blocky specifics
+
+### Entry form: `*.X` covers `X`; a bare `X` does not cover its subdomains
+
+Measured on 2026-09-03 against the live resolver on both routers, by reading
+blocky's own `response_reason` rather than inferring from a 0.0.0.0:
+
+| Entry in the file | Query | Result |
+|---|---|---|
+| `*.qustodio.com` | `qustodio.com` | `BLOCKED (custom)` |
+| `*.qustodio.com` | `zz9b.qustodio.com` | `BLOCKED (custom)` |
+| `*.qustodio.com` | `zz9test.deep.qustodio.com` | `BLOCKED (custom)` |
+| `*.trythunder.app` | `trythunder.app` | `0.0.0.0` |
+| `*.shop.tiktok.com` | `shop.tiktok.com` | `0.0.0.0` |
+| `*.shop.tiktok.com` | `www.tiktok.com` | resolves — no over-reach |
+| `gamecenter.api.intl.miui.com` (bare) | same name | `BLOCKED (custom)` |
+| `gamecenter.api.intl.miui.com` (bare) | `zz9b.gamecenter.api.intl.miui.com` | **`RESOLVED`** — not blocked |
+
+So: **wildcard always, once, at whatever depth you mean.** Never the
+`X` + `*.X` pair, and never a bare name.
+
+**Verify with `response_reason`, not with the answer.** A `0.0.0.0` tells you
+something blocked the name, not *what*. During this measurement a bare
+cloudfront entry appeared to cover its own subdomain and looked like
+counter-evidence; the reason field showed `BLOCKED (doh)` — a different list
+entirely — and the bare-entry rule was confirmed once that was excluded.
 
 - `blockType` is `zeroIp`, so a blocked name answers `0.0.0.0`, never NXDOMAIN.
 - Regex entries are `/^host$/`, matched by Go's RE2: `(?:...)` works,
@@ -494,4 +532,9 @@ Say plainly which tool produced which entry. Best coverage is the union of
   bundled JS yields `img.style.top` — which resolves, because someone owns
   `style.top`. Resolving is therefore not evidence. Grep a suspicious
   candidate back to its context before blocking it.
-- **Blocking the apex only.** Use `*.domain`, never bare `domain`.
+- **Writing a bare `domain`.** It blocks that exact name and nothing under it,
+  so one added label walks around it. Use `*.domain`. Verified 2026-09-03; see
+  the table under **blocky specifics**.
+- **Writing `domain` and `*.domain` as a pair.** The wildcard already covers
+  the apex, so the first line is dead weight. 47 such duplicates were removed
+  on 2026-09-03.
