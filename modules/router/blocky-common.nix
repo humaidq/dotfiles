@@ -1,3 +1,10 @@
+# dnsBlocklist and dnsWhitelist are paths, taken as arguments rather than
+# referenced as ./custom-*.txt because they are sops secrets now and only the
+# module that has `config` can name where they were decrypted to. See lists.nix.
+{
+  dnsBlocklist,
+  dnsWhitelist,
+}:
 {
   # THE ISP'S OWN RESOLVERS, and the reason is CDN steering rather than speed
   # for its own sake. Measured from bongo on 2026-08-31 over 6,266 domains taken
@@ -262,7 +269,7 @@
       ];
 
       custom = [
-        "${./custom-blocklist.txt}"
+        "${dnsBlocklist}"
       ];
 
       # Block DoH provider hostnames so clients cannot bootstrap a
@@ -342,7 +349,7 @@
       general = [
         "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt"
         "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/optional-list.txt"
-        "${./custom-whitelist.txt}"
+        "${dnsWhitelist}"
       ];
     };
   };

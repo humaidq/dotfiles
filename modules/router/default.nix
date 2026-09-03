@@ -21,6 +21,7 @@ in
     ./client-mode.nix
     ./geoip.nix
     ./ip-blocklist.nix
+    ./lists.nix
     ./suricata.nix
     ./tools.nix
     ./vpn.nix

@@ -6,7 +6,10 @@
 }:
 let
   cfg = config.sifr.router;
-  blockyCommon = import ./blocky-common.nix;
+  blockyCommon = import ./blocky-common.nix {
+    dnsBlocklist = cfg.lists.dnsBlocklist;
+    dnsWhitelist = cfg.lists.dnsWhitelist;
+  };
   customDNSMappings = blockyCommon.customDNS.mapping // cfg.customDNSMappings;
 
   # Reverse zone for the LAN: one octet of the router address per full byte of

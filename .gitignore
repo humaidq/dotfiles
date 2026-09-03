@@ -21,3 +21,4 @@ __pycache__/
 
 # subagent-driven-development scratch workspace
 .superpowers/
+.lists-work/

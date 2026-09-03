@@ -6,14 +6,6 @@ keys:
   - &bingo age1swvwwcz00rukxfxkfq2m08gqq4jj0j2n04vcpnlxgwcm2n7qjq4stgg2u2
   - &hisn age1tat3vf5uj0k6s78llc7eqct9d9h9u26fhw5ggzj9aank7g2gwp5q943qvn
 creation_rules:
-  # Every host belongs here, not just the ones that obviously want a shared
-  # secret: this file carries user-passwd, and modules/personal/secrets.nix
-  # points hashedPasswordFile at it for the primary user on every host that is
-  # not in bootstrap mode. A host missing from this list boots with no password
-  # hash, and since mutableUsers is false and PermitRootLogin is no, it cannot
-  # be escalated on from the console either — the only ways back are
-  # `init=/bin/sh` at the bootloader or a reinstall. Add a new host here at the
-  # same time as its own secrets file, before its first boot.
   - path_regex: secrets/all.yaml$
     key_groups:
       - age:
@@ -35,13 +27,6 @@ creation_rules:
           - *oreamnos
           - *anoa
           - *bingo
-  # hisn's key is derived from an ssh host key generated here and handed to the
-  # installer, rather than from one the host generated for itself. The ordering
-  # is the point: sops-nix decrypts using /etc/ssh/ssh_host_ed25519_key, and
-  # hisn's nebula certificate is a sops secret. A host keyed only after it
-  # first boots therefore comes up with no certificate, and since the ssh
-  # daemon here is not opened to the WAN, with no mesh and no way in either.
-  # Pre-generating the key closes that window.
   - path_regex: secrets/hisn.yaml$
     key_groups:
       - age:
@@ -49,6 +34,14 @@ creation_rules:
           - *anoa
           - *serow
           - *hisn
+  - path_regex: secrets/router/[^/]+\.txt$
+    key_groups:
+      - age:
+          - *oreamnos
+          - *anoa
+          - *serow
+          - *bongo
+          - *bingo
   - path_regex: secrets/home-server.yaml$
     key_groups:
       - age:

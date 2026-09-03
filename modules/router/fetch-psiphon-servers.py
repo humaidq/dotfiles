@@ -68,6 +68,7 @@ import collections
 import concurrent.futures
 import hashlib
 import json
+import os
 import pathlib
 import re
 import socket
@@ -120,6 +121,14 @@ SECRET_FIELDS = {
 }
 
 HERE = pathlib.Path(__file__).resolve().parent
+
+# The lists became sops secrets on 2026-09-03 and no longer sit beside this
+# script. Point this at a decrypted checkout:
+#
+#   .claude/skills/editing-sops-lists/lists.sh checkout
+#   ROUTER_LISTS_DIR=.lists-work python3 modules/router/fetch-psiphon-servers.py
+#   .claude/skills/editing-sops-lists/lists.sh commit
+LISTS = pathlib.Path(os.environ.get("ROUTER_LISTS_DIR", HERE))
 LIST_FILES = ["custom-throttle-list.txt", "custom-ip-blocklist.txt"]
 
 
@@ -222,7 +231,7 @@ def already_listed():
     """Addresses already present in the router's two address files."""
     known = set()
     for name in LIST_FILES:
-        path = HERE / name
+        path = LISTS / name
         if not path.exists():
             continue
         for line in path.read_text(errors="replace").splitlines():

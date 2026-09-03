@@ -110,19 +110,6 @@ let
     print(f"local blocklist: {len(v4)} IPv4, {len(v6)} IPv6", file=sys.stderr)
   '';
 
-  localBlocklist =
-    pkgs.runCommand "nft-local-blocklist.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-ip-blocklist.txt} "$out" \
-          router-blocklists local_block4 local_block6
-      '';
-
-  # Same build-time-not-runtime treatment as the local IP list above, for the
-  # same two reasons: a typo fails the rebuild instead of silently blocking
-  # nothing, and applying it needs no network.
   portBlocklistGen = pkgs.writeText "gen-port-blocklist.py" ''
     import pathlib
     import sys
@@ -158,52 +145,6 @@ let
 
     print(f"port blocklist: {len(ports)} ports", file=sys.stderr)
   '';
-
-  portBlocklist =
-    pkgs.runCommand "nft-port-blocklist.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${portBlocklistGen} ${./custom-port-blocklist.txt} "$out" \
-          router-blocklists blocked_ports
-      '';
-
-  # Reuses portBlocklistGen verbatim, exactly as throttleList reuses
-  # localBlocklistGen: same format, same build-time validation, only the
-  # target set differs.
-  lowTrustPorts =
-    pkgs.runCommand "nft-lowtrust-ports.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${portBlocklistGen} ${./custom-lowtrust-ports.txt} "$out" \
-          router-blocklists lowtrust_ports
-      '';
-
-  lowTrustSubnets =
-    pkgs.runCommand "nft-lowtrust-subnets.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-lowtrust-subnets.txt} "$out" \
-          router-blocklists lowtrust_block4 lowtrust_block6
-      '';
-
-  # The carve-out from the ASN expansion. Same generator as the two lists above
-  # — it is the same shape of input, a hand-written file of ranges — but it
-  # feeds a set the policy chain RETURNS on rather than drops on.
-  lowTrustAllow =
-    pkgs.runCommand "nft-lowtrust-allow.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-lowtrust-allow-subnets.txt} "$out" \
-          router-blocklists lowtrust_allow4 lowtrust_allow6
-      '';
 
   # Addresses that no generated range may ever swallow. Not a general whitelist
   # — it is a tripwire for the ASN expansion below, which turns fifteen numbers
@@ -329,16 +270,6 @@ let
 
   lowTrustASNGen = mkASNGen "gen-lowtrust-asns.py" lowTrustNeverCover;
 
-  lowTrustASNs =
-    pkgs.runCommand "nft-lowtrust-asns.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${lowTrustASNGen} ${./custom-lowtrust-asns.txt} ${./ip2asn-combined.tsv} "$out" \
-          router-blocklists lowtrust_asn4 lowtrust_asn6
-      '';
-
   # The CDN quota set reuses the ASN expander with ONE difference, and it is the
   # difference that needs justifying rather than the reuse.
   #
@@ -366,16 +297,6 @@ let
   ) lowTrustNeverCover;
 
   cdnQuotaASNGen = mkASNGen "gen-cdn-quota-asns.py" cdnQuotaNeverCover;
-
-  cdnQuotaASNs =
-    pkgs.runCommand "nft-cdn-quota-asns.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${cdnQuotaASNGen} ${./custom-cdn-quota-asns.txt} ${./ip2asn-combined.tsv} "$out" \
-          router-blocklists cdn_quota4 cdn_quota6
-      '';
 
   # Every unit below that writes elements into an nftables set carries this, and
   # leaving it off one is a silent, total fail-open. It is the fix for an outage
@@ -416,77 +337,112 @@ let
   # observe that, so follow one with a restart of the three units carrying this.
   nftRulesetTrigger = [ config.systemd.services.nftables.serviceConfig.ExecReload ];
 
-  # The throttle list reuses the local blocklist's generator verbatim — same
-  # format, same build-time validation, same interval collapsing — and only the
-  # target sets differ. What happens to a matching packet is decided in the
-  # ruleset and in tc, not here.
-  throttleList =
-    pkgs.runCommand "nft-throttle-list.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-throttle-list.txt} "$out" \
-          router-blocklists throttle4 throttle6
-      '';
-
-  # The same generator once more, into sets of its own rather than into
-  # throttle4/6, and the separation is the point rather than tidiness.
+  # Every set pair the loader below fills, as (generator, list, nft set names).
   #
-  # The generator opens with `flush set`, so two files writing one set would
-  # leave only whichever loaded last — the two sources must not share a pair.
-  # Beyond that, this list and custom-throttle-list.txt are different KINDS of
-  # thing and are maintained differently: that file is hand-curated, mostly
-  # broad CIDRs, and every entry was checked by hand. This one is machine
-  # generated from a public subscription, is ~1500 individual addresses, and is
-  # replaced wholesale by re-running fetch-v2ray-nodes.py. Keeping them apart
-  # means the regeneration cannot clobber curated work, and the rule counters
-  # in forward_throttle show which source is actually catching traffic.
+  # The four generators are unchanged; only where they run moved. Each entry
+  # names a sops-decrypted path, so none of this can be expanded until the unit
+  # starts — see lists.nix for what that trade bought and cost.
   #
-  # Same tc class as throttle4/6 all the same — see forward_throttle, which
-  # marks both 0x2. The tier is identical; the scope is not. throttle4/6
-  # applies to every device, these sets only to the low-trust pool, which is
-  # what makes a machine-generated list of this size defensible at all.
-  vpnIntelThrottleList =
-    pkgs.runCommand "nft-vpn-intel-throttle.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-vpn-intel-throttle.txt} "$out" \
-          router-blocklists vpnintel4 vpnintel6
-      '';
+  # Two properties this table has to keep. Each generator opens with `flush
+  # set`, so two entries writing one set pair would leave only whichever ran
+  # last: no set name may appear twice. And the low-trust ASN carve-out must
+  # load before the ranges it exempts, so order matters — `mkNftGen` emits in
+  # list order and the loader applies in that order too.
+  nftGens = [
+    {
+      gen = localBlocklistGen;
+      src = cfg.lists.ipBlocklist;
+      out = "local-blocklist";
+      sets = "local_block4 local_block6";
+    }
+    {
+      gen = portBlocklistGen;
+      src = cfg.lists.portBlocklist;
+      out = "port-blocklist";
+      sets = "blocked_ports";
+    }
+    {
+      gen = localBlocklistGen;
+      src = cfg.lists.throttle;
+      out = "throttle";
+      sets = "throttle4 throttle6";
+    }
+    # Its own set pair rather than throttle4/6 because the two lists are
+    # different kinds of thing: one hand-curated and checked entry by entry,
+    # one replaced wholesale by re-running fetch-v2ray-nodes.py. Keeping them
+    # apart means a regeneration cannot clobber curated work, and the rule
+    # counters in forward_throttle show which source is catching traffic.
+    # Same tc class all the same — forward_throttle marks both 0x2. The tier
+    # is identical; the scope is not.
+    {
+      gen = localBlocklistGen;
+      src = cfg.lists.vpnIntelThrottle;
+      out = "vpn-intel-throttle";
+      sets = "vpnintel4 vpnintel6";
+    }
+  ]
+  ++ lib.optionals cfg.lowTrust.enable [
+    {
+      gen = portBlocklistGen;
+      src = cfg.lists.lowtrustPorts;
+      out = "lowtrust-ports";
+      sets = "lowtrust_ports";
+    }
+    {
+      gen = localBlocklistGen;
+      src = cfg.lists.lowtrustSubnets;
+      out = "lowtrust-subnets";
+      sets = "lowtrust_block4 lowtrust_block6";
+    }
+    # Before the ASN list, so that on a reload the carve-out is never
+    # observably absent while the provider ranges it exempts are already
+    # loaded. Each nft -f is its own transaction, so the window between two
+    # of them is real; this order makes it fail safe rather than briefly
+    # cutting Botim off on every rebuild.
+    {
+      gen = localBlocklistGen;
+      src = cfg.lists.lowtrustAllowSubnets;
+      out = "lowtrust-allow";
+      sets = "lowtrust_allow4 lowtrust_allow6";
+    }
+    {
+      gen = lowTrustASNGen;
+      src = cfg.lists.lowtrustAsns;
+      out = "lowtrust-asns";
+      sets = "lowtrust_asn4 lowtrust_asn6";
+      asn = true;
+    }
+  ]
+  ++ lib.optionals (cfg.lowTrust.enable && cfg.lowTrust.cdnQuota.enable) [
+    {
+      gen = cdnQuotaASNGen;
+      src = cfg.lists.cdnQuotaAsns;
+      out = "cdn-quota-asns";
+      sets = "cdn_quota4 cdn_quota6";
+      asn = true;
+    }
+  ];
 
-  # Same generator again, third and fourth targets. See the note on
-  # throttleList above: the file format and validation are identical and only
-  # the set names differ, because what happens to a matching packet is decided
-  # in the ruleset and in tc rather than here.
-  #
-  # One source file, two destinations, because imo's estate is either shaped or
-  # dropped depending on the day and on the host — see imoPolicy. Which pair is
-  # populated is what carries that decision.
-  imoList =
-    pkgs.runCommand "nft-imo-list.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-imo-list.txt} "$out" \
-          router-blocklists imo4 imo6
-      '';
+  # The ASN expanders take the ip2asn table as a second argument; the others
+  # take none. That table is public data and stays a store path.
+  mkNftGen =
+    entry:
+    "python3 ${entry.gen} ${lib.escapeShellArg (toString entry.src)} "
+    + lib.optionalString (entry.asn or false) "${./ip2asn-combined.tsv} "
+    + ''"$work/${entry.out}.nft" router-blocklists ${entry.sets}'';
 
-  imoBlockList =
-    pkgs.runCommand "nft-imo-block-list.nft"
-      {
-        nativeBuildInputs = [ pkgs.python3 ];
-      }
-      ''
-        python3 ${localBlocklistGen} ${./custom-imo-list.txt} "$out" \
-          router-blocklists imo_block4 imo_block6
-      '';
+  # Refuses to read a secret that is not there yet. Without this the generator
+  # reports a python traceback for a file that will exist in two seconds, which
+  # reads as corruption rather than as the boot race it usually is.
+  mkNftGuard = entry: ''
+    if [ ! -r ${lib.escapeShellArg (toString entry.src)} ]; then
+      echo "nft-blocklists-local: cannot read ${entry.out} list" >&2
+      exit 1
+    fi
+  '';
 
   # Parses blocky's query log into "family address" pairs for the suffixes in
-  # custom-lowtrust-allow-domains.txt. Its own file rather than an inline script
+  # the lowtrustAllowDomains list. Its own file rather than an inline script
   # because it is quoted twice otherwise — once by Nix and once by the shell —
   # and the character classes below are exactly the kind of thing that does not
   # survive that.
@@ -553,20 +509,34 @@ let
     }
   '';
 
-  # The two states imo-policy.service switches between, each a single file that
-  # fills one pair of sets and empties the other. One file rather than two `nft`
-  # calls because `nft -f` is one transaction: the estate is never in both pairs
-  # at once, and never briefly in neither.
-  imoThrottleState = pkgs.runCommand "nft-imo-state-throttle.nft" { } ''
-    cat ${imoList} > "$out"
-    printf 'flush set inet router-blocklists imo_block4\n' >> "$out"
-    printf 'flush set inet router-blocklists imo_block6\n' >> "$out"
-  '';
-
-  imoBlockState = pkgs.runCommand "nft-imo-state-block.nft" { } ''
-    cat ${imoBlockList} > "$out"
-    printf 'flush set inet router-blocklists imo4\n' >> "$out"
-    printf 'flush set inet router-blocklists imo6\n' >> "$out"
+  # Builds the two states imo-policy.service switches between, each a single
+  # file that fills one pair of sets and empties the other. One file rather
+  # than two `nft` calls because `nft -f` is one transaction: the estate is
+  # never in both pairs at once, and never briefly in neither.
+  #
+  # One source list, two destinations, because the estate is either shaped or
+  # dropped depending on the day and on the host. Which pair is populated is
+  # what carries that decision.
+  #
+  # A shell function rather than two derivations, for the reason in lists.nix:
+  # the source is a secret now, so it cannot be read until the unit runs.
+  imoStateGen = pkgs.writeShellScript "gen-imo-state" ''
+    set -euo pipefail
+    # $1 = mode (block|throttle), $2 = destination
+    src=${lib.escapeShellArg (toString cfg.lists.imo)}
+    if [ ! -r "$src" ]; then
+      echo "imo-policy: cannot read imo list" >&2
+      exit 1
+    fi
+    if [ "$1" = "block" ]; then
+      fill4=imo_block4 fill6=imo_block6 empty4=imo4 empty6=imo6
+    else
+      fill4=imo4 fill6=imo6 empty4=imo_block4 empty6=imo_block6
+    fi
+    ${pkgs.python3}/bin/python3 ${localBlocklistGen} "$src" "$2" \
+      router-blocklists "$fill4" "$fill6"
+    printf 'flush set inet router-blocklists %s\n' "$empty4" >> "$2"
+    printf 'flush set inet router-blocklists %s\n' "$empty6" >> "$2"
   '';
 
   # Prints the mode in force — "block" or "throttle" — for today, or for the
@@ -1582,19 +1552,24 @@ in
       '';
     };
 
-    # Applies custom-ip-blocklist.txt and custom-port-blocklist.txt during
-    # `nixos-rebuild switch`, so a change to either takes effect with the rebuild
-    # instead of whenever the feed timer next happens to fire (up to 12 minutes
-    # later, and only if a download succeeds).
+    # Expands every hand-maintained list into its nftables sets, so a change
+    # takes effect promptly instead of whenever the feed timer next happens to
+    # fire (up to 12 minutes away, and only if a download succeeds).
     #
-    # The trigger for that is the store paths of ${localBlocklist} and
-    # ${portBlocklist} embedded in the script below: edit either txt and that
-    # path changes, which changes this unit, which makes switch-to-configuration
-    # restart it. That covers a list edit on its own, which is why this unit
-    # carried no restartTriggers for so long — but it covers ONLY a list edit,
-    # and a ruleset change that touches no list flushes these same sets while
-    # leaving this unit's definition identical. That is the gap nftRulesetTrigger
-    # closes; it is a second mechanism, not a replacement for this one.
+    # HOW AN EDIT REACHES THIS UNIT, which changed on 2026-09-03. The lists used
+    # to be store paths embedded in the script below, so editing a txt changed
+    # this unit's ExecStart and switch-to-configuration restarted it. They are
+    # sops secrets now and the script holds only /run/secrets paths, which are
+    # identical from one rebuild to the next — that mechanism is gone. What
+    # replaces it is restartUnits on each secret in lists.nix: sops-nix
+    # restarts this unit when the decrypted content changes. A list added there
+    # without this unit in its restartUnits is an edit that silently does
+    # nothing.
+    #
+    # nftRulesetTrigger is still a second, independent mechanism for the case
+    # neither of those covers: a ruleset change that touches no list at all,
+    # which flushes these same sets while leaving this unit's definition
+    # identical. That was the 2026-08-15 outage.
     #
     # Note either way that restartTriggers alone would not be enough here,
     # because
@@ -1617,36 +1592,49 @@ in
       # nftRulesetTrigger for the outage that came of trusting partOf alone.
       restartTriggers = nftRulesetTrigger;
 
+      # A missing secret is a boot race, not corruption: this reads
+      # /run/secrets and can start before sops-nix has decrypted. Retry through
+      # it. Malformed content never fixes itself, so the bounded start limit
+      # leaves the unit failed and visible rather than looping on a bad file.
+      # Same shape and reasoning as nft-lowtrust-macs.
+      startLimitIntervalSec = 600;
+      startLimitBurst = 6;
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = 30;
       };
 
-      path = [ pkgs.nftables ];
+      path = [
+        pkgs.nftables
+        pkgs.python3
+        pkgs.coreutils
+      ];
 
       # imo's own lists are deliberately absent: which of its two set pairs is
       # populated depends on the day, so it is imo-policy.service that writes
       # them and this unit that pulls it. One writer per set.
+      #
+      # EVERY FILE IS GENERATED BEFORE ANY IS APPLIED. The generators exit
+      # non-zero on a malformed line, and that used to fail a sandboxed build
+      # where it could not affect a running router. It now fails here, so the
+      # split matters: nothing is flushed until all of them have parsed, and a
+      # bad line therefore leaves the previous contents in place rather than
+      # emptying the sets it was meant to fill. Applying in one pass at the end
+      # is what keeps a runtime parse as safe as the build-time one was.
       script = ''
         set -euo pipefail
-        nft -f ${localBlocklist}
-        nft -f ${portBlocklist}
-        nft -f ${throttleList}
-        nft -f ${vpnIntelThrottleList}
-        ${lib.optionalString cfg.lowTrust.enable ''
-          nft -f ${lowTrustPorts}
-          nft -f ${lowTrustSubnets}
-          # Before the ASN list, so that on a reload the carve-out is never
-          # observably absent while the provider ranges it exempts are already
-          # loaded. Each nft -f is its own transaction, so the window between
-          # two of them is real; this order makes it fail safe rather than
-          # briefly cutting Botim off on every rebuild.
-          nft -f ${lowTrustAllow}
-          nft -f ${lowTrustASNs}
-          ${lib.optionalString cfg.lowTrust.cdnQuota.enable ''
-            nft -f ${cdnQuotaASNs}
-          ''}
-        ''}
+
+        work=$(mktemp -d)
+        trap 'rm -rf "$work"' EXIT
+
+        ${lib.concatMapStringsSep "\n" mkNftGuard nftGens}
+
+        ${lib.concatMapStringsSep "\n" mkNftGen nftGens}
+
+        ${lib.concatMapStringsSep "\n" (entry: ''nft -f "$work/${entry.out}.nft"'') nftGens}
       '';
     };
 
@@ -1936,7 +1924,7 @@ in
 
           [ -z "$got" ] && echo "nft-lowtrust-stun: could not resolve $name (sinkholed here, or genuinely unresolvable)" >&2
           [ -n "$got" ] && anyresolved=yes
-        done < ${./custom-lowtrust-stun-hosts.txt}
+        done < ${cfg.lists.lowtrustStunHosts}
 
         # Flush is conditional per family, not unconditional the way the MAC
         # loader's is. An empty set is a silent fail-open — every device in
@@ -2090,7 +2078,7 @@ in
         # backlog is the reconciler's job. -o cat drops the syslog prefix so awk
         # sees blocky's own line and nothing else.
         journalctl -u blocky --follow -n 0 --no-pager -o cat 2>/dev/null \
-          | awk -f ${allowDomainsAwk} ${./custom-lowtrust-allow-domains.txt} - \
+          | awk -f ${allowDomainsAwk} ${cfg.lists.lowtrustAllowDomains} - \
           | while read -r fam addr; do
               case "$fam" in
                 4) setname=lowtrust_allow_dyn4 ;;
@@ -2262,13 +2250,21 @@ in
       ];
       wants = [ "nftables.service" ];
 
+      # The source list is a sops secret now, so this can lose the same boot
+      # race nft-blocklists-local can. Bounded retry, for the same reasons.
+      startLimitIntervalSec = 600;
+      startLimitBurst = 6;
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = false;
+        Restart = "on-failure";
+        RestartSec = 30;
       };
 
       path = [
         pkgs.nftables
+        pkgs.coreutils
         imoPolicyToday
       ];
 
@@ -2277,12 +2273,16 @@ in
 
         mode=$(imo-policy-today)
 
+        work=$(mktemp -d)
+        trap 'rm -rf "$work"' EXIT
+
         case "$mode" in
-          block)
-            nft -f ${imoBlockState}
-            ;;
-          throttle)
-            nft -f ${imoThrottleState}
+          block|throttle)
+            # Built then applied, never applied while being built: one `nft -f`
+            # is one transaction, and that is what keeps the estate out of both
+            # set pairs at once.
+            ${imoStateGen} "$mode" "$work/imo-state.nft"
+            nft -f "$work/imo-state.nft"
             ;;
           *)
             # Unreachable unless imo-policy-today is changed and this is not.

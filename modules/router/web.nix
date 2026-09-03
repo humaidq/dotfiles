@@ -8,19 +8,6 @@ let
   cfg = config.sifr.router;
   routerWeb = pkgs.callPackage ./web/package.nix { };
 
-  # The tunnel transports dropped LAN->WAN, read from the same file the nft set
-  # is generated from so the peers page cannot drift from the firewall. Only
-  # used to flag a port visually, so a line this does not understand is skipped
-  # rather than fatal — the generator in ip-blocklist.nix is the authority on
-  # that file and already fails the build on a malformed entry.
-  suspectPorts =
-    let
-      lines = lib.splitString "\n" (builtins.readFile ./custom-port-blocklist.txt);
-      stripped = map (line: lib.head (lib.splitString "#" line)) lines;
-      matches = map (line: builtins.match "[[:space:]]*([0-9]+)[[:space:]]*" line) stripped;
-    in
-    map lib.head (lib.filter (match: match != null) matches);
-
   # name|address|role|pair quads, where pair is "voice" or empty. Flattened
   # into one variable rather than one per anchor because the count is not known
   # at build time, and parsed back with a parser that rejects anything
@@ -167,7 +154,15 @@ in
           }"
           # Both feed the peers page's traffic column: which ports to flag, and
           # which conntrack mark means the qos chain recognised a call.
-          "ROUTER_SUSPECT_PORTS=${lib.concatStringsSep "," suspectPorts}"
+          #
+          # A path rather than the ports themselves since 2026-09-03: the list
+          # is a sops secret, so it cannot be read at eval time any more. Same
+          # file the nft set is generated from, so the peers page cannot drift
+          # from the firewall. Only used to flag a port visually, so a line the
+          # reader does not understand is skipped rather than fatal — the
+          # generator in ip-blocklist.nix is the authority on that file and
+          # fails nft-blocklists-local on a malformed entry.
+          "ROUTER_SUSPECT_PORTS_FILE=${cfg.lists.portBlocklist}"
           "ROUTER_CALL_MARK=${toString cfg.qos.highPriorityMark}"
           "ROUTER_CAPTURE_DIR=%S/router-web/captures"
         ]

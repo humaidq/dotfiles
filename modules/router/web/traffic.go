@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -105,18 +106,42 @@ type namer struct {
 	callMark uint64
 }
 
+// parseSuspectPorts turns lines or comma-separated fields into a port set,
+// skipping `#` comments and anything that is not a port. Deliberately lenient:
+// these only flag a port visually, and the generator in ip-blocklist.nix is
+// what actually rejects a malformed entry.
+func parseSuspectPorts(fields []string) map[uint16]bool {
+	ports := map[uint16]bool{}
+	for _, field := range fields {
+		if i := strings.IndexByte(field, '#'); i >= 0 {
+			field = field[:i]
+		}
+		port, err := strconv.ParseUint(strings.TrimSpace(field), 10, 16)
+		if err != nil {
+			continue
+		}
+		ports[uint16(port)] = true
+	}
+	return ports
+}
+
 // newNamerFromEnv reads the configuration web.nix passes in. Both values are
 // optional: absent means that half of the column is simply quieter.
 func newNamerFromEnv() namer {
 	var n namer
 	if raw := os.Getenv("ROUTER_SUSPECT_PORTS"); raw != "" {
-		n.suspect = map[uint16]bool{}
-		for _, field := range strings.Split(raw, ",") {
-			port, err := strconv.ParseUint(strings.TrimSpace(field), 10, 16)
-			if err != nil {
-				continue
-			}
-			n.suspect[uint16(port)] = true
+		n.suspect = parseSuspectPorts(strings.Split(raw, ","))
+	}
+	// The same list read from the file the nft set is generated from. A path
+	// rather than the ports inline because the list became a sops secret and
+	// web.nix can no longer read it at eval time. An unreadable file leaves the
+	// column quieter rather than failing the page, which is the same tolerance
+	// the inline form had for a field it could not parse.
+	if path := os.Getenv("ROUTER_SUSPECT_PORTS_FILE"); path != "" {
+		if data, err := os.ReadFile(path); err == nil {
+			n.suspect = parseSuspectPorts(strings.Split(string(data), "\n"))
+		} else {
+			log.Printf("suspect ports: %v", err)
 		}
 	}
 	if raw := os.Getenv("ROUTER_CALL_MARK"); raw != "" {

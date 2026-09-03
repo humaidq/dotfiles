@@ -101,6 +101,7 @@ import bisect
 import concurrent.futures
 import ipaddress
 import json
+import os
 import pathlib
 import socket
 import sys
@@ -109,6 +110,17 @@ import urllib.request
 from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
+
+# Where the filter lists actually are. They became sops secrets on 2026-09-03
+# and no longer sit beside this script, so point this at a decrypted checkout:
+#
+#   .claude/skills/editing-sops-lists/lists.sh checkout
+#   ROUTER_LISTS_DIR=.lists-work python3 modules/router/fetch-v2ray-nodes.py
+#   .claude/skills/editing-sops-lists/lists.sh commit
+#
+# ip2asn-combined.tsv is public data and stays beside the script, so it keeps
+# using HERE.
+LISTS = pathlib.Path(os.environ.get("ROUTER_LISTS_DIR", HERE))
 
 # The aggregate of every Sub*.txt in the repository, refreshed upstream every
 # few minutes. The per-Sub files are strict subsets, so fetching this one is
@@ -303,8 +315,8 @@ def main() -> int:
         ipaddress.ip_network(p) for p in fa.get("addresses", []) if ":" not in p
     ]
 
-    already = read_list_cidrs(HERE / "custom-throttle-list.txt") + read_list_cidrs(
-        HERE / "custom-ip-blocklist.txt"
+    already = read_list_cidrs(LISTS / "custom-throttle-list.txt") + read_list_cidrs(
+        LISTS / "custom-ip-blocklist.txt"
     )
 
     hosts, domains = set(), set()
