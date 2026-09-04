@@ -132,6 +132,21 @@ let
         "no-resolv"
         "no-hosts"
         "no-poll"
+        # No pidfile. Empty is how dnsmasq is told not to write one at all, and
+        # it must be told: the default path is /var/run/dnsmasq.pid, which the
+        # router's *other* dnsmasq — the LAN one, from the NixOS module — also
+        # uses, and dnsmasq has opened that file O_EXCL since 2.91 as a
+        # symlink-attack guard. Two instances, one default path: whichever
+        # restarts second dies with "failed to open pidfile: File exists" and
+        # exit status 3, and dnsmasq does not remove the file when it exits, so
+        # the loser stays dead through every retry. It surfaced on a switch that
+        # restarted both, which is the only event that reorders them.
+        #
+        # Nothing wants the file anyway. The unit runs dnsmasq with -k, so
+        # systemd tracks the process itself and ExecReload signals $MAINPID.
+        # An alternative path would also have to survive ProtectSystem=strict
+        # below, and not needing one at all beats arranging for one.
+        "pid-file="
         # blocky caches behind this. A second cache here would only add a
         # second set of TTLs to reason about, and would hold the CDN answers
         # that blocky-common.nix is careful not to pin.
