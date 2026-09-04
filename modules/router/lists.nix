@@ -89,6 +89,26 @@ let
       units = [ "blocky.service" ];
       mode = "0444";
     };
+    # Written for the dns-review skill, and read on the router by the
+    # dark-peer collector in web/darkpeer.go, which uses it to decide whether
+    # the name behind a dominant peer is one that means anything. See
+    # web/commondomains.go for why that question and not "does it have a name".
+    #
+    # 0444 like the blocky lists above and for the same reason: router-web runs
+    # under DynamicUser and has no build-time uid to grant it to. The content
+    # is a list of domains everyone here talks to constantly, which is the one
+    # category in secrets/router carrying no per-person detail — it is
+    # encrypted to travel with the lists it belongs to, not because reading it
+    # would tell anyone anything.
+    #
+    # No restart unit. The collector re-reads the file when it changes, so a
+    # rebuild that rewrites it is picked up without restarting the service and
+    # dropping the connection-table baseline it judges against.
+    dnsCommonDomains = {
+      file = "dns-common-domains.txt";
+      units = [ ];
+      mode = "0444";
+    };
     # Nothing reads this one; it is kept here so it is decrypted, backed up and
     # key-rotated with the lists it documents.
     inspectedApps = {

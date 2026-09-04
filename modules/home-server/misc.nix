@@ -98,12 +98,16 @@ in
       requires = [ "docker.service" ];
     };
 
-    services.stirling-pdf = {
-      enable = true;
-      environment = {
-        SERVER_PORT = 8084;
-      };
-    };
+    # stirling-pdf was here, on 8084 and fronted at pdf.alq.ae. Removed
+    # 2026-09-04 because it had not built for a while: its gradle build runs
+    # the upstream test suite, 15 of which fail, and the whole host's toplevel
+    # fails with it — so one unused PDF tool was holding back every deploy of
+    # every other service on oreamnos.
+    #
+    # Deleted rather than pinned or built with checks off, because both of
+    # those keep a package nobody was using on the critical path of every
+    # rebuild. Bring it back by re-adding the service and an `(mkRP "pdf"
+    # "8084")` vhost in web-server.nix, once it builds again.
 
     services.forgejo = {
       enable = true;

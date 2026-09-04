@@ -74,7 +74,7 @@ in
         (mkRP "hydra" "3300")
         (mkRP "vault" "8222")
         (mkRP "grafana" "3000")
-        (mkRP "pdf" "8084")
+        # (mkRP "pdf" "8084") — stirling-pdf removed 2026-09-04, see misc.nix
         (mkRP "dav" "5232")
 
         {

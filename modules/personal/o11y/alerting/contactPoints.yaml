@@ -53,6 +53,38 @@ contactPoints:
             authorization_credentials: $__file{/run/secrets/ntfy/grafana-token}
             maxAlerts: "5"
           disableResolveMessage: false
+    # Findings that are worth reading and not worth waking up for. Same server,
+    # same topic and same token as the ntfyalerts integration above — the only
+    # difference is ?template=grafana-quiet, which renders priority 2/1 instead
+    # of 4/2, so the phone shows it without sound or vibration and Do Not
+    # Disturb has nothing to override.
+    #
+    # A contact point of its own rather than a third integration on
+    # grafana-default-email, because a notification policy routes to one
+    # contact point and every integration on it fires: adding this beside the
+    # loud one would make every quiet alert also ring the phone and send mail,
+    # which is the entire thing it exists to avoid. Rules select it by name
+    # through notification_settings.receiver.
+    #
+    # No email integration here deliberately. A finding that mails as well as
+    # pushes is two notifications for one thing, and the mailbox is where the
+    # infrastructure alerts live.
+    - orgId: 1
+      name: ntfy-quiet
+      receivers:
+        - uid: ntfyquiet
+          type: webhook
+          settings:
+            url: https://ntfy.alq.ae/alerts?template=grafana-quiet
+            httpMethod: POST
+            authorization_scheme: Bearer
+            authorization_credentials: $__file{/run/secrets/ntfy/grafana-token}
+            # Lower than the loud point's 5. These group by device, and a
+            # device rotating through endpoints produces one alert instance per
+            # endpoint — past three the message is a list of addresses nobody
+            # reads on a lock screen, and the peers page is where that belongs.
+            maxAlerts: "3"
+          disableResolveMessage: false
     # A contact form submission is not an incident, so it does not want the
     # generic alert layout with its Values/Labels/Silence furniture. This point
     # exists only to hang contact_form.subject/message off, keeping the shared

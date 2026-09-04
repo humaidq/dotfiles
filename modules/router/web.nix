@@ -19,8 +19,64 @@ let
   ) cfg.uplink.anchors;
 
   lanHost = lib.head (lib.splitString "/" cfg.lanAddress);
+
+  # The dark-peer collector needs the query log to have something to test a
+  # peer's name against, and the mesh listener to publish on — it is scraped
+  # over the mesh rather than the LAN for the same reason the peers pages are
+  # only there: it says which device is talking to which address.
+  darkPeerEnabled = cfg.queryLog.enable && cfg.meshAddress != null;
+
+  # Every mesh endpoint this host knows an address for, taken from the nebula
+  # config rather than written out again here.
+  #
+  # These are the one class of peer guaranteed to match the signature and mean
+  # nothing by it: a mesh link is an encrypted tunnel to a bare address that no
+  # name ever resolves to, which is the entire finding. Deriving them means a
+  # lighthouse that moves — as it did when the role went from 10.10.0.10 to
+  # hisn — stops being a false positive on its own, instead of when someone
+  # remembers this list exists.
+  meshEndpoints = lib.unique (
+    map (endpoint: lib.head (lib.splitString ":" endpoint)) (
+      lib.flatten (lib.attrValues (config.services.nebula.networks.sifr0.staticHostMap or { }))
+    )
+  );
+
+  ignoredPeers = lib.unique (meshEndpoints ++ cfg.darkPeer.ignorePeers);
 in
 {
+  options.sifr.router.darkPeer = {
+    ignorePeers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "139.84.173.48" ];
+      description = ''
+        Addresses and CIDRs never counted as a device's peer.
+
+        For the endpoints where the signature is correct and the conclusion is
+        still wrong. The nebula lighthouse is the case this exists for: it is a
+        tunnel by construction, it holds most of the bytes of every host on the
+        mesh, and no name is ever resolved to it, so it matches perfectly and
+        means nothing.
+
+        A bare address is taken as a host route, so the mask can be left off.
+      '';
+    };
+    exemptClients = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "192.168.1.40" ];
+      description = ''
+        LAN addresses never judged.
+
+        For a device that is deliberately and permanently tunnelled — a work
+        laptop on a corporate VPN — where the finding is true every day and
+        therefore worth nothing. Prefer ignorePeers where the endpoint is the
+        known-good part: exempting the device also hides a second tunnel it
+        might pick up.
+      '';
+    };
+  };
+
   config = lib.mkIf cfg.enable {
     assertions = [
       {
@@ -51,19 +107,39 @@ in
     # components label themselves with. Without it this scrape would arrive
     # labelled with the LAN address and the dashboard's existing
     # instance="$node" filter would exclude every panel built on it.
-    sifr.personal.o11y.client.extraConfig =
-      lib.mkIf (cfg.uplink.enable && config.sifr.personal.o11y.client.enable)
-        ''
-          prometheus.scrape "uplink" {
-            targets = [{
-              __address__ = "${lanHost}:80",
-              instance    = "${config.networking.hostName}",
-            }]
-            metrics_path    = "/metrics"
-            scrape_interval = "30s"
-            forward_to      = [prometheus.remote_write.default.receiver]
-          }
-        '';
+    sifr.personal.o11y.client.extraConfig = lib.mkIf config.sifr.personal.o11y.client.enable (
+      lib.optionalString cfg.uplink.enable ''
+        prometheus.scrape "uplink" {
+          targets = [{
+            __address__ = "${lanHost}:80",
+            instance    = "${config.networking.hostName}",
+          }]
+          metrics_path    = "/metrics"
+          scrape_interval = "30s"
+          forward_to      = [prometheus.remote_write.default.receiver]
+        }
+      ''
+      # The mesh address, not the LAN one. Same process, different listener:
+      # this endpoint names a device and the peer holding its traffic, and
+      # the LAN listener deliberately carries no route that can see a device.
+      # Alloy runs on this router, so the mesh address is local to it.
+      #
+      # Scraped a minute apart because that is how often the collector
+      # samples — see darkPeerInterval in web/darkpeer.go. A faster scrape
+      # would re-read the same snapshot and only make the alert's `for`
+      # window count the same minute twice.
+      + lib.optionalString darkPeerEnabled ''
+        prometheus.scrape "darkpeer" {
+          targets = [{
+            __address__ = "${cfg.meshAddress}:80",
+            instance    = "${config.networking.hostName}",
+          }]
+          metrics_path    = "/metrics/peers"
+          scrape_interval = "60s"
+          forward_to      = [prometheus.remote_write.default.receiver]
+        }
+      ''
+    );
 
     systemd.services.router-web = {
       description = "Router landing page";
@@ -214,6 +290,23 @@ in
           "ROUTER_UPLINK_MAINTENANCE=/var/lib/router-fullreboot/maintenance"
         ]
         ++ lib.optional (cfg.meshAddress != null) "ROUTER_LISTEN_MESH=${cfg.meshAddress}:80"
+        # The dark-peer collector's two exception lists. Both are unset when
+        # empty rather than passed as an empty string, so the log line the
+        # parser writes for an unusable entry can only ever be about something
+        # someone actually put here.
+        ++ lib.optional (
+          darkPeerEnabled && ignoredPeers != [ ]
+        ) "ROUTER_DARKPEER_IGNORE=${lib.concatStringsSep "," ignoredPeers}"
+        ++ lib.optional (
+          darkPeerEnabled && cfg.darkPeer.exemptClients != [ ]
+        ) "ROUTER_DARKPEER_EXEMPT=${lib.concatStringsSep "," cfg.darkPeer.exemptClients}"
+        # The domains whose presence behind an address makes it unremarkable.
+        # Without this the collector falls back to treating any name at all as
+        # unremarkable, which is exactly what a fronted tunnel walks through —
+        # see web/commondomains.go. Set with the collector rather than behind a
+        # flag of its own: a router with the collector and not the list is a
+        # shape with no reason to exist.
+        ++ lib.optional darkPeerEnabled "ROUTER_COMMON_DOMAINS_FILE=${cfg.lists.dnsCommonDomains}"
         # Presence alone enables the pool button and badge on the peers page.
         # Set from the same option that creates the nft sets, the drop chains
         # and the `lowtrust` tool, so the page cannot offer an action the

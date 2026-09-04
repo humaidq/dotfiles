@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
@@ -633,6 +634,24 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 		go answers.follow()
 		log.Printf("naming peers without a PTR from the %s query log",
 			os.Getenv("ROUTER_ANSWERLOG_UNIT"))
+	}
+	// The dark-peer collector, which is gated on the answer log above rather
+	// than on an option of its own: its whole test is whether a name was ever
+	// resolved to a peer, so on a router with no query log it would report
+	// every busy device and mean nothing by it.
+	if monitor := newDarkPeerMonitor(peers); monitor != nil {
+		monitor.ignorePeers = parsePrefixList(os.Getenv("ROUTER_DARKPEER_IGNORE"))
+		monitor.exemptClients = parsePrefixList(os.Getenv("ROUTER_DARKPEER_EXEMPT"))
+		// The list that decides which names count as unremarkable. Read once
+		// before the first sample so the collector is never judging against an
+		// empty one, then re-read on an interval because sops rewrites the
+		// file on a rebuild without restarting this service.
+		monitor.common = newCommonDomains(os.Getenv("ROUTER_COMMON_DOMAINS_FILE"))
+		monitor.common.reload()
+		go monitor.common.watch(tableWatchInterval)
+		peers.dark = monitor
+		go monitor.run(context.Background())
+		log.Printf("watching for devices whose traffic is held by one unremarkable-looking peer")
 	}
 	// Captures are opt-in on the directory: a router without one keeps every
 	// route and every pixel it had before this feature.

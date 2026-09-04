@@ -1,0 +1,21 @@
+# The quiet counterpart of grafana.yml, selected with ?template=grafana-quiet.
+#
+# Identical in every way but the priority. It exists because priority is a
+# property of the template rather than of the alert — ntfy takes only title,
+# message and priority as template fields, and everything else has to be a
+# query parameter on the publish URL — so an alert that should arrive without
+# making the phone do anything needs a template of its own and a contact point
+# pointing at it.
+#
+# What it is for: findings rather than incidents. A device whose traffic has
+# gone dark is worth knowing about tonight and is not worth waking up for, and
+# an alert that wakes someone for something that turns out to be a game server
+# three times gets muted, after which it is worth nothing at all.
+title: "{{.title}}"
+message: "{{.message}}"
+
+# 2 (low) firing: it lands in the shade with no sound and no vibration, and is
+# there when the phone is next picked up. 1 (min) resolved: no notification
+# drawer entry at all on Android, which is right for "the thing you have not
+# looked at yet has stopped on its own".
+priority: '{{if eq .status "firing"}}2{{else}}1{{end}}'

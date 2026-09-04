@@ -253,6 +253,11 @@ type peersServer struct {
 	// disables it: no second line under any address, and the page is what it
 	// was before. Read-only from here and never blocking — see answerlog.go.
 	answers *answerLog
+	// The dark-peer collector, which samples this server's own readers on a
+	// timer and publishes what it found. Nil disables it and its route; it is
+	// only ever non-nil when answers is, since without a name to test against
+	// it has nothing to say. See darkpeer.go.
+	dark *darkPeerMonitor
 }
 
 func newPeersServer(lanNet netip.Prefix, tables *tableWatcher, tmpl, indexTmpl *template.Template, leasesPath string) *peersServer {
@@ -648,6 +653,14 @@ func (s *peersServer) registerRoutes(mux *http.ServeMux) {
 		mux.HandleFunc("GET /peers/{$}", s.handleIndex)
 	}
 	mux.HandleFunc("GET /peers/{device}", s.handlePage)
+	// The dark-peer collector's scrape endpoint, registered here rather than
+	// beside the uplink prober's /metrics because of what it says: which
+	// device is talking to which address, which is the same claim every route
+	// in this function makes and the reason none of them is on the LAN
+	// listener. Alloy reaches it over the mesh address.
+	if s.dark != nil {
+		mux.HandleFunc("GET /metrics/peers", s.dark.handleMetrics)
+	}
 	// The browser's half of the reverse-DNS column. Absent when the cache is
 	// nil, matching the template: a page that renders no fill-in script must
 	// not leave a route behind that nothing calls.

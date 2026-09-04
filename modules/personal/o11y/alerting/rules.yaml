@@ -281,3 +281,103 @@ groups:
             repeat_interval: 1d
             active_time_intervals:
                 - End of Day
+        - uid: bfe7dark0peer01
+          title: Dark Peer
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: edy9njbuhd4aob
+              model:
+                editorMode: code
+                # The byte gauge rather than the boolean beside it, because the
+                # value ends up in the message: "94 MB in a minute to <address>"
+                # is a thing to act on, "a boolean went true" is not. Divided
+                # here rather than formatted in the annotation, since Grafana's
+                # rule templates have printf and no unit helpers.
+                #
+                # The series exists only while the finding holds — see the
+                # header of modules/router/web/darkpeer.go — so there is no
+                # threshold on the share or the rate here. Both were already
+                # applied by the collector, which had the connection table and
+                # the resolver's answer log in front of it and could therefore
+                # ask the question this query cannot: whether anything on the
+                # network ever resolved a name to that address.
+                #
+                # max by () rather than a bare selector so a device holding two
+                # dark peers at once is two instances and not two series
+                # fighting over one.
+                expr: |
+                    max by (instance, client, name, peer, service, asn, org, country) (
+                      router_host_dark_peer_bytes / 1024 / 1024
+                    )
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          # OK, not NoData. A network where nothing is tunnelling produces no
+          # series at all, which is the ordinary state and must not arrive as a
+          # DatasourceNoData alert carrying these annotations — see the same
+          # note on Filesystems All above.
+          noDataState: OK
+          execErrState: Error
+          # Three consecutive evaluations of a 5m group. A device has to hold
+          # the pattern for a quarter of an hour — at the collector's floor
+          # that is around 45 MB — before anything is said about it, which is
+          # what keeps a video call that briefly dominated a quiet device off
+          # the phone.
+          for: 15m
+          annotations:
+            # The dns label is the address's last resolved name and is empty
+            # for a peer nobody ever looked up. Both cases are worth saying and
+            # they are different sentences: a bare address is a tunnel that did
+            # not need a name, and a name that is not on the common-domains
+            # list is a tunnel that did — which is the more interesting of the
+            # two and the one to lead with.
+            summary: '{{ $labels.name }} ({{ $labels.client }}) sent {{ printf "%.0f" $values.A.Value }} MB in a minute to {{ if $labels.dns }}{{ $labels.dns }}{{ else }}{{ $labels.peer }}, an address with no name{{ end }}'
+            description: '{{ $labels.client }} is spending nearly all of its traffic on {{ $labels.peer }} ({{ $labels.service }}, AS{{ $labels.asn }} {{ $labels.org }}, {{ $labels.country }}). {{ if $labels.dns }}It resolves from {{ $labels.dns }}, which is not a domain on the common-domains list — add it there if this turns out to be ordinary.{{ else }}Nothing on this network has ever resolved a name to that address.{{ end }} Open http://{{ $labels.instance }}/peers/{{ $labels.client }} on the mesh to see the conversation.'
+          isPaused: false
+          notification_settings:
+            # The quiet contact point: ntfy at priority 2, no email. This is a
+            # finding to read, not an incident to be woken for.
+            receiver: ntfy-quiet
+            # client in the group key, peer deliberately not. A device rotating
+            # through endpoints is one story and should arrive as one
+            # notification listing them, not as one per address — which is the
+            # shape that made single blocks unwinnable in the first place.
+            group_by:
+                - grafana_folder
+                - alertname
+                - client
+            # A tunnel that stays up all day says nothing new at hour three.
+            # Once when it starts, once more the next day if it is still going.
+            repeat_interval: 24h
