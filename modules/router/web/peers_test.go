@@ -1007,6 +1007,105 @@ func TestPageMarksLowTrustUnknownWithNoMACAnywhere(t *testing.T) {
 	}
 }
 
+// namingPeersServer is the shape a router with static reservations runs: a
+// device that holds an address and passes traffic, is in the neighbour table,
+// and has no lease line — which is what an `infinite` reservation guarantees,
+// since it tells the client never to renew.
+func namingPeersServer(t *testing.T) *peersServer {
+	t.Helper()
+	server := testPeersServer(t)
+	tmpl, err := template.New("peers.html").Parse(`{{.Name}}|{{.MAC}}|{{.NameReserved}}`)
+	if err != nil {
+		t.Fatalf("parse template: %v", err)
+	}
+	server.tmpl = tmpl
+	server.neighbours = newNeighbourCache(func(context.Context) ([]byte, error) {
+		return []byte("192.168.0.40 dev lan0 lladdr 72:16:2b:79:40:ff REACHABLE\n" +
+			"192.168.0.10 dev lan0 lladdr aa:bb:cc:dd:ee:01 REACHABLE\n"), nil
+	})
+	server.reservations = newReservationFile(writeReservations(t, reservationFixture))
+	return server
+}
+
+func TestPageNamesALeaselessDeviceFromTheReservations(t *testing.T) {
+	rec := httptest.NewRecorder()
+	namingPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.40", nil))
+
+	// The MAC matters as much as the name: with the page blank there was
+	// nothing to copy into the low-trust secret for exactly the devices someone
+	// had already named.
+	if got, want := rec.Body.String(), "device-d|72:16:2b:79:40:ff|true"; got != want {
+		t.Fatalf("page data = %q, want %q", got, want)
+	}
+}
+
+// The live lease wins. It is what the device called itself just now; the
+// reservation is what an operator decided months ago, possibly about a MAC the
+// device has since rotated away from.
+func TestPagePrefersTheLeaseNameOverTheReservation(t *testing.T) {
+	server := namingPeersServer(t)
+	server.reservations = newReservationFile(writeReservations(t,
+		"aa:bb:cc:dd:ee:01,192.168.0.10,stale-name,infinite\n"))
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.10", nil))
+	if got, want := rec.Body.String(), "device-a|aa:bb:cc:dd:ee:01|false"; got != want {
+		t.Fatalf("page data = %q, want %q", got, want)
+	}
+}
+
+func TestPageWithNoReservationFileIsUnchanged(t *testing.T) {
+	server := namingPeersServer(t)
+	server.reservations = nil
+
+	rec := httptest.NewRecorder()
+	server.mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers/192.168.0.40", nil))
+	if got, want := rec.Body.String(), "|72:16:2b:79:40:ff|false"; got != want {
+		t.Fatalf("page data = %q, want %q", got, want)
+	}
+}
+
+func TestIndexNamesALeaselessDeviceFromTheReservations(t *testing.T) {
+	rec := httptest.NewRecorder()
+	namingPeersServer(t).mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/peers", nil))
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "192.168.0.40=device-d;") {
+		t.Fatalf("reserved name missing from the index: %q", body)
+	}
+	// The lease that offered no hostname stays nameless: no reservation names
+	// that MAC, and the address it holds must not lend it another device's.
+	if !strings.Contains(body, "192.168.0.20=;") {
+		t.Fatalf("nameless lease should stay nameless: %q", body)
+	}
+}
+
+// The real templates mark a reserved name so a reader can tell the two claims
+// apart on hover, rather than reading an operator's label as a live hostname.
+func TestRealTemplatesMarkAReservedName(t *testing.T) {
+	var page bytes.Buffer
+	pageTmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))
+	if err := pageTmpl.Execute(&page, peersPageData{
+		Device: "192.168.50.156", Name: "device-d", MAC: "72:16:2b:79:40:ff", NameReserved: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(page.String(), "not a current lease") {
+		t.Errorf("peers.html does not mark the reserved name: %q", page.String())
+	}
+
+	var index bytes.Buffer
+	indexTmpl := template.Must(template.ParseFiles("peers-index.html", "nav.html"))
+	if err := indexTmpl.Execute(&index, indexPageData{
+		Leases: []deviceRow{{lease: lease{Addr: netip.MustParseAddr("192.168.50.156"), Name: "device-d"}, NameReserved: true}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(index.String(), "not a current lease") {
+		t.Errorf("peers-index.html does not mark the reserved name: %q", index.String())
+	}
+}
+
 func TestLowTrustBadgeHidesRemoveForPermanent(t *testing.T) {
 	var buf bytes.Buffer
 	tmpl := template.Must(template.ParseFiles("peers.html", "nav.html"))

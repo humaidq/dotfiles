@@ -39,6 +39,19 @@ in
   config = lib.mkIf cfg.enable {
     services.alloy.enable = true;
 
+    # Alloy phones home to stats.grafana.org on its own schedule, and this is
+    # NOT covered by the Grafana server's analytics.reporting_enabled — that
+    # setting is Grafana's, and Alloy is a separate binary with its own
+    # reporter. It has to be turned off with a run flag.
+    #
+    # Left on, it is not a trickle: on bongo, where blocky sinkholes the name,
+    # it produced 14210 blocked lookups in one 24h window — about ten a minute,
+    # and a sixth of every DNS query the router logged. The retry loop never
+    # backs off because a 0.0.0.0 answer is a successful resolution as far as
+    # Alloy is concerned. It buried the actual client traffic in the query log
+    # and made the router dashboard's volume panels read as noise.
+    services.alloy.extraFlags = [ "--disable-reporting" ];
+
     # Created here rather than beside the one writer in modules/router, so that
     # the collector configured below always has a directory to read. A missing
     # one is not benign: node_exporter reports it as a collector error on every

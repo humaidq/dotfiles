@@ -246,8 +246,20 @@ in
         # access control, so following one unit costs the same group as
         # following all of them. answerlog.go follows exactly one and parses
         # two fields out of it.
+        #
+        # The static DHCP reservations are a sops secret owned by dnsmasq, and
+        # until this group was added router-web could not read a byte of it.
+        # That was visible in two places at once: the status page reported
+        # "configured" instead of a count of reservations, and the peers pages
+        # rendered every reserved device as an em-dash — including the ones
+        # whose reservation says `infinite`, which is precisely the setting
+        # that stops a device renewing and so keeps it out of the lease file
+        # for good. Named rather than given its own group, unlike router-ap:
+        # the file already has an owner that must keep reading it, and a file
+        # has only one group to give away.
         SupplementaryGroups =
           lib.optional (cfg.accessPoints.file != null) "router-ap"
+          ++ lib.optional (cfg.dhcp.hostsFile != null) "dnsmasq"
           ++ lib.optional cfg.queryLog.enable "systemd-journal";
       };
     };

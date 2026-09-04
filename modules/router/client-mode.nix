@@ -44,7 +44,19 @@ in
             family = "ip";
             content = "";
           };
+        }
+        // lib.optionalAttrs (cfg.meshAddress != null && cfg.meshDNSMappings != { }) {
+          router-mesh-dns = lib.mkForce {
+            family = "ip";
+            content = "";
+          };
         };
+      };
+
+      # Nothing to be in front of: blocky is off below, so the mesh instance
+      # would forward every query into a closed port.
+      systemd.services.dnsmasq-mesh = lib.mkIf (cfg.meshAddress != null && cfg.meshDNSMappings != { }) {
+        enable = lib.mkForce false;
       };
 
       services = {

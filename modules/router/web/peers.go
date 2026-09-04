@@ -68,15 +68,21 @@ type peersPageData struct {
 	Nav    navData
 	Device string
 	// How DHCP knows this device: the hostname it offered, and the hardware
-	// address the lease was handed to. Both come from the lease file, so a
-	// device with a static address has neither and the template renders the
-	// same em-dash the index table uses for a nameless lease.
+	// address it holds. The lease file answers both when there is a lease; the
+	// static reservations answer the name and the neighbour table the MAC when
+	// there is not. Only a device that is in neither renders the em-dash.
 	//
 	// The MAC is here because it is the identifier the low-trust pool keys on:
 	// making a device's membership permanent means copying this value into the
 	// sops secret, and having it on the page saves a trip to the router.
 	Name string
 	MAC  string
+	// Set when Name came from the reservation file rather than a live lease.
+	// The template says so on hover: the two are different claims — one is what
+	// the device called itself just now, the other is what an operator decided
+	// it is called, possibly months ago and possibly about a MAC the device has
+	// since rotated away from.
+	NameReserved bool
 	// The other addresses this device holds, beyond the one in the URL. Shown
 	// because the peer table below is a union across all of them, and a page
 	// that silently merged two address families would leave a reader unable to
@@ -117,6 +123,9 @@ type deviceRow struct {
 	// same claim about the same connection table.
 	LastSeen string
 	Stale    bool
+	// Same meaning as the device page's field of the same name: this row's name
+	// is an operator's reservation, not a hostname the device offered.
+	NameReserved bool
 	// The unformatted gap behind LastSeen, and whether there was one. Kept
 	// unexported because the template has no use for them — they exist so the
 	// rows can be ordered by how recently a device was active, which a
@@ -226,6 +235,13 @@ type peersServer struct {
 	// tests that pass their own fixture expectations; the page then renders
 	// blank last-seen cells and is otherwise unchanged.
 	timeouts *timeoutTable
+	// The static DHCP reservations, which name a device the lease file has
+	// forgotten — see reservations.go for why that is the normal state for the
+	// devices someone bothered to name rather than an edge case.
+	//
+	// Nil disables it: a router with no reservation file configured reads none,
+	// and every page is what it was before this existed.
+	reservations *reservationFile
 	// Reverse DNS names for the peer addresses. The render path only ever
 	// reads this cache, never fills it — see rdns.go for why the resolver is
 	// kept off the render path entirely, and for the browser's half of it.
@@ -416,6 +432,20 @@ func (s *peersServer) deviceRows(ctx context.Context, leases []lease) []deviceRo
 			lease: lease{Addr: pickDeviceAddr(addrs), MAC: mac},
 			addrs: addrs,
 		})
+	}
+
+	// Names for the rows the lease file could not name: a device that offered
+	// no hostname, and — the case this was written for — a device whose
+	// reservation is `infinite`, which stops it renewing and so eventually
+	// takes it out of the lease file altogether. Read once for the whole page.
+	reserved := s.reservations.load()
+	for i := range rows {
+		if rows[i].Name != "" {
+			continue
+		}
+		if name := reserved.name(rows[i].MAC, rows[i].Addr); name != "" {
+			rows[i].Name, rows[i].NameReserved = name, true
+		}
 	}
 	return rows
 }
@@ -802,6 +832,25 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 				data.Name, data.MAC = entry.Name, entry.MAC
 				break
 			}
+		}
+	}
+
+	// What the lease file could not say. The MAC is the neighbour table's,
+	// already read above for the address union, and the name is the operator's
+	// reservation.
+	//
+	// Both matter most for the same device: one with an `infinite` reservation,
+	// which never renews and so has no lease line to be found in. That device
+	// used to render an em-dash for its name and an em-dash for its MAC — and
+	// with no MAC on the page there was nothing to copy into the low-trust
+	// secret, so the pool could not be made permanent for the very devices
+	// someone had already gone to the trouble of naming.
+	if data.MAC == "" {
+		data.MAC = mac
+	}
+	if data.Name == "" {
+		if name := s.reservations.load().name(data.MAC, device); name != "" {
+			data.Name, data.NameReserved = name, true
 		}
 	}
 

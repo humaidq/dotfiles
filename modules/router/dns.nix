@@ -75,6 +75,88 @@ let
       lib.filterAttrs (name: value: !redundantWithHostRecord name value) shadowingMappings
     )
   );
+
+  # THE MESH VIEW. sifr.router.meshDNSMappings says some names must be
+  # answered differently for clients arriving over sifr0, and this is the
+  # whole of how that is served.
+  #
+  # It is a second dnsmasq in front of blocky rather than anything inside
+  # blocky, and that is forced rather than chosen. blocky's custom DNS and its
+  # conditional mapping are both client-agnostic, and — decisively — its cache
+  # is keyed on question name and type alone (util.GenerateCacheKey), so even
+  # if the answer could be varied per client the first LAN lookup of alq.ae
+  # would be handed to the next mesh client that asked. Client-specific
+  # upstream groups, the one client-aware branch blocky has, sit *below* the
+  # cache and the conditional resolver, so they cannot help either. A whole
+  # second blocky would work and is not worth it: the nrd lists alone are 7.7
+  # million names of resident memory, and this router would hold them twice.
+  #
+  # So: mesh clients are redirected to this instance, it answers the overridden
+  # names itself, and forwards everything else to blocky, which still applies
+  # every denylist. What that costs is the client address on the forwarded
+  # queries — blocky logs them as 127.0.0.1, so a roaming device does not
+  # appear under its own address in the DNS panels or the peers page while it
+  # is on the overlay. There is no fixing that from here; blocky takes the
+  # client from the packet, and the packet is now the router's.
+  meshMappings = cfg.meshDNSMappings;
+  meshEnabled = cfg.meshAddress != null && meshMappings != { };
+
+  # Not 53: blocky already holds 0.0.0.0:53, the mesh address included. The
+  # queries get here by dstnat, not by binding.
+  meshPort = 5354;
+
+  strictlyUnder = parent: name: name != parent && lib.hasSuffix ".${parent}" ".${name}";
+
+  # An override is a wildcard over its whole zone, which is what makes it
+  # useful — every vhost under alq.ae wants the mesh address. But this router
+  # answers specific names under those zones too (bongo.s.alq.ae is 10.10.0.16,
+  # not the home server; the LAN's DHCP zone hangs off the same suffix), and a
+  # wildcard would take all of them. Each one is handed back to blocky, which
+  # already knows the right answer. dnsmasq resolves by longest match across
+  # server= and address= alike, so the specific entries win over the wildcard.
+  meshPassthrough = lib.filter (
+    name: lib.any (m: strictlyUnder m name) (lib.attrNames meshMappings)
+  ) (lib.unique (lib.attrNames customDNSMappings ++ [ cfg.localDomain ]));
+
+  meshConf = pkgs.writeText "dnsmasq-mesh.conf" (
+    lib.concatStringsSep "\n" (
+      [
+        "port=${toString meshPort}"
+        # bind-dynamic rather than bind-interfaces: nebula assigns the mesh
+        # address asynchronously and may not have done it yet when this starts,
+        # and bind-interfaces would fail outright on an address that is not
+        # there. This picks it up whenever it appears, and survives nebula
+        # restarting under it.
+        "interface=sifr0"
+        "bind-dynamic"
+        "no-resolv"
+        "no-hosts"
+        "no-poll"
+        # blocky caches behind this. A second cache here would only add a
+        # second set of TTLs to reason about, and would hold the CDN answers
+        # that blocky-common.nix is careful not to pin.
+        "cache-size=0"
+      ]
+      # address= answers A and nothing else, so an AAAA or HTTPS query for the
+      # same name would be treated as forwardable and go to blocky, which would
+      # answer it with the LAN address — the exact split this is here to
+      # prevent, on the query type browsers ask first. Declaring the zone local
+      # makes those NODATA instead. Same reasoning as the shadowed zones above.
+      ++ lib.concatLists (
+        lib.mapAttrsToList (
+          name: value: map (ip: "address=/${name}/${ip}") (lib.splitString "," value)
+        ) meshMappings
+      )
+      ++ map (name: "local=/${name}/") (lib.attrNames meshMappings)
+      ++ map (name: "server=/${name}/${blockyUpstream}") meshPassthrough
+      ++ [ "server=${blockyUpstream}" ]
+    )
+    + "\n"
+  );
+
+  # blocky's own listener, for the forwarded queries. Loopback, so the mesh
+  # instance does not depend on the mesh address being up to reach it.
+  blockyUpstream = "127.0.0.1#53";
 in
 
 {
@@ -284,6 +366,65 @@ in
         OnUnitActiveSec = "1m";
         AccuracySec = "10s";
       };
+    };
+
+    # The mesh view: a second dnsmasq for clients on sifr0, and the dstnat that
+    # sends them to it. See the meshMappings block above for why it is a
+    # separate process and not a blocky setting.
+    systemd.services.dnsmasq-mesh = lib.mkIf meshEnabled {
+      description = "Split-horizon resolver for mesh clients";
+      wantedBy = [ "multi-user.target" ];
+      # blocky is where everything not overridden goes, and nebula owns the
+      # address this binds. Both are ordering only — bind-dynamic copes with
+      # the interface arriving late, and dnsmasq retries its upstream.
+      after = [
+        "network.target"
+        "blocky.service"
+        "nebula@sifr0.service"
+      ];
+      wants = [
+        "blocky.service"
+        "nebula@sifr0.service"
+      ];
+      serviceConfig = {
+        ExecStart = "${pkgs.dnsmasq}/bin/dnsmasq -k --conf-file=${meshConf}";
+        ExecReload = "${pkgs.coreutils}/bin/kill -HUP $MAINPID";
+        Restart = "on-failure";
+        RestartSec = "5s";
+        # Started as root so it can bind before dropping to nobody, which
+        # dnsmasq does itself. No DynamicUser: this host persists, and
+        # DynamicUser services cannot take a StateDirectory across the
+        # impermanence bind mounts. It has no state to keep in any case.
+        CapabilityBoundingSet = [
+          "CAP_NET_BIND_SERVICE"
+          "CAP_NET_RAW"
+          "CAP_SETGID"
+          "CAP_SETUID"
+        ];
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+      };
+    };
+
+    # Mesh clients ask 10.10.0.16:53 like any other resolver — blocky is what
+    # holds that socket, and it cannot be told to leave the mesh address alone
+    # without pinning every other address it must answer on, including a LAN
+    # link-local that changes. So the queries are taken at the door instead:
+    # anything for port 53 entering sifr0 is redirected to the mesh instance.
+    # iifname is the whole test, which is what makes this exactly as narrow as
+    # the overlay.
+    networking.nftables.tables."router-mesh-dns" = lib.mkIf meshEnabled {
+      family = "ip";
+      content = ''
+        chain prerouting {
+          type nat hook prerouting priority dstnat; policy accept;
+
+          iifname "sifr0" udp dport 53 counter redirect to :${toString meshPort} comment "Mesh clients to the split-horizon resolver"
+          iifname "sifr0" tcp dport 53 counter redirect to :${toString meshPort} comment "Mesh clients to the split-horizon resolver"
+        }
+      '';
     };
 
     services.resolved.enable = false;

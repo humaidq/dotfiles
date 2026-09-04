@@ -231,6 +231,19 @@
         "alq.ae" = "10.20.0.250";
         "cache.huma.id" = "10.20.0.250";
       };
+      # The other half of the paragraph above. A client on the overlay cannot
+      # reach 10.20.0.250 for the reason given there, and until this existed a
+      # phone using this resolver from outside the house got the LAN address
+      # for every alq.ae vhost and timed out on all of them. Same host, other
+      # address: oreamnos is 10.10.0.12 on the mesh.
+      #
+      # Only for queries arriving on sifr0, so the LAN answers are untouched —
+      # and mesh clients still get everything else from blocky with the
+      # blocklists applied. See sifr.router.meshDNSMappings.
+      meshDNSMappings = {
+        "alq.ae" = "10.10.0.12";
+        "cache.huma.id" = "10.10.0.12";
+      };
       pppdConfig = config.sops.secrets."etisalat/pppd-config".path;
       # The only view of the physical line anything here has. The anchors
       # below measure the path beyond the fibre and cannot tell a degrading

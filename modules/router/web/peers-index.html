@@ -44,7 +44,7 @@
 
 <section class="section">
 <h2>All devices</h2>
-<p class="note">Current DHCP leases. Pick one to see the peers it is talking to right now, and to throttle or block any of them.</p>
+<p class="note">Every device the router can see: current DHCP leases, plus anything in the neighbour table that holds no lease. Pick one to see the peers it is talking to right now, and to throttle or block any of them.</p>
 {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
 {{if .Leases}}
 <div class="table-wrap narrow">
@@ -53,7 +53,7 @@
 {{range .Leases}}
 <tr>
 <td><a href="/peers/{{.Addr}}">{{.Addr}}</a></td>
-<td class="name">{{if .Name}}{{.Name}}{{else}}—{{end}}</td>
+<td class="name"{{if .NameReserved}} title="From the static DHCP reservations, not a current lease."{{end}}>{{if .Name}}{{.Name}}{{else}}—{{end}}</td>
 <td class="num{{if .Stale}} stale{{end}}">{{if .LastSeen}}{{.LastSeen}}{{else}}—{{end}}</td>
 </tr>
 {{end}}

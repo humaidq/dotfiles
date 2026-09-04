@@ -91,6 +91,35 @@ in
       default = { };
       description = "Router-specific static DNS name-to-address mappings.";
     };
+    meshDNSMappings = lib.mkOption {
+      type = with lib.types; attrsOf str;
+      default = { };
+      example = {
+        "alq.ae" = "10.10.0.12";
+      };
+      description = ''
+        The same names as customDNSMappings, answered differently for clients
+        that arrive over the mesh interface. Split horizon, and it exists
+        because the two sides of this router genuinely need different answers:
+        the home server is 10.20.0.250 on the LAN and 10.10.0.12 on the
+        overlay, and neither address is reachable from the other side —
+        nothing bridges the LAN into nebula (see hosts/bongo/default.nix), so
+        a roaming client handed the LAN address has nowhere to send the
+        packet.
+
+        Names not listed here are resolved for mesh clients exactly as they
+        are for everyone else, blocklists included; only the listed ones are
+        overridden. Names *under* a listed one that this router already
+        answers specifically — the s.alq.ae mesh host records, the LAN's own
+        DHCP zone — keep their existing answers rather than being swallowed by
+        the wildcard.
+
+        Requires sifr.router.meshAddress. Serving this needs a second resolver
+        in front of blocky, because blocky cannot do it: its cache is keyed on
+        name and type with no client component, so one name has exactly one
+        answer per router no matter which client asked. See dns.nix.
+      '';
+    };
     pppdConfig = lib.mkOption {
       type = lib.types.path;
       description = "Path to file containing the ISP provided credentials for PPPoE authentication.";

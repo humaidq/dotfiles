@@ -617,6 +617,12 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 	// the page which IPv6 addresses belong to the device whose page it is, so
 	// without it every device is IPv4-only again.
 	peers.neighbours = newNeighbourCache(readNeighbours(getenvDefault("ROUTER_LAN_INTERFACE", "enp2s0")))
+	// The same file the status page counts, read here for the names in it. Nil
+	// when unset, and nil again in effect when the file cannot be read — the
+	// secret is group-readable and this service has to be in that group, which
+	// is a thing to get wrong, so the failure is logged once rather than
+	// silently rendering every reserved device nameless forever.
+	peers.reservations = newReservationFile(os.Getenv("ROUTER_DHCP_HOSTS_FILE"))
 	// Opt-in on the unit, like captures: unset means the peers page shows
 	// reverse names only and reads no log at all. Primed once before serving so
 	// the first page render already has the names blocky resolved recently,
