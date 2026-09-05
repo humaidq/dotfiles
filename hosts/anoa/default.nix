@@ -171,6 +171,7 @@ in
           ".config/doom"
           ".config/emacs"
           ".config/hamradio" # qlog
+          ".config/kicad"
           ".config/opencode"
           ".config/net.imput.helium"
           ".config/PrusaSlicer"
@@ -180,6 +181,7 @@ in
           ".local/share/contacts"
           ".local/share/direnv"
           ".local/share/hamradio/QLog"
+          ".local/share/kicad"
           ".local/share/keyrings"
           ".local/share/khal"
           ".local/share/vdirsyncer"
@@ -352,6 +354,7 @@ in
     intel-gpu-tools
 
     rpi-imager
+    kicad
   ];
 
   # Intel VAAPI hardware video decode (iHD/intel-media-driver) so browsers

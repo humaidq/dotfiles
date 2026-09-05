@@ -33,9 +33,21 @@
 #   * The captive-portal probes, via cooldown_allow4/6 below. This is the only
 #     part that had to be built rather than inherited, and the only part with a
 #     cost — see sifr.router.cooldown.allowDomains.
+#   * Whole networks named by AS number in custom-cooldown-allow-asns.txt, via
+#     cooldown_asn4/6 — Apple, Meta, Google and Etisalat as shipped, so a cooled
+#     phone still gets messages and push. See that file for what each of those
+#     four costs, and ip-blocklist.nix for what fills the sets. Everything they
+#     admit is rate-capped; see sifr.router.cooldown.rate.
 #
 # Everything else — every route through ppp0, and every route into the mesh —
 # is dropped in both directions.
+#
+# THE TWO CARVE-OUTS ARE DIFFERENT INSTRUMENTS and the difference is worth
+# holding onto. allowDomains is a handful of host addresses, re-resolved every
+# three minutes, existing so the device does not declare the Wi-Fi broken. The
+# ASN list is thousands of prefixes that do not move, existing so a cooldown can
+# be "off the internet except for X" rather than "off the internet". A name
+# belongs in the first; a provider belongs in the second.
 let
   cfg = config.sifr.router;
 
@@ -80,10 +92,15 @@ in
         device associated, leased, resolving and able to answer its own
         captive-portal probe.
 
-        On by default because it costs one table with five small sets and a
-        chain of eleven rules, all of which match nothing until a cooldown is
-        actually started. Off means no table, no chain, no tool, and no button
-        on the peers page.
+        On by default because it costs one table with seven sets and a chain of
+        seventeen rules, all of which match nothing until a cooldown is actually
+        started. Five of the sets are small; the two holding the allowed ASN
+        ranges are as big as custom-cooldown-allow-asns.txt makes them, and that
+        file ships with four numbers in it.
+
+        Off means no table, no chain, no tool, no tc class 1:40, no button on
+        the peers page, and nothing filling the ASN sets — nft-blocklists-local
+        drops that entry rather than failing on a table that is not there.
       '';
     };
 
@@ -97,6 +114,27 @@ in
         self-clearing consequence, and a typo in the duration box ("5h" for
         "5m") should not turn into a day nobody notices. Anything longer than
         this belongs in the blocklists, where it is written down.
+      '';
+    };
+
+    rate = lib.mkOption {
+      type = lib.types.str;
+      default = "512kbit";
+      description = ''
+        Rate cap on everything a device in cooldown is still allowed to reach —
+        both carve-outs, each direction. tc class 1:40, fed by meta mark 0x4.
+
+        A cap rather than a plain accept because the carve-outs are wide enough
+        to matter. The captive-portal list admits www.google.com's addresses, and
+        an ASN in custom-cooldown-allow-asns.txt admits everything a provider
+        announces; at line rate that is not a cooldown with exceptions, it is a
+        cooldown someone can watch YouTube through. At this rate messaging,
+        push and a portal probe are unaffected and video is not worth having.
+
+        Overridable from a later chain: a peer that is also in the throttle list
+        (0x2) or the imo list (0x3) is re-marked at priority 0 and lands in the
+        stricter class instead. That direction is the safe one, so it is left
+        alone.
       '';
     };
 
@@ -212,6 +250,32 @@ in
           size 512
         }
 
+        # The standing carve-out: whole networks a device in cooldown may still
+        # reach, expanded from the AS numbers in
+        # custom-cooldown-allow-asns.txt by nft-blocklists-local. See nftGens in
+        # ip-blocklist.nix for why the filling lives over there.
+        #
+        # `flags interval` and no timeout, which is the opposite of the pair
+        # above on both counts, and both differences follow from the source.
+        # These are announced CIDRs, not host addresses out of a DNS answer, so
+        # they must be ranges; and they change when a provider's allocations
+        # change rather than when a TTL expires, so a timeout would only be a
+        # way for the set to empty itself between reloads.
+        #
+        # Declared unconditionally so the rules below always have something to
+        # reference. An empty file is a valid state and costs nothing: the sets
+        # load empty, the six rules match nothing, and a cooldown means what it
+        # meant before any of this existed.
+        set cooldown_asn4 {
+          type ipv4_addr
+          flags interval
+        }
+
+        set cooldown_asn6 {
+          type ipv6_addr
+          flags interval
+        }
+
         # Priority -25: behind killrst at -30, so `cooldown add` still gets a
         # clean conntrack teardown instead of having its own drop swallow the
         # packet the reset needed to match, and ahead of tempblock at -20 and
@@ -233,12 +297,33 @@ in
           # `accept` ends evaluation of THIS chain only; the blocklist chains
           # at -10 still get their say, so a carve-out can never re-open an
           # address this router blocks for everyone.
-          ether saddr @cooldown_macs ip daddr @cooldown_allow4 counter accept comment "Cooldown: captive-portal probe out (IPv4)"
-          ether saddr @cooldown_macs ip6 daddr @cooldown_allow6 counter accept comment "Cooldown: captive-portal probe out (IPv6)"
-          ip saddr @cooldown4 ip daddr @cooldown_allow4 counter accept comment "Cooldown: captive-portal probe out, no MAC (IPv4)"
-          ip6 saddr @cooldown6 ip6 daddr @cooldown_allow6 counter accept comment "Cooldown: captive-portal probe out, no MAC (IPv6)"
-          ip daddr @cooldown4 ip saddr @cooldown_allow4 counter accept comment "Cooldown: captive-portal probe back (IPv4)"
-          ip6 daddr @cooldown6 ip6 saddr @cooldown_allow6 counter accept comment "Cooldown: captive-portal probe back (IPv6)"
+          #
+          # EVERY ACCEPT HERE IS MARKED 0x4 FIRST, which puts it in the capped
+          # tc class rather than on the open link — see
+          # sifr.router.cooldown.rate, and cake-sqm in qos.nix for the class.
+          # The mark and the accept are one rule on purpose: an accept that
+          # forgot its mark is a full-rate hole in a cooldown, and keeping them
+          # adjacent is the only thing that stops a seventh rule being added
+          # later without one. `meta mark set` on a chain at priority -25 is
+          # overwritten by forward_throttle at priority 0, so a peer that is
+          # also throttled or imo lands in the stricter class instead.
+          ether saddr @cooldown_macs ip daddr @cooldown_allow4 counter meta mark set 0x4 accept comment "Cooldown: captive-portal probe out (IPv4)"
+          ether saddr @cooldown_macs ip6 daddr @cooldown_allow6 counter meta mark set 0x4 accept comment "Cooldown: captive-portal probe out (IPv6)"
+          ip saddr @cooldown4 ip daddr @cooldown_allow4 counter meta mark set 0x4 accept comment "Cooldown: captive-portal probe out, no MAC (IPv4)"
+          ip6 saddr @cooldown6 ip6 daddr @cooldown_allow6 counter meta mark set 0x4 accept comment "Cooldown: captive-portal probe out, no MAC (IPv6)"
+          ip daddr @cooldown4 ip saddr @cooldown_allow4 counter meta mark set 0x4 accept comment "Cooldown: captive-portal probe back (IPv4)"
+          ip6 daddr @cooldown6 ip6 saddr @cooldown_allow6 counter meta mark set 0x4 accept comment "Cooldown: captive-portal probe back (IPv6)"
+
+          # The ASN carve-out, in the same six forms and scoped the same way:
+          # both ends named on every rule, so this is a statement about devices
+          # in cooldown and never about the LAN. With the file empty these six
+          # match nothing.
+          ether saddr @cooldown_macs ip daddr @cooldown_asn4 counter meta mark set 0x4 accept comment "Cooldown: allowed network out (IPv4)"
+          ether saddr @cooldown_macs ip6 daddr @cooldown_asn6 counter meta mark set 0x4 accept comment "Cooldown: allowed network out (IPv6)"
+          ip saddr @cooldown4 ip daddr @cooldown_asn4 counter meta mark set 0x4 accept comment "Cooldown: allowed network out, no MAC (IPv4)"
+          ip6 saddr @cooldown6 ip6 daddr @cooldown_asn6 counter meta mark set 0x4 accept comment "Cooldown: allowed network out, no MAC (IPv6)"
+          ip daddr @cooldown4 ip saddr @cooldown_asn4 counter meta mark set 0x4 accept comment "Cooldown: allowed network back (IPv4)"
+          ip6 daddr @cooldown6 ip6 saddr @cooldown_asn6 counter meta mark set 0x4 accept comment "Cooldown: allowed network back (IPv6)"
 
           # The cooldown itself. The MAC rule is the one that does the work;
           # the address rules cut the return direction, so an already-open UDP

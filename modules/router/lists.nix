@@ -71,6 +71,15 @@ let
       file = "custom-cdn-quota-asns.txt";
       units = [ "nft-blocklists-local.service" ];
     };
+    # The only ALLOW-list among the ASN files, and the only list here whose
+    # sets live in a table other than router-blocklists — cooldown.nix owns
+    # them. The restart unit is still nft-blocklists-local, because that unit
+    # is the single writer for every list-to-set expansion regardless of which
+    # table the set is in; see nftGens in ip-blocklist.nix.
+    cooldownAllowAsns = {
+      file = "custom-cooldown-allow-asns.txt";
+      units = [ "nft-blocklists-local.service" ];
+    };
     lowtrustStunHosts = {
       file = "custom-lowtrust-stun-hosts.txt";
       units = [ "nft-lowtrust-stun.service" ];

@@ -298,6 +298,22 @@ let
 
   cdnQuotaASNGen = mkASNGen "gen-cdn-quota-asns.py" cdnQuotaNeverCover;
 
+  # The cooldown carve-out reuses the same expander with NO never-cover list at
+  # all, which needs saying because every other caller here has one.
+  #
+  # The tripwire exists because an ASN number expands to millions of addresses
+  # that are then DROPPED, and a typo can therefore take out the resolver. This
+  # list only ever produces `accept`, and an accept in the cooldown chain ends
+  # evaluation of that chain alone — the blocklist chains at priority -10 still
+  # get their say, so nothing generated here can re-open an address this router
+  # blocks for everyone. A mistyped number here admits more than intended for
+  # the length of a cooldown; it cannot break the house.
+  #
+  # What still holds: an AS number the ip2asn table has never heard of fails the
+  # unit rather than contributing nothing. That is the guard that matters for a
+  # file whose whole content is five-digit numbers.
+  cooldownAllowASNGen = mkASNGen "gen-cooldown-allow-asns.py" [ ];
+
   # Every unit below that writes elements into an nftables set carries this, and
   # leaving it off one is a silent, total fail-open. It is the fix for an outage
   # on 2026-08-15 in which every set on both routers sat empty for over an hour:
@@ -345,9 +361,18 @@ let
   #
   # Two properties this table has to keep. Each generator opens with `flush
   # set`, so two entries writing one set pair would leave only whichever ran
-  # last: no set name may appear twice. And the low-trust ASN carve-out must
-  # load before the ranges it exempts, so order matters — `mkNftGen` emits in
-  # list order and the loader applies in that order too.
+  # last: no table/set pair may appear twice. And the low-trust ASN carve-out
+  # must load before the ranges it exempts, so order matters — `mkNftGen` emits
+  # in list order and the loader applies in that order too.
+  #
+  # `table` defaults to router-blocklists, which is where all of this used to
+  # go and where all but one entry still does. The cooldown carve-out at the
+  # bottom writes into router-cooldown instead, because nftables sets are
+  # table-scoped and the chain that reads them lives there. It is loaded from
+  # here rather than from a unit of its own so that there stays exactly one
+  # thing on this router that turns a list file into set elements — one place
+  # that generates everything before applying anything, and one place carrying
+  # the restartTriggers that survived the 2026-08-15 outage.
   nftGens = [
     {
       gen = localBlocklistGen;
@@ -421,6 +446,20 @@ let
       sets = "cdn_quota4 cdn_quota6";
       asn = true;
     }
+  ]
+  ++ lib.optionals cfg.cooldown.enable [
+    # The sets and the rules that read them are in cooldown.nix; only the
+    # filling is here. Gated on cooldown.enable because without it the table
+    # does not exist and every `nft -f` in this unit would fail, taking the
+    # blocklists down with it.
+    {
+      gen = cooldownAllowASNGen;
+      src = cfg.lists.cooldownAllowAsns;
+      out = "cooldown-allow-asns";
+      table = "router-cooldown";
+      sets = "cooldown_asn4 cooldown_asn6";
+      asn = true;
+    }
   ];
 
   # The ASN expanders take the ip2asn table as a second argument; the others
@@ -429,7 +468,7 @@ let
     entry:
     "python3 ${entry.gen} ${lib.escapeShellArg (toString entry.src)} "
     + lib.optionalString (entry.asn or false) "${./ip2asn-combined.tsv} "
-    + ''"$work/${entry.out}.nft" router-blocklists ${entry.sets}'';
+    + ''"$work/${entry.out}.nft" ${entry.table or "router-blocklists"} ${entry.sets}'';
 
   # Refuses to read a secret that is not there yet. Without this the generator
   # reports a python traceback for a file that will exist in two seconds, which

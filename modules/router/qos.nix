@@ -177,6 +177,34 @@ in
               tc filter add dev "$dev" parent 1: protocol all prio 1 \
                 handle 0x3 fw flowid 1:30
             ''}
+
+            # Cooldown class. Everything a device in cooldown is still allowed
+            # to reach — the captive-portal carve-out and the allowed ASNs —
+            # marked 0x4 by the cooldown chain in cooldown.nix.
+            #
+            # prio 7 like the other two penalty classes, so a cooled device
+            # cannot take capacity from anyone. That is nearly moot in practice:
+            # the class is empty except while a cooldown is running, which is
+            # minutes at a time.
+            #
+            # fq_codel with the same parameters as the throttled class, for the
+            # first of the two reasons given there and not the second. Nothing
+            # here is hiding from a client's node scoring; this is a phone whose
+            # owner has been cut off. What matters is that the default pfifo at
+            # ${cfg.cooldown.rate} would be tens of seconds of standing buffer,
+            # so a probe or a push keepalive would queue behind whatever bulk
+            # transfer the device tried first and time out — and a device that
+            # concludes the network is broken is the failure this whole feature
+            # exists to avoid. Flow isolation keeps the small things answering.
+            ${lib.optionalString cfg.cooldown.enable ''
+              tc class add dev "$dev" parent 1:1 classid 1:40 htb \
+                rate ${cfg.cooldown.rate} ceil ${cfg.cooldown.rate} prio 7
+              tc qdisc add dev "$dev" parent 1:40 handle 40: fq_codel \
+                limit 100 target 100ms interval 1s noecn
+
+              tc filter add dev "$dev" parent 1: protocol all prio 1 \
+                handle 0x4 fw flowid 1:40
+            ''}
           }
 
           # Upload: egress of the PPP uplink. "nat" recovers the real LAN source

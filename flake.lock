@@ -638,11 +638,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1788607633,
-        "narHash": "sha256-HFRAmrvgAaLZFGsYHoGSVrEw1tYCkg3GRelsT4iG8GU=",
+        "lastModified": 1788616100,
+        "narHash": "sha256-7cdirk8VteazF2DiRhLZ5hYDxks67vy80BCrbkVzYrg=",
         "ref": "refs/heads/main",
-        "rev": "840568ced72017f4baede95ea1e45430f57b4420",
-        "revCount": 1061,
+        "rev": "b1b398ed3d0353618c01e3d85e5f22f452d0aee4",
+        "revCount": 1065,
         "type": "git",
         "url": "https://git.alq.ae/humaid/groundwave"
       },
