@@ -104,6 +104,15 @@ type peersPageData struct {
 	// the tool refuses to remove a permanent member and a button that cannot
 	// work should not be shown.
 	LowTrust string
+	// Whether this router offers cooldowns at all. False leaves the whole block
+	// out of the page, matching the routes: on a router with the feature off
+	// there is no table for the drop to live in and no tool to write it.
+	CooldownEnabled bool
+	// Whether this device is currently in cooldown, and for how much longer.
+	// Read from the ruleset on every render rather than remembered here, so the
+	// page cannot claim a cooldown that a reboot or a ruleset reload has
+	// already ended.
+	Cooldown cooldownState
 	// Set when the pool is enabled but no MAC could be found for this device,
 	// in either the neighbour table or the lease file. Kept apart from a
 	// LowTrust of "": that one means "asked the sets, not a member", this one
@@ -126,6 +135,12 @@ type deviceRow struct {
 	// Same meaning as the device page's field of the same name: this row's name
 	// is an operator's reservation, not a hostname the device offered.
 	NameReserved bool
+	// How much of this device's cooldown is left, already formatted; empty when
+	// it is not in one. On the index because a cooldown is the one state on
+	// these pages that ENDS on its own — being able to see which devices are
+	// cut off, without opening each page in turn, is most of what makes it
+	// usable as a household instrument rather than a debugging one.
+	Cooldown string
 	// The unformatted gap behind LastSeen, and whether there was one. Kept
 	// unexported because the template has no use for them — they exist so the
 	// rows can be ordered by how recently a device was active, which a
@@ -227,6 +242,17 @@ type peersServer struct {
 	// not exist. bongo runs this binary with the pool off, and must behave
 	// exactly as it did before the pool existed.
 	lowTrust func(ctx context.Context, mac string) string
+	// The cooldown sets, read for the banner on a device page and the badge on
+	// every index row. Nil disables the feature exactly as a nil captures does:
+	// no routes, no banner, no badge, and no nft(8) calls that could only fail
+	// because the table does not exist. See cooldown.go.
+	cooldowns *cooldownCache
+	// The longest cooldown this router will accept, from the same NixOS option
+	// the tool's own ceiling comes from. Zero means the built-in default; the
+	// tool refuses anything over its ceiling regardless, so this only decides
+	// whether an over-long duration comes back as a sentence or as a shell
+	// tool's stderr.
+	cooldownMax time.Duration
 	// Builds the shared nav strip. Zero value is usable: an empty hostname and
 	// a grey lamp, which is what a test server renders and what a router with
 	// no probing shows.
@@ -450,6 +476,16 @@ func (s *peersServer) deviceRows(ctx context.Context, leases []lease) []deviceRo
 		}
 		if name := reserved.name(rows[i].MAC, rows[i].Addr); name != "" {
 			rows[i].Name, rows[i].NameReserved = name, true
+		}
+	}
+	// One read of the cooldown sets for the whole page — the cache is what
+	// keeps this from being three forks of nft(8) per row.
+	if s.cooldowns != nil {
+		index := s.cooldowns.get(ctx)
+		for i := range rows {
+			if left, ok := index.remaining(rows[i].MAC, rows[i].addrs); ok {
+				rows[i].Cooldown = formatDuration(left)
+			}
 		}
 	}
 	return rows
@@ -725,6 +761,14 @@ func (s *peersServer) registerRoutes(mux *http.ServeMux) {
 			},
 		}))
 	}
+	// Absent unless this router has the cooldown table and tool, for the same
+	// reason the low-trust routes are: a button whose only possible outcome is
+	// a 500 should not be offered. Not a peerAction, because it is the one
+	// action here that carries a value from the operator — see cooldown.go.
+	if s.cooldowns != nil {
+		mux.HandleFunc("POST /peers/{device}/cooldown", s.handleCooldownStart)
+		mux.HandleFunc("POST /peers/{device}/cooldown/end", s.handleCooldownEnd)
+	}
 	// Absent unless a capture directory is configured, so a router without one
 	// answers 404 here exactly as it did before this feature.
 	if s.captures != nil {
@@ -869,6 +913,25 @@ func (s *peersServer) render(w http.ResponseWriter, r *http.Request, device neti
 
 	if s.captures != nil {
 		data.Capture = s.captures.Get(device)
+	}
+	// Asked with both handles, because the ruleset holds both: the MAC, which
+	// is what the drop is really keyed on, and every address this device is
+	// known to hold, which is what covers a device the neighbour table has no
+	// entry for. The lease MAC stands in when the live table has none, the same
+	// fallback the low-trust lookup below makes and for the same reason — a
+	// sleeping device is evicted from the neighbour table within minutes, and a
+	// device in cooldown has every reason to have gone quiet.
+	if s.cooldowns != nil {
+		data.CooldownEnabled = true
+		cooldownMAC := mac
+		if cooldownMAC == "" {
+			cooldownMAC = data.MAC
+		}
+		cooldownAddrs := make([]netip.Addr, 0, len(addresses))
+		for addr := range addresses {
+			cooldownAddrs = append(cooldownAddrs, addr)
+		}
+		data.Cooldown = s.cooldownFor(ctx, cooldownMAC, cooldownAddrs)
 	}
 	// The pool is keyed on MAC, not address, so the address has to be resolved
 	// first, and from two places rather than one. The neighbour table is the

@@ -667,6 +667,23 @@ func startMeshServer(meshAddr, lanCIDR, asnPath, staticRoot string, config pageD
 	if strings.TrimSpace(os.Getenv("ROUTER_LOWTRUST")) != "" {
 		peers.lowTrust = lowTrustMembership
 	}
+	// Cooldowns, gated the same way and for the same reason: the table, the
+	// chain and the `cooldown` tool are one NixOS option, so a router without
+	// it has nothing for these routes to read or write. The ceiling is carried
+	// alongside so an over-long duration is refused with a sentence instead of
+	// a shell tool's stderr; an unset or unreadable value leaves the built-in
+	// default, which matches the option's.
+	if strings.TrimSpace(os.Getenv("ROUTER_COOLDOWN")) != "" {
+		peers.cooldowns = newCooldownCache()
+		peers.cooldownMax = defaultMaxCooldown
+		if raw := strings.TrimSpace(os.Getenv("ROUTER_COOLDOWN_MAX_SECONDS")); raw != "" {
+			if secs, err := strconv.Atoi(raw); err == nil && secs > 0 {
+				peers.cooldownMax = time.Duration(secs) * time.Second
+			} else {
+				log.Printf("cooldown: ignoring ROUTER_COOLDOWN_MAX_SECONDS=%q, keeping %s", raw, peers.cooldownMax)
+			}
+		}
+	}
 	peers.nav = nav
 	go serveMeshWithRetry(validAddr, meshMux(config, tmpl, uplink, aps, ont, fullReboot, peers, nav))
 	return nil

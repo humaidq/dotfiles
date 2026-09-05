@@ -313,6 +313,16 @@ in
         # firewall does not implement — on a router without the pool the two
         # routes are never registered and the block never renders.
         ++ lib.optional cfg.lowTrust.enable "ROUTER_LOWTRUST=1"
+        # Presence enables the cooldown banner, the badge on the devices list
+        # and the two routes behind them. Set from the same option that creates
+        # the table, the chain and the `cooldown` tool, so the page cannot
+        # offer a button the firewall does not implement. The ceiling travels
+        # with it so an over-long duration is refused in the browser with a
+        # sentence rather than as a 500 carrying the tool's stderr.
+        ++ lib.optionals cfg.cooldown.enable [
+          "ROUTER_COOLDOWN=1"
+          "ROUTER_COOLDOWN_MAX_SECONDS=${toString cfg.cooldown.maxSeconds}"
+        ]
         # Presence of the database path is what turns probing on: unset means
         # no raw socket, no goroutines, no file, and neither /uplink nor
         # /metrics registered. Under the same StateDirectory as the captures,

@@ -19,6 +19,7 @@ in
     ./ont.nix
     ./pppd.nix
     ./client-mode.nix
+    ./cooldown.nix
     ./geoip.nix
     ./ip-blocklist.nix
     ./lists.nix

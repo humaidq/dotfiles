@@ -32,6 +32,28 @@
 </form>
 {{end}}
 {{end}}
+{{if .CooldownEnabled}}
+{{if .Cooldown.Active}}
+<div class="cooldown">
+<form class="cooldown" method="post" action="/peers/{{.Device}}/cooldown/end">
+<button type="submit">end cooldown</button>
+</form>
+<span class="figure">in cooldown &mdash; {{.Cooldown.Left}} left{{if .Cooldown.Until}}, back at {{.Cooldown.Until}}{{end}}</span>
+</div>
+<p class="note">No internet in either direction. Still working: the Wi-Fi association, the DHCP lease, DNS through this router, anything on this LAN segment, and the device's own captive-portal check &mdash; so the phone stays on the network instead of deciding it is broken and using mobile data. Ends by itself; the button above is only for ending it early.</p>
+{{else}}
+<!-- The duration is a real text input, not only a scripted prompt. The script
+     below hides it and asks in a dialog instead, which is the nicer thing on a
+     phone; with scripting off, or before that script runs, the form still works
+     exactly as it reads. -->
+<form class="cooldown-start" method="post" action="/peers/{{.Device}}/cooldown" style="margin: 0 0 1rem">
+<label for="cooldown-duration">Cooldown for</label>
+<input type="text" id="cooldown-duration" name="duration" value="15m" size="6" autocomplete="off" spellcheck="false" inputmode="text">
+<button type="submit">cooldown</button>
+</form>
+<p class="note">Cuts this device off the internet for a set time &mdash; 5m, 90s, 1h30m &mdash; without touching its Wi-Fi. DHCP, DNS, the LAN and the captive-portal check keep working, so the device stays connected and everything else simply stops. Lifts itself when the time is up.</p>
+{{end}}
+{{end}}
 {{if eq .Capture.State "running"}}
 <div class="capture">
 <form class="capture" method="post" action="/peers/{{.Device}}/capture/stop">
@@ -183,6 +205,45 @@
   }
 
   run(pending);
+})();
+
+// Asks for the cooldown duration in a dialog instead of leaving a text box on
+// the page.
+//
+// Pure enhancement: the form above is complete and correct without any of this
+// — the input carries a sensible default and submits on its own. All this does
+// is take the box out of the layout and put the question in front of whoever
+// pressed the button, which is what makes the control usable one-handed on a
+// phone. If it fails or scripting is off, the box stays visible and the form
+// behaves as written.
+(function () {
+  var form = document.querySelector('form.cooldown-start');
+  if (!form || !window.prompt) return;
+  var input = form.querySelector('input[name="duration"]');
+  var label = form.querySelector('label[for="cooldown-duration"]');
+  if (!input) return;
+
+  // Hidden rather than removed: it is still the field that gets submitted, and
+  // its current value is the default offered in the dialog.
+  input.type = 'hidden';
+  if (label) label.hidden = true;
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var answer = window.prompt(
+      'No internet for this device for how long?\n\nGo-style duration: 5m, 90s, 1h30m.',
+      input.value);
+    // Cancelled, or cleared and confirmed. Either way nothing is submitted:
+    // this button cuts a device off the network, so an empty answer must never
+    // fall back to a default nobody chose.
+    if (answer === null) return;
+    answer = answer.replace(/^\s+|\s+$/g, '');
+    if (answer === '') return;
+    input.value = answer;
+    // submit() rather than dispatching another submit event, which would come
+    // straight back here.
+    form.submit();
+  });
 })();
 </script>
 </body>

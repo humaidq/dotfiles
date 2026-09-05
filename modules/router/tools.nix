@@ -20,21 +20,9 @@ let
       ''
       + builtins.readFile ./clients.bash;
   };
-  killconn = pkgs.writeShellApplication {
-    name = "killconn";
-    runtimeInputs = with pkgs; [
-      coreutils
-      gawk
-      conntrack-tools
-      # For the neighbour lookup that folds a device's IPv4 and IPv6 addresses
-      # together, and for arming the reset set. Neither is optional: without
-      # iproute2 a dual-stack device loses half its flows, and without nftables
-      # a TCP teardown silently degrades to deleting state nobody is told about.
-      iproute2
-      nftables
-    ];
-    text = builtins.readFile ./killconn.bash;
-  };
+  # A package expression of its own because cooldown.nix builds it too — see
+  # the header of killconn-package.nix.
+  killconn = pkgs.callPackage ./killconn-package.nix { };
   tempblock = pkgs.writeShellApplication {
     name = "tempblock";
     runtimeInputs = [
@@ -81,6 +69,10 @@ let
   };
 in
 {
+  # The `cooldown` tool is NOT here. It is built in cooldown.nix alongside the
+  # table and chain it writes to, because the three are one feature and a
+  # reviewer reading the chain needs the tool in front of them. It merges its
+  # own entries into environment.systemPackages and router-web's PATH below.
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [
       clients

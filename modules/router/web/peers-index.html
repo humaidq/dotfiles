@@ -53,7 +53,7 @@
 {{range .Leases}}
 <tr>
 <td><a href="/peers/{{.Addr}}">{{.Addr}}</a></td>
-<td class="name"{{if .NameReserved}} title="From the static DHCP reservations, not a current lease."{{end}}>{{if .Name}}{{.Name}}{{else}}—{{end}}</td>
+<td class="name"{{if .NameReserved}} title="From the static DHCP reservations, not a current lease."{{end}}>{{if .Name}}{{.Name}}{{else}}—{{end}}{{if .Cooldown}} <span class="shape cooldown" title="No internet until this runs out. The device is still associated, still leased and still resolving.">cooldown {{.Cooldown}}</span>{{end}}</td>
 <td class="num{{if .Stale}} stale{{end}}">{{if .LastSeen}}{{.LastSeen}}{{else}}—{{end}}</td>
 </tr>
 {{end}}

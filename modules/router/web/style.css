@@ -1234,6 +1234,65 @@ form.capture button:hover {
   background: #d6e9ec;
 }
 
+/* The cooldown control, on the device page. Amber rather than the destructive
+   red of form.device: this one ends by itself, which is the whole difference
+   between it and a block, and the colour is where that gets said before the
+   button is pressed. */
+form.cooldown-start,
+form.cooldown {
+  display: inline;
+}
+
+form.cooldown-start button,
+form.cooldown button {
+  background: #fdf6e6;
+  border-color: #c08a1e;
+  color: #7a5205;
+  font-weight: 600;
+}
+
+form.cooldown-start button:hover,
+form.cooldown button:hover {
+  background: #f8ead0;
+}
+
+form.cooldown-start label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-right: 0.35rem;
+}
+
+form.cooldown-start input {
+  font: inherit;
+  font-family: var(--mono);
+  width: 5rem;
+  padding: 0.25rem 0.4rem;
+  margin-right: 0.35rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* Same div-not-p reason as the capture banner below. */
+div.cooldown {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+div.cooldown .figure {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The chip on the devices list. Qualified with .shape so it cannot reach the
+   form and banner above, which share the word and not the styling. */
+.shape.cooldown {
+  background: #f4d99a;
+  color: #4a3505;
+}
+
 /* Use div instead of p: the banner contains a form, and a form inside a
    paragraph is auto-closed by the parser, which would drop these selectors. */
 div.capture {
